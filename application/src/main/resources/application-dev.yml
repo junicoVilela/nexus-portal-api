@@ -1,0 +1,52 @@
+# Perfil `dev` — banco e JWT com defaults locais (nunca use estes segredos em produção).
+
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/softon_intranet}
+    username: ${DB_USERNAME:softon_intranet}
+    password: '${DB_PASSWORD:softon!@#}'
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+  flyway:
+    enabled: true
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+management:
+  health:
+    mail:
+      enabled: false
+
+docflow:
+  storage:
+    publicacoes-dir: ${PUBLICACOES_DIR:./storage/publicacoes}
+  notificacoes:
+    habilitado: ${NOTIFICACOES_EMAIL_HABILITADO:false}
+    admin-email: ${NOTIFICACOES_ADMIN_EMAIL:}
+  security:
+    admin-password: ${ADMIN_PASSWORD:admin}
+    editor-password: ${EDITOR_PASSWORD:editor}
+    jwt-secret: ${JWT_SECRET:doc-flow-dev-only-jwt-secret-min-256-bits-do-not-use-in-production-change-me}
+    jwt-expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+    jwt-download-expiration-ms: ${JWT_DOWNLOAD_EXPIRATION_MS:900000}
+    gateway-api-key: ${GATEWAY_API_KEY:doc-flow-dev-gateway-key}
+  cors:
+    allowed-origins: http://localhost:4200,http://localhost:4201,http://localhost:4300
+
+logging:
+  level:
+    br.com.softon.docflow: DEBUG

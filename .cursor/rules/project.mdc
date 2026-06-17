@@ -1,0 +1,29 @@
+---
+description: Padrões do projeto Softon Portal API
+alwaysApply: true
+---
+
+# Softon Portal API
+
+Backend Java 21 / Spring Boot 4.x — monólito modular simples.
+
+Toda a documentação de padrões está centralizada em `.ai/`. Consulte antes de gerar código:
+
+## Padrões obrigatórios
+
+- `.ai/project/ARCHITECTURE.md` — estrutura Maven, pacotes, camadas, responsabilidades
+- `.ai/project/BACKEND_STANDARDS.md` — nomenclatura, Lombok, MapStruct, UUID, Interface+Impl
+- `.ai/project/JAVA_STYLE.md` — estilo Java moderno: Streams, Lambdas, Optional, Records, var, Collections, clean code
+- `.ai/project/API_STANDARDS.md` — REST, CRUD, status HTTP, paginação
+- `.ai/project/DATABASE_STANDARDS.md` — tabelas `tb_*`, Flyway, TIMESTAMPTZ
+
+## Specs por módulo
+
+- `.ai/modules/` — specs de cada módulo (docflow, releases, gateway, etc.)
+- `docs/release-orchestrator/` — spec técnica detalhada do Release Orchestrator
+- `docs/release-orchestrator/` — spec funcional do Release Orchestrator
+
+## Prompts e exemplos
+
+- `.ai/prompts/` — prompts para criar módulo, CRUD, endpoint, migration, testes
+- `.ai/examples/` — exemplo de estrutura de módulo

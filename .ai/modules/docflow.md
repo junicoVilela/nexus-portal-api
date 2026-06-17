@@ -1,0 +1,183 @@
+# Módulo DocFlow
+
+## Objetivo
+
+O módulo DocFlow é responsável pela criação, organização, versionamento, geração e publicação de documentação dos sistemas internos da Softon.
+
+Abrange: clientes, projetos, módulos, páginas, publicações, preview, auditoria, usuários e empresa.
+
+## Localização Maven
+
+```text
+doc-flow/src/main/java/br/com/softon/portal/docflow/
+```
+
+## Pacote base
+
+```text
+br.com.softon.portal.docflow
+```
+
+## Estrutura de pacotes
+
+```text
+br.com.softon.portal.docflow.controller
+br.com.softon.portal.docflow.service
+br.com.softon.portal.docflow.repository
+br.com.softon.portal.docflow.entity
+br.com.softon.portal.docflow.dto.request
+br.com.softon.portal.docflow.dto.response
+```
+
+## Estrutura de pastas
+
+```text
+doc-flow/src/main/java/br/com/softon/portal/
+└── docflow/
+    ├── controller/
+    │   ├── ClienteController.java
+    │   ├── ModuloController.java
+    │   ├── PaginaController.java
+    │   ├── ProjetoController.java
+    │   ├── PublicacaoController.java
+    │   ├── PublicDownloadController.java
+    │   ├── PreviewController.java
+    │   ├── EmpresaController.java
+    │   ├── AuditoriaController.java
+    │   ├── AuthController.java
+    │   └── UsuarioController.java
+    │
+    ├── service/
+    │   ├── ClienteService.java
+    │   ├── ClienteLogoService.java
+    │   ├── ModuloService.java
+    │   ├── PaginaService.java
+    │   ├── PaginaAnexoService.java
+    │   ├── ProjetoService.java
+    │   ├── PublicacaoService.java
+    │   ├── PublicacaoWorkerService.java
+    │   ├── PreviewTokenService.java
+    │   ├── UsuarioService.java
+    │   ├── AuditoriaService.java
+    │   ├── EmpresaLogoService.java
+    │   ├── GeradorPdfService.java
+    │   ├── GeradorPacoteService.java
+    │   └── NotificacaoEmailService.java
+    │
+    ├── repository/
+    │   ├── ClienteRepository.java
+    │   ├── ClienteModuloRepository.java
+    │   ├── ClientePaginaRepository.java
+    │   ├── ClienteProjetoRepository.java
+    │   ├── ModuloRepository.java
+    │   ├── PaginaRepository.java
+    │   ├── PaginaAnexoRepository.java
+    │   ├── PaginaRevisaoRepository.java
+    │   ├── ProjetoRepository.java
+    │   ├── PublicacaoRepository.java
+    │   ├── PublicacaoChangelogRepository.java
+    │   ├── PreviewTokenRepository.java
+    │   ├── AuditoriaRepository.java
+    │   └── UsuarioRepository.java
+    │
+    ├── entity/
+    │   ├── Cliente.java
+    │   ├── ClienteModulo.java
+    │   ├── ClientePagina.java
+    │   ├── ClienteProjeto.java
+    │   ├── Modulo.java
+    │   ├── Pagina.java
+    │   ├── PaginaAnexo.java
+    │   ├── PaginaRevisao.java
+    │   ├── StatusPagina.java
+    │   ├── Projeto.java
+    │   ├── Publicacao.java
+    │   ├── PublicacaoChangelog.java
+    │   ├── StatusPublicacao.java
+    │   ├── PreviewToken.java
+    │   ├── AuditoriaEvento.java
+    │   └── Usuario.java
+    │
+    └── dto/
+        ├── request/
+        │   ├── ClienteRequest.java
+        │   ├── VinculosRequest.java
+        │   ├── CopiarVinculosRequest.java
+        │   ├── ModuloRequest.java
+        │   ├── PaginaRequest.java
+        │   ├── ReordenarRequest.java
+        │   ├── ProjetoRequest.java
+        │   ├── PublicacaoRequest.java
+        │   ├── LoginRequest.java
+        │   ├── CriarUsuarioRequest.java
+        │   ├── AtualizarUsuarioRequest.java
+        │   └── AlterarSenhaRequest.java
+        │
+        └── response/
+            ├── ClienteResponse.java
+            ├── ModuloResponse.java
+            ├── PaginaResponse.java
+            ├── PaginaAnexoResponse.java
+            ├── PaginaRevisaoResponse.java
+            ├── ProjetoResponse.java
+            ├── PublicacaoResponse.java
+            ├── ChangelogItemResponse.java
+            ├── DownloadTokenResponse.java
+            ├── PreviewTokenResponse.java
+            ├── AuditoriaResponse.java
+            ├── LoginResponse.java
+            └── UsuarioResponse.java
+```
+
+## Endpoints atuais
+
+```text
+GET    /api/v1/clientes
+POST   /api/v1/clientes
+PUT    /api/v1/clientes/{id}
+DELETE /api/v1/clientes/{id}
+
+GET    /api/v1/projetos
+POST   /api/v1/projetos
+PUT    /api/v1/projetos/{id}
+DELETE /api/v1/projetos/{id}
+
+GET    /api/v1/modulos
+POST   /api/v1/modulos
+PUT    /api/v1/modulos/{id}
+DELETE /api/v1/modulos/{id}
+
+GET    /api/v1/paginas
+POST   /api/v1/paginas
+PUT    /api/v1/paginas/{id}
+DELETE /api/v1/paginas/{id}
+
+POST   /api/v1/publicacoes
+GET    /api/v1/publicacoes/{id}
+
+POST   /api/v1/auth/login
+GET    /api/v1/usuarios
+POST   /api/v1/usuarios
+
+GET    /api/v1/auditoria
+```
+
+## Regras de negócio principais
+
+- Comunicação entre contextos internos (clientes, projetos, módulos, páginas) sempre via Service, nunca via Repository direto.
+- Publicação gera snapshot do conteúdo.
+- Preview usa token temporário para acesso público.
+- Auditoria registra eventos de criação e alteração.
+
+## Observações para IA
+
+Ao gerar código para este módulo:
+
+- Usar pacote `br.com.softon.portal.docflow.{camada}`.
+- Não criar sub-pacotes por contexto dentro das camadas.
+- Não usar `modules` no caminho do pacote.
+- Priorizar simplicidade.
+- Não criar arquitetura hexagonal.
+- Usar services claros.
+- Usar DTOs.
+- Não expor Entity diretamente.
