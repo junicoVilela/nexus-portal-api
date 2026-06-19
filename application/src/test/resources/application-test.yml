@@ -1,0 +1,36 @@
+# Perfil `test` — usado pelos testes de integração com Testcontainers.
+# Postgres é injetado via @ServiceConnection; o resto fica em defaults.
+
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+  mail:
+    host: localhost
+    port: 25
+    username: ''
+    password: ''
+
+management:
+  health:
+    mail:
+      enabled: false
+
+docflow:
+  storage:
+    publicacoes-dir: ./target/test-storage/publicacoes
+  notificacoes:
+    habilitado: false
+    admin-email: ''
+  security:
+    admin-password: admin
+    editor-password: editor
+    jwt-secret: integration-test-secret-min-256-bits-do-not-use-in-production-change-me
+    jwt-expiration-ms: 3600000
+    jwt-download-expiration-ms: 900000
+    gateway-api-key: test-gateway-key
+  cors:
+    allowed-origins: http://localhost
