@@ -52,7 +52,7 @@ Plano executável em sprints de **~2 semanas**. Ajuste a duração conforme o ti
 - [x] CRUD cliente DocFlow (+ vínculos via API)
 - [x] Página até **PUBLICADO** → publicação **SUCESSO** → download ZIP
 
-_Validado em 2026-06-18: smoke test API (Postgres + `./mvnw spring-boot:run` perfil `dev`)._
+_Validado em 2026-06-19: smoke test end-to-end — login JWT de `admin`/`editor`/`revisor`, `/auth/me` retornando grupos + permissões do catálogo RBAC, proxy `/api/doc-flow/*` rewriting correto pra `/api/v1/{public,preview-tokens,preview,docflow}/*`, e backend tests 31/31 verdes. Hotfix nesse mesmo dia: V12 gravava hash BCrypt errado pro `revisor` (`fix(rbac): move ajustes do REVISOR para V17`)._
 
 **Spec:** [`../doc-flow/README.md`](../doc-flow/README.md) § Integração
 
@@ -61,6 +61,15 @@ _Validado em 2026-06-18: smoke test API (Postgres + `./mvnw spring-boot:run` per
 ## Sprint 1 — F0 backend: módulos e artefatos
 
 **Objetivo:** release sabe quais módulos tem e aceita upload.
+
+### 🛡️ Higiene de repo (1–2 dias antes de F0.3)
+
+Bloco curto no início da sprint pra fechar dívida técnica que ficou exposta no fim da S0 (o bug do hash BCrypt do `revisor` só apareceu no smoke manual — CI teria pegado em PR).
+
+- [ ] GitHub Actions: workflow `ci.yml` rodando `./mvnw -pl doc-flow -am test` em push/PR pra `main` (`softon-portal-api`)
+- [ ] GitHub Actions: workflow `ci.yml` rodando `ng test --watch=false --browsers=ChromeHeadless` em push/PR pra `main` (`softon-portal-web`)
+- [ ] Branch protection em `main` (ambos repos): exigir PR + status check verde antes de merge
+- [ ] Teste de integração com Testcontainers: aplica V1–V17 num Postgres efêmero e valida login dos 3 seeds (`admin/admin`, `editor/editor`, `revisor/revisor`) — garante que regressões nos seeds quebram o build, não o smoke manual
 
 ### Backend (release-orchestrator)
 - [ ] Migration + entidade `ModuloProduto` (tipos WEB/BATCH/BANCO/KETTLE/FUNC/REGRAS)
@@ -74,6 +83,7 @@ _Validado em 2026-06-18: smoke test API (Postgres + `./mvnw spring-boot:run` per
 - [ ] (Opcional neste sprint) stub ou API-only — UI na S2
 
 ### DoD
+- [ ] CI rodando em ambos repos, branch protection ativa, teste de seeds verde
 - [ ] Postman/curl: criar módulo WEB em DTEC-LD, upload `.war` na release em rascunho
 
 **Specs:** `10-produtos-modulos-artefatos.md`, ROADMAP F0.3–F0.6
