@@ -83,7 +83,7 @@ Etapas por módulo:
 Os números 01/04/05/06 são marcadores de **tipo**, não exigem migrations
 intermediárias (`02_*`, `03_*` deixam de ser usadas nessa convenção).
 
-### Baseline atual (V1–V9)
+### Baseline atual (V1–V8)
 
 ```text
 V1  docflow              (schema)
@@ -93,9 +93,13 @@ V4  rbac                 (seed catálogo + grupos)
 V5  docflow              (seed demonstração)
 V6  seguranca            (seed usuários)
 V7  rbac                 (seed vínculos usuário↔grupo)
-V8  release_orchestrator (schema)
-V9  release_orchestrator (alter — modulo_produto)
+V8  release_orchestrator (schema — releases + módulos de produto)
 ```
+
+Enquanto não houver primeiro deploy em ambiente compartilhado, tabelas
+novas de um módulo existente entram **direto no `01_schema` do módulo**
+(em vez de criar `05_alter_*`). `05_alter_*` só passa a ser obrigatório
+depois do primeiro deploy real.
 
 ## Regras para migrations
 

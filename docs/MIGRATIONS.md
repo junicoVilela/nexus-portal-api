@@ -24,7 +24,7 @@ Baseline e seeds usam sufixos no nome do arquivo pra marcar a intenção. Não h
 
 ## Mapa atual (baseline — reset do zero)
 
-Ordem global Flyway (V1 → V9):
+Ordem global Flyway (V1 → V8):
 
 | Versão | Módulo | Tipo | Arquivo |
 |---|---|---|---|
@@ -36,7 +36,10 @@ Ordem global Flyway (V1 → V9):
 | V6 | seguranca | seed | `V6__seguranca__04_seed_usuarios.sql` |
 | V7 | rbac | seed | `V7__rbac__04_seed_usuarios_grupos.sql` |
 | V8 | release_orchestrator | schema | `V8__release_orchestrator__01_schema.sql` |
-| V9 | release_orchestrator | alter | `V9__release_orchestrator__05_alter_modulo_produto.sql` |
+
+> **Pré-deploy:** enquanto não houver primeiro deploy real, novas tabelas
+> de um módulo existente entram diretamente no `01_schema` correspondente.
+> `05_alter_*` só passa a ser obrigatório após o primeiro deploy compartilhado.
 
 ### Dependências entre módulos
 
@@ -49,7 +52,7 @@ rbac (V3) — tb_grupo_usuario → tb_usuario
     ↓
 seeds: rbac catálogo (V4) → docflow demo (V5) → usuários (V6) → vínculos (V7)
     ↓
-release_orchestrator (V8) + alter modulo_produto (V9)
+release_orchestrator (V8) — releases + módulos de produto
 ```
 
 ---
