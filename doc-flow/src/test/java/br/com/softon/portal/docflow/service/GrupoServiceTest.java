@@ -32,6 +32,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 class GrupoServiceTest {
 
   @Mock GrupoRepository grupoRepository;
+  @Mock RbacService rbacService;
   @Mock SecurityContext securityContext;
   @Mock Authentication authentication;
 
@@ -39,15 +40,12 @@ class GrupoServiceTest {
 
   @BeforeEach
   void setUp() {
-    grupoService = new GrupoService(grupoRepository);
+    grupoService = new GrupoService(grupoRepository, rbacService);
     when(securityContext.getAuthentication()).thenReturn(authentication);
     when(authentication.getName()).thenReturn("admin");
     SecurityContextHolder.setContext(securityContext);
+    when(grupoRepository.findCodigosComPrefixo(any())).thenReturn(List.of());
   }
-
-  // -------------------------------------------------------------------------
-  // criar
-  // -------------------------------------------------------------------------
 
   @Test
   void criar_deveSalvarGrupoComDadosCorretos() {
@@ -58,6 +56,7 @@ class GrupoServiceTest {
     Grupo resultado = grupoService.criar(request);
 
     assertThat(resultado.getNome()).isEqualTo("Editores");
+    assertThat(resultado.getCodigo()).isEqualTo("EDITORES");
     assertThat(resultado.getDescricao()).isEqualTo("Grupo de editores");
     assertThat(resultado.isAtivo()).isTrue();
     verify(grupoRepository).save(any(Grupo.class));
@@ -84,14 +83,10 @@ class GrupoServiceTest {
     assertThat(resultado.isAtivo()).isTrue();
   }
 
-  // -------------------------------------------------------------------------
-  // atualizar
-  // -------------------------------------------------------------------------
-
   @Test
   void atualizar_deveAlterarDadosDoGrupo() {
     UUID id = UUID.randomUUID();
-    Grupo grupo = new Grupo("Antigo", null, true);
+    Grupo grupo = new Grupo("G1", "Antigo", null, true);
     GrupoRequest request = new GrupoRequest("Novo Nome", "nova desc", false);
 
     when(grupoRepository.findById(id)).thenReturn(Optional.of(grupo));
@@ -107,7 +102,7 @@ class GrupoServiceTest {
   @Test
   void atualizar_deveLancarExcecaoQuandoNomeDuplicadoEmOutroGrupo() {
     UUID id = UUID.randomUUID();
-    Grupo grupo = new Grupo("Original", null, true);
+    Grupo grupo = new Grupo("G1", "Original", null, true);
     GrupoRequest request = new GrupoRequest("Duplicado", null, true);
 
     when(grupoRepository.findById(id)).thenReturn(Optional.of(grupo));
@@ -117,14 +112,10 @@ class GrupoServiceTest {
         .isInstanceOf(BusinessException.class);
   }
 
-  // -------------------------------------------------------------------------
-  // alterarStatus
-  // -------------------------------------------------------------------------
-
   @Test
   void alterarStatus_deveAtualizarStatusDoGrupo() {
     UUID id = UUID.randomUUID();
-    Grupo grupo = new Grupo("G1", null, true);
+    Grupo grupo = new Grupo("G1", "G1", null, true);
     when(grupoRepository.findById(id)).thenReturn(Optional.of(grupo));
 
     Grupo resultado = grupoService.alterarStatus(id, false);
@@ -132,24 +123,16 @@ class GrupoServiceTest {
     assertThat(resultado.isAtivo()).isFalse();
   }
 
-  // -------------------------------------------------------------------------
-  // excluir
-  // -------------------------------------------------------------------------
-
   @Test
   void excluir_deveDeletarGrupoExistente() {
     UUID id = UUID.randomUUID();
-    Grupo grupo = new Grupo("G1", null, true);
+    Grupo grupo = new Grupo("G1", "G1", null, true);
     when(grupoRepository.findById(id)).thenReturn(Optional.of(grupo));
 
     grupoService.excluir(id);
 
     verify(grupoRepository).delete(grupo);
   }
-
-  // -------------------------------------------------------------------------
-  // buscar
-  // -------------------------------------------------------------------------
 
   @Test
   void buscar_deveLancarNotFoundQuandoNaoExistir() {
@@ -161,49 +144,41 @@ class GrupoServiceTest {
         .hasMessageContaining("Grupo não encontrado");
   }
 
-  // -------------------------------------------------------------------------
-  // permissoes
-  // -------------------------------------------------------------------------
-
   @Test
   void salvarPermissoes_deveAtualizarListaDePermissoes() {
     UUID id = UUID.randomUUID();
-    Grupo grupo = new Grupo("G1", null, true);
+    UUID permId = UUID.randomUUID();
+    Grupo grupo = new Grupo("G1", "G1", null, true);
     when(grupoRepository.findById(id)).thenReturn(Optional.of(grupo));
+    when(rbacService.idsPorCodigos(List.of("CLIENTE:LER", "CLIENTE:EDITAR")))
+        .thenReturn(List.of(permId));
 
-    GrupoPermissoesRequest request = new GrupoPermissoesRequest(
-        List.of("docflow.visualizar", "docflow.editar"));
+    grupoService.salvarPermissoes(id, new GrupoPermissoesRequest(
+        List.of("CLIENTE:LER", "CLIENTE:EDITAR")));
 
-    grupoService.salvarPermissoes(id, request);
-
-    assertThat(grupo.getPermissoes()).containsExactlyInAnyOrder("docflow.visualizar", "docflow.editar");
+    assertThat(grupo.getPermissaoIds()).containsExactly(permId);
   }
 
   @Test
   void listarPermissoes_deveRetornarPermissoesDoGrupo() {
     UUID id = UUID.randomUUID();
-    Grupo grupo = new Grupo("G1", null, true);
-    grupo.atualizarPermissoes(List.of("admin.usuarios"));
+    Grupo grupo = new Grupo("G1", "G1", null, true);
     when(grupoRepository.findById(id)).thenReturn(Optional.of(grupo));
+    when(rbacService.codigosPermissoesDoGrupo(grupo)).thenReturn(List.of("USUARIO:LER"));
 
     List<String> permissoes = grupoService.listarPermissoes(id);
 
-    assertThat(permissoes).containsExactly("admin.usuarios");
+    assertThat(permissoes).containsExactly("USUARIO:LER");
   }
-
-  // -------------------------------------------------------------------------
-  // membros
-  // -------------------------------------------------------------------------
 
   @Test
   void salvarMembros_deveAtualizarListaDeUsuarios() {
     UUID id = UUID.randomUUID();
     UUID usuarioId = UUID.randomUUID();
-    Grupo grupo = new Grupo("G1", null, true);
+    Grupo grupo = new Grupo("G1", "G1", null, true);
     when(grupoRepository.findById(id)).thenReturn(Optional.of(grupo));
 
-    GrupoUsuariosRequest request = new GrupoUsuariosRequest(List.of(usuarioId));
-    grupoService.salvarMembros(id, request);
+    grupoService.salvarMembros(id, new GrupoUsuariosRequest(List.of(usuarioId)));
 
     assertThat(grupo.getUsuarios()).containsExactly(usuarioId);
   }
@@ -212,7 +187,7 @@ class GrupoServiceTest {
   void listarMembros_deveRetornarIdsDeUsuariosDoGrupo() {
     UUID id = UUID.randomUUID();
     UUID usuarioId = UUID.randomUUID();
-    Grupo grupo = new Grupo("G1", null, true);
+    Grupo grupo = new Grupo("G1", "G1", null, true);
     grupo.atualizarUsuarios(List.of(usuarioId));
     when(grupoRepository.findById(id)).thenReturn(Optional.of(grupo));
 

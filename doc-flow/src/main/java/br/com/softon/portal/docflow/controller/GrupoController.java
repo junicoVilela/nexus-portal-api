@@ -5,6 +5,7 @@ import br.com.softon.portal.docflow.dto.request.GrupoPermissoesRequest;
 import br.com.softon.portal.docflow.dto.request.GrupoRequest;
 import br.com.softon.portal.docflow.dto.request.GrupoUsuariosRequest;
 import br.com.softon.portal.docflow.dto.response.GrupoResponse;
+import br.com.softon.portal.docflow.entity.Grupo;
 import br.com.softon.portal.docflow.service.GrupoService;
 import br.com.softon.portal.shared.api.PageResponse;
 import br.com.softon.portal.shared.api.PageableUtils;
@@ -40,17 +41,17 @@ public class GrupoController {
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
   public GrupoResponse criar(@Valid @RequestBody GrupoRequest request) {
-    return GrupoResponse.from(grupoService.criar(request));
+    return GrupoResponse.from(grupoService.criar(request), List.of());
   }
 
   @PutMapping("/{id}")
   public GrupoResponse atualizar(@PathVariable UUID id, @Valid @RequestBody GrupoRequest request) {
-    return GrupoResponse.from(grupoService.atualizar(id, request));
+    return GrupoResponse.from(grupoService.atualizar(id, request), List.of());
   }
 
   @PatchMapping("/{id}/status")
   public GrupoResponse alterarStatus(@PathVariable UUID id, @Valid @RequestBody AlterarStatusGrupoRequest request) {
-    return GrupoResponse.from(grupoService.alterarStatus(id, request.ativo()));
+    return GrupoResponse.from(grupoService.alterarStatus(id, request.ativo()), List.of());
   }
 
   @DeleteMapping("/{id}")
@@ -71,12 +72,13 @@ public class GrupoController {
         Sort.by("nome"));
     return PageResponse.from(
         grupoService.listar(nome, PageableUtils.of(page, size, sortOrder)),
-        GrupoResponse::from);
+        g -> GrupoResponse.from(g, List.of()));
   }
 
   @GetMapping("/{id}")
   public GrupoResponse buscar(@PathVariable UUID id) {
-    return GrupoResponse.from(grupoService.buscar(id));
+    Grupo grupo = grupoService.buscar(id);
+    return GrupoResponse.from(grupo, grupoService.listarPermissoes(id));
   }
 
   @GetMapping("/{id}/usuarios")

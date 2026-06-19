@@ -9,7 +9,10 @@ import br.com.softon.portal.shared.exception.BusinessException;
 import br.com.softon.portal.shared.exception.NotFoundException;
 import jakarta.transaction.Transactional;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,6 +24,7 @@ import org.springframework.stereotype.Service;
 public class GrupoService {
 
   private final GrupoRepository grupoRepository;
+  private final RbacService rbacService;
 
   @Transactional
   public Grupo criar(GrupoRequest request) {
@@ -29,7 +33,7 @@ public class GrupoService {
       throw new BusinessException("Já existe um grupo com o nome informado.");
     }
     boolean ativo = request.ativo() == null || request.ativo();
-    return grupoRepository.save(new Grupo(nome, request.descricao(), ativo));
+    return grupoRepository.save(new Grupo(gerarCodigoUnico(nome), nome, request.descricao(), ativo));
   }
 
   @Transactional
@@ -86,13 +90,32 @@ public class GrupoService {
 
   @Transactional
   public List<String> listarPermissoes(UUID id) {
-    return buscar(id).getPermissoes();
+    return rbacService.codigosPermissoesDoGrupo(buscar(id));
   }
 
   @Transactional
   public void salvarPermissoes(UUID id, GrupoPermissoesRequest request) {
     Grupo grupo = buscar(id);
-    grupo.atualizarPermissoes(request.permissoes());
+    grupo.atualizarPermissaoIds(rbacService.idsPorCodigos(request.permissoes()));
+  }
+
+  private String gerarCodigoUnico(String nome) {
+    String base = nome.toUpperCase(Locale.ROOT).replaceAll("[^A-Z0-9]+", "_");
+    if (base.isBlank()) {
+      base = "GRUPO";
+    }
+    Set<String> existentes = grupoRepository.findCodigosComPrefixo(base).stream()
+        .map(c -> c.toUpperCase(Locale.ROOT))
+        .collect(Collectors.toSet());
+    if (!existentes.contains(base)) {
+      return base;
+    }
+    for (int sufixo = 1; ; sufixo++) {
+      String candidato = base + "_" + sufixo;
+      if (!existentes.contains(candidato)) {
+        return candidato;
+      }
+    }
   }
 
   private String lowerBlankToNull(String value) {

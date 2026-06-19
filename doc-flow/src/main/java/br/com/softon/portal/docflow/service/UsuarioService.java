@@ -1,5 +1,6 @@
 package br.com.softon.portal.docflow.service;
 
+import br.com.softon.portal.docflow.dto.response.MeResponse;
 import br.com.softon.portal.docflow.entity.Usuario;
 import br.com.softon.portal.docflow.repository.UsuarioRepository;
 import br.com.softon.portal.shared.config.JwtService;
@@ -21,6 +22,7 @@ public class UsuarioService {
   private final UsuarioRepository usuarioRepository;
   private final PasswordEncoder passwordEncoder;
   private final JwtService jwtService;
+  private final RbacService rbacService;
 
   public String autenticar(String username, String rawPassword) {
     Usuario usuario = usuarioRepository.findByUsernameAndAtivoTrue(username)
@@ -29,6 +31,19 @@ public class UsuarioService {
       throw new BusinessException("Usuário ou senha inválidos.");
     }
     return jwtService.gerarToken(usuario.getUsername(), usuario.roleList());
+  }
+
+  public MeResponse me(String username) {
+    Usuario usuario = usuarioRepository.findByUsernameAndAtivoTrue(username)
+        .orElseThrow(() -> new NotFoundException("Usuário não encontrado."));
+    return new MeResponse(
+        usuario.getId(),
+        usuario.getUsername(),
+        usuario.getNome(),
+        usuario.getEmail(),
+        usuario.roleList(),
+        rbacService.gruposDoUsuario(usuario.getId()),
+        rbacService.permissoesDoUsuario(usuario.getId()));
   }
 
   public List<Usuario> listar() {

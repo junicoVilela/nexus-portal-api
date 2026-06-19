@@ -7,6 +7,7 @@ import java.util.UUID;
 
 public record GrupoResponse(
     UUID id,
+    String codigo,
     String nome,
     String descricao,
     boolean ativo,
@@ -17,13 +18,14 @@ public record GrupoResponse(
     String createdBy,
     String updatedBy) {
 
-  public static GrupoResponse from(Grupo grupo) {
+  public static GrupoResponse from(Grupo grupo, List<String> permissaoCodigos) {
     return new GrupoResponse(
         grupo.getId(),
+        grupo.getCodigo(),
         grupo.getNome(),
         grupo.getDescricao(),
         grupo.isAtivo(),
-        List.copyOf(grupo.getPermissoes()),
+        List.copyOf(permissaoCodigos),
         grupo.getUsuarios().size(),
         grupo.getCreatedAt(),
         grupo.getUpdatedAt(),

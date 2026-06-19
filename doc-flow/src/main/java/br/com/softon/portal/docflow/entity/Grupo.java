@@ -30,6 +30,9 @@ public class Grupo extends AuditableEntity {
   @GeneratedValue(strategy = GenerationType.UUID)
   private UUID id;
 
+  @Column(nullable = false, unique = true, length = 80)
+  private String codigo;
+
   @Column(nullable = false, length = 150)
   private String nome;
 
@@ -41,15 +44,16 @@ public class Grupo extends AuditableEntity {
 
   @ElementCollection(fetch = FetchType.EAGER)
   @CollectionTable(name = "tb_grupo_permissao", joinColumns = @JoinColumn(name = "grupo_id"))
-  @Column(name = "permissao_id", length = 100)
-  private List<String> permissoes = new ArrayList<>();
+  @Column(name = "permissao_id")
+  private List<UUID> permissaoIds = new ArrayList<>();
 
   @ElementCollection(fetch = FetchType.EAGER)
   @CollectionTable(name = "tb_grupo_usuario", joinColumns = @JoinColumn(name = "grupo_id"))
   @Column(name = "usuario_id")
   private List<UUID> usuarios = new ArrayList<>();
 
-  public Grupo(String nome, String descricao, boolean ativo) {
+  public Grupo(String codigo, String nome, String descricao, boolean ativo) {
+    this.codigo = codigo;
     this.nome = nome;
     this.descricao = descricao;
     this.ativo = ativo;
@@ -65,10 +69,10 @@ public class Grupo extends AuditableEntity {
     this.ativo = ativo;
   }
 
-  public void atualizarPermissoes(List<String> novasPermissoes) {
-    this.permissoes.clear();
+  public void atualizarPermissaoIds(List<UUID> novasPermissoes) {
+    this.permissaoIds.clear();
     if (novasPermissoes != null) {
-      this.permissoes.addAll(novasPermissoes);
+      this.permissaoIds.addAll(novasPermissoes);
     }
   }
 
