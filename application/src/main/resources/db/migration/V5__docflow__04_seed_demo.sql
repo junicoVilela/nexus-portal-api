@@ -1,6 +1,6 @@
 -- =============================================================================
--- MÓDULO: docflow | ETAPA 5: dados iniciais (demonstração)
--- Credenciais: ver V12__seguranca__04_seed_usuarios.sql
+-- MÓDULO: docflow | SEED: dados de demonstração
+-- Credenciais: ver V6__seguranca__04_seed_usuarios.sql
 -- =============================================================================
 
 -- =============================================================================

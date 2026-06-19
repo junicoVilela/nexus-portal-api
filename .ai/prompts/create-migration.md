@@ -8,55 +8,47 @@ Leia antes: [`docs/MIGRATIONS.md`](../../docs/MIGRATIONS.md) e [`.ai/project/DAT
 
 - PostgreSQL, snake_case, prefixo `tb_`, UUID como PK.
 - **Não alterar** migration antiga já aplicada.
-- Respeitar a **ordem de etapas** (ver abaixo).
-- Numeração **global** — próxima versão após V16 = **V17**.
+- Numeração **global** — próxima versão após V9 = **V10**.
+- Migrations vivem em `application/src/main/resources/db/migration/`.
 
-## Ordem ideal por módulo
+## Tipos de migration
 
-1. **Schemas** — projeto usa `public`; módulo lógico no nome do arquivo (`docflow`, `seguranca`, `rbac`, `release_orchestrator`).
-2. **Tabelas** — `01_tables` — só `CREATE TABLE` + `PRIMARY KEY`.
-3. **Constraints** — `02_constraints` — `UNIQUE`, `FOREIGN KEY`, comentários.
-4. **Índices** — `03_indexes`.
-5. **Dados iniciais** — `04_seed_*` — `INSERT` com `ON CONFLICT`.
-6. **Alterações incrementais** — `05_alter_*`, `06_alter_*`.
-7. **Correções pontuais** — `07_fix_*`.
+| Sufixo | Quando usar |
+|---|---|
+| `01_schema` | Baseline de módulo novo: tabelas + constraints + índices num arquivo só |
+| `04_seed_*` | Dados iniciais (`INSERT` idempotente com `ON CONFLICT`) |
+| `05_alter_*` | Mudança pós-baseline: nova coluna, nova tabela, nova FK |
+| `06_fix_*` / `07_fix_*` | Correção pontual de dados |
 
 ## Padrão de arquivo
 
 ```text
-V{n}__{modulo}__{etapa}_{descricao}.sql
+V{n}__{modulo}__{tipo}_{descricao}.sql
 ```
 
 Exemplos:
 
 ```text
-V17__release_orchestrator__05_alter_entrega_add_status.sql
-V18__rbac__06_fix_grupo_editor_permissoes.sql
+V10__release_orchestrator__05_alter_entrega_add_status.sql
+V10__rbac__06_fix_grupo_editor_permissoes.sql
+V10__novo_modulo__01_schema.sql
 ```
 
-## Exemplo — nova tabela (etapas separadas)
+## Exemplo — módulo novo
 
-**V17__meu_modulo__01_tables.sql**
+**V10__meu_modulo__01_schema.sql**
 
 ```sql
 CREATE TABLE tb_exemplo (
-  id         UUID        NOT NULL,
+  id         UUID         NOT NULL DEFAULT gen_random_uuid(),
   nome       VARCHAR(150) NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL,
-  updated_at TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ  NOT NULL DEFAULT now(),
   CONSTRAINT pk_tb_exemplo PRIMARY KEY (id)
 );
-```
 
-**V18__meu_modulo__02_constraints.sql**
-
-```sql
 ALTER TABLE tb_exemplo ADD CONSTRAINT uq_tb_exemplo_nome UNIQUE (nome);
-```
 
-**V19__meu_modulo__03_indexes.sql**
-
-```sql
 CREATE INDEX idx_tb_exemplo_nome ON tb_exemplo (nome);
 ```
 

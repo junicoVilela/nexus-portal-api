@@ -1,7 +1,8 @@
 -- =============================================================================
--- MÓDULO: release_orchestrator | ETAPA 1–2: tabelas
+-- MÓDULO: release_orchestrator | BASELINE: schema (tabelas + constraints + índices)
 -- Produtos, releases, itens, histórico e templates
 -- =============================================================================
+
 
 CREATE TABLE tb_produto_rh (
   id             UUID         NOT NULL DEFAULT gen_random_uuid(),
@@ -83,3 +84,28 @@ CREATE TABLE tb_release_template (
   updated_by   VARCHAR(120),
   CONSTRAINT pk_tb_release_template PRIMARY KEY (id)
 );
+
+-- -- constraints -- --
+
+ALTER TABLE tb_produto_rh ADD CONSTRAINT uq_tb_produto_rh_sigla UNIQUE (sigla);
+ALTER TABLE tb_release      ADD CONSTRAINT uq_tb_release_produto_versao UNIQUE (produto_id, versao);
+
+ALTER TABLE tb_release
+  ADD CONSTRAINT fk_tb_release_produto
+  FOREIGN KEY (produto_id) REFERENCES tb_produto_rh(id);
+
+ALTER TABLE tb_release_item
+  ADD CONSTRAINT fk_tb_release_item_release
+  FOREIGN KEY (release_id) REFERENCES tb_release(id) ON DELETE CASCADE;
+
+ALTER TABLE tb_release_historico
+  ADD CONSTRAINT fk_tb_release_historico_release
+  FOREIGN KEY (release_id) REFERENCES tb_release(id) ON DELETE CASCADE;
+
+-- -- índices -- --
+
+CREATE INDEX idx_tb_release_produto           ON tb_release           (produto_id);
+CREATE INDEX idx_tb_release_status            ON tb_release           (status);
+CREATE INDEX idx_tb_release_updated           ON tb_release           (updated_at DESC);
+CREATE INDEX idx_tb_release_item_release      ON tb_release_item      (release_id, ordem);
+CREATE INDEX idx_tb_release_historico_release ON tb_release_historico (release_id, created_at DESC);

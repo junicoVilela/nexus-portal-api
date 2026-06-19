@@ -7,59 +7,49 @@ Convenção de migrations por **módulo lógico** e **etapa de DDL/DML**, com nu
 
 ---
 
-## Ordem ideal (dependências do banco)
+## Tipos de migration
 
-Ao criar ou reorganizar migrations, respeite esta sequência **dentro de cada módulo**:
+Baseline e seeds usam sufixos no nome do arquivo pra marcar a intenção. Não há etapas intermediárias (`02_*`, `03_*`) — tables + constraints + índices do mesmo módulo entram juntos em `01_schema`.
 
-| Etapa | Sufixo no arquivo | Conteúdo |
-|---|---|---|
-| **1. Schemas** | *(implícito)* | Projeto usa schema PostgreSQL `public` + prefixo `tb_`. Módulos lógicos: `docflow`, `seguranca`, `rbac`, `release_orchestrator`. |
-| **2. Tabelas** | `01_tables` | `CREATE TABLE` + `PRIMARY KEY` apenas |
-| **3. Constraints** | `02_constraints` | `UNIQUE`, `FOREIGN KEY`, `CHECK`, comentários de coluna |
-| **4. Índices** | `03_indexes` | `CREATE INDEX` |
-| **5. Dados iniciais** | `04_seed_*` | `INSERT` idempotente (`ON CONFLICT`) |
-| **6. Alterações incrementais** | `05_alter_*`, `06_alter_*`… | Novas colunas, tabelas, FKs em produção |
-| **7. Correções pontuais** | `07_fix_*`, `08_fix_*`… | `UPDATE`/`DELETE` pontuais de dados |
+| Sufixo | Conteúdo |
+|---|---|
+| `01_schema` | Baseline do módulo: `CREATE TABLE` + constraints + índices |
+| `04_seed_*` | Dados iniciais (`INSERT` idempotente com `ON CONFLICT`) |
+| `05_alter_*` | Alterações incrementais pós-baseline |
+| `06_fix_*` / `07_fix_*` | Correções pontuais de dados |
 
-**Nunca altere** migration já aplicada em ambiente compartilhado — crie nova versão na etapa 6 ou 7.
+**Nunca altere** migration já aplicada em ambiente compartilhado — crie `05_alter_*` ou `06_fix_*` com o ajuste.
 
 ---
 
 ## Mapa atual (baseline — reset do zero)
 
-Ordem global Flyway (V1 → V16):
+Ordem global Flyway (V1 → V9):
 
-| Versão | Módulo | Etapa | Arquivo |
+| Versão | Módulo | Tipo | Arquivo |
 |---|---|---|---|
-| V1 | docflow | tabelas | `V1__docflow__01_tables.sql` |
-| V2 | docflow | constraints | `V2__docflow__02_constraints.sql` |
-| V3 | docflow | índices | `V3__docflow__03_indexes.sql` |
-| V4 | seguranca | tabelas | `V4__seguranca__01_tables.sql` |
-| V5 | seguranca | constraints | `V5__seguranca__02_constraints.sql` |
-| V6 | seguranca | índices | `V6__seguranca__03_indexes.sql` |
-| V7 | rbac | tabelas | `V7__rbac__01_tables.sql` |
-| V8 | rbac | constraints | `V8__rbac__02_constraints.sql` |
-| V9 | rbac | índices | `V9__rbac__03_indexes.sql` |
-| V10 | rbac | seed | `V10__rbac__04_seed_catalog.sql` |
-| V11 | docflow | seed | `V11__docflow__04_seed_demo.sql` |
-| V12 | seguranca | seed | `V12__seguranca__04_seed_usuarios.sql` |
-| V13 | rbac | seed | `V13__rbac__05_seed_usuarios_grupos.sql` |
-| V14 | release_orchestrator | tabelas | `V14__release_orchestrator__01_tables.sql` |
-| V15 | release_orchestrator | constraints | `V15__release_orchestrator__02_constraints.sql` |
-| V16 | release_orchestrator | índices | `V16__release_orchestrator__03_indexes.sql` |
+| V1 | docflow | schema | `V1__docflow__01_schema.sql` |
+| V2 | seguranca | schema | `V2__seguranca__01_schema.sql` |
+| V3 | rbac | schema | `V3__rbac__01_schema.sql` |
+| V4 | rbac | seed | `V4__rbac__04_seed_catalog.sql` |
+| V5 | docflow | seed | `V5__docflow__04_seed_demo.sql` |
+| V6 | seguranca | seed | `V6__seguranca__04_seed_usuarios.sql` |
+| V7 | rbac | seed | `V7__rbac__04_seed_usuarios_grupos.sql` |
+| V8 | release_orchestrator | schema | `V8__release_orchestrator__01_schema.sql` |
+| V9 | release_orchestrator | alter | `V9__release_orchestrator__05_alter_modulo_produto.sql` |
 
 ### Dependências entre módulos
 
 ```text
-docflow (V1–V3)
+docflow (V1)
     ↓
-seguranca (V4–V6) — tb_usuario
+seguranca (V2) — tb_usuario
     ↓
-rbac (V7–V9) — tb_grupo_usuario → tb_usuario
+rbac (V3) — tb_grupo_usuario → tb_usuario
     ↓
-seeds: rbac catálogo (V10) → docflow demo (V11) → usuários (V12) → grupos (V13)
+seeds: rbac catálogo (V4) → docflow demo (V5) → usuários (V6) → vínculos (V7)
     ↓
-release_orchestrator (V14–V16)
+release_orchestrator (V8) + alter modulo_produto (V9)
 ```
 
 ---
@@ -91,7 +81,7 @@ psql "$DB_URL" -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
 cd softon-portal-api && ./mvnw -pl application -am spring-boot:run
 ```
 
-Credenciais seed: `admin/admin`, `editor/editor`, `revisor/revisor` (ver V12).
+Credenciais seed: `admin/admin`, `editor/editor`, `revisor/revisor` (ver V6).
 
 ---
 
@@ -99,9 +89,10 @@ Credenciais seed: `admin/admin`, `editor/editor`, `revisor/revisor` (ver V12).
 
 | Necessidade | Nome sugerido |
 |---|---|
-| Nova coluna em release | `V17__release_orchestrator__05_alter_release_add_campo_x.sql` |
-| Nova tabela de entrega | `V17__release_orchestrator__05_alter_entrega_tables.sql` (etapas 01–03 se módulo novo grande) |
-| Corrigir seed | `V18__rbac__06_fix_permissao_orchestrator.sql` |
+| Nova coluna em release | `V10__release_orchestrator__05_alter_release_add_campo_x.sql` |
+| Nova tabela em módulo existente | `V10__release_orchestrator__05_alter_entrega_tables.sql` |
+| Corrigir seed | `V10__rbac__06_fix_permissao_orchestrator.sql` |
+| Novo módulo grande | `V10__novo_modulo__01_schema.sql` (baseline) + V11 seed se precisar |
 
 ---
 

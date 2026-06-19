@@ -1,7 +1,8 @@
 -- =============================================================================
--- MÓDULO: seguranca | ETAPA 1–2: tabelas
+-- MÓDULO: seguranca | BASELINE: schema (tabelas + constraints + índices)
 -- Identidade: usuários de login (JWT / roles legado)
 -- =============================================================================
+
 
 CREATE TABLE tb_usuario (
   id         UUID         NOT NULL,
@@ -17,3 +18,11 @@ CREATE TABLE tb_usuario (
   updated_by VARCHAR(120),
   CONSTRAINT pk_tb_usuario PRIMARY KEY (id)
 );
+
+-- -- constraints -- --
+
+ALTER TABLE tb_usuario ADD CONSTRAINT uq_tb_usuario_username UNIQUE (username);
+
+-- -- índices -- --
+
+-- (sem índices adicionais nesta versão)

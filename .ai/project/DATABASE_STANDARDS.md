@@ -71,33 +71,38 @@ revisão e numeração. A convenção `{modulo}` continua no nome do arquivo.
 V{n}__{modulo}__{etapa}_{descricao}.sql
 ```
 
-Etapas por módulo (ordem de dependências):
+Etapas por módulo:
 
-| Etapa | Sufixo | Conteúdo |
-|---|---|---|
-| 1 | *(implícito)* | Schema `public` + módulo lógico |
-| 2 | `01_tables` | Tabelas + PK |
-| 3 | `02_constraints` | UNIQUE, FK, CHECK |
-| 4 | `03_indexes` | Índices |
-| 5 | `04_seed_*` | Dados iniciais |
-| 6 | `05_alter_*` | Alterações incrementais |
-| 7 | `06_fix_*` / `07_fix_*` | Correções pontuais de dados |
+| Sufixo | Conteúdo |
+|---|---|
+| `01_schema` | Baseline do módulo: tabelas + constraints + índices no mesmo arquivo |
+| `04_seed_*` | Dados iniciais (`INSERT` idempotente com `ON CONFLICT`) |
+| `05_alter_*` | Alterações incrementais pós-baseline (novas colunas, tabelas, FKs) |
+| `06_fix_*` / `07_fix_*` | Correções pontuais de dados |
 
-### Baseline atual (V1–V16)
+Os números 01/04/05/06 são marcadores de **tipo**, não exigem migrations
+intermediárias (`02_*`, `03_*` deixam de ser usadas nessa convenção).
+
+### Baseline atual (V1–V9)
 
 ```text
-V1–V3   docflow              (tabelas, constraints, índices)
-V4–V6   seguranca            (tb_usuario)
-V7–V9   rbac                 (catálogo + grupos)
-V10–V13 seeds                (rbac, docflow demo, usuários, vínculos)
-V14–V16 release_orchestrator (tabelas, constraints, índices)
+V1  docflow              (schema)
+V2  seguranca            (schema — tb_usuario)
+V3  rbac                 (schema — catálogo + grupos)
+V4  rbac                 (seed catálogo + grupos)
+V5  docflow              (seed demonstração)
+V6  seguranca            (seed usuários)
+V7  rbac                 (seed vínculos usuário↔grupo)
+V8  release_orchestrator (schema)
+V9  release_orchestrator (alter — modulo_produto)
 ```
 
 ## Regras para migrations
 
 - Nunca alterar migration já aplicada em ambiente compartilhado.
-- Criar nova migration na etapa 6 (alter) ou 7 (fix).
-- Separar por módulo e por etapa (tabelas / constraints / índices / seed).
+- Criar nova migration `05_alter_*` ou `06_fix_*` para mudanças pós-baseline.
+- Baseline (`01_schema`) tem tabelas + constraints + índices num arquivo só
+  por módulo. Mudanças posteriores entram como migrations separadas.
 - Nomes descritivos: `V17__release_orchestrator__05_alter_entrega_status.sql`.
 - Evitar scripts gigantes que misturam etapas.
 
