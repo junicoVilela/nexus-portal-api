@@ -61,6 +61,7 @@ Release Orchestrator (módulo Maven `release-orchestrator`)
 - [08 — Listagem](08-produtos-lista.md)
 - [09 — Cadastro (com integração GitHub + Jenkins)](09-produtos-cadastro.md)
 - [10 — Módulos (catálogo cadastrável por produto)](10-produtos-modulos-artefatos.md)
+- [11 — Catálogo de domínios e funcionalidades (por produto)](11-produtos-catalogo-funcional.md)
 
 ### Release Orchestrator (apenas o que falta — restante já existe no backend)
 - [14 — Detalhe da release (aba PDF)](14-release-orchestrator-detalhe.md)

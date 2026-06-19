@@ -12,7 +12,7 @@ Módulo Maven **`doc-flow/`** do `softon-portal-api`. Gestão de manuais: client
 | Item | Caminho |
 |---|---|
 | Código | `softon-portal-api/doc-flow/src/main/java/br/com/softon/portal/docflow/` |
-| Migrations | `doc-flow/src/main/resources/db/migration/` |
+| Migrations | `doc-flow/src/main/resources/db/migration/` — ver [`../MIGRATIONS.md`](../MIGRATIONS.md) |
 | Resumo IA | `softon-portal-api/.ai/modules/docflow.md` |
 
 Pacote base: `br.com.softon.portal.docflow.{controller|service|repository|entity|dto}`
@@ -32,6 +32,7 @@ Exceções (sem prefixo `docflow`):
 | Recurso | Prefixo |
 |---|---|
 | Login | `POST /api/v1/auth/login` |
+| Usuário atual | `GET /api/v1/auth/me` (JWT) |
 | Preview tokens | `/api/v1/preview-tokens`, `/api/v1/preview/{token}` |
 | Download público pacote | `GET /api/v1/public/publicacoes/download` |
 
@@ -92,7 +93,7 @@ Serviços de geração: `GeradorPacoteService`, `GeradorPdfService`, `Publicacao
 - Usuários, grupos, auditoria, logo empresa: `@PreAuthorize("hasRole('ADMIN')")`
 - Endpoints públicos: preview HTML, download anexo/logo, download pacote com token
 
-Grupos (`tb_grupo`, `tb_grupo_permissao`) existem na API mas **permissões de grupo ainda não entram no JWT** — hoje só `Usuario.roles` (ADMIN, EDITOR).
+Grupos (`tb_grupo`, `tb_grupo_permissao`) existem na API; permissões vêm do **catálogo RBAC** (`tb_dominio`, `tb_funcionalidade`, `tb_permissao`) e são expostas em `GET /auth/me`. `@PreAuthorize` nos controllers ainda usa roles `ADMIN`/`EDITOR`.
 
 ---
 
@@ -100,10 +101,10 @@ Grupos (`tb_grupo`, `tb_grupo_permissao`) existem na API mas **permissões de gr
 
 | Aspecto | Frontend | Backend | Status |
 |---|---|---|---|
-| Base URL services | `environment.apiUrl` = `/api/doc-flow` | `/api/v1/docflow/...` | ⚠️ Alinhar proxy ou prefixo nos services |
-| Auth | Mock `AuthApiService` (seguranca) | `POST /api/v1/auth/login` JWT real | ⚠️ Migrar login |
-| Permissões menu | `CLIENTE:LER`, `PAGINA:EDITAR`, … | Roles ADMIN/EDITOR | ⚠️ Unificar modelo |
-| Logo empresa | `ConfiguracaoService` mock localStorage | `EmpresaController` | ⚠️ HttpClient |
+| Base URL services | `environment.apiUrl` = `/api/doc-flow` | `/api/v1/docflow/...` | ✅ Proxy dev reescreve para `docflow` |
+| Auth | `AuthApiService` → `POST/GET /api/v1/auth/*` | JWT real | ✅ S0 |
+| Permissões menu | `GET /auth/me` → `permissoes[]` do catálogo RBAC | `tb_dominio` → `tb_permissao` + grupos | ✅ S0.5 |
+| Logo empresa | `ConfiguracaoService` → HttpClient | `EmpresaController` | ✅ S0 |
 | Preview tokens | Service existe | API existe | ⚠️ Sem UI |
 | Grupos/usuários admin | Módulo `seguranca` mock | API docflow | ⚠️ Conectar ou separar |
 

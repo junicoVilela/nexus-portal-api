@@ -16,13 +16,16 @@ Pessoa física associada a um cliente. Recebe notificações por e-mail/papel qu
 Como o pacote é entregue ao cliente: destino (PASTA local, FTP, SFTP, Bucket), caminho, credenciais, janela permitida, aprovação obrigatória.
 
 ### **Domínio (de funcionalidade)**
-Área funcional do sistema (Usuários, Relatórios, Integrações). Catálogo por **produto**.
+Área funcional do sistema (Usuários, Relatórios, Integrações). Catálogo **por produto**. Entidade persistida: `DominioProduto` (tabela `tb_dominio_produto`) — sufixo "Produto" só no schema para evitar colisão com o domínio do RBAC.
 
 ### **Funcionalidade**
-Ação específica dentro de um domínio (Inserir, Bloquear, Resetar Senha). Catálogo por **produto** sob um domínio.
+Ação específica dentro de um domínio (Inserir, Bloquear, Resetar Senha). Catálogo **por produto** sob um domínio. Entidade: `FuncionalidadeProduto` (`tb_funcionalidade_produto`).
 
 ### **ClienteFuncionalidade**
-Matriz que indica quais funcionalidades um cliente específico tem habilitadas. Alimenta os módulos `FUNCIONALIDADES` e `REGRAS` no pacote.
+Matriz que indica quais funcionalidades um cliente específico tem habilitadas. Entidade: `ClienteFuncionalidadeProduto` (`tb_cliente_funcionalidade_produto`). Alimenta os módulos `FUNCIONALIDADES` e `REGRAS` no pacote.
+
+### **Domínio / Funcionalidade do RBAC** *(não confundir)*
+Catálogo **de segurança** em `doc-flow` (módulo lógico `rbac`) — `SEGURANCA`, `DOC_FLOW`, `RELEASE_ORCHESTRATOR`, com permissões `FUNCIONALIDADE:ACAO` (ex.: `RELEASE:PUBLICAR`). Tabelas: `tb_dominio`, `tb_funcionalidade`, `tb_permissao`. Ver [`33-decisoes-tecnicas.md`](33-decisoes-tecnicas.md) §Autorização.
 
 ---
 
@@ -36,8 +39,8 @@ Sub-componente do produto: WEB, BATCH, BANCO, KETTLE, FUNCIONALIDADES ou REGRAS.
 
 ### **Tipo de Módulo**
 Enum dos 6 tipos suportados:
-- **WEB**: artefato `.war` ou `.jar` da aplicação web.
-- **BATCH**: artefato `.jar` de processamento batch.
+- **WEB**: artefato deployável da aplicação web (`.war`, `.jar`, `.zip`, `.tar.gz`, `.tgz`, `.ear`, etc. — ver `extensoesAceitas` em `10`).
+- **BATCH**: artefato de processamento batch (`.jar`, `.zip`, …).
 - **BANCO**: scripts SQL (DDL/DML) — gera delta.
 - **KETTLE**: jobs Pentaho ETL — gera delta.
 - **FUNCIONALIDADES**: gerado da config do cliente.
@@ -172,10 +175,13 @@ Cópia imutável de um estado. Ex.: `ReleasePdfSnapshot` (PDF gerado de uma vers
 ## Segurança
 
 ### **Role**
-Papel do usuário no sistema. Atualmente: ADMIN, EDITOR. Pós-Fase 0: ADMIN, EDITOR, VIEWER.
+Papel do usuário no sistema (`Usuario.roles` — CSV no JWT). Atualmente: `ADMIN`, `EDITOR`. Pós-Fase 0: `ADMIN`, `EDITOR`, `LEITOR`. Usado como gate efetivo em `@PreAuthorize("hasAnyRole(...)")`.
 
-### **Permissão (granular)**
-Capacidade nomeada (`release.criar`, `cliente.editar`). Mapeada de Role → Set<Permissão>.
+### **Grupo de acesso** (`tb_grupo`)
+Conjunto nomeado de permissões com vínculo N:N a usuários. Seed: `ADMIN`, `EDITOR`, `LEITOR` (códigos espelham as roles). Editável por administrador.
+
+### **Permissão (RBAC)** (`tb_permissao`)
+Capacidade nomeada no formato `FUNCIONALIDADE:ACAO` (`RELEASE:CRIAR`, `CLIENTE:EDITAR`, `RELEASE:PUBLICAR`). Persistida em tabela, vinculada a grupos via `tb_grupo_permissao`. Retornada em `GET /auth/me` para uso na UI. Ver [`33-decisoes-tecnicas.md`](33-decisoes-tecnicas.md) §Autorização.
 
 ### **JWT**
 JSON Web Token usado para autenticação. Validado em cada requisição pelo `JwtAuthFilter`.

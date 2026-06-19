@@ -46,43 +46,110 @@ public enum GeracaoStatus {
 
 ## Autorização
 
-### Roles (Spring Security)
-Reaproveitar as roles existentes do release-orchestrator e adicionar uma terceira:
+O backend usa **dois mecanismos coexistentes**, já implementados em `doc-flow`:
+
+1. **Roles legados** (gate efetivo nos controllers) — string CSV em `Usuario.roles`, carregada no JWT, consumida por `@PreAuthorize("hasAnyRole(...)")`.
+2. **RBAC tabular** (catálogo fino + UI) — entidades persistidas em `doc-flow` (módulo lógico `rbac`), retornadas em `GET /api/v1/auth/me` para a UI decidir o que mostrar.
+
+Os dois andam juntos. A migração completa para RBAC table-driven nos `@PreAuthorize` é evolução pós-MVP.
+
+### Roles legados (Spring Security — gate atual)
+
 - `ROLE_ADMIN` — tudo.
 - `ROLE_EDITOR` — operação do dia a dia.
-- `ROLE_VIEWER` — somente leitura. **Novo** (o backend hoje só tem ADMIN/EDITOR; será adicionado).
+- `ROLE_LEITOR` — somente leitura. **Novo** (o backend hoje só tem `ADMIN`/`EDITOR` ativos via `@PreAuthorize`; precisa ser adicionado nos endpoints `GET ...` do release-orchestrator).
 
-### Permissões internas (granulares)
-Em vez de apenas `@PreAuthorize("hasRole(...)")`, adicionar permissões nomeadas para casos sensíveis. Implementação: enum `Permissao` + bean `Map<Role, Set<Permissao>>` + helper `@auth.has('...')` usado nos controllers.
+Implementação atual:
+```java
+// Usuario.roles é String CSV ("ADMIN,EDITOR")
+@Column(nullable = false, length = 60) private String roles;
 
-| Permissão | ADMIN | EDITOR | VIEWER |
-|---|---|---|---|
-| `cliente.consultar` | ✓ | ✓ | ✓ |
-| `cliente.criar` | ✓ | ✓ |  |
-| `cliente.editar` | ✓ | ✓ |  |
-| `cliente.excluir` | ✓ |  |  |
-| `cliente.config-entrega` | ✓ |  |  |
-| `produto.consultar` | ✓ | ✓ | ✓ |
-| `produto.criar` | ✓ |  |  |
-| `produto.editar` | ✓ | ✓ |  |
-| `modulo.gerenciar` | ✓ | ✓ |  |
-| `release.consultar` | ✓ | ✓ | ✓ |
-| `release.criar` | ✓ | ✓ |  |
-| `release.publicar` | ✓ |  |  |
-| `release.cancelar` | ✓ |  |  |
-| `artefato.upload` | ✓ | ✓ |  |
-| `artefato.remover-publicada` | ✓ |  |  |
-| `entrega.consultar` | ✓ | ✓ | ✓ |
-| `entrega.gerar` | ✓ | ✓ |  |
-| `entrega.cancelar` | ✓ |  |  |
-| `entrega.reentregar` | ✓ | ✓ |  |
-| `entrega.republicar` | ✓ |  |  |
-| `configuracoes.editar` | ✓ |  |  |
-| `auditoria.consultar` | ✓ |  | ✓ |
+// JWT carrega a lista
+public List<String> roleList() { return Arrays.stream(roles.split(",")).map(String::trim).filter(r -> !r.isBlank()).toList(); }
 
-### Mudança necessária no release-orchestrator existente
-- Adicionar `ROLE_VIEWER` aos endpoints de leitura (`GET ...`).
-- Aplicar permissões granulares aos endpoints críticos (`publicar`, `cancelar`, `excluir`).
+// Controller efetivo
+@PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
+```
+
+`JwtAuthFilter` / `GatewayAuthFilter` prefixam `ROLE_` automaticamente.
+
+### RBAC tabular (catálogo + UI)
+
+Já existe em `doc-flow` (migrations `V7–V13` — ver [`../MIGRATIONS.md`](../MIGRATIONS.md)):
+
+| Tabela | Conteúdo |
+|---|---|
+| `tb_dominio` | Domínio de permissão (`SEGURANCA`, `SISTEMA`, `DOC_FLOW`, `RELEASE_ORCHESTRATOR`) |
+| `tb_funcionalidade` | Funcionalidade dentro de um domínio (`USUARIO`, `CLIENTE`, `RELEASE`, `PRODUTO`, `TEMPLATE`, …) |
+| `tb_permissao` | Permissão atômica com código `FUNCIONALIDADE:ACAO` (`RELEASE:CRIAR`, `CLIENTE:LER`) |
+| `tb_grupo` | Grupo (seed: `ADMIN`, `EDITOR`, `LEITOR`) |
+| `tb_grupo_permissao` | N:N grupo↔permissão |
+| `tb_grupo_usuario` | N:N grupo↔usuário |
+
+> ⚠️ Colisão de nome: `tb_dominio` / `tb_funcionalidade` já estão ocupadas pelo RBAC. O catálogo funcional **do produto** (`05`/`11`) usa entidades distintas no orchestrator — `DominioProduto` / `FuncionalidadeProduto` (`tb_dominio_produto` / `tb_funcionalidade_produto`). Ver [`32-modelo-dados-sugerido.md`](32-modelo-dados-sugerido.md).
+
+#### Convenção de ação
+
+| Ação CRUD | Significado |
+|---|---|
+| `LER` | Consultar |
+| `CRIAR` | Criar novo |
+| `EDITAR` | Atualizar existente |
+| `EXCLUIR` | Remover/inativar |
+
+**Especiais** (fora do CRUD): `VINCULAR_PERMISSAO`, `BLOQUEAR`, `RESETAR_SENHA`, `REVOGAR`, `VISUALIZAR` (auditoria/histórico-login).
+
+#### Permissões do orchestrator (catálogo a semear)
+
+Códigos no formato `FUNC:ACAO`. As permissões CRUD são geradas via `CROSS JOIN` no seed (V10) para todas as funcionalidades ativas; aqui ficam as **especiais** + as que precisam aparecer no plano:
+
+| Permissão | ADMIN | EDITOR | LEITOR | Observações |
+|---|---|---|---|---|
+| `CLIENTE:LER` | ✓ | ✓ | ✓ | CRUD padrão |
+| `CLIENTE:CRIAR` | ✓ | ✓ |  | |
+| `CLIENTE:EDITAR` | ✓ | ✓ |  | |
+| `CLIENTE:EXCLUIR` | ✓ |  |  | |
+| `CLIENTE:CONFIG_ENTREGA` | ✓ |  |  | Especial (a semear) |
+| `PRODUTO:LER` | ✓ | ✓ | ✓ | |
+| `PRODUTO:CRIAR` | ✓ |  |  | |
+| `PRODUTO:EDITAR` | ✓ | ✓ |  | |
+| `MODULO:GERENCIAR` | ✓ | ✓ |  | Cobre catálogo §10 |
+| `RELEASE:LER` | ✓ | ✓ | ✓ | |
+| `RELEASE:CRIAR` | ✓ | ✓ |  | |
+| `RELEASE:PUBLICAR` | ✓ |  |  | Especial |
+| `RELEASE:CANCELAR` | ✓ |  |  | Especial |
+| `ARTEFATO:UPLOAD` | ✓ | ✓ |  | Especial |
+| `ARTEFATO:REMOVER_PUBLICADA` | ✓ |  |  | Especial |
+| `ENTREGA:LER` | ✓ | ✓ | ✓ | |
+| `ENTREGA:GERAR` | ✓ | ✓ |  | Especial |
+| `ENTREGA:CANCELAR` | ✓ |  |  | Especial |
+| `ENTREGA:REENTREGAR` | ✓ | ✓ |  | Especial |
+| `ENTREGA:REPUBLICAR` | ✓ |  |  | Especial |
+| `CONFIGURACAO:EDITAR` | ✓ |  |  | |
+| `AUDITORIA:VISUALIZAR` | ✓ |  | ✓ | Já no catálogo |
+
+### Como o RBAC entra na requisição
+
+```text
+Login → JWT (roles CSV) → JwtAuthFilter → SecurityContext(roles)
+                                              ↓
+                                       @PreAuthorize hasAnyRole(...)
+                                              ↓
+                                            Controller
+
+GET /auth/me → MeResponse { roles, grupos[], permissoes[] }
+                ↑                       ↑           ↑
+              legacy                RbacService.gruposDoUsuario()
+                                   RbacService.permissoesDoUsuario()
+```
+
+O frontend usa `permissoes[]` para esconder ações; o gate efetivo continua nos `@PreAuthorize`. Evolução: substituir `hasAnyRole` por `@auth.has('CLIENTE:CRIAR')` via `PermissionEvaluator` que consulta `RbacService`.
+
+### Mudanças necessárias no release-orchestrator existente
+
+- Endpoints `GET ...`: adicionar `LEITOR` em `hasAnyRole('ADMIN','EDITOR','LEITOR')`.
+- Endpoints críticos (`publicar`, `cancelar`, `excluir`): manter `hasRole('ADMIN')`.
+- Seed `V10__rbac__04_seed_catalog.sql`: adicionar permissões especiais do orchestrator (lista acima — apenas `CLIENTE`, `PRODUTO`, `RELEASE`, `TEMPLATE` estão no catálogo; faltam `ENTREGA`, `MODULO`, `ARTEFATO`, `AUDITORIA` no domínio `RELEASE_ORCHESTRATOR`).
 
 ---
 
@@ -182,5 +249,6 @@ management:
 - [`36-deploy-operacao.md`](36-deploy-operacao.md) — Operação em prod.
 - [`37-contratos-openapi.md`](37-contratos-openapi.md) — Documentação de API.
 - [`99-melhorias-sugeridas.md`](99-melhorias-sugeridas.md) — Backlog.
+- [`../MIGRATIONS.md`](../MIGRATIONS.md) — Baseline Flyway (split por módulo) + ordem `docflow → seguranca → rbac → release_orchestrator`.
 - Roles e permissões base — consolidado neste módulo.
 - Tratamento de erro / Problem Details — ver [`99-padroes-tela.md`](99-padroes-tela.md).

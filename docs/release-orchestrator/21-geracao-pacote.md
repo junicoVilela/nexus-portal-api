@@ -83,9 +83,11 @@ Executadas em sequência, com log e progresso individuais.
 - **Pós-MVP**: transformações/jobs modificados + dependências.
 
 ### Etapa 6: Gerar scripts de configuração (FUNCIONALIDADES/REGRAS)
-- Lê `ClienteFuncionalidade` atual.
-- Renderiza template de script com dados do cliente.
-- Gera arquivos `funcionalidades_*.sql` e `regras_*.sql`.
+- Lê `ClienteFuncionalidade` atual (`05`).
+- Gera **`00_ddl_tb_cliente_funcionalidade.sql`** — DDL da tabela nova (se ainda não existir no destino).
+- Gera **`01_catalogo_dominio_funcional.sql`** — MERGE Oracle em `TB_DOMINIO_FUNCIONAL` + `TB_FUNCIONALIDADE` (template §17.2 de [`11`](11-produtos-catalogo-funcional.md)).
+- Gera **`02_cliente_{sigla}_habilitadas.sql`** — `DELETE` + `INSERT` em `TB_CLIENTE_FUNCIONALIDADE` (banco dedicado ao cliente; template §17.3).
+- Gera **`manifest-funcionalidades.json`** + scripts `regras_*.sql` (módulo REGRAS).
 
 ### Etapa 7: Renderizar release notes (PDF)
 - Usa o mesmo renderer Markdown → PDF (ver [`25-documento-release-md-pdf.md`](25-documento-release-md-pdf.md)).

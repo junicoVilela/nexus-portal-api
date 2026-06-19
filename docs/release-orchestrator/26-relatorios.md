@@ -201,7 +201,7 @@ public record RelatorioResultadoResponse(
 
 ## 11. Permissões
 
-| Categoria | ADMIN | EDITOR | VIEWER |
+| Categoria | ADMIN | EDITOR | LEITOR |
 |---|---|---|---|
 | Operacionais | ✅ | ✅ | ✅ |
 | Por cliente/produto | ✅ | ✅ | ✅ |

@@ -19,6 +19,7 @@ Acessível em:
 | Registrar identidade do produto | Seção "Identidade" |
 | Configurar repositório GitHub | Seção "Integração GitHub" (pós-MVP) |
 | Configurar pipeline Jenkins | Seção "Integração Jenkins" (pós-MVP) |
+| Acessar catálogo funcional | Botão "Catálogo funcional" após salvar → `11` |
 | Definir status e visibilidade | Status ativo/inativo |
 | Vincular templates de documento | Seção "Templates de documento" |
 | Acessar configuração de módulos | Botão "Configurar módulos" após salvar |

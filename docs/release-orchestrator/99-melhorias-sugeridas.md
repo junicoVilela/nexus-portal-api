@@ -145,9 +145,11 @@ Backlog específico do **Release Orchestrator** cobrindo **back + front**. Para 
 - Hashicorp Vault ou AWS Secrets Manager.
 - **Esforço**: L.
 
-### D.3 Permissões granulares
-- Já documentadas em `33`. Implementar.
-- **Esforço**: M.
+### D.3 Permissões granulares (RBAC tabular)
+- **Estado**: 🟡 *Parcialmente implementado* — catálogo `tb_dominio`/`tb_funcionalidade`/`tb_permissao` + `tb_grupo` (seed `ADMIN`/`EDITOR`/`LEITOR`) já existe em `doc-flow` (migrations `V7–V13`). `GET /auth/me` já retorna `grupos` + `permissoes`.
+- **Falta**: (1) semear permissões especiais do orchestrator no domínio `RELEASE_ORCHESTRATOR` (`ENTREGA:GERAR`, `RELEASE:PUBLICAR`, `ARTEFATO:UPLOAD`, etc. — lista em `33`); (2) substituir `@PreAuthorize("hasAnyRole(...)")` por `@PreAuthorize("@auth.has('FUNC:ACAO')")` via `PermissionEvaluator` consultando `RbacService`; (3) adicionar `LEITOR` nos endpoints `GET ...` do release-orchestrator.
+- **Esforço**: M (M para semear + adapter; S para retrofit dos `@PreAuthorize`).
+- Ver [`33-decisoes-tecnicas.md`](33-decisoes-tecnicas.md) §Autorização.
 
 ### D.4 Audit de acesso a dados sensíveis
 - Registrar quem viu credenciais de cliente.

@@ -145,11 +145,11 @@ Ver `34-observabilidade.md` §9 para schema completo de `orchestrator_auditoria`
 ### Roles
 - `ROLE_ADMIN` — tudo.
 - `ROLE_EDITOR` — operação diária (criar/editar/aprovar/gerar).
-- `ROLE_VIEWER` — só leitura.
+- `ROLE_LEITOR` — só leitura.
 
 ### Mapeamento por tela
 
-| Tela | ADMIN | EDITOR | VIEWER |
+| Tela | ADMIN | EDITOR | LEITOR |
 |---|---|---|---|
 | Listagens de leitura | ✅ | ✅ | ✅ |
 | Cadastros (criar/editar) | ✅ | ✅ | ❌ |

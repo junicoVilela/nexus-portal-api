@@ -162,7 +162,7 @@ Mostrar apenas atalhos cujas ações o usuário tem permissão para executar.
 ### Por perfil
 - **ADMIN**: vê tudo, sem restrição.
 - **EDITOR**: vê tudo, sem alguns admin-only (ex.: configurações).
-- **VIEWER**: vê KPIs e listas, mas atalhos de criação ocultos. Ações inline ocultas.
+- **LEITOR**: vê KPIs e listas, mas atalhos de criação ocultos. Ações inline ocultas.
 
 ### Por contexto
 - Falhas críticas (5xx no backend, healthcheck DEGRADED) aparecem como banner no topo, independente do filtro.

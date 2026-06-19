@@ -159,7 +159,7 @@ Click no card → filtra a tabela.
 
 ### Permissões
 
-| Ação | ADMIN | EDITOR | VIEWER |
+| Ação | ADMIN | EDITOR | LEITOR |
 |---|---|---|---|
 | Ver agenda | ✅ | ✅ | ✅ |
 | Planejar | ✅ | ✅ | ❌ |

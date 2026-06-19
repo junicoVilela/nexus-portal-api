@@ -20,7 +20,9 @@
 /orchestrator/clientes/novo                              → 03 Cadastro
 /orchestrator/clientes/:id                               → 04 Visão geral
 /orchestrator/clientes/:id/editar                        → 03 Cadastro (edit)
-/orchestrator/clientes/:id/dominios-funcionalidades      → 05
+/orchestrator/clientes                                   → 02 Listagem
+/orchestrator/clientes/resumo-funcionalidades             → 05 §8 Visão consolidada por produto
+/orchestrator/clientes/:id/dominios-funcionalidades      → 05 Matriz do cliente
 /orchestrator/clientes/:id/produtos                      → 06
 /orchestrator/clientes/:id/configuracao-entrega          → 07
 
@@ -29,6 +31,7 @@
 /orchestrator/produtos/:id                               → (detalhe → tabs)
 /orchestrator/produtos/:id/editar                        → 09 Cadastro (edit)
 /orchestrator/produtos/:id/modulos                       → 10 Catálogo de módulos
+/orchestrator/produtos/:id/catalogo-funcional            → 11 Catálogo domínios/funcionalidades
 
 /orchestrator/proximas-entregas                          → 16 Agenda
 /orchestrator/proximas-entregas/nova                     → 17 Cadastro
@@ -151,6 +154,10 @@ export const ORCHESTRATOR_ROUTES: Routes = [
       { path: 'produtos',
         loadComponent: () => import('./pages/produtos/lista/produtos-lista.component')
           .then(m => m.ProdutosListaComponent) },
+      { path: 'produtos/:id/catalogo-funcional',
+        canActivate: [roleGuard('ADMIN', 'EDITOR', 'LEITOR')],
+        loadComponent: () => import('./pages/produtos/catalogo/catalogo-funcional.component')
+          .then(m => m.CatalogoFuncionalComponent) },
       // ... resto
 
       // Próximas entregas

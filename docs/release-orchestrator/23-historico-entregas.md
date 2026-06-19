@@ -130,7 +130,7 @@ Acessível em `/orchestrator/entregas`. Atalho a partir do dashboard e da visão
 
 ### Permissões
 
-| Ação | ADMIN | EDITOR | VIEWER |
+| Ação | ADMIN | EDITOR | LEITOR |
 |---|---|---|---|
 | Listar e ver | ✅ | ✅ | ✅ |
 | Download | ✅ | ✅ | ✅ |

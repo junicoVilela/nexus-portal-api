@@ -84,7 +84,7 @@ Acessível em `/orchestrator/clientes/:id`.
 - **⋮ Mais** (menu): Editar, Pausar/Reativar, Encerrar (com confirm dupla), Exportar dados.
 
 ### Permissões
-- VIEWER: vê tudo, mas botões de ação ocultos.
+- LEITOR: vê tudo, mas botões de ação ocultos.
 - EDITOR: pode editar, criar entrega.
 - ADMIN: pode pausar, encerrar.
 

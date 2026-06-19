@@ -115,11 +115,11 @@ Healthchecks em tempo real:
 - Vai para auditoria.
 
 ### 6.2 Permissões
-- Aba Fila: VIEWER+.
+- Aba Fila: LEITOR+.
 - Aba Falhas: EDITOR+.
 - Aba Logs: ADMIN.
-- Aba Auditoria: ADMIN + VIEWER (read-only).
-- Aba Saúde: VIEWER+.
+- Aba Auditoria: ADMIN + LEITOR (read-only).
+- Aba Saúde: LEITOR+.
 - Ações de reprocessamento: EDITOR+.
 - Ações destrutivas (limpar fila): ADMIN.
 

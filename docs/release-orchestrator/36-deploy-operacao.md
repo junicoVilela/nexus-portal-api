@@ -276,6 +276,9 @@ readinessProbe:
 - Flyway aplica automaticamente no startup.
 - Migrações **forward-only**. Sem rollback automático.
 - Para rollback: criar nova migration que reverte.
+- **Baseline e convenção**: ver [`../MIGRATIONS.md`](../MIGRATIONS.md). Padrão de nome `V{n}__{modulo}__{etapa}_{descricao}.sql` com numeração global única (ordem: `docflow → seguranca → rbac → release_orchestrator`).
+- **Etapas dentro do módulo**: `01_tables` → `02_constraints` → `03_indexes` → `04_seed_*` → `05_alter_*` (incrementais) → `07_fix_*` (correções).
+- **Nunca alterar** migration já aplicada — criar nova versão na etapa 05/06/07.
 
 ### Migrations longas
 - Não rodar `ALTER TABLE` em tabelas grandes durante peak.
@@ -407,5 +410,6 @@ Já coberto em `34-observabilidade.md`. Recapitulando o **mínimo operacional**:
 - [`33-decisoes-tecnicas.md`](33-decisoes-tecnicas.md) — Stack técnica.
 - [`34-observabilidade.md`](34-observabilidade.md) — Monitoramento.
 - [`35-testes-qa.md`](35-testes-qa.md) — Validação contínua.
+- [`../MIGRATIONS.md`](../MIGRATIONS.md) — Baseline Flyway (split por módulo).
 - [`../ROADMAP.md`](../ROADMAP.md) — Fases de evolução.
 - [`99-melhorias-sugeridas.md`](99-melhorias-sugeridas.md) — Seção H.

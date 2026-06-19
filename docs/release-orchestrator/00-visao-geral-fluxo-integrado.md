@@ -90,7 +90,7 @@ Pré-requisitos no **mesmo módulo Maven** `release-orchestrator` antes de imple
 - Filtros de visibilidade (CLIENTE/SUPORTE/INTERNO).
 - Detalhe em [`25-documento-release-md-pdf.md`](25-documento-release-md-pdf.md).
 
-### 4.5 `ROLE_VIEWER` + permissões granulares
+### 4.5 `ROLE_LEITOR` + permissões granulares
 - Detalhe em [`33-decisoes-tecnicas.md`](33-decisoes-tecnicas.md) (autorização).
 
 ### 4.6 Naming cleanup (opcional, mas recomendado)

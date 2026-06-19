@@ -56,9 +56,13 @@ Permitir ao operador anexar arquivos físicos da release por módulo do produto,
 │ │ Anexar: [Choose file]  Obs: [_______________]   [+ Adicionar]    │ │
 │ └──────────────────────────────────────────────────────────────────┘ │
 │                                                                        │
-│ ┌─ dtec-web (WEB) ─────────────────────── Obrigatório ─ ✅ 1 arq.  ─┐ │
-│ │ dtec-web-1.5.0.war  •  47MB  •  sha256: 123..789  [⬇️] [🗑️]      │ │
-│ │ ✅ Aceita: .war, .jar                                             │ │
+│ ┌─ dtec-portal (WEB) ──────────────────── Obrigatório ─ ✅ 1 arq.  ─┐ │
+│ │ dtec-portal-1.5.0.war  •  47MB  •  sha256: 123..789  [⬇️] [🗑️]   │ │
+│ │ ✅ Aceita: .war, .jar, .zip, .tar.gz, .tgz, .ear (config módulo)  │ │
+│ └──────────────────────────────────────────────────────────────────┘ │
+│                                                                        │
+│ ┌─ dtec-api (WEB) ─────────────────────── Obrigatório ─ ✅ 1 arq.  ─┐ │
+│ │ dtec-api-1.5.0.jar  •  38MB  •  sha256: abc..012  [⬇️] [🗑️]     │ │
 │ └──────────────────────────────────────────────────────────────────┘ │
 │                                                                        │
 │ ┌─ dtec-funcs (FUNCIONALIDADES) ──────── Auto-gerado ─ N/A          ┐│
@@ -71,12 +75,14 @@ Permitir ao operador anexar arquivos físicos da release por módulo do produto,
 
 | Tipo | Aceita upload? | O que pode ser anexado |
 |---|---|---|
-| `WEB` | Sim | Um `.war` ou `.jar` |
-| `BATCH` | Sim | Um `.jar` |
+| `WEB` | Sim | **Um** artefato por módulo; extensões default: `.war`, `.jar`, `.zip`, `.tar.gz`, `.tgz`, `.ear` — ou lista `extensoesAceitas` na config do módulo (ver `10` §3) |
+| `BATCH` | Sim | **Um** artefato; default: `.jar`, `.zip`, `.tar.gz`, `.tgz` |
 | `BANCO` | Sim | Múltiplos `.sql` ou um `.zip` contendo `.sql` |
 | `KETTLE` | Sim | Múltiplos `.ktr` / `.kjb` ou um `.zip` |
 | `FUNCIONALIDADES` | **Não** | Gerado a partir da config do cliente |
 | `REGRAS` | **Não** | Gerado a partir da config do cliente |
+
+> Vários apps web = vários módulos `WEB` na release, cada um com slot de upload próprio (`10` §7.8).
 
 ### 3.4 Campos por upload
 
@@ -252,7 +258,7 @@ Detalhe completo em [`25-documento-release-md-pdf.md`](25-documento-release-md-p
 
 ## 6. Permissões
 
-| Ação | ADMIN | EDITOR | VIEWER |
+| Ação | ADMIN | EDITOR | LEITOR |
 |---|---|---|---|
 | Ver artefatos | ✅ | ✅ | ✅ |
 | Upload artefato | ✅ | ✅ | ❌ |

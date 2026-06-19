@@ -36,8 +36,53 @@ Exemplos:
 ### ClienteFuncionalidade
 Vínculo entre cliente e funcionalidade que indica se está **habilitada** para esse cliente.
 
+### O que significa “cliente possui domínio / funcionalidade”
+
+| Termo | Significado | Persistência |
+|---|---|---|
+| **Possui funcionalidade** | `ClienteFuncionalidade.habilitada = true` | Linha explícita na matriz |
+| **Possui domínio** | Pelo menos **uma** funcionalidade **habilitada** dentro desse domínio | **Derivado** (não exige tabela `ClienteDominio`) |
+| **Não possui domínio** | Nenhuma funcionalidade habilitada naquele domínio | Domínio continua no catálogo do produto; some do pacote e dos resumos “possuídos” |
+
+Cada cliente enxerga **todo o catálogo do produto** na tela de edição, mas **só leva no pacote** o que estiver habilitado. Dois clientes do mesmo produto podem ter conjuntos **totalmente diferentes**.
+
+### Exemplo — mesmo produto, matrizes distintas
+
+Catálogo do produto **DTEC-LD** (`11`):
+
 ```text
-Catálogo (por Produto):
+Domínio A → funcionalidades 1, 2, 4
+Domínio B → funcionalidades 1, 2, 3
+Domínio C → funcionalidades 2, 3
+Domínio T → funcionalidades 2, 3, 5
+```
+
+| Cliente | Domínios possuídos | Funcionalidades habilitadas | Observação |
+|---|---|---|---|
+| **Cliente X** | **A, B, C** | **1, 2** | Em A: só 1 e 2. Em B: 1 e 2 (não 3). Em C: 2. Domínio T: nenhuma → **não possui T** |
+| **Cliente Y** | **T, B, C** | **2, 3** | Em T: 2 e 3. Em B/C: 2 e/ou 3 conforme toggles. Domínio A: nenhuma → **não possui A** |
+
+Funcionalidade **2** pode estar habilitada nos dois clientes; **1** só no X; **3** só no Y. Domínios **B** e **C** podem ser compartilhados, mas com funcionalidades diferentes dentro deles.
+
+```text
+Catálogo (produto DTEC-LD) — vocabulário completo
+  A.{1,2,4}  B.{1,2,3}  C.{2,3}  T.{2,3,5}
+
+Cliente X — subconjunto contratado
+  A → {1✅, 2✅, 4❌}
+  B → {1✅, 2✅, 3❌}
+  C → {2✅, 3❌}
+  T → (nenhuma habilitada)
+
+Cliente Y — subconjunto contratado
+  T → {2✅, 3✅, 5❌}
+  B → {1❌, 2✅, 3✅}
+  C → {2✅, 3✅}
+  A → (nenhuma habilitada)
+```
+
+```text
+Catálogo (por Produto) — exemplo genérico
   Domínio "Usuários"
    ├─ Funcionalidade "Inserir"
    ├─ Funcionalidade "Bloquear"
@@ -61,8 +106,9 @@ Cliente "ACME":
 ├────────────────────────────────────────────────────────────────────────┤
 │ Domínios e Funcionalidades                       Produto: [DTEC-LD ▼] │
 ├────────────────────────────────────────────────────────────────────────┤
-│ Filtros: [Apenas desabilitadas]  [Habilitadas]  [Todas]                │
+│ Filtros: [Apenas possuídos] [Apenas desabilitadas] [Habilitadas] [Todas] │
 │ 🔍 [Buscar funcionalidade...]                                          │
+│ Resumo cliente: domínios A, B, C • func. 1, 2 (de 4 dom. / 12 func.)  │
 ├────────────────────────────────────────────────────────────────────────┤
 │ ┌─ Domínios ──────────────┐ ┌─ Funcionalidades de "Usuários" ──────┐ │
 │ │ Resumo: 32/48 habilit.   │ │ ✅ Inserir                            │ │
@@ -99,7 +145,12 @@ Cliente "ACME":
 ### Conteúdo por linha
 - Nome do domínio.
 - Contador "habilitadas / total" (ex.: `8/10`).
+- Badge **Possuído** se `habilitadas ≥ 1`; caso contrário **Não contratado** (visual cinza).
 - Barra de progresso visual.
+
+### Filtro "Apenas possuídos"
+- Mostra só domínios com ≥1 funcionalidade habilitada para o cliente.
+- Útil para revisar o que entra no pacote (`FUNCIONALIDADES` / `REGRAS`).
 
 ### Estados visuais
 - **Verde** se 100% habilitado.
@@ -128,9 +179,9 @@ Cliente "ACME":
 - Visual muda imediatamente.
 
 ### Ações em lote
-- "Habilitar todas no domínio" / "Desabilitar todas".
+- "Habilitar todas no domínio" / "Desabilitar todas" — desabilitar todas faz o cliente **deixar de possuir** aquele domínio.
 - "Selecionar template" (aplicar conjunto pré-definido).
-- "Copiar de outro cliente" (modal de seleção).
+- "Copiar de outro cliente" (modal de seleção — ex.: copiar matriz do Cliente Y para novo cliente).
 
 ---
 
@@ -176,6 +227,60 @@ Cliente "ACME":
 - Snapshot da matriz no momento da entrega.
 - Histórico permite ver o estado em data passada.
 
+### Subconjunto por cliente (geração de pacote)
+- Scripts `FUNCIONALIDADES` incluem **somente** funcionalidades com `habilitada = true`.
+- Domínios sem nenhuma funcionalidade habilitada **não geram** bloco no pacote.
+- Dois clientes do mesmo produto podem receber pacotes com domínios e funcionalidades distintos (ex.: Cliente X ≠ Cliente Y na tabela §2).
+
+### Visão consolidada (todos os clientes)
+
+Rota complementar (read-only ou com drill-down para matriz):
+
+`/orchestrator/clientes/resumo-funcionalidades?produtoId={produtoId}`
+
+```text
+┌────────────────────────────────────────────────────────────────────────┐
+│ Resumo funcional — DTEC-LD                         Produto: [DTEC-LD ▼] │
+├────────────────────────────────────────────────────────────────────────┤
+│ Cliente      │ Domínios possuídos │ Funcionalidades (códigos) │ Ações  │
+├────────────────────────────────────────────────────────────────────────┤
+│ Cliente X    │ A, B, C            │ 1, 2                      │ [Abrir]│
+│ Cliente Y    │ T, B, C            │ 2, 3                      │ [Abrir]│
+│ ACME LTDA    │ A, B, T            │ 1, 2, 3, 5                │ [Abrir]│
+└────────────────────────────────────────────────────────────────────────┘
+```
+
+- **Domínios possuídos**: códigos com ≥1 funcionalidade habilitada.
+- **Funcionalidades**: códigos numéricos/slug **únicos** habilitados no cliente (podem repetir entre domínios no catálogo; lista exibe código da funcionalidade).
+- Coluna clicável → abre matriz do cliente (`05`) já filtrada em "Apenas possuídos".
+- Export CSV para auditoria comercial.
+
+```
+GET /api/v1/release-orchestrator/clientes/resumo-funcionalidades?produtoId={produtoId}
+```
+
+Response (trecho):
+```json
+{
+  "produtoId": "uuid",
+  "produtoSigla": "DTECLD",
+  "clientes": [
+    {
+      "clienteId": "uuid-x",
+      "clienteNome": "Cliente X",
+      "dominiosPossuidos": ["a", "b", "c"],
+      "funcionalidadesHabilitadas": ["1", "2"]
+    },
+    {
+      "clienteId": "uuid-y",
+      "clienteNome": "Cliente Y",
+      "dominiosPossuidos": ["t", "b", "c"],
+      "funcionalidadesHabilitadas": ["2", "3"]
+    }
+  ]
+}
+```
+
 ---
 
 ## 9. Contratos de API
@@ -191,12 +296,19 @@ Response:
 {
   "produtoId": "uuid",
   "produtoSigla": "DTECLD",
-  "resumo": { "habilitadas": 32, "total": 48 },
+  "resumo": {
+    "habilitadas": 32,
+    "total": 48,
+    "dominiosPossuidos": 5,
+    "totalDominios": 7,
+    "codigosFuncionalidadesHabilitadas": ["1", "2", "inserir", "exportar"]
+  },
   "dominios": [
     {
       "id": "uuid-dominio-usuarios",
       "nome": "Usuários",
       "codigo": "usuarios",
+      "possuiDominio": true,
       "habilitadas": 8,
       "total": 10,
       "funcionalidades": [
@@ -303,10 +415,16 @@ public record AlterarMatrizRequest(
 ## 11. Integração com geração de pacote
 
 Quando uma entrega é gerada, o pacote inclui os módulos `FUNCIONALIDADES` e `REGRAS`:
-- Cliente.Funcionalidades habilitadas → script de habilitação no banco.
-- Combinada com permissões de grupo → módulo `REGRAS`.
 
-Detalhes em `21-geracao-pacote.md` e na strategy de delta para tipo `FUNCIONALIDADES`/`REGRAS`.
+| Artefato | Conteúdo |
+|---|---|
+| `funcionalidades/00_ddl_tb_cliente_funcionalidade.sql` | DDL da tabela **nova** `TB_CLIENTE_FUNCIONALIDADE` — ver `11` §17.1 |
+| `funcionalidades/01_catalogo_dominio_funcional.sql` | MERGE catálogo (`TB_DOMINIO_FUNCIONAL`, `TB_FUNCIONALIDADE`) — ver `11` §17.2 |
+| `funcionalidades/02_cliente_{sigla}_habilitadas.sql` | `DELETE` + `INSERT` em `TB_CLIENTE_FUNCIONALIDADE` (ambiente dedicado; sigla só no nome do arquivo) — ver `11` §17.3 |
+| `funcionalidades/manifest-funcionalidades.json` | Snapshot para auditoria/reentrega |
+| `regras/*.sql` | Permissões/grupos (módulo `REGRAS`) |
+
+Detalhes em [`21-geracao-pacote.md`](21-geracao-pacote.md) etapa 6 e [`11-produtos-catalogo-funcional.md`](11-produtos-catalogo-funcional.md) §17.
 
 ### Snapshot
 - Ao gerar entrega: estado atual da matriz é **snapshotado** em `EntregaFuncionalidades` (sugestão de tabela).
@@ -333,7 +451,7 @@ Detalhes em `21-geracao-pacote.md` e na strategy de delta para tipo `FUNCIONALID
 - Tela mostra: "Cliente não tem produto contratado. [Configurar produtos]".
 
 ### Catálogo do produto vazio
-- "Produto não tem domínios/funcionalidades cadastradas. [Configurar catálogo do produto]".
+- "Produto não tem domínios/funcionalidades cadastradas. [Configurar catálogo do produto]" → link para [`11-produtos-catalogo-funcional.md`](11-produtos-catalogo-funcional.md).
 
 ### Mudança em massa
 - "Habilitar todas no domínio" → marca local.
@@ -375,7 +493,8 @@ Em `detalhes` (JSON): lista `[{funcionalidadeId, codigo, antes, depois}]`.
 
 - [`04-cliente-visao-geral.md`](04-cliente-visao-geral.md) — Tela mãe.
 - [`06-cliente-produtos-contratados.md`](06-cliente-produtos-contratados.md) — Catálogo de produtos.
-- [`10-produtos-modulos-artefatos.md`](10-produtos-modulos-artefatos.md) — Catálogo de domínios/funcionalidades.
+- [`11-produtos-catalogo-funcional.md`](11-produtos-catalogo-funcional.md) — Catálogo mestre de domínios/funcionalidades (por produto).
+- [`10-produtos-modulos-artefatos.md`](10-produtos-modulos-artefatos.md) — Módulos de empacotamento (WEB/BATCH/…).
 - [`21-geracao-pacote.md`](21-geracao-pacote.md) — Como matriz alimenta o pacote.
 - [`32-modelo-dados-sugerido.md`](32-modelo-dados-sugerido.md) — Entidades.
 - [`99-padroes-tela.md`](99-padroes-tela.md) — Padrões.

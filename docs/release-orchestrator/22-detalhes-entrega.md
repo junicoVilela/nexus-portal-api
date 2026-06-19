@@ -78,7 +78,7 @@ Acessível em `/orchestrator/entregas/:id`.
 
 ### Permissões
 
-| Ação | ADMIN | EDITOR | VIEWER |
+| Ação | ADMIN | EDITOR | LEITOR |
 |---|---|---|---|
 | Ver detalhes | ✅ | ✅ | ✅ |
 | Download pacote | ✅ | ✅ | ✅ |

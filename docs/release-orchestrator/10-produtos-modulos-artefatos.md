@@ -14,11 +14,14 @@ Acessível em `/orchestrator/produtos/:produtoId/modulos`.
 
 - Cada produto tem N módulos cadastráveis.
 - Cada módulo tem um **tipo** (categoria fixa do sistema) que determina como o pacote é montado.
+- **Vários projetos web** no mesmo produto = **vários módulos `WEB`** (não é necessário novo tipo).
 - O cliente contrata módulos individualmente (ver `06-cliente-produtos-contratados.md`).
 
 ```text
 Produto DTEC-LD
-├─ Módulo dtec-web         (WEB)
+├─ Módulo dtec-portal      (WEB)   ← app principal (.war)
+├─ Módulo dtec-api         (WEB)   ← API REST (.jar ou .war)
+├─ Módulo dtec-front-spa   (WEB)   ← build estático (.zip)
 ├─ Módulo dtec-batch       (BATCH)
 ├─ Módulo dtec-db-ddl      (BANCO)
 ├─ Módulo dtec-db-dml      (BANCO)
@@ -27,18 +30,35 @@ Produto DTEC-LD
 └─ Módulo dtec-regras      (REGRAS)
 ```
 
+> Um módulo `WEB`/`BATCH` = **um slot de artefato** na release (upload no MVP; asset da `TO_TAG` no pós-MVP). Cada um com `destinoPacote` distinto no ZIP final.
+
 ---
 
 ## 3. Tipos de módulo (fixos)
 
 | Tipo | Origem do artefato | Mecanismo de empacotamento |
 |---|---|---|
-| `WEB` | GitHub Release asset (`.war`) — MVP: upload manual | Baixa o asset da `TO_TAG`. Substitui inteiro (sem delta). |
-| `BATCH` | GitHub Release asset (`.jar`) — MVP: upload manual | Baixa o asset da `TO_TAG`. Substitui inteiro. |
+| `WEB` | GitHub Release asset — MVP: upload manual | Baixa o asset da `TO_TAG` (pós-MVP). Substitui inteiro (sem delta). |
+| `BATCH` | GitHub Release asset — MVP: upload manual | Baixa o asset da `TO_TAG` (pós-MVP). Substitui inteiro. |
 | `BANCO` | Diretório de scripts SQL no repositório — MVP: upload `.zip`/`.sql` | Coleta SQL entre `FROM_TAG` e `TO_TAG`, ordena DDL → DML, gera `DDL.sql` e `DML.sql` unificados. **Gera delta.** |
 | `KETTLE` | Diretório `.ktr`/`.kjb` no repositório — MVP: upload `.zip` | Coleta arquivos modificados entre `FROM_TAG` e `TO_TAG`. **Gera delta.** |
 | `FUNCIONALIDADES` | Configuração do cliente (`05-cliente-dominios-funcionalidades.md`) | Gera scripts a partir das funcionalidades habilitadas. Sempre re-gera. |
 | `REGRAS` | Configuração do cliente | Gera scripts de regras (matriz de permissões/grupos). |
+
+### Extensões aceitas por tipo
+
+Validadas no upload (MVP) e no `padraoAsset` / download GitHub (pós-MVP). Lista **default** se `extensoesAceitas` não estiver na config do módulo.
+
+| Tipo | Extensões default | Exemplos de uso |
+|---|---|---|
+| `WEB` | `.war`, `.jar`, `.zip`, `.tar.gz`, `.tgz`, `.ear` | WAR Tomcat, JAR Spring Boot, SPA estático em ZIP, pacote legado EAR |
+| `BATCH` | `.jar`, `.zip`, `.tar.gz`, `.tgz` | JAR batch, pacote com libs + scripts |
+| `BANCO` | `.sql`, `.zip` | Scripts avulsos ou ZIP com DDL/DML |
+| `KETTLE` | `.ktr`, `.kjb`, `.zip` | Jobs avulsos ou ZIP com delta |
+
+- `extensoesAceitas` na config **restringe** (subset) ou **expande** (superset explícito) o default do tipo — validado server-side.
+- Comparação **case-insensitive** (`.WAR` = `.war`).
+- MIME type é informativo; a validação primária é pela extensão.
 
 ### Defaults por tipo
 
@@ -67,9 +87,10 @@ Produto DTEC-LD
 │ │ 2   │ ✅     │ dtec-db-dml   │ Banco DML        │ BANCO │✓ │ ⋮  │  │
 │ │ 3   │ ✅     │ dtec-funcs    │ Funcionalidades  │ FUNC  │  │ ⋮  │  │
 │ │ 4   │ ✅     │ dtec-regras   │ Regras           │ REGRAS│  │ ⋮  │  │
-│ │ 5   │ ✅     │ dtec-web      │ Portal Web       │ WEB   │  │ ⋮  │  │
-│ │ 6   │ ✅     │ dtec-batch    │ Processador      │ BATCH │  │ ⋮  │  │
-│ │ 7   │ ❌     │ dtec-etl      │ ETL Kettle       │ KETTLE│✓ │ ⋮  │  │
+│ │ 5   │ ✅     │ dtec-portal   │ Portal Web       │ WEB   │  │ ⋮  │  │
+│ │ 6   │ ✅     │ dtec-api      │ API REST         │ WEB   │  │ ⋮  │  │
+│ │ 7   │ ✅     │ dtec-batch    │ Processador      │ BATCH │  │ ⋮  │  │
+│ │ 8   │ ❌     │ dtec-etl      │ ETL Kettle       │ KETTLE│✓ │ ⋮  │  │
 │ └──────────────────────────────────────────────────────────────────┘  │
 │ ℹ️  Ordem afeta sequência de montagem do pacote.                      │
 └────────────────────────────────────────────────────────────────────────┘
@@ -116,12 +137,57 @@ Produto DTEC-LD
 
 ### Config específica por tipo
 
-#### WEB / BATCH (pós-MVP)
+Campos comuns em `WEB` e `BATCH`:
+
+| Campo | Obrigatório | Descrição |
+|---|---|---|
+| `destinoPacote` | recomendado | Pasta relativa no ZIP final (ex.: `web/portal/`) |
+| `extensoesAceitas` | ❌ | Lista de extensões permitidas; default = tabela §3 |
+| `padraoAsset` | pós-MVP | Glob do asset na GitHub Release (ex.: `dtec-portal-*.war`) |
+| `repositorioGithub` | pós-MVP | `owner/repo` **por módulo**; se omitido, usa o do produto (`09`) |
+| `jenkinsJob` | pós-MVP | Job Jenkins que publica o asset deste módulo |
+
+> **Repositório por módulo (pós-MVP):** quando cada app web tem repo próprio, configure `repositorioGithub` no módulo. A `TO_TAG` da release é a mesma (ex.: `v1.5.0`); o orchestrator busca o asset em cada repo/tag conforme `padraoAsset`.
+
+#### WEB — exemplos
+
+Portal Tomcat (repo dedicado):
 ```json
 {
-  "padraoAsset": "*.war",
-  "jenkinsJob": "dtec-web-build",
-  "destinoPacote": "web/"
+  "repositorioGithub": "softon/dtec-portal",
+  "padraoAsset": "dtec-portal-*.war",
+  "extensoesAceitas": [".war"],
+  "jenkinsJob": "dtec-portal-build",
+  "destinoPacote": "web/portal/"
+}
+```
+
+API Spring Boot (mesmo repo do produto, asset distinto):
+```json
+{
+  "padraoAsset": "dtec-api-*.jar",
+  "extensoesAceitas": [".jar", ".war"],
+  "destinoPacote": "web/api/"
+}
+```
+
+Frontend estático (ZIP de build):
+```json
+{
+  "repositorioGithub": "softon/dtec-front",
+  "padraoAsset": "dtec-front-*.zip",
+  "extensoesAceitas": [".zip", ".tar.gz"],
+  "destinoPacote": "web/static/"
+}
+```
+
+#### BATCH — exemplo
+```json
+{
+  "padraoAsset": "dtec-batch-*.jar",
+  "extensoesAceitas": [".jar", ".zip"],
+  "jenkinsJob": "dtec-batch-build",
+  "destinoPacote": "batch/"
 }
 ```
 
@@ -196,6 +262,19 @@ Produto DTEC-LD
 ### 7.7 Config específica
 - Validada server-side por tipo.
 - JSON inválido → erro detalhado.
+
+### 7.8 Vários módulos WEB/BATCH no mesmo produto
+- Permitido e esperado quando há múltiplas aplicações deployáveis.
+- Códigos (slug) únicos por produto: `dtec-portal`, `dtec-api`, etc.
+- Cada módulo tem upload/artefato **independente** na release.
+- `destinoPacote` deve ser **único** por módulo para evitar sobrescrita no ZIP.
+- Cliente pode contratar subset (ver `06`); módulos não contratados não entram na entrega.
+
+### 7.9 Extensões de artefato
+- Upload e download validam extensão contra `extensoesAceitas` (ou default do tipo).
+- Extensão desconhecida → `422` com mensagem listando as permitidas.
+- Um artefato ativo por módulo na release (reupload substitui o anterior).
+- `padraoAsset` (pós-MVP) deve ser compatível com `extensoesAceitas` (validação na gravação da config).
 
 ---
 
@@ -300,5 +379,6 @@ Ver seções acima (§6).
 - [`19-selecao-modulos.md`](19-selecao-modulos.md) — Onde módulos aparecem na entrega.
 - [`21-geracao-pacote.md`](21-geracao-pacote.md) — Como tipo afeta empacotamento.
 - Spec técnica de módulos e artefatos — este documento.
-- Upload de artefatos na release — ver [`14-release-orchestrator-detalhe.md`](14-release-orchestrator-detalhe.md).
+- [`11-produtos-catalogo-funcional.md`](11-produtos-catalogo-funcional.md) — Catálogo funcional (domínios/funcionalidades por produto).
+- [`14-release-orchestrator-detalhe.md`](14-release-orchestrator-detalhe.md) — Upload de artefatos na release.
 - [`99-padroes-tela.md`](99-padroes-tela.md) — Padrões.

@@ -68,14 +68,21 @@ Apenas referenciadas. Estão prontas no backend:
 ### `ClienteProdutoModulo`
 - clienteProdutoId, moduloProdutoId, versaoAtual, ativo, ultimaEntregaId
 
-### `Dominio`
-- produtoId, nome, codigo, descricao, ativo
+### `DominioProduto` *(tabela `tb_dominio_produto`)*
+- produtoId, nome, codigo (`NM_MODELO_DOMINIO`), **codigoLegado** (`CD_DOMINIO_FUNCIONAL`), descricao, ordem, ativo
+- Spec de tela: [`11-produtos-catalogo-funcional.md`](11-produtos-catalogo-funcional.md) §17
+- **Por que `Produto` no nome:** o RBAC de segurança (em `doc-flow`) já ocupa `tb_dominio` / `Dominio` — ver [`33-decisoes-tecnicas.md`](33-decisoes-tecnicas.md) §Autorização.
 
-### `Funcionalidade`
-- dominioId, nome, codigo, descricao, ativo
+### `FuncionalidadeProduto` *(tabela `tb_funcionalidade_produto`)*
+- dominioProdutoId, nome, codigo, **codigoLegado** (`CD_FUNCIONALIDADE`), **codigoOperacao** (`CD_OPERACAO`), descricao, critica, ordem, ativo
+- Distinta da `Funcionalidade` do RBAC (que representa item de segurança como `USUARIO`, `CLIENTE`, `RELEASE`).
 
-### `ClienteFuncionalidade`
-- clienteId, funcionalidadeId, habilitada, origem (`MANUAL` | `TEMPLATE` | `HERDADA`)
+### `ClienteFuncionalidadeProduto` *(tabela `tb_cliente_funcionalidade_produto`)*
+- clienteId, funcionalidadeProdutoId, habilitada, origem (`MANUAL` | `TEMPLATE` | `HERDADA`)
+- Granularidade: **por funcionalidade do produto**. Domínios “possuídos” pelo cliente são **derivados** (`COUNT habilitada=true` por domínio do produto) — ver `05` §2 e §8.
+- **Espelho no banco destino:** `TB_CLIENTE_FUNCIONALIDADE` (`CD_FUNCIONALIDADE` PK) — tabela **nova**, ambiente **single-tenant** (um cliente por banco), ver `11` §17.1.
+
+> **Nota sobre nomenclatura:** o sufixo `Produto` evita colisão com o RBAC. Na UI, comunicação informal e na tela `11` os termos seguem **Domínio** e **Funcionalidade** (do produto) — o sufixo aparece apenas no modelo persistido / API interna. O domínio do RBAC trata de **segurança** (`USUARIO`, `CLIENTE`, `RELEASE`, …); o domínio do produto trata de **catálogo funcional** (`Usuários`, `Relatórios`, …).
 
 ### `ProximaEntrega`
 - clienteId, produtoId, releaseId, dataPrevista, ambiente
@@ -199,7 +206,7 @@ Release 1—N ReleaseItem
 ProximaEntrega 0..1 — 0..1 Entrega
 Entrega 1—N EntregaModulo
 Entrega 1—1 Pacote 1—N ArtefatoPacote
-Cliente 1—N ClienteFuncionalidade N—1 Funcionalidade N—1 Dominio N—1 Produto
+Cliente 1—N ClienteFuncionalidadeProduto N—1 FuncionalidadeProduto N—1 DominioProduto N—1 Produto
 ```
 
 ---
@@ -230,9 +237,11 @@ Histórico de notificações enviadas (e-mail, Slack).
 
 ## Cross-reference
 
-- [`33-decisoes-tecnicas.md`](33-decisoes-tecnicas.md) — Stack, storage, async, autorização.
+- [`33-decisoes-tecnicas.md`](33-decisoes-tecnicas.md) — Stack, storage, async, autorização (RBAC tabular em `doc-flow`).
 - [`34-observabilidade.md`](34-observabilidade.md) — Schema de auditoria.
 - Entidades reutilizadas do release-orchestrator (Produto, Release, ReleaseItem) — consolidadas neste módulo.
 - [`10-produtos-modulos-artefatos.md`](10-produtos-modulos-artefatos.md) — Detalhe de `ModuloProduto` e `ArtefatoReleaseModulo`.
+- [`11-produtos-catalogo-funcional.md`](11-produtos-catalogo-funcional.md) — UI de `DominioProduto` / `FuncionalidadeProduto`.
 - [`../naming-suggestions.md`](../naming-suggestions.md) — `ProdutoRh` → `Produto`.
+- [`../MIGRATIONS.md`](../MIGRATIONS.md) — Baseline Flyway. As novas tabelas (`tb_dominio_produto`, `tb_funcionalidade_produto`, `tb_cliente_funcionalidade_produto`) entram em `V?__release_orchestrator__05_alter_*`.
 - [`38-glossario.md`](38-glossario.md) — Termos do domínio.

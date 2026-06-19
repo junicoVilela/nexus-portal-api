@@ -27,12 +27,13 @@ Este documento cobre o **primeiro bloco** — o que cada repositório deve entre
 
 | Item | Detalhe |
 |---|---|
-| Artefato | `.war` (ou `.jar` executável, conforme produto) |
+| Artefato | `.war`, `.jar`, `.zip`, `.tar.gz` ou outro conforme `extensoesAceitas` do módulo `WEB` |
 | Trigger | Tag `v*.*.*` (regex configurável no portal — ver `09`) |
 | Jenkins | Job `build-on-tag` — ver [`40`](40-guia-versao-tag.md) |
 | Jenkinsfile | No repositório: `Jenkinsfile` na raiz ou `ci/Jenkinsfile` |
-| GitHub Release | Asset nomeado `{produto}-{versao}.war` |
+| GitHub Release | Asset nomeado conforme convenção do produto (ex.: `{modulo}-{versao}.war`) |
 | Guia | [`40-guia-versao-tag.md`](40-guia-versao-tag.md) no repo ou wiki do produto |
+| Repo | Um repo por app **ou** monorepo com vários assets na mesma release — ver `repositorioGithub` por módulo em [`10`](10-produtos-modulos-artefatos.md) §6 |
 
 **Produtos de referência (estimativa história: 2 dias cada)**:
 
@@ -76,8 +77,8 @@ Este documento cobre o **primeiro bloco** — o que cada repositório deve entre
 
 | Item | Detalhe |
 |---|---|
-| Conteúdo no repo | Templates SQL/XML em `funcionalidades/` |
-| No orchestrator | Gerado a partir de `ClienteFuncionalidade` na entrega — ver `21` etapa 6 |
+| Conteúdo no repo | DDL + scripts MERGE: catálogo legado + **`TB_CLIENTE_FUNCIONALIDADE`** (nova) — ver [`11` §17](11-produtos-catalogo-funcional.md) |
+| No orchestrator | Gerado na entrega: catálogo + subset cliente (`ClienteFuncionalidade`) — [`21` etapa 6](21-geracao-pacote.md) |
 | Prazo história | 2 dias |
 | Módulo portal | `FUNCIONALIDADES` (auto-gerado; **sem upload** na release) |
 
@@ -141,15 +142,17 @@ pipeline {
 
 ## 4. Integração com o portal
 
-O portal **não contém** o Jenkinsfile; apenas **referencia** o repositório:
+O portal **não contém** o Jenkinsfile; referencia repositórios no **produto** e, quando necessário, **por módulo**:
 
-| Campo no produto (`09`) | Uso |
-|---|---|
-| `repositorioGithub` | Owner/repo para descoberta de tags e download de assets |
-| `branchPadrao` | Branch para comparar tags |
-| `padraoTag` | Regex de tags válidas (ex.: `^v\d+\.\d+\.\d+$`) |
-| `jenkinsUrl` + `jenkinsJob` | Disparo manual ou webhook pós-tag |
-| `triggerMode` | `BUILD_ON_TAG` |
+| Campo | Onde | Uso |
+|---|---|---|
+| `repositorioGithub` | Produto (`09`) | Default para tags e download de assets |
+| `repositorioGithub` | Módulo `WEB`/`BATCH` (`10` §6) | Override quando cada app tem repo próprio |
+| `branchPadrao` | Produto (`09`) | Branch para comparar tags |
+| `padraoTag` | Produto (`09`) | Regex de tags válidas (ex.: `^v\d+\.\d+\.\d+$`) |
+| `jenkinsUrl` + `jenkinsJob` | Produto / módulo | Disparo manual ou webhook pós-tag |
+| `triggerMode` | Produto (`09`) | `BUILD_ON_TAG` |
+| `padraoAsset` | Módulo (`10` §6) | Glob do asset na GitHub Release da `TO_TAG` |
 
 Fluxo Fase 2:
 

@@ -73,7 +73,7 @@ Padronizar como **criar, publicar e consumir tags** de versão para que:
 ### FUNCIONALIDADES / REGRAS
 
 - [ ] Não usam tag de repo para entrega — gerados na entrega pelo orchestrator
-- [ ] Catálogo de domínios/funcionalidades atualizado no portal (`05`)
+- [ ] Catálogo de domínios/funcionalidades atualizado no portal ([`11`](11-produtos-catalogo-funcional.md), matriz em [`05`](05-cliente-dominios-funcionalidades.md))
 
 ---
 

@@ -18,6 +18,7 @@ Acessível em `/orchestrator/clientes`. Atalho a partir do dashboard (`01-dashbo
 | Criar novo cliente | Botão "+ Novo cliente" |
 | Acessar configurações | Ações inline ou contexto |
 | Triagem (qual cliente precisa atenção?) | Indicadores de entrega atrasada, problemas |
+| Comparar funcionalidades entre clientes | Atalho **Resumo funcional** → `05` §8 (filtro por produto) |
 
 ---
 
@@ -127,6 +128,7 @@ Multi-select. Lista produtos cadastrados. Filtro mostra clientes que contrataram
 |---|---|---|
 | 🔍 Busca | Todos | Filtra inline |
 | + Novo cliente | ADMIN, EDITOR | Vai para `03-clientes-cadastro.md` |
+| Resumo funcional | ADMIN, EDITOR, LEITOR | Vai para `05` §8 — domínios/func. por cliente e produto |
 | ⚙️ Exportar | ADMIN, EDITOR | Download CSV com filtros aplicados |
 
 ### Inline (por linha — menu kebab "⋮")
@@ -144,7 +146,7 @@ Multi-select. Lista produtos cadastrados. Filtro mostra clientes que contrataram
 
 ### Permissões — resumo
 
-| Ação | ADMIN | EDITOR | VIEWER |
+| Ação | ADMIN | EDITOR | LEITOR |
 |---|---|---|---|
 | Listar e ver | ✅ | ✅ | ✅ |
 | Criar | ✅ | ✅ | ❌ |

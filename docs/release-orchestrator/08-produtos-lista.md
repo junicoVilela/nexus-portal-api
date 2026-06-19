@@ -15,6 +15,7 @@ Acessível em `/orchestrator/produtos`. Também acessível pelo Release Orchestr
 | Listar produtos | Tabela paginada |
 | Identificar status e saúde | Coluna status + indicadores |
 | Acessar configuração de módulos | Botão "Módulos" por linha |
+| Acessar catálogo funcional | Botão "Catálogo" por linha → `11` |
 | Iniciar novo cadastro | Botão "+ Novo produto" |
 | Navegar para releases do produto | Click → vai para release flow filtrado |
 | Avaliar uso (quantos clientes contratam) | Coluna "Clientes" com contagem |
@@ -101,18 +102,20 @@ Acessível em `/orchestrator/produtos`. Também acessível pelo Release Orchestr
 ### Inline (kebab ⋮)
 - **Editar** — vai para `09-produtos-cadastro.md` modo edit.
 - **Módulos** — vai para `10-produtos-modulos-artefatos.md`.
+- **Catálogo funcional** — vai para `11-produtos-catalogo-funcional.md`.
 - **Ver releases** — vai para Release Orchestrator filtrado.
 - **Ver clientes** — vai para `02-clientes-lista.md` filtrado por este produto.
 - **Inativar / Ativar** — ADMIN — toggle status.
 
 ### Permissões
 
-| Ação | ADMIN | EDITOR | VIEWER |
+| Ação | ADMIN | EDITOR | LEITOR |
 |---|---|---|---|
 | Listar | ✅ | ✅ | ✅ |
 | Criar | ✅ | ❌ | ❌ |
 | Editar | ✅ | ✅ | ❌ |
 | Módulos | ✅ | ✅ | ❌ |
+| Catálogo funcional | ✅ | ✅ | 👁️ |
 | Inativar | ✅ | ❌ | ❌ |
 
 ---

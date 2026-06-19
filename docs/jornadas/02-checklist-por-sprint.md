@@ -35,21 +35,24 @@ Plano executável em sprints de **~2 semanas**. Ajuste a duração conforme o ti
 **Objetivo:** manual operando contra API real.
 
 ### Backend
-- [ ] Confirmar endpoints em `/api/v1/docflow/*` documentados
-- [ ] Validar login JWT `POST /api/v1/auth/login` (admin/editor seed)
+- [x] Confirmar endpoints em `/api/v1/docflow/*` documentados
+- [x] Validar login JWT `POST /api/v1/auth/login` (admin/editor seed)
+- [x] `GET /api/v1/auth/me` para usuário autenticado
 
 ### Frontend
-- [ ] Corrigir proxy ou prefixo services (`/api/doc-flow` → `/api/v1/docflow`)
-- [ ] Migrar `AuthApiService` de mock para HttpClient real
-- [ ] Implementar ou adaptar `GET /auth/me` (permissões no menu)
-- [ ] `ConfiguracaoService` → `EmpresaController` (logo empresa)
-- [ ] Interceptor JWT em todas as chamadas DocFlow
+- [x] Corrigir proxy ou prefixo services (`/api/doc-flow` → `/api/v1/docflow`)
+- [x] Migrar `AuthApiService` de mock para HttpClient real
+- [x] Implementar ou adaptar `GET /auth/me` (permissões do catálogo RBAC na base)
+- [x] `ConfiguracaoService` → `EmpresaController` (logo empresa)
+- [x] Interceptor JWT em todas as chamadas DocFlow
 
 ### QA (DoD)
-- [ ] Login → dashboard DocFlow
-- [ ] CRUD cliente + vínculos
-- [ ] Editar página → workflow até PUBLICADO
-- [ ] Gerar publicação → status GERANDO → SUCESSO → download ZIP
+- [x] Login `admin/admin` → dashboard DocFlow
+- [x] Menu filtrado por `/auth/me` (ex.: **Configurações** visível com `CONFIGURACAO:EDITAR`)
+- [x] CRUD cliente DocFlow (+ vínculos via API)
+- [x] Página até **PUBLICADO** → publicação **SUCESSO** → download ZIP
+
+_Validado em 2026-06-18: smoke test API (Postgres + `./mvnw spring-boot:run` perfil `dev`)._
 
 **Spec:** [`../doc-flow/README.md`](../doc-flow/README.md) § Integração
 

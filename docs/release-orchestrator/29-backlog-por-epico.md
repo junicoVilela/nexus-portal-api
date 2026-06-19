@@ -18,7 +18,7 @@ Necessário **antes** do orchestrator entrar.
 | Vincular release a versão por módulo (`ReleaseModuloVersao`) | Planejado | M |
 | Aba de upload de artefatos por módulo na release (`ArtefatoReleaseModulo`) | Planejado | L |
 | Renderer Markdown → PDF da release | Planejado | L |
-| Role `VIEWER` + permissões granulares | Planejado | M |
+| Role `LEITOR` + permissões granulares | Planejado | M |
 | Naming cleanup (`ProdutoRh` → `Produto`) | Sugerido | M |
 | *(pós-MVP)* Integração GitHub/Jenkins ao Produto | Backlog | XL |
 
@@ -47,8 +47,8 @@ User stories:
 
 | História | Tela | Prio |
 |---|---|---|
-| Como administrador, quero cadastrar domínios funcionais por produto | `10`/catálogo | P0 |
-| Como administrador, quero cadastrar funcionalidades dentro de cada domínio | `10`/catálogo | P0 |
+| Como administrador, quero cadastrar domínios funcionais por produto | `11` | P0 |
+| Como administrador, quero cadastrar funcionalidades dentro de cada domínio | `11` | P0 |
 | Como administrador, quero habilitar/desabilitar funcionalidades por cliente | `05` | P0 |
 | Como administrador, quero copiar configuração de um cliente para outro | `05` | P1 |
 | Como administrador, quero aplicar template padrão de funcionalidades | `05` | P2 |
