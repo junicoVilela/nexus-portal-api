@@ -1,6 +1,7 @@
 -- =============================================================================
 -- MÓDULO: release_orchestrator | BASELINE: schema (tabelas + constraints + índices)
--- Produtos, releases, itens, histórico, templates e módulos por produto (F0.3)
+-- Produtos, releases, itens, histórico, templates, módulos por produto (F0.3)
+-- e vínculo release ↔ versão por módulo (F0.4).
 -- =============================================================================
 
 
@@ -144,3 +145,31 @@ ALTER TABLE tb_modulo_produto
 CREATE INDEX idx_tb_modulo_produto_produto       ON tb_modulo_produto (produto_id);
 CREATE INDEX idx_tb_modulo_produto_produto_ordem ON tb_modulo_produto (produto_id, ordem);
 CREATE INDEX idx_tb_modulo_produto_ativo         ON tb_modulo_produto (ativo);
+
+-- -- vínculo release ↔ versão por módulo (F0.4) -- --
+
+CREATE TABLE tb_release_modulo_versao (
+  id                 UUID         NOT NULL DEFAULT gen_random_uuid(),
+  release_id         UUID         NOT NULL,
+  modulo_produto_id  UUID         NOT NULL,
+  versao             VARCHAR(80)  NOT NULL,
+  created_at         TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  updated_at         TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  created_by         VARCHAR(120),
+  updated_by         VARCHAR(120),
+  CONSTRAINT pk_tb_release_modulo_versao PRIMARY KEY (id)
+);
+
+ALTER TABLE tb_release_modulo_versao
+  ADD CONSTRAINT uq_tb_release_modulo_versao_release_modulo UNIQUE (release_id, modulo_produto_id);
+
+ALTER TABLE tb_release_modulo_versao
+  ADD CONSTRAINT fk_tb_release_modulo_versao_release
+  FOREIGN KEY (release_id) REFERENCES tb_release(id) ON DELETE CASCADE;
+
+ALTER TABLE tb_release_modulo_versao
+  ADD CONSTRAINT fk_tb_release_modulo_versao_modulo
+  FOREIGN KEY (modulo_produto_id) REFERENCES tb_modulo_produto(id);
+
+CREATE INDEX idx_tb_release_modulo_versao_release ON tb_release_modulo_versao (release_id);
+CREATE INDEX idx_tb_release_modulo_versao_modulo  ON tb_release_modulo_versao (modulo_produto_id);
