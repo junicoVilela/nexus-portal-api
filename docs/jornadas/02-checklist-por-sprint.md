@@ -72,19 +72,19 @@ Bloco curto no início da sprint pra fechar dívida técnica que ficou exposta n
 - [x] Teste de integração com Testcontainers: `AuthSeedsIntegrationTest` aplica V1–V17 num Postgres efêmero e valida login dos 3 seeds (`admin/admin`, `editor/editor`, `revisor/revisor`) — pega regressões nos seeds em CI antes do smoke manual
 
 ### Backend (release-orchestrator)
-- [ ] Migration + entidade `ModuloProduto` (tipos WEB/BATCH/BANCO/KETTLE/FUNC/REGRAS)
-- [ ] Migration + entidade `ReleaseModuloVersao`
-- [ ] Migration + entidade `ArtefatoReleaseModulo` + storage filesystem
-- [ ] CRUD módulos por produto
-- [ ] Endpoints upload / listar / excluir artefato por release+módulo
-- [ ] Testes service: upload, validação tipo, release publicada = imutável
+- [x] Migration + entidade `ModuloProduto` (tipos WEB/BATCH/BANCO/KETTLE/FUNC/REGRAS) — F0.3
+- [x] Migration + entidade `ReleaseModuloVersao` — F0.4
+- [x] Migration + entidade `ArtefatoReleaseModulo` + storage filesystem — F0.5
+- [x] CRUD módulos por produto — F0.6 part 1
+- [x] Endpoints upload / listar / excluir artefato por release+módulo — F0.6 part 2
+- [x] Testes service: upload, validação tipo, release publicada = imutável (10 testes em ArtefatoReleaseModuloServiceTest)
 
 ### Frontend
 - [ ] (Opcional neste sprint) stub ou API-only — UI na S2
 
 ### DoD
 - [x] CI rodando em ambos repos, teste de seeds verde (branch protection adiada — exige Pro)
-- [ ] Postman/curl: criar módulo WEB em DTEC-LD, upload `.war` na release em rascunho
+- [ ] Postman/curl: criar módulo WEB em DTEC-LD, upload `.war` na release em rascunho (validação manual pendente — endpoints prontos)
 
 **Specs:** `10-produtos-modulos-artefatos.md`, ROADMAP F0.3–F0.6
 
