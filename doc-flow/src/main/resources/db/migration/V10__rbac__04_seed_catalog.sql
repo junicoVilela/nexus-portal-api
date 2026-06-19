@@ -91,10 +91,9 @@ ON CONFLICT (codigo) DO NOTHING;
 
 INSERT INTO tb_grupo (id, codigo, nome, descricao, ativo, created_at, updated_at, created_by, updated_by)
 VALUES
-  ('00000000-0000-0000-0000-000000000801', 'ADMIN',   'Administradores', 'Grupo com todas as permissões.',                  true, now(), now(), 'seed', 'seed'),
-  ('00000000-0000-0000-0000-000000000802', 'EDITOR',  'Editores',        'CRUD completo no Doc Flow.',                       true, now(), now(), 'seed', 'seed'),
-  ('00000000-0000-0000-0000-000000000803', 'LEITOR',  'Leitores',        'Somente permissões de leitura (LER).',             true, now(), now(), 'seed', 'seed'),
-  ('00000000-0000-0000-0000-000000000804', 'REVISOR', 'Revisores',       'Leitura no Doc Flow + edição de páginas.',         true, now(), now(), 'seed', 'seed')
+  ('00000000-0000-0000-0000-000000000801', 'ADMIN',  'Administradores', 'Grupo com todas as permissões.',           true, now(), now(), 'seed', 'seed'),
+  ('00000000-0000-0000-0000-000000000802', 'EDITOR', 'Editores',        'CRUD completo no Doc Flow.',                 true, now(), now(), 'seed', 'seed'),
+  ('00000000-0000-0000-0000-000000000803', 'LEITOR', 'Leitores',        'Somente permissões de leitura (LER).',       true, now(), now(), 'seed', 'seed')
 ON CONFLICT (codigo) DO UPDATE SET
   nome = EXCLUDED.nome, descricao = EXCLUDED.descricao, ativo = EXCLUDED.ativo, updated_at = now();
 
@@ -119,22 +118,5 @@ INSERT INTO tb_grupo_permissao (grupo_id, permissao_id)
 SELECT '00000000-0000-0000-0000-000000000803', p.id
 FROM tb_permissao p
 WHERE p.acao = 'LER'
-  AND p.ativo = true
-ON CONFLICT DO NOTHING;
-
--- REVISOR → LER em todo Doc Flow + EDITAR em PAGINA
-INSERT INTO tb_grupo_permissao (grupo_id, permissao_id)
-SELECT '00000000-0000-0000-0000-000000000804', p.id
-FROM tb_permissao p
-JOIN tb_funcionalidade f ON f.id = p.funcionalidade_id
-WHERE f.codigo IN ('CLIENTE', 'PROJETO', 'MODULO', 'PAGINA', 'PUBLICACAO')
-  AND p.acao = 'LER'
-  AND p.ativo = true
-ON CONFLICT DO NOTHING;
-
-INSERT INTO tb_grupo_permissao (grupo_id, permissao_id)
-SELECT '00000000-0000-0000-0000-000000000804', p.id
-FROM tb_permissao p
-WHERE p.codigo = 'PAGINA:EDITAR'
   AND p.ativo = true
 ON CONFLICT DO NOTHING;

@@ -26,7 +26,7 @@ VALUES
     '00000000-0000-0000-0000-000000000703',
     'revisor',
     '$2b$10$p22zwg4H9Iu.0V3CVX//y.IVPSjrZWgZfdW0giT2J8oHAKYeNxA1a',
-    'Revisor de Conteúdo', 'REVISOR',
+    'Revisor de Conteúdo', 'EDITOR',
     true, now(), now(), 'seed', 'seed'
   )
 ON CONFLICT (username) DO NOTHING;
