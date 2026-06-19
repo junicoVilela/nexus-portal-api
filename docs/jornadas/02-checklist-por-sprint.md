@@ -66,10 +66,10 @@ _Validado em 2026-06-19: smoke test end-to-end — login JWT de `admin`/`editor`
 
 Bloco curto no início da sprint pra fechar dívida técnica que ficou exposta no fim da S0 (o bug do hash BCrypt do `revisor` só apareceu no smoke manual — CI teria pegado em PR).
 
-- [ ] GitHub Actions: workflow `ci.yml` rodando `./mvnw -pl doc-flow -am test` em push/PR pra `main` (`softon-portal-api`)
-- [ ] GitHub Actions: workflow `ci.yml` rodando `ng test --watch=false --browsers=ChromeHeadless` em push/PR pra `main` (`softon-portal-web`)
-- [ ] Branch protection em `main` (ambos repos): exigir PR + status check verde antes de merge
-- [ ] Teste de integração com Testcontainers: aplica V1–V17 num Postgres efêmero e valida login dos 3 seeds (`admin/admin`, `editor/editor`, `revisor/revisor`) — garante que regressões nos seeds quebram o build, não o smoke manual
+- [x] GitHub Actions: workflow `ci.yml` rodando `./mvnw test` em push/PR pra `main` (`softon-portal-api`) — _job `Test (Java 21)`_
+- [x] GitHub Actions: workflow `ci.yml` rodando `ng test --watch=false --browsers=ChromeHeadless` em push/PR pra `main` (`softon-portal-web`) — _job `Test (Node 22, Chrome headless)`_
+- [ ] ~~Branch protection em `main` (ambos repos)~~ — **bloqueado pelo plano:** branch protection e rulesets exigem GitHub Pro pra repos privados. Reabrir se decidirmos upgrade ou tornar repos públicos.
+- [x] Teste de integração com Testcontainers: `AuthSeedsIntegrationTest` aplica V1–V17 num Postgres efêmero e valida login dos 3 seeds (`admin/admin`, `editor/editor`, `revisor/revisor`) — pega regressões nos seeds em CI antes do smoke manual
 
 ### Backend (release-orchestrator)
 - [ ] Migration + entidade `ModuloProduto` (tipos WEB/BATCH/BANCO/KETTLE/FUNC/REGRAS)
@@ -83,7 +83,7 @@ Bloco curto no início da sprint pra fechar dívida técnica que ficou exposta n
 - [ ] (Opcional neste sprint) stub ou API-only — UI na S2
 
 ### DoD
-- [ ] CI rodando em ambos repos, branch protection ativa, teste de seeds verde
+- [x] CI rodando em ambos repos, teste de seeds verde (branch protection adiada — exige Pro)
 - [ ] Postman/curl: criar módulo WEB em DTEC-LD, upload `.war` na release em rascunho
 
 **Specs:** `10-produtos-modulos-artefatos.md`, ROADMAP F0.3–F0.6
