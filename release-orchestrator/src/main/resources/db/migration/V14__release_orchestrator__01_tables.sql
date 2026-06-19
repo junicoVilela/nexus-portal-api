@@ -1,12 +1,12 @@
 -- =============================================================================
--- RELEASE ORCHESTRATOR
--- produtos RH, releases, itens, histórico e templates
+-- MÓDULO: release_orchestrator | ETAPA 1–2: tabelas
+-- Produtos, releases, itens, histórico e templates
 -- =============================================================================
 
 CREATE TABLE tb_produto_rh (
-  id             UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+  id             UUID         NOT NULL DEFAULT gen_random_uuid(),
   nome           VARCHAR(200) NOT NULL,
-  sigla          VARCHAR(20)  NOT NULL UNIQUE,
+  sigla          VARCHAR(20)  NOT NULL,
   descricao      VARCHAR(500),
   cor            VARCHAR(20)  NOT NULL DEFAULT '#2563eb',
   responsavel_id UUID,
@@ -14,14 +14,13 @@ CREATE TABLE tb_produto_rh (
   created_at     TIMESTAMPTZ  NOT NULL DEFAULT now(),
   updated_at     TIMESTAMPTZ  NOT NULL DEFAULT now(),
   created_by     VARCHAR(120),
-  updated_by     VARCHAR(120)
+  updated_by     VARCHAR(120),
+  CONSTRAINT pk_tb_produto_rh PRIMARY KEY (id)
 );
 
--- -----------------------------------------------------------------------------
-
 CREATE TABLE tb_release (
-  id              UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
-  produto_id      UUID         NOT NULL REFERENCES tb_produto_rh(id),
+  id              UUID         NOT NULL DEFAULT gen_random_uuid(),
+  produto_id      UUID         NOT NULL,
   versao          VARCHAR(50)  NOT NULL,
   titulo          VARCHAR(200) NOT NULL,
   tipo            VARCHAR(30)  NOT NULL,
@@ -36,14 +35,12 @@ CREATE TABLE tb_release (
   updated_at      TIMESTAMPTZ  NOT NULL DEFAULT now(),
   created_by      VARCHAR(120),
   updated_by      VARCHAR(120),
-  CONSTRAINT uq_tb_release_produto_versao UNIQUE (produto_id, versao)
+  CONSTRAINT pk_tb_release PRIMARY KEY (id)
 );
 
--- -----------------------------------------------------------------------------
-
 CREATE TABLE tb_release_item (
-  id             UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
-  release_id     UUID         NOT NULL REFERENCES tb_release(id) ON DELETE CASCADE,
+  id             UUID         NOT NULL DEFAULT gen_random_uuid(),
+  release_id     UUID         NOT NULL,
   categoria      VARCHAR(40)  NOT NULL,
   titulo         VARCHAR(300) NOT NULL,
   descricao      TEXT,
@@ -56,26 +53,24 @@ CREATE TABLE tb_release_item (
   created_at     TIMESTAMPTZ  NOT NULL DEFAULT now(),
   updated_at     TIMESTAMPTZ  NOT NULL DEFAULT now(),
   created_by     VARCHAR(120),
-  updated_by     VARCHAR(120)
+  updated_by     VARCHAR(120),
+  CONSTRAINT pk_tb_release_item PRIMARY KEY (id)
 );
 
--- -----------------------------------------------------------------------------
-
 CREATE TABLE tb_release_historico (
-  id              UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
-  release_id      UUID         NOT NULL REFERENCES tb_release(id) ON DELETE CASCADE,
+  id              UUID         NOT NULL DEFAULT gen_random_uuid(),
+  release_id      UUID         NOT NULL,
   acao            VARCHAR(40)  NOT NULL,
   descricao       VARCHAR(500),
   status_anterior VARCHAR(30),
   status_novo     VARCHAR(30),
   usuario         VARCHAR(120),
-  created_at      TIMESTAMPTZ  NOT NULL DEFAULT now()
+  created_at      TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  CONSTRAINT pk_tb_release_historico PRIMARY KEY (id)
 );
 
--- -----------------------------------------------------------------------------
-
 CREATE TABLE tb_release_template (
-  id           UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+  id           UUID         NOT NULL DEFAULT gen_random_uuid(),
   nome         VARCHAR(200) NOT NULL,
   descricao    VARCHAR(500),
   tipo_release VARCHAR(30),
@@ -85,15 +80,6 @@ CREATE TABLE tb_release_template (
   created_at   TIMESTAMPTZ  NOT NULL DEFAULT now(),
   updated_at   TIMESTAMPTZ  NOT NULL DEFAULT now(),
   created_by   VARCHAR(120),
-  updated_by   VARCHAR(120)
+  updated_by   VARCHAR(120),
+  CONSTRAINT pk_tb_release_template PRIMARY KEY (id)
 );
-
--- -----------------------------------------------------------------------------
--- Índices
--- -----------------------------------------------------------------------------
-
-CREATE INDEX idx_tb_release_produto          ON tb_release          (produto_id);
-CREATE INDEX idx_tb_release_status           ON tb_release          (status);
-CREATE INDEX idx_tb_release_updated          ON tb_release          (updated_at DESC);
-CREATE INDEX idx_tb_release_item_release     ON tb_release_item     (release_id, ordem);
-CREATE INDEX idx_tb_release_historico_release ON tb_release_historico (release_id, created_at DESC);

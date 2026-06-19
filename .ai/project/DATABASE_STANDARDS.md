@@ -25,6 +25,9 @@ tb_auditoria_evento
 tb_usuario
 tb_preview_token
 tb_publicacao_changelog
+tb_dominio
+tb_funcionalidade
+tb_permissao
 tb_grupo
 tb_grupo_permissao
 tb_grupo_usuario
@@ -53,29 +56,48 @@ tabelas com inserts manuais (seeds).
 Migrations em:
 
 ```text
-{modulo}/src/main/resources/db/migration
+{modulo}/src/main/resources/db/migration/
 ```
 
-Numeração compartilhada entre módulos (V1, V2, V3… são únicos no classpath
-agregado).
+Numeração **global única** no classpath agregado (doc-flow + release-orchestrator).
 
-Padrão atual:
+**Documentação completa:** [`docs/MIGRATIONS.md`](../../docs/MIGRATIONS.md)
+
+### Convenção de nome
 
 ```text
-doc-flow/src/main/resources/db/migration/V1__schema_dominio.sql
-doc-flow/src/main/resources/db/migration/V2__schema_seguranca.sql
-doc-flow/src/main/resources/db/migration/V3__schema_grupos.sql
-release-orchestrator/src/main/resources/db/migration/V4__schema_release_orchestrator.sql
-doc-flow/src/main/resources/db/migration/V5__seed_demonstracao.sql
+V{n}__{modulo}__{etapa}_{descricao}.sql
+```
+
+Etapas por módulo (ordem de dependências):
+
+| Etapa | Sufixo | Conteúdo |
+|---|---|---|
+| 1 | *(implícito)* | Schema `public` + módulo lógico |
+| 2 | `01_tables` | Tabelas + PK |
+| 3 | `02_constraints` | UNIQUE, FK, CHECK |
+| 4 | `03_indexes` | Índices |
+| 5 | `04_seed_*` | Dados iniciais |
+| 6 | `05_alter_*` | Alterações incrementais |
+| 7 | `06_fix_*` / `07_fix_*` | Correções pontuais de dados |
+
+### Baseline atual (V1–V16)
+
+```text
+V1–V3   docflow              (tabelas, constraints, índices)
+V4–V6   seguranca            (tb_usuario)
+V7–V9   rbac                 (catálogo + grupos)
+V10–V13 seeds                (rbac, docflow demo, usuários, vínculos)
+V14–V16 release_orchestrator (tabelas, constraints, índices)
 ```
 
 ## Regras para migrations
 
 - Nunca alterar migration já aplicada em ambiente compartilhado.
-- Criar nova migration para alteração futura.
-- Nomes descritivos: `V{n}__o_que_faz.sql`.
-- Separar migrations por módulo quando possível.
-- Evitar scripts gigantes sem necessidade.
+- Criar nova migration na etapa 6 (alter) ou 7 (fix).
+- Separar por módulo e por etapa (tabelas / constraints / índices / seed).
+- Nomes descritivos: `V17__release_orchestrator__05_alter_entrega_status.sql`.
+- Evitar scripts gigantes que misturam etapas.
 
 ## Nomenclatura de tabelas
 
