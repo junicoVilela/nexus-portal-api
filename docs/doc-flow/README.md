@@ -12,7 +12,7 @@ Módulo Maven **`doc-flow/`** do `softon-portal-api`. Gestão de manuais: client
 | Item | Caminho |
 |---|---|
 | Código | `softon-portal-api/doc-flow/src/main/java/br/com/softon/portal/docflow/` |
-| Migrations | `doc-flow/src/main/resources/db/migration/` — ver [`../MIGRATIONS.md`](../MIGRATIONS.md) |
+| Migrations | `application/src/main/resources/db/migration/` (todas centralizadas) — ver [`../MIGRATIONS.md`](../MIGRATIONS.md) |
 | Resumo IA | `softon-portal-api/.ai/modules/docflow.md` |
 
 Pacote base: `br.com.softon.portal.docflow.{controller|service|repository|entity|dto}`

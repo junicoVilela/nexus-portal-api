@@ -53,13 +53,15 @@ tabelas com inserts manuais (seeds).
 
 ## Flyway
 
-Migrations em:
+Migrations em **um único diretório** no módulo `application`:
 
 ```text
-{modulo}/src/main/resources/db/migration/
+application/src/main/resources/db/migration/
 ```
 
-Numeração **global única** no classpath agregado (doc-flow + release-orchestrator).
+Mesmo que o nome do arquivo carregue o módulo lógico (`V{n}__{modulo}__...`),
+o banco é único (schema `public`) e a co-localização física simplifica
+revisão e numeração. A convenção `{modulo}` continua no nome do arquivo.
 
 **Documentação completa:** [`docs/MIGRATIONS.md`](../../docs/MIGRATIONS.md)
 

@@ -1,9 +1,9 @@
 # Flyway — migrations do portal
 
-Convenção de migrations por **módulo lógico** e **etapa de DDL/DML**, com numeração **global única** no classpath (doc-flow + release-orchestrator).
+Convenção de migrations por **módulo lógico** e **etapa de DDL/DML**, com numeração **global única** num diretório único.
 
-> Pasta física: `{modulo}/src/main/resources/db/migration/`  
-> Padrão de nome: `V{n}__{modulo}__{etapa}_{descricao}.sql`
+> Pasta física: `application/src/main/resources/db/migration/` (todas as migrations vivem juntas)  
+> Padrão de nome: `V{n}__{modulo}__{etapa}_{descricao}.sql` (o módulo está só no nome do arquivo)
 
 ---
 
