@@ -1,7 +1,7 @@
 -- =============================================================================
 -- MÓDULO: release_orchestrator | BASELINE: schema (tabelas + constraints + índices)
--- Produtos, releases, itens, histórico, templates, módulos por produto (F0.3)
--- e vínculo release ↔ versão por módulo (F0.4).
+-- Produtos, releases, itens, histórico, templates, módulos por produto (F0.3),
+-- vínculo release ↔ versão por módulo (F0.4) e artefatos uploadados (F0.5).
 -- =============================================================================
 
 
@@ -173,3 +173,35 @@ ALTER TABLE tb_release_modulo_versao
 
 CREATE INDEX idx_tb_release_modulo_versao_release ON tb_release_modulo_versao (release_id);
 CREATE INDEX idx_tb_release_modulo_versao_modulo  ON tb_release_modulo_versao (modulo_produto_id);
+
+-- -- artefatos uploadados manualmente (F0.5) -- --
+
+CREATE TABLE tb_artefato_release_modulo (
+  id                  UUID         NOT NULL DEFAULT gen_random_uuid(),
+  release_id          UUID         NOT NULL,
+  modulo_produto_id   UUID         NOT NULL,
+  nome_arquivo        VARCHAR(255) NOT NULL,
+  caminho_armazenado  VARCHAR(700) NOT NULL,
+  sha256              VARCHAR(64)  NOT NULL,
+  tamanho_bytes       BIGINT       NOT NULL,
+  observacao          TEXT,
+  created_at          TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  updated_at          TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  created_by          VARCHAR(120),
+  updated_by          VARCHAR(120),
+  CONSTRAINT pk_tb_artefato_release_modulo PRIMARY KEY (id)
+);
+
+ALTER TABLE tb_artefato_release_modulo
+  ADD CONSTRAINT fk_tb_artefato_release_modulo_release
+  FOREIGN KEY (release_id) REFERENCES tb_release(id) ON DELETE CASCADE;
+
+ALTER TABLE tb_artefato_release_modulo
+  ADD CONSTRAINT fk_tb_artefato_release_modulo_modulo
+  FOREIGN KEY (modulo_produto_id) REFERENCES tb_modulo_produto(id);
+
+CREATE INDEX idx_tb_artefato_release_modulo_release_modulo
+  ON tb_artefato_release_modulo (release_id, modulo_produto_id);
+
+CREATE INDEX idx_tb_artefato_release_modulo_sha256
+  ON tb_artefato_release_modulo (sha256);

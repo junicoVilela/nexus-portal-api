@@ -34,3 +34,7 @@ docflow:
     gateway-api-key: test-gateway-key
   cors:
     allowed-origins: http://localhost
+
+release-orchestrator:
+  storage:
+    artefatos-dir: ./target/test-storage/artefatos

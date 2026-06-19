@@ -47,6 +47,10 @@ docflow:
   cors:
     allowed-origins: http://localhost:4200,http://localhost:4201,http://localhost:4300
 
+release-orchestrator:
+  storage:
+    artefatos-dir: ${ARTEFATOS_DIR:./storage/artefatos}
+
 logging:
   level:
     br.com.softon.docflow: DEBUG
