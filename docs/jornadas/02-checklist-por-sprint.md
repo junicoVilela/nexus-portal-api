@@ -118,19 +118,19 @@ Bloco curto no início da sprint pra fechar dívida técnica que ficou exposta n
 **Objetivo:** orchestrator conhece clientes operacionais.
 
 ### Backend
-- [ ] Migrations: Cliente, Contato, ConfigEntrega, Dominio, Funcionalidade
-- [ ] Migrations: ClienteFuncionalidade, ClienteProduto, ClienteProdutoModulo
-- [ ] CRUD Cliente + Contatos
-- [ ] CRUD Domínio/Funcionalidade por produto
-- [ ] Matriz ClienteFuncionalidade
-- [ ] Produtos e módulos contratados + `versaoAtual` por módulo
-- [ ] Config entrega (MVP: destino PASTA local)
+- [x] Migrations: Cliente, Contato, ConfigEntrega, Dominio, Funcionalidade — F1.2a/b, F1.3
+- [x] Migrations: ClienteFuncionalidade, ClienteProduto, ClienteProdutoModulo — F1.4, F1.5
+- [x] CRUD Cliente + Contatos — F1.2a/b
+- [x] CRUD Domínio/Funcionalidade por produto — F1.3
+- [x] Matriz ClienteFuncionalidade — F1.4
+- [x] Produtos e módulos contratados + `versaoAtual` por módulo — F1.5
+- [x] Config entrega (MVP: destino PASTA local) — F1.2b
 
 ### Frontend
 - [ ] (Opcional) telas na S5 — validar via API neste sprint
 
 ### DoD
-- [ ] Cliente ACME cadastrado: DTEC-LD contratado, módulos WEB+BANCO, v1.4.0 instalada, 23 funcionalidades marcadas
+- [ ] Cliente ACME cadastrado: DTEC-LD contratado, módulos WEB+BANCO, v1.4.0 instalada, 23 funcionalidades marcadas (validação manual via Postman — endpoints prontos)
 
 **Specs:** `02`–`07`, ROADMAP F1.2–F1.6
 

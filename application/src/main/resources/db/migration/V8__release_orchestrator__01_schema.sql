@@ -397,3 +397,67 @@ CREATE INDEX idx_tb_cliente_funcionalidade_produto_funcionalidade
 
 CREATE INDEX idx_tb_cliente_funcionalidade_produto_habilitada
   ON tb_cliente_funcionalidade_produto (cliente_id, habilitada);
+
+-- -- contratos cliente × produto + módulos contratados (F1.5) -- --
+
+CREATE TABLE tb_cliente_produto (
+  id          UUID         NOT NULL DEFAULT gen_random_uuid(),
+  cliente_id  UUID         NOT NULL,
+  produto_id  UUID         NOT NULL,
+  ambiente    VARCHAR(20)  NOT NULL,
+  ativo       BOOLEAN      NOT NULL DEFAULT TRUE,
+  created_at  TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  updated_at  TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  created_by  VARCHAR(120),
+  updated_by  VARCHAR(120),
+  CONSTRAINT pk_tb_cliente_produto PRIMARY KEY (id)
+);
+
+ALTER TABLE tb_cliente_produto
+  ADD CONSTRAINT uq_tb_cliente_produto_par UNIQUE (cliente_id, produto_id);
+
+ALTER TABLE tb_cliente_produto
+  ADD CONSTRAINT fk_tb_cliente_produto_cliente
+  FOREIGN KEY (cliente_id) REFERENCES tb_cliente_orchestrator(id) ON DELETE CASCADE;
+
+ALTER TABLE tb_cliente_produto
+  ADD CONSTRAINT fk_tb_cliente_produto_produto
+  FOREIGN KEY (produto_id) REFERENCES tb_produto_rh(id);
+
+ALTER TABLE tb_cliente_produto
+  ADD CONSTRAINT ck_tb_cliente_produto_ambiente
+  CHECK (ambiente IN ('PROD', 'HOM', 'DEV', 'TEST'));
+
+CREATE INDEX idx_tb_cliente_produto_cliente ON tb_cliente_produto (cliente_id);
+CREATE INDEX idx_tb_cliente_produto_produto ON tb_cliente_produto (produto_id);
+
+CREATE TABLE tb_cliente_produto_modulo (
+  id                  UUID         NOT NULL DEFAULT gen_random_uuid(),
+  cliente_produto_id  UUID         NOT NULL,
+  modulo_produto_id   UUID         NOT NULL,
+  versao_atual        VARCHAR(80),
+  ativo               BOOLEAN      NOT NULL DEFAULT TRUE,
+  created_at          TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  updated_at          TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  created_by          VARCHAR(120),
+  updated_by          VARCHAR(120),
+  CONSTRAINT pk_tb_cliente_produto_modulo PRIMARY KEY (id)
+);
+
+ALTER TABLE tb_cliente_produto_modulo
+  ADD CONSTRAINT uq_tb_cliente_produto_modulo_par
+  UNIQUE (cliente_produto_id, modulo_produto_id);
+
+ALTER TABLE tb_cliente_produto_modulo
+  ADD CONSTRAINT fk_tb_cliente_produto_modulo_cliente_produto
+  FOREIGN KEY (cliente_produto_id) REFERENCES tb_cliente_produto(id) ON DELETE CASCADE;
+
+ALTER TABLE tb_cliente_produto_modulo
+  ADD CONSTRAINT fk_tb_cliente_produto_modulo_modulo
+  FOREIGN KEY (modulo_produto_id) REFERENCES tb_modulo_produto(id);
+
+CREATE INDEX idx_tb_cliente_produto_modulo_cliente_produto
+  ON tb_cliente_produto_modulo (cliente_produto_id);
+
+CREATE INDEX idx_tb_cliente_produto_modulo_modulo
+  ON tb_cliente_produto_modulo (modulo_produto_id);
