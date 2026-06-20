@@ -11,6 +11,7 @@ import java.util.List;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import br.com.softon.portal.shared.security.SecurityRoles;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -27,7 +28,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/v1/docflow/projetos")
-@PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
+@PreAuthorize(SecurityRoles.WRITE)
 public class ProjetoController {
   private final ProjetoService projetoService;
 
@@ -42,6 +43,7 @@ public class ProjetoController {
     return ProjetoResponse.from(projetoService.atualizar(id, request));
   }
 
+  @PreAuthorize(SecurityRoles.READ)
   @GetMapping
   public PageResponse<ProjetoResponse> listar(
       @RequestParam(required = false) String nome,
@@ -57,6 +59,7 @@ public class ProjetoController {
         ProjetoResponse::from);
   }
 
+  @PreAuthorize(SecurityRoles.READ)
   @GetMapping("/{id}")
   public ProjetoResponse buscar(@PathVariable UUID id) {
     return ProjetoResponse.from(projetoService.buscar(id));

@@ -20,6 +20,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import br.com.softon.portal.shared.security.SecurityRoles;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -41,12 +42,13 @@ import br.com.softon.portal.docflow.dto.response.PaginaRevisaoResponse;
 @RestController
 @RequestMapping("/api/v1/docflow/paginas")
 @RequiredArgsConstructor
-@PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
+@PreAuthorize(SecurityRoles.WRITE)
 public class PaginaController {
 
   private final PaginaService paginaService;
   private final PaginaAnexoService paginaAnexoService;
 
+  @PreAuthorize(SecurityRoles.READ)
   @GetMapping("/resumo-por-status")
   public Map<String, Long> resumoPorStatusGlobal() {
     Map<String, Long> map = new LinkedHashMap<>();
@@ -66,6 +68,7 @@ public class PaginaController {
     return PaginaResponse.from(paginaService.atualizar(id, request, principal));
   }
 
+  @PreAuthorize(SecurityRoles.READ)
   @GetMapping
   public PageResponse<PaginaResponse> listar(@RequestParam(required = false) String titulo,
       @RequestParam(required = false) UUID moduloId,
@@ -97,6 +100,7 @@ public class PaginaController {
         PaginaResponse::from);
   }
 
+  @PreAuthorize(SecurityRoles.READ)
   @GetMapping("/{id}")
   public PaginaResponse buscar(@PathVariable UUID id) {
     return PaginaResponse.from(paginaService.buscar(id));
@@ -127,11 +131,13 @@ public class PaginaController {
     return PaginaResponse.from(paginaService.arquivar(id, principal));
   }
 
+  @PreAuthorize(SecurityRoles.READ)
   @GetMapping(value = "/{id}/preview", produces = MediaType.TEXT_HTML_VALUE)
   public String preview(@PathVariable UUID id) {
     return paginaService.preview(id);
   }
 
+  @PreAuthorize(SecurityRoles.READ)
   @GetMapping("/{id}/revisoes")
   public PageResponse<PaginaRevisaoResponse> revisoes(
       @PathVariable UUID id,
@@ -158,6 +164,7 @@ public class PaginaController {
     paginaService.reordenar(request.paginaIds(), principal);
   }
 
+  @PreAuthorize(SecurityRoles.READ)
   @GetMapping("/{id}/anexos")
   public List<PaginaAnexoResponse> anexos(@PathVariable UUID id) {
     return paginaAnexoService.listar(id).stream().map(PaginaAnexoResponse::from).toList();
@@ -169,6 +176,7 @@ public class PaginaController {
     return PaginaAnexoResponse.from(paginaAnexoService.anexar(id, file));
   }
 
+  @PreAuthorize(SecurityRoles.READ)
   @GetMapping("/{paginaId}/anexos/{anexoId}/download")
   public ResponseEntity<Resource> baixarAnexo(@PathVariable UUID paginaId, @PathVariable UUID anexoId) {
     var anexo = paginaAnexoService.buscar(anexoId);

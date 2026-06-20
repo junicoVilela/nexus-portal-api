@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import br.com.softon.portal.shared.security.SecurityRoles;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -23,11 +24,12 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/v1/release-orchestrator/releases/{releaseId}/itens")
-@PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
+@PreAuthorize(SecurityRoles.WRITE)
 public class ReleaseItemController {
 
     private final ReleaseItemService service;
 
+    @PreAuthorize(SecurityRoles.READ)
     @GetMapping
     public List<ReleaseItemResponse> listar(@PathVariable UUID releaseId) {
         return service.listar(releaseId).stream()

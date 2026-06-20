@@ -8,6 +8,7 @@ import java.util.UUID;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import br.com.softon.portal.shared.security.SecurityRoles;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -25,7 +26,7 @@ public class PreviewController {
   private final PreviewTokenService previewTokenService;
 
   @PostMapping("/api/v1/preview-tokens")
-  @PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
+  @PreAuthorize(SecurityRoles.WRITE)
   public PreviewTokenResponse gerarToken(
       @RequestParam UUID clienteId,
       @RequestParam(defaultValue = "72") int horasValidade,
@@ -35,17 +36,18 @@ public class PreviewController {
   }
 
   @GetMapping("/api/v1/preview-tokens")
-  @PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
+  @PreAuthorize(SecurityRoles.WRITE)
   public List<PreviewTokenResponse> listar(@RequestParam UUID clienteId) {
     return previewTokenService.listar(clienteId).stream().map(PreviewTokenResponse::from).toList();
   }
 
   @DeleteMapping("/api/v1/preview-tokens/{id}")
-  @PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
+  @PreAuthorize(SecurityRoles.WRITE)
   public void revogar(@PathVariable UUID id, Principal principal) {
     previewTokenService.revogar(id, principal);
   }
 
+  @PreAuthorize(SecurityRoles.READ)
   @GetMapping(value = "/api/v1/preview/{token}", produces = MediaType.TEXT_HTML_VALUE)
   public ResponseEntity<String> preview(@PathVariable String token) {
     String html = previewTokenService.renderizarPreview(token);

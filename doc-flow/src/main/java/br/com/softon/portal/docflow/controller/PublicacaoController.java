@@ -23,6 +23,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import br.com.softon.portal.shared.security.SecurityRoles;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -40,7 +41,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/v1/docflow/publicacoes")
-@PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
+@PreAuthorize(SecurityRoles.WRITE)
 public class PublicacaoController {
 
   private final PublicacaoService publicacaoService;
@@ -54,6 +55,7 @@ public class PublicacaoController {
         request.observacao(), principal));
   }
 
+  @PreAuthorize(SecurityRoles.READ)
   @GetMapping
   public PageResponse<PublicacaoResponse> listar(
       @RequestParam(required = false) UUID clienteId,
@@ -69,6 +71,7 @@ public class PublicacaoController {
         PublicacaoResponse::from);
   }
 
+  @PreAuthorize(SecurityRoles.READ)
   @GetMapping("/{id}")
   public PublicacaoResponse buscar(@PathVariable UUID id) {
     return PublicacaoResponse.from(publicacaoService.buscar(id));
@@ -79,21 +82,25 @@ public class PublicacaoController {
     return PublicacaoResponse.from(publicacaoService.reprocessar(id, principal));
   }
 
+  @PreAuthorize(SecurityRoles.READ)
   @GetMapping("/preview")
   public List<PaginaResponse> preview(@RequestParam UUID clienteId) {
     return publicacaoService.preverPaginas(clienteId);
   }
 
+  @PreAuthorize(SecurityRoles.READ)
   @GetMapping(value = "/preview-html", produces = MediaType.TEXT_HTML_VALUE)
   public String previewHtml(@RequestParam UUID clienteId, @RequestParam(required = false) String versao) {
     return publicacaoService.previewHtml(clienteId, versao);
   }
 
+  @PreAuthorize(SecurityRoles.READ)
   @GetMapping("/diagnostico")
   public List<DiagnosticoPublicacao> diagnostico(@RequestParam UUID clienteId) {
     return publicacaoService.diagnosticar(clienteId);
   }
 
+  @PreAuthorize(SecurityRoles.READ)
   @GetMapping("/{id}/download")
   public ResponseEntity<Resource> download(@PathVariable UUID id) {
     Publicacao publicacao = publicacaoService.buscar(id);
@@ -105,6 +112,7 @@ public class PublicacaoController {
         .body(resource);
   }
 
+  @PreAuthorize(SecurityRoles.READ)
   @GetMapping("/{id}/download-token")
   public DownloadTokenResponse emitirTokenDownload(@PathVariable UUID id) {
     publicacaoService.recursoPacoteDownloadPublico(id);
@@ -113,6 +121,7 @@ public class PublicacaoController {
         "/api/v1/public/publicacoes/download");
   }
 
+  @PreAuthorize(SecurityRoles.READ)
   @GetMapping(value = "/{id}/download-pdf", produces = MediaType.APPLICATION_PDF_VALUE)
   public ResponseEntity<Resource> downloadPdf(@PathVariable UUID id) {
     Publicacao publicacao = publicacaoService.buscar(id);
@@ -127,6 +136,7 @@ public class PublicacaoController {
         .body(new ByteArrayResource(pdf));
   }
 
+  @PreAuthorize(SecurityRoles.READ)
   @GetMapping("/{id}/changelog")
   public List<ChangelogItemResponse> changelog(@PathVariable UUID id) {
     return publicacaoService.listarChangelog(id).stream()

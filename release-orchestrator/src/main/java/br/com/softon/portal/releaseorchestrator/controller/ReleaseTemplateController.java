@@ -14,6 +14,7 @@ import java.util.UUID;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import br.com.softon.portal.shared.security.SecurityRoles;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -30,7 +31,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/v1/release-orchestrator/templates")
-@PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
+@PreAuthorize(SecurityRoles.WRITE)
 public class ReleaseTemplateController {
 
     private final ReleaseTemplateService service;
@@ -53,6 +54,7 @@ public class ReleaseTemplateController {
         return ReleaseTemplateResponse.from(service.alterarStatus(id, request));
     }
 
+    @PreAuthorize(SecurityRoles.READ)
     @GetMapping
     public PageResponse<ReleaseTemplateResponse> listar(
             @RequestParam(required = false) String nome,
@@ -68,6 +70,7 @@ public class ReleaseTemplateController {
                 ReleaseTemplateResponse::from);
     }
 
+    @PreAuthorize(SecurityRoles.READ)
     @GetMapping("/{id}")
     public ReleaseTemplateResponse buscar(@PathVariable UUID id) {
         return ReleaseTemplateResponse.from(service.buscar(id));

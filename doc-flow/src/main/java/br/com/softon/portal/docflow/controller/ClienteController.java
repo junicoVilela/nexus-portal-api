@@ -16,6 +16,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import br.com.softon.portal.shared.security.SecurityRoles;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -36,7 +37,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/v1/docflow/clientes")
-@PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
+@PreAuthorize(SecurityRoles.WRITE)
 public class ClienteController {
   private final ClienteService clienteService;
   private final ClienteLogoService clienteLogoService;
@@ -52,6 +53,7 @@ public class ClienteController {
     return ClienteResponse.from(clienteService.atualizar(id, request));
   }
 
+  @PreAuthorize(SecurityRoles.READ)
   @GetMapping
   public PageResponse<ClienteResponse> listar(
       @RequestParam(required = false) String nome,
@@ -67,6 +69,7 @@ public class ClienteController {
         ClienteResponse::from);
   }
 
+  @PreAuthorize(SecurityRoles.READ)
   @GetMapping("/{id}")
   public ClienteResponse buscar(@PathVariable UUID id) {
     return ClienteResponse.from(clienteService.buscar(id));
@@ -90,6 +93,7 @@ public class ClienteController {
     clienteService.vincularPaginas(id, request.paginaIds());
   }
 
+  @PreAuthorize(SecurityRoles.READ)
   @GetMapping("/{id}/vinculos")
   public Map<String, List<UUID>> vinculos(@PathVariable UUID id) {
     return Map.of(
@@ -110,6 +114,7 @@ public class ClienteController {
     clienteLogoService.salvarLogo(id, file);
   }
 
+  @PreAuthorize(SecurityRoles.READ)
   @GetMapping("/{id}/logo")
   public ResponseEntity<Resource> getLogo(@PathVariable UUID id) {
     return clienteLogoService.servir(id);

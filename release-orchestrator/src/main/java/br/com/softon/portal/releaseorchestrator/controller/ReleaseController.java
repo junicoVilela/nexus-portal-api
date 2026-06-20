@@ -20,6 +20,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import br.com.softon.portal.shared.security.SecurityRoles;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -36,7 +37,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/v1/release-orchestrator/releases")
-@PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
+@PreAuthorize(SecurityRoles.WRITE)
 public class ReleaseController {
 
     private final ReleaseService service;
@@ -83,6 +84,7 @@ public class ReleaseController {
         return ReleaseResponse.from(release, 0L);
     }
 
+    @PreAuthorize(SecurityRoles.READ)
     @GetMapping("/{id}/historico")
     public List<ReleaseHistoricoResponse> historico(@PathVariable UUID id) {
         return service.buscarHistorico(id).stream()
@@ -90,11 +92,13 @@ public class ReleaseController {
                 .toList();
     }
 
+    @PreAuthorize(SecurityRoles.READ)
     @GetMapping("/{id}/validar")
     public RevisaoValidacaoResponse validar(@PathVariable UUID id) {
         return service.validar(id);
     }
 
+    @PreAuthorize(SecurityRoles.READ)
     @GetMapping
     public PageResponse<ReleaseResponse> listar(
             @RequestParam(required = false) String q,
@@ -115,6 +119,7 @@ public class ReleaseController {
                 r -> ReleaseResponse.from(r, service.contarItens(r.getId())));
     }
 
+    @PreAuthorize(SecurityRoles.READ)
     @GetMapping("/{id}")
     public ReleaseResponse buscar(@PathVariable UUID id) {
         Release release = service.buscar(id);

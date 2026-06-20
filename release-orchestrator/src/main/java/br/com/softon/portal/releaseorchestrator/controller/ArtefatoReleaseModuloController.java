@@ -12,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import br.com.softon.portal.shared.security.SecurityRoles;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -25,11 +26,12 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/v1/release-orchestrator/releases/{releaseId}/modulos/{moduloId}/artefatos")
-@PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
+@PreAuthorize(SecurityRoles.WRITE)
 public class ArtefatoReleaseModuloController {
 
   private final ArtefatoReleaseModuloService service;
 
+  @PreAuthorize(SecurityRoles.READ)
   @GetMapping
   public List<ArtefatoReleaseModuloResponse> listar(@PathVariable UUID releaseId,
       @PathVariable UUID moduloId) {
@@ -48,6 +50,7 @@ public class ArtefatoReleaseModuloController {
         service.upload(releaseId, moduloId, file, observacao));
   }
 
+  @PreAuthorize(SecurityRoles.READ)
   @GetMapping("/{id}/download")
   public ResponseEntity<Resource> download(@PathVariable UUID releaseId,
       @PathVariable UUID moduloId, @PathVariable UUID id) {

@@ -11,6 +11,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import br.com.softon.portal.shared.security.SecurityRoles;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -25,16 +26,18 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/v1/release-orchestrator/produtos/{produtoId}/modulos")
-@PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
+@PreAuthorize(SecurityRoles.WRITE)
 public class ModuloProdutoController {
 
   private final ModuloProdutoService service;
 
+  @PreAuthorize(SecurityRoles.READ)
   @GetMapping
   public List<ModuloProdutoResponse> listar(@PathVariable UUID produtoId) {
     return service.listar(produtoId).stream().map(ModuloProdutoResponse::from).toList();
   }
 
+  @PreAuthorize(SecurityRoles.READ)
   @GetMapping("/{id}")
   public ModuloProdutoResponse buscar(@PathVariable UUID produtoId, @PathVariable UUID id) {
     return ModuloProdutoResponse.from(service.buscar(produtoId, id));

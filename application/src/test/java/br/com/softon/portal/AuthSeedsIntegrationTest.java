@@ -66,6 +66,15 @@ class AuthSeedsIntegrationTest {
             "PUBLICACAO:LER");
   }
 
+  @Test
+  void leitor_loga_e_pertence_ao_grupo_LEITOR_com_somente_LER() throws Exception {
+    Map<String, Object> me = loginEBuscarMe("leitor", "leitor");
+    assertThat(grupos(me)).containsExactly("LEITOR");
+    assertThat(permissoes(me)).isNotEmpty();
+    // Todas as permissões de LEITOR são :LER
+    assertThat(permissoes(me)).allMatch(p -> p.endsWith(":LER"));
+  }
+
   @SuppressWarnings("unchecked")
   private Map<String, Object> loginEBuscarMe(String username, String password) throws Exception {
     String loginBody = json.writeValueAsString(Map.of("username", username, "password", password));
