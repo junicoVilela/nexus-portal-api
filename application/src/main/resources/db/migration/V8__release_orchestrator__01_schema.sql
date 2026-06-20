@@ -512,3 +512,65 @@ CREATE INDEX idx_tb_proxima_entrega_produto       ON tb_proxima_entrega (produto
 CREATE INDEX idx_tb_proxima_entrega_release       ON tb_proxima_entrega (release_id);
 CREATE INDEX idx_tb_proxima_entrega_data_prevista ON tb_proxima_entrega (data_prevista);
 CREATE INDEX idx_tb_proxima_entrega_status        ON tb_proxima_entrega (status);
+
+-- -- entrega executada (F1.8) -- --
+
+CREATE TABLE tb_entrega (
+  id                       UUID         NOT NULL DEFAULT gen_random_uuid(),
+  cliente_id               UUID         NOT NULL,
+  produto_id               UUID         NOT NULL,
+  release_id               UUID         NOT NULL,
+  proxima_entrega_id       UUID,
+  entrega_original_id      UUID,
+  ambiente                 VARCHAR(20)  NOT NULL,
+  status                   VARCHAR(20)  NOT NULL,
+  data_inicio_geracao      TIMESTAMPTZ,
+  data_conclusao           TIMESTAMPTZ,
+  responsavel_id           UUID,
+  arquivo_pacote_caminho   VARCHAR(700),
+  arquivo_pacote_sha256    VARCHAR(64),
+  tamanho_bytes            BIGINT,
+  observacoes              TEXT,
+  falha_motivo             TEXT,
+  created_at               TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  updated_at               TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  created_by               VARCHAR(120),
+  updated_by               VARCHAR(120),
+  CONSTRAINT pk_tb_entrega PRIMARY KEY (id)
+);
+
+ALTER TABLE tb_entrega
+  ADD CONSTRAINT fk_tb_entrega_cliente
+  FOREIGN KEY (cliente_id) REFERENCES tb_cliente_orchestrator(id);
+
+ALTER TABLE tb_entrega
+  ADD CONSTRAINT fk_tb_entrega_produto
+  FOREIGN KEY (produto_id) REFERENCES tb_produto_rh(id);
+
+ALTER TABLE tb_entrega
+  ADD CONSTRAINT fk_tb_entrega_release
+  FOREIGN KEY (release_id) REFERENCES tb_release(id);
+
+ALTER TABLE tb_entrega
+  ADD CONSTRAINT fk_tb_entrega_proxima_entrega
+  FOREIGN KEY (proxima_entrega_id) REFERENCES tb_proxima_entrega(id);
+
+ALTER TABLE tb_entrega
+  ADD CONSTRAINT fk_tb_entrega_original
+  FOREIGN KEY (entrega_original_id) REFERENCES tb_entrega(id);
+
+ALTER TABLE tb_entrega
+  ADD CONSTRAINT ck_tb_entrega_ambiente
+  CHECK (ambiente IN ('PROD', 'HOM', 'DEV', 'TEST'));
+
+ALTER TABLE tb_entrega
+  ADD CONSTRAINT ck_tb_entrega_status
+  CHECK (status IN ('RASCUNHO', 'EM_GERACAO', 'CONCLUIDA', 'FALHA', 'CANCELADA'));
+
+CREATE INDEX idx_tb_entrega_cliente            ON tb_entrega (cliente_id);
+CREATE INDEX idx_tb_entrega_produto            ON tb_entrega (produto_id);
+CREATE INDEX idx_tb_entrega_release            ON tb_entrega (release_id);
+CREATE INDEX idx_tb_entrega_proxima_entrega    ON tb_entrega (proxima_entrega_id);
+CREATE INDEX idx_tb_entrega_original           ON tb_entrega (entrega_original_id);
+CREATE INDEX idx_tb_entrega_status             ON tb_entrega (status);
+CREATE INDEX idx_tb_entrega_created            ON tb_entrega (created_at DESC);
