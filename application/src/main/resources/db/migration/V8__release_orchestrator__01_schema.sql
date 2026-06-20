@@ -574,3 +574,35 @@ CREATE INDEX idx_tb_entrega_proxima_entrega    ON tb_entrega (proxima_entrega_id
 CREATE INDEX idx_tb_entrega_original           ON tb_entrega (entrega_original_id);
 CREATE INDEX idx_tb_entrega_status             ON tb_entrega (status);
 CREATE INDEX idx_tb_entrega_created            ON tb_entrega (created_at DESC);
+
+-- -- seleção de módulos por entrega (F1.9) -- --
+
+CREATE TABLE tb_entrega_modulo (
+  id                 UUID         NOT NULL DEFAULT gen_random_uuid(),
+  entrega_id         UUID         NOT NULL,
+  modulo_produto_id  UUID         NOT NULL,
+  versao_from        VARCHAR(80),
+  versao_to          VARCHAR(80),
+  selecionado        BOOLEAN      NOT NULL,
+  fora_contrato      BOOLEAN      NOT NULL DEFAULT FALSE,
+  ordem              INT          NOT NULL DEFAULT 0,
+  created_at         TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  updated_at         TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  created_by         VARCHAR(120),
+  updated_by         VARCHAR(120),
+  CONSTRAINT pk_tb_entrega_modulo PRIMARY KEY (id)
+);
+
+ALTER TABLE tb_entrega_modulo
+  ADD CONSTRAINT uq_tb_entrega_modulo_par UNIQUE (entrega_id, modulo_produto_id);
+
+ALTER TABLE tb_entrega_modulo
+  ADD CONSTRAINT fk_tb_entrega_modulo_entrega
+  FOREIGN KEY (entrega_id) REFERENCES tb_entrega(id) ON DELETE CASCADE;
+
+ALTER TABLE tb_entrega_modulo
+  ADD CONSTRAINT fk_tb_entrega_modulo_modulo
+  FOREIGN KEY (modulo_produto_id) REFERENCES tb_modulo_produto(id);
+
+CREATE INDEX idx_tb_entrega_modulo_entrega ON tb_entrega_modulo (entrega_id, ordem);
+CREATE INDEX idx_tb_entrega_modulo_modulo  ON tb_entrega_modulo (modulo_produto_id);

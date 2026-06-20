@@ -1,0 +1,51 @@
+package br.com.softon.portal.releaseorchestrator.controller;
+
+import br.com.softon.portal.releaseorchestrator.dto.request.AlterarSelecaoModuloRequest;
+import br.com.softon.portal.releaseorchestrator.dto.response.EntregaModuloResponse;
+import br.com.softon.portal.releaseorchestrator.service.EntregaModuloService;
+import br.com.softon.portal.shared.security.SecurityRoles;
+import jakarta.validation.Valid;
+import java.util.List;
+import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RequiredArgsConstructor
+@RestController("orchestratorEntregaModuloController")
+@RequestMapping("/api/v1/release-orchestrator/entregas/{entregaId}/modulos")
+@PreAuthorize(SecurityRoles.WRITE)
+public class EntregaModuloController {
+
+  private final EntregaModuloService service;
+
+  @PreAuthorize(SecurityRoles.READ)
+  @GetMapping
+  public List<EntregaModuloResponse> listar(@PathVariable UUID entregaId) {
+    return service.listar(entregaId).stream().map(EntregaModuloResponse::from).toList();
+  }
+
+  /**
+   * Reconstrói a seleção a partir do contrato + release. Idempotente: pode
+   * ser chamado várias vezes em RASCUNHO (limpa estado anterior).
+   */
+  @PostMapping("/inicializar")
+  public List<EntregaModuloResponse> inicializar(@PathVariable UUID entregaId) {
+    return service.inicializar(entregaId).stream()
+        .map(EntregaModuloResponse::from).toList();
+  }
+
+  @PatchMapping("/{moduloProdutoId}/selecao")
+  public EntregaModuloResponse alterarSelecao(@PathVariable UUID entregaId,
+      @PathVariable UUID moduloProdutoId,
+      @Valid @RequestBody AlterarSelecaoModuloRequest request) {
+    return EntregaModuloResponse.from(
+        service.alterarSelecao(entregaId, moduloProdutoId, request.selecionado()));
+  }
+}
