@@ -245,3 +245,57 @@ ALTER TABLE tb_cliente_orchestrator
 
 CREATE INDEX idx_tb_cliente_orchestrator_nome   ON tb_cliente_orchestrator (lower(nome));
 CREATE INDEX idx_tb_cliente_orchestrator_ativo  ON tb_cliente_orchestrator (ativo);
+
+-- -- contatos do cliente operacional (F1.2b) -- --
+
+CREATE TABLE tb_contato_orchestrator (
+  id          UUID         NOT NULL DEFAULT gen_random_uuid(),
+  cliente_id  UUID         NOT NULL,
+  nome        VARCHAR(200) NOT NULL,
+  papel       VARCHAR(20)  NOT NULL,
+  email       VARCHAR(200) NOT NULL,
+  telefone    VARCHAR(40),
+  created_at  TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  updated_at  TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  created_by  VARCHAR(120),
+  updated_by  VARCHAR(120),
+  CONSTRAINT pk_tb_contato_orchestrator PRIMARY KEY (id)
+);
+
+ALTER TABLE tb_contato_orchestrator
+  ADD CONSTRAINT fk_tb_contato_orchestrator_cliente
+  FOREIGN KEY (cliente_id) REFERENCES tb_cliente_orchestrator(id) ON DELETE CASCADE;
+
+ALTER TABLE tb_contato_orchestrator
+  ADD CONSTRAINT ck_tb_contato_orchestrator_papel
+  CHECK (papel IN ('TECNICO', 'COMERCIAL', 'OPERACIONAL', 'FINANCEIRO', 'OUTRO'));
+
+CREATE INDEX idx_tb_contato_orchestrator_cliente ON tb_contato_orchestrator (cliente_id);
+CREATE INDEX idx_tb_contato_orchestrator_email   ON tb_contato_orchestrator (lower(email));
+
+-- -- config de entrega 1:1 com cliente operacional (F1.2b) -- --
+
+CREATE TABLE tb_config_entrega_orchestrator (
+  id                  UUID         NOT NULL DEFAULT gen_random_uuid(),
+  cliente_id          UUID         NOT NULL,
+  tipo_destino        VARCHAR(20)  NOT NULL,
+  caminho_base        VARCHAR(500),
+  exigir_aprovacao    BOOLEAN      NOT NULL DEFAULT FALSE,
+  emails_notificacao  VARCHAR(1000),
+  created_at          TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  updated_at          TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  created_by          VARCHAR(120),
+  updated_by          VARCHAR(120),
+  CONSTRAINT pk_tb_config_entrega_orchestrator PRIMARY KEY (id)
+);
+
+ALTER TABLE tb_config_entrega_orchestrator
+  ADD CONSTRAINT uq_tb_config_entrega_orchestrator_cliente UNIQUE (cliente_id);
+
+ALTER TABLE tb_config_entrega_orchestrator
+  ADD CONSTRAINT fk_tb_config_entrega_orchestrator_cliente
+  FOREIGN KEY (cliente_id) REFERENCES tb_cliente_orchestrator(id) ON DELETE CASCADE;
+
+ALTER TABLE tb_config_entrega_orchestrator
+  ADD CONSTRAINT ck_tb_config_entrega_orchestrator_tipo
+  CHECK (tipo_destino IN ('PASTA', 'FTP', 'SFTP', 'BUCKET'));
