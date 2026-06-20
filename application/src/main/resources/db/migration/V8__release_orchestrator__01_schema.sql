@@ -357,3 +357,43 @@ ALTER TABLE tb_funcionalidade_produto
 CREATE INDEX idx_tb_funcionalidade_produto_dominio        ON tb_funcionalidade_produto (dominio_produto_id);
 CREATE INDEX idx_tb_funcionalidade_produto_dominio_ordem  ON tb_funcionalidade_produto (dominio_produto_id, ordem);
 CREATE INDEX idx_tb_funcionalidade_produto_ativo          ON tb_funcionalidade_produto (ativo);
+
+-- -- matriz cliente × funcionalidade do produto (F1.4) -- --
+
+CREATE TABLE tb_cliente_funcionalidade_produto (
+  id                         UUID         NOT NULL DEFAULT gen_random_uuid(),
+  cliente_id                 UUID         NOT NULL,
+  funcionalidade_produto_id  UUID         NOT NULL,
+  habilitada                 BOOLEAN      NOT NULL,
+  origem                     VARCHAR(20)  NOT NULL,
+  created_at                 TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  updated_at                 TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  created_by                 VARCHAR(120),
+  updated_by                 VARCHAR(120),
+  CONSTRAINT pk_tb_cliente_funcionalidade_produto PRIMARY KEY (id)
+);
+
+ALTER TABLE tb_cliente_funcionalidade_produto
+  ADD CONSTRAINT uq_tb_cliente_funcionalidade_produto_par
+  UNIQUE (cliente_id, funcionalidade_produto_id);
+
+ALTER TABLE tb_cliente_funcionalidade_produto
+  ADD CONSTRAINT fk_tb_cliente_funcionalidade_produto_cliente
+  FOREIGN KEY (cliente_id) REFERENCES tb_cliente_orchestrator(id) ON DELETE CASCADE;
+
+ALTER TABLE tb_cliente_funcionalidade_produto
+  ADD CONSTRAINT fk_tb_cliente_funcionalidade_produto_funcionalidade
+  FOREIGN KEY (funcionalidade_produto_id) REFERENCES tb_funcionalidade_produto(id) ON DELETE CASCADE;
+
+ALTER TABLE tb_cliente_funcionalidade_produto
+  ADD CONSTRAINT ck_tb_cliente_funcionalidade_produto_origem
+  CHECK (origem IN ('MANUAL', 'TEMPLATE', 'HERDADA'));
+
+CREATE INDEX idx_tb_cliente_funcionalidade_produto_cliente
+  ON tb_cliente_funcionalidade_produto (cliente_id);
+
+CREATE INDEX idx_tb_cliente_funcionalidade_produto_funcionalidade
+  ON tb_cliente_funcionalidade_produto (funcionalidade_produto_id);
+
+CREATE INDEX idx_tb_cliente_funcionalidade_produto_habilitada
+  ON tb_cliente_funcionalidade_produto (cliente_id, habilitada);
