@@ -299,3 +299,61 @@ ALTER TABLE tb_config_entrega_orchestrator
 ALTER TABLE tb_config_entrega_orchestrator
   ADD CONSTRAINT ck_tb_config_entrega_orchestrator_tipo
   CHECK (tipo_destino IN ('PASTA', 'FTP', 'SFTP', 'BUCKET'));
+
+-- -- catálogo funcional por produto: domínios + funcionalidades (F1.3) -- --
+
+CREATE TABLE tb_dominio_produto (
+  id             UUID         NOT NULL DEFAULT gen_random_uuid(),
+  produto_id     UUID         NOT NULL,
+  nome           VARCHAR(150) NOT NULL,
+  codigo         VARCHAR(80)  NOT NULL,
+  codigo_legado  VARCHAR(80),
+  descricao      VARCHAR(1000),
+  ordem          INT          NOT NULL DEFAULT 0,
+  ativo          BOOLEAN      NOT NULL DEFAULT TRUE,
+  created_at     TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  updated_at     TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  created_by     VARCHAR(120),
+  updated_by     VARCHAR(120),
+  CONSTRAINT pk_tb_dominio_produto PRIMARY KEY (id)
+);
+
+ALTER TABLE tb_dominio_produto
+  ADD CONSTRAINT uq_tb_dominio_produto_codigo UNIQUE (produto_id, codigo);
+
+ALTER TABLE tb_dominio_produto
+  ADD CONSTRAINT fk_tb_dominio_produto_produto
+  FOREIGN KEY (produto_id) REFERENCES tb_produto_rh(id) ON DELETE CASCADE;
+
+CREATE INDEX idx_tb_dominio_produto_produto       ON tb_dominio_produto (produto_id);
+CREATE INDEX idx_tb_dominio_produto_produto_ordem ON tb_dominio_produto (produto_id, ordem);
+CREATE INDEX idx_tb_dominio_produto_ativo         ON tb_dominio_produto (ativo);
+
+CREATE TABLE tb_funcionalidade_produto (
+  id                  UUID         NOT NULL DEFAULT gen_random_uuid(),
+  dominio_produto_id  UUID         NOT NULL,
+  nome                VARCHAR(200) NOT NULL,
+  codigo              VARCHAR(80)  NOT NULL,
+  codigo_legado       VARCHAR(80),
+  codigo_operacao     VARCHAR(80),
+  descricao           VARCHAR(1000),
+  critica             BOOLEAN      NOT NULL DEFAULT FALSE,
+  ordem               INT          NOT NULL DEFAULT 0,
+  ativo               BOOLEAN      NOT NULL DEFAULT TRUE,
+  created_at          TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  updated_at          TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  created_by          VARCHAR(120),
+  updated_by          VARCHAR(120),
+  CONSTRAINT pk_tb_funcionalidade_produto PRIMARY KEY (id)
+);
+
+ALTER TABLE tb_funcionalidade_produto
+  ADD CONSTRAINT uq_tb_funcionalidade_produto_codigo UNIQUE (dominio_produto_id, codigo);
+
+ALTER TABLE tb_funcionalidade_produto
+  ADD CONSTRAINT fk_tb_funcionalidade_produto_dominio
+  FOREIGN KEY (dominio_produto_id) REFERENCES tb_dominio_produto(id) ON DELETE CASCADE;
+
+CREATE INDEX idx_tb_funcionalidade_produto_dominio        ON tb_funcionalidade_produto (dominio_produto_id);
+CREATE INDEX idx_tb_funcionalidade_produto_dominio_ordem  ON tb_funcionalidade_produto (dominio_produto_id, ordem);
+CREATE INDEX idx_tb_funcionalidade_produto_ativo          ON tb_funcionalidade_produto (ativo);
