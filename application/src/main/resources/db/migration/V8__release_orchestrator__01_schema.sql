@@ -461,3 +461,54 @@ CREATE INDEX idx_tb_cliente_produto_modulo_cliente_produto
 
 CREATE INDEX idx_tb_cliente_produto_modulo_modulo
   ON tb_cliente_produto_modulo (modulo_produto_id);
+
+-- -- agenda de próximas entregas (F1.7) -- --
+
+CREATE TABLE tb_proxima_entrega (
+  id                    UUID         NOT NULL DEFAULT gen_random_uuid(),
+  cliente_id            UUID         NOT NULL,
+  produto_id            UUID         NOT NULL,
+  release_id            UUID,
+  data_prevista         DATE         NOT NULL,
+  ambiente              VARCHAR(20)  NOT NULL,
+  prioridade            VARCHAR(20)  NOT NULL,
+  status                VARCHAR(20)  NOT NULL,
+  responsavel_id        UUID,
+  observacoes           TEXT,
+  entrega_convertida_id UUID,
+  created_at            TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  updated_at            TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  created_by            VARCHAR(120),
+  updated_by            VARCHAR(120),
+  CONSTRAINT pk_tb_proxima_entrega PRIMARY KEY (id)
+);
+
+ALTER TABLE tb_proxima_entrega
+  ADD CONSTRAINT fk_tb_proxima_entrega_cliente
+  FOREIGN KEY (cliente_id) REFERENCES tb_cliente_orchestrator(id);
+
+ALTER TABLE tb_proxima_entrega
+  ADD CONSTRAINT fk_tb_proxima_entrega_produto
+  FOREIGN KEY (produto_id) REFERENCES tb_produto_rh(id);
+
+ALTER TABLE tb_proxima_entrega
+  ADD CONSTRAINT fk_tb_proxima_entrega_release
+  FOREIGN KEY (release_id) REFERENCES tb_release(id);
+
+ALTER TABLE tb_proxima_entrega
+  ADD CONSTRAINT ck_tb_proxima_entrega_ambiente
+  CHECK (ambiente IN ('PROD', 'HOM', 'DEV', 'TEST'));
+
+ALTER TABLE tb_proxima_entrega
+  ADD CONSTRAINT ck_tb_proxima_entrega_prioridade
+  CHECK (prioridade IN ('BAIXA', 'MEDIA', 'ALTA', 'CRITICA'));
+
+ALTER TABLE tb_proxima_entrega
+  ADD CONSTRAINT ck_tb_proxima_entrega_status
+  CHECK (status IN ('PLANEJADA', 'AGENDADA', 'REPLANEJADA', 'ATRASADA', 'CONVERTIDA', 'CANCELADA'));
+
+CREATE INDEX idx_tb_proxima_entrega_cliente       ON tb_proxima_entrega (cliente_id);
+CREATE INDEX idx_tb_proxima_entrega_produto       ON tb_proxima_entrega (produto_id);
+CREATE INDEX idx_tb_proxima_entrega_release       ON tb_proxima_entrega (release_id);
+CREATE INDEX idx_tb_proxima_entrega_data_prevista ON tb_proxima_entrega (data_prevista);
+CREATE INDEX idx_tb_proxima_entrega_status        ON tb_proxima_entrega (status);
