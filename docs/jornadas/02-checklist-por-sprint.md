@@ -95,18 +95,19 @@ Bloco curto no início da sprint pra fechar dívida técnica que ficou exposta n
 **Objetivo:** release completa visualmente + PDF.
 
 ### Backend
-- [ ] Renderer Markdown → PDF (openhtmltopdf + commonmark + Thymeleaf)
-- [ ] `GET /releases/{id}/pdf?tipo=INTERNO|CLIENTE|SUPORTE`
-- [ ] (P1) `ROLE_VIEWER` + GET-only onde aplicável
+- [x] Renderer Markdown → PDF (openhtmltopdf + commonmark + Thymeleaf) — F0.7
+- [x] `GET /releases/{id}/pdf?tipo=INTERNO|CLIENTE|SUPORTE` — F0.8
+- [x] (P1) `ROLE_LEITOR` + GET-only onde aplicável — F0.9 (renomeado de VIEWER pra alinhar com seed)
+- [x] CRUD `ReleaseModuloVersao` (vínculo versão por módulo) — endpoints REST
 
 ### Frontend
-- [ ] CRUD módulos por produto (`/orchestrator/produtos/:id/modulos` ou equivalente)
-- [ ] Aba **Artefatos** no detalhe da release — upload por módulo
-- [ ] Botão gerar/preview PDF no detalhe
-- [ ] Vincular versão por módulo na release (`ReleaseModuloVersao`)
+- [x] CRUD módulos por produto (`/release-orchestrator/produtos/:id/modulos`) — F0.14
+- [x] Aba **Artefatos** no detalhe da release — upload + listar + download + excluir — F0.12
+- [x] Botão gerar/preview PDF no detalhe (3 tipos: Cliente/Suporte/Interno) — F0.8 front
+- [x] Vincular versão por módulo na release (input dentro do card do módulo na aba Artefatos)
 
 ### DoD
-- [ ] Release DTEC-LD 1.5.0: módulos catalogados, `.war` + `.zip` sql uploadados, PDF baixado
+- [ ] Release DTEC-LD 1.5.0: módulos catalogados, `.war` + `.zip` sql uploadados, PDF baixado (validação manual pendente)
 
 **Specs:** `14-release-orchestrator-detalhe.md`, `25-documento-release-md-pdf.md`, ROADMAP F0.7–F0.14
 
