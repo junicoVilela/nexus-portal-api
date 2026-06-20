@@ -1,7 +1,8 @@
 -- =============================================================================
 -- MÓDULO: release_orchestrator | BASELINE: schema (tabelas + constraints + índices)
 -- Produtos, releases, itens, histórico, templates, módulos por produto (F0.3),
--- vínculo release ↔ versão por módulo (F0.4) e artefatos uploadados (F0.5).
+-- vínculo release ↔ versão por módulo (F0.4), artefatos uploadados (F0.5) e
+-- cliente operacional (F1.2).
 -- =============================================================================
 
 
@@ -205,3 +206,42 @@ CREATE INDEX idx_tb_artefato_release_modulo_release_modulo
 
 CREATE INDEX idx_tb_artefato_release_modulo_sha256
   ON tb_artefato_release_modulo (sha256);
+
+-- -- cliente operacional (F1.2) -- --
+
+CREATE TABLE tb_cliente_orchestrator (
+  id                        UUID         NOT NULL DEFAULT gen_random_uuid(),
+  nome                      VARCHAR(200) NOT NULL,
+  razao_social              VARCHAR(300),
+  cnpj                      VARCHAR(18),
+  sigla                     VARCHAR(20)  NOT NULL,
+  ativo                     BOOLEAN      NOT NULL DEFAULT TRUE,
+  responsavel_comercial_id  UUID,
+  ambiente_padrao           VARCHAR(20)  NOT NULL,
+  tipo_banco                VARCHAR(20),
+  codificacao               VARCHAR(30),
+  fuso_horario              VARCHAR(60),
+  observacoes               TEXT,
+  created_at                TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  updated_at                TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  created_by                VARCHAR(120),
+  updated_by                VARCHAR(120),
+  CONSTRAINT pk_tb_cliente_orchestrator PRIMARY KEY (id)
+);
+
+ALTER TABLE tb_cliente_orchestrator
+  ADD CONSTRAINT uq_tb_cliente_orchestrator_sigla UNIQUE (sigla);
+
+ALTER TABLE tb_cliente_orchestrator
+  ADD CONSTRAINT uq_tb_cliente_orchestrator_cnpj UNIQUE (cnpj);
+
+ALTER TABLE tb_cliente_orchestrator
+  ADD CONSTRAINT ck_tb_cliente_orchestrator_ambiente
+  CHECK (ambiente_padrao IN ('PROD', 'HOM', 'DEV', 'TEST'));
+
+ALTER TABLE tb_cliente_orchestrator
+  ADD CONSTRAINT ck_tb_cliente_orchestrator_banco
+  CHECK (tipo_banco IS NULL OR tipo_banco IN ('ORACLE', 'SQLSERVER', 'POSTGRES'));
+
+CREATE INDEX idx_tb_cliente_orchestrator_nome   ON tb_cliente_orchestrator (lower(nome));
+CREATE INDEX idx_tb_cliente_orchestrator_ativo  ON tb_cliente_orchestrator (ativo);
