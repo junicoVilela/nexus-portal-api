@@ -606,3 +606,32 @@ ALTER TABLE tb_entrega_modulo
 
 CREATE INDEX idx_tb_entrega_modulo_entrega ON tb_entrega_modulo (entrega_id, ordem);
 CREATE INDEX idx_tb_entrega_modulo_modulo  ON tb_entrega_modulo (modulo_produto_id);
+
+-- -- delta MVP: artefatos selecionados por EntregaModulo (F1.10) -- --
+
+CREATE TABLE tb_entrega_modulo_artefato (
+  id                          UUID         NOT NULL DEFAULT gen_random_uuid(),
+  entrega_modulo_id           UUID         NOT NULL,
+  artefato_release_modulo_id  UUID         NOT NULL,
+  ordem                       INT          NOT NULL DEFAULT 0,
+  created_at                  TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  updated_at                  TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  created_by                  VARCHAR(120),
+  updated_by                  VARCHAR(120),
+  CONSTRAINT pk_tb_entrega_modulo_artefato PRIMARY KEY (id)
+);
+
+ALTER TABLE tb_entrega_modulo_artefato
+  ADD CONSTRAINT uq_tb_entrega_modulo_artefato_par
+  UNIQUE (entrega_modulo_id, artefato_release_modulo_id);
+
+ALTER TABLE tb_entrega_modulo_artefato
+  ADD CONSTRAINT fk_tb_entrega_modulo_artefato_em
+  FOREIGN KEY (entrega_modulo_id) REFERENCES tb_entrega_modulo(id) ON DELETE CASCADE;
+
+ALTER TABLE tb_entrega_modulo_artefato
+  ADD CONSTRAINT fk_tb_entrega_modulo_artefato_artefato
+  FOREIGN KEY (artefato_release_modulo_id) REFERENCES tb_artefato_release_modulo(id);
+
+CREATE INDEX idx_tb_entrega_modulo_artefato_em        ON tb_entrega_modulo_artefato (entrega_modulo_id, ordem);
+CREATE INDEX idx_tb_entrega_modulo_artefato_artefato  ON tb_entrega_modulo_artefato (artefato_release_modulo_id);
