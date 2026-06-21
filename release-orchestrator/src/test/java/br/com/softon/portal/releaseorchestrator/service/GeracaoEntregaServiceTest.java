@@ -53,6 +53,7 @@ class GeracaoEntregaServiceTest {
   @Mock OrchestratorClienteProdutoRepository clienteProdutoRepository;
   @Mock OrchestratorClienteProdutoModuloRepository cpmRepository;
   @Mock EmpacotadorEntrega empacotador;
+  @Mock RenderizadorFuncionalidades renderizador;
 
   GeracaoEntregaService service;
   ReleaseOrchestratorStorageProperties storage;
@@ -86,7 +87,13 @@ class GeracaoEntregaServiceTest {
 
     storage = new ReleaseOrchestratorStorageProperties(null, "/tmp/entregas");
     service = new GeracaoEntregaService(entregaRepository, entregaModuloRepository,
-        deltaRepository, clienteProdutoRepository, cpmRepository, empacotador, storage);
+        deltaRepository, clienteProdutoRepository, cpmRepository, empacotador,
+        renderizador, storage);
+
+    when(renderizador.renderizar(any(), any())).thenReturn(List.of());
+    when(entregaModuloRepository
+        .findByEntrega_IdOrderByOrdemAscModuloProduto_NomeAsc(any()))
+        .thenReturn(List.of());
   }
 
   @Test
@@ -127,20 +134,24 @@ class GeracaoEntregaServiceTest {
   }
 
   @Test
-  void iniciar_rejeitaQuandoDeltaVazio() {
+  void iniciar_rejeitaQuandoDeltaERenderizaveisVazios() {
     when(entregaRepository.findById(entregaId)).thenReturn(Optional.of(entrega));
     when(deltaRepository.findByEntrega_Id(entregaId)).thenReturn(List.of());
+    when(entregaModuloRepository
+        .findByEntrega_IdOrderByOrdemAscModuloProduto_NomeAsc(entregaId))
+        .thenReturn(List.of());
 
     assertThatThrownBy(() -> service.iniciar(entregaId))
         .isInstanceOf(BusinessException.class)
-        .hasMessageContaining("Delta vazio");
+        .hasMessageContaining("Nada a entregar");
   }
 
   @Test
   void iniciar_rejeitaQuandoStorageEntregasNaoConfigurado() {
     storage = new ReleaseOrchestratorStorageProperties(null, null);
     service = new GeracaoEntregaService(entregaRepository, entregaModuloRepository,
-        deltaRepository, clienteProdutoRepository, cpmRepository, empacotador, storage);
+        deltaRepository, clienteProdutoRepository, cpmRepository, empacotador,
+        renderizador, storage);
     when(entregaRepository.findById(entregaId)).thenReturn(Optional.of(entrega));
 
     assertThatThrownBy(() -> service.iniciar(entregaId))
@@ -161,7 +172,7 @@ class GeracaoEntregaServiceTest {
     entrega.alterarStatus(StatusEntrega.EM_GERACAO);
     when(entregaRepository.findById(entregaId)).thenReturn(Optional.of(entrega));
     when(deltaRepository.findByEntrega_Id(entregaId)).thenReturn(List.of(mockDelta()));
-    when(empacotador.empacotar(any(), any(), any())).thenReturn(
+    when(empacotador.empacotar(any(), any(), any(), any())).thenReturn(
         new EmpacotadorEntrega.PacoteGerado("/tmp/pacote.zip", "shaXXX", 1024, 1));
     EntregaModulo em = new EntregaModulo(entrega, modPortal, "1.4.0", "1.5.0", true, false, 0);
     when(entregaModuloRepository
@@ -190,7 +201,7 @@ class GeracaoEntregaServiceTest {
     entrega.alterarStatus(StatusEntrega.EM_GERACAO);
     when(entregaRepository.findById(entregaId)).thenReturn(Optional.of(entrega));
     when(deltaRepository.findByEntrega_Id(entregaId)).thenReturn(List.of(mockDelta()));
-    when(empacotador.empacotar(any(), any(), any()))
+    when(empacotador.empacotar(any(), any(), any(), any()))
         .thenThrow(new BusinessException("falha simulada"));
 
     service.executar(entregaId);
@@ -207,7 +218,7 @@ class GeracaoEntregaServiceTest {
     service.executar(entregaId);
 
     assertThat(entrega.getStatus()).isEqualTo(StatusEntrega.CANCELADA);
-    verify(empacotador, never()).empacotar(any(), any(), any());
+    verify(empacotador, never()).empacotar(any(), any(), any(), any());
   }
 
   @Test

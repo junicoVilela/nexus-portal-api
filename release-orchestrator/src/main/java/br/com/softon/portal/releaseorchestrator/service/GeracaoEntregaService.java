@@ -46,6 +46,7 @@ public class GeracaoEntregaService {
   private final OrchestratorClienteProdutoRepository clienteProdutoRepository;
   private final OrchestratorClienteProdutoModuloRepository cpmRepository;
   private final EmpacotadorEntrega empacotador;
+  private final RenderizadorFuncionalidades renderizador;
   private final ReleaseOrchestratorStorageProperties storage;
 
   /**
@@ -66,9 +67,13 @@ public class GeracaoEntregaService {
           "Configuração `release-orchestrator.storage.entregas-dir` ausente.");
     }
     long totalDelta = deltaRepository.findByEntrega_Id(entregaId).size();
-    if (totalDelta == 0) {
+    long totalRenderizaveis = entregaModuloRepository
+        .findByEntrega_IdOrderByOrdemAscModuloProduto_NomeAsc(entregaId).stream()
+        .filter(em -> em.isSelecionado() && em.getModuloProduto().getTipo().aceitaUploadDeArtefato() == false)
+        .count();
+    if (totalDelta == 0 && totalRenderizaveis == 0) {
       throw new BusinessException(
-          "Delta vazio. Calcule o delta antes de iniciar a geração.");
+          "Nada a entregar. Selecione ao menos um módulo e calcule o delta antes da geração.");
     }
     entrega.marcarEmGeracao();
     executar(entregaId);
@@ -95,11 +100,14 @@ public class GeracaoEntregaService {
 
     try {
       List<EntregaModuloArtefato> delta = deltaRepository.findByEntrega_Id(entregaId);
+      List<EntregaModulo> linhas = entregaModuloRepository
+          .findByEntrega_IdOrderByOrdemAscModuloProduto_NomeAsc(entregaId);
+      var virtuais = renderizador.renderizar(entrega, linhas);
       Path destino = Path.of(storage.entregasDir(),
           entrega.getCliente().getSigla().toLowerCase(),
           entrega.getProduto().getSigla().toLowerCase(),
           entrega.getRelease().getVersao());
-      var pacote = empacotador.empacotar(entrega, delta, destino);
+      var pacote = empacotador.empacotar(entrega, delta, virtuais, destino);
 
       atualizarVersoesAtuaisDoCliente(entrega);
       entrega.marcarConcluida(pacote.caminho(), pacote.sha256(), pacote.tamanhoBytes());

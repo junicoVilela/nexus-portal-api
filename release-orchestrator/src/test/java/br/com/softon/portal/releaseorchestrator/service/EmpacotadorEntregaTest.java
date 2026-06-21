@@ -84,7 +84,7 @@ class EmpacotadorEntregaTest {
         new EntregaModuloArtefato(emDb, art2, 0));
 
     Path destino = tempDir.resolve("output");
-    var pacote = empacotador.empacotar(entrega, linhas, destino);
+    var pacote = empacotador.empacotar(entrega, linhas, java.util.List.of(), destino);
 
     Path zip = Path.of(pacote.caminho());
     assertThat(zip).exists();
@@ -118,7 +118,7 @@ class EmpacotadorEntregaTest {
 
   @Test
   void empacotar_rejeitaDeltaVazio() {
-    assertThatThrownBy(() -> empacotador.empacotar(entrega, List.of(), tempDir))
+    assertThatThrownBy(() -> empacotador.empacotar(entrega, List.of(), java.util.List.of(), tempDir))
         .isInstanceOf(BusinessException.class)
         .hasMessageContaining("vazio");
   }
@@ -131,7 +131,7 @@ class EmpacotadorEntregaTest {
     List<EntregaModuloArtefato> linhas = List.of(
         new EntregaModuloArtefato(em, art, 0));
 
-    assertThatThrownBy(() -> empacotador.empacotar(entrega, linhas, tempDir))
+    assertThatThrownBy(() -> empacotador.empacotar(entrega, linhas, java.util.List.of(), tempDir))
         .isInstanceOf(BusinessException.class)
         .hasMessageContaining("não encontrado");
   }

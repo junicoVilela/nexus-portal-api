@@ -50,14 +50,15 @@ public class EmpacotadorEntrega {
    * Monta o pacote no diretório destino. Retorna metadados pra persistir.
    *
    * @param entrega                entrega que está sendo gerada
-   * @param linhas                 itens selecionados (entregaModulo → artefatos)
+   * @param linhas                 artefatos uploadados (delta — F1.10)
+   * @param virtuais               artefatos sintetizados (FUNC/REGRAS — F1.12)
    * @param diretorioDestino       diretório onde o ZIP final será gravado
    * @return path absoluto do ZIP + sha256 + tamanho
    */
   public PacoteGerado empacotar(Entrega entrega, List<EntregaModuloArtefato> linhas,
-      Path diretorioDestino) throws IOException {
-    if (linhas.isEmpty()) {
-      throw new BusinessException("Delta vazio — nada a empacotar.");
+      List<VirtualArtefato> virtuais, Path diretorioDestino) throws IOException {
+    if (linhas.isEmpty() && virtuais.isEmpty()) {
+      throw new BusinessException("Nada a empacotar — delta e renderizados vazios.");
     }
 
     Files.createDirectories(diretorioDestino);
@@ -92,6 +93,21 @@ public class EmpacotadorEntrega {
         zip.closeEntry();
         itens.add(new ItemPacote(entryName, ema.getArtefato().getSha256(),
             ema.getArtefato().getTamanhoBytes(), modulo.getCodigo(), em.getVersaoTo()));
+      }
+
+      // Virtuais (FUNC/REGRAS renderizados)
+      for (VirtualArtefato va : virtuais) {
+        ModuloProduto modulo = va.entregaModulo().getModuloProduto();
+        String pastaNoPacote = destinoPacoteOuTipo(modulo);
+        String entryName = pastaNoPacote + "/" + va.nomeArquivo();
+
+        ZipEntry entry = new ZipEntry(entryName);
+        entry.setSize(va.conteudo().length);
+        zip.putNextEntry(entry);
+        zip.write(va.conteudo());
+        zip.closeEntry();
+        itens.add(new ItemPacote(entryName, va.sha256(),
+            va.conteudo().length, modulo.getCodigo(), va.entregaModulo().getVersaoTo()));
       }
 
       // manifest.json
@@ -181,6 +197,13 @@ public class EmpacotadorEntrega {
   }
 
   public record PacoteGerado(String caminho, String sha256, long tamanhoBytes, int totalItens) {}
+
+  /**
+   * Artefato gerado dinamicamente (FUNCIONALIDADES/REGRAS — F1.12). Não vem
+   * de upload, é renderizado a partir da matriz cliente×funcionalidade.
+   */
+  public record VirtualArtefato(EntregaModulo entregaModulo, String nomeArquivo,
+      byte[] conteudo, String sha256) {}
 
   private record ItemPacote(String entryName, String sha256, long tamanhoBytes,
       String moduloCodigo, String versaoTo) {}
