@@ -11,11 +11,18 @@ import br.com.softon.portal.shared.api.SortDirection;
 import br.com.softon.portal.shared.api.SortUtils;
 import br.com.softon.portal.shared.security.SecurityRoles;
 import jakarta.validation.Valid;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -58,6 +65,32 @@ public class EntregaController {
   @GetMapping("/{id}")
   public EntregaResponse buscar(@PathVariable UUID id) {
     return EntregaResponse.from(service.buscar(id));
+  }
+
+  /**
+   * Stream do pacote ZIP gerado para a entrega. Disponível apenas após
+   * CONCLUIDA — antes disso o caminho não existe ou está sendo escrito.
+   */
+  @PreAuthorize(SecurityRoles.READ)
+  @GetMapping("/{id}/pacote/download")
+  public ResponseEntity<Resource> downloadPacote(@PathVariable UUID id) {
+    var entrega = service.buscar(id);
+    if (entrega.getStatus() != StatusEntrega.CONCLUIDA
+        || entrega.getArquivoPacoteCaminho() == null) {
+      return ResponseEntity.notFound().build();
+    }
+    Path arquivo = Path.of(entrega.getArquivoPacoteCaminho());
+    if (!Files.isRegularFile(arquivo)) {
+      return ResponseEntity.notFound().build();
+    }
+    String nome = "pacote-" + entrega.getCliente().getSigla().toLowerCase()
+        + "-" + entrega.getProduto().getSigla().toLowerCase()
+        + "-" + entrega.getRelease().getVersao() + ".zip";
+    return ResponseEntity.ok()
+        .header(HttpHeaders.CONTENT_DISPOSITION,
+            "attachment; filename=\"" + nome + "\"")
+        .contentType(MediaType.parseMediaType("application/zip"))
+        .body(new FileSystemResource(arquivo));
   }
 
   @PostMapping
