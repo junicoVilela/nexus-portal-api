@@ -128,16 +128,14 @@ Release PUBLICADA → (opcional) assets no GitHub → entrega técnica ACME → 
 
 ---
 
-## Lacunas conhecidas (integração)
+## Lacunas conhecidas
 
-Itens que a jornada assume mas ainda precisam de código:
+Auditoria atualizada da jornada pós-S7 — incluindo o que já foi fechado
+e o que ainda fica como UX/backlog — está em
+[`06-gaps-jornada-acme.md`](06-gaps-jornada-acme.md).
 
-- Paths API DocFlow: front `/api/doc-flow/*` vs back `/api/v1/docflow/*` (proxy/services).
-- Auth: front mock (`seguranca`) vs JWT real (`/api/v1/auth/login`).
-- Telas `/orchestrator/*` (entregas) ainda não existem no frontend.
-- `ConfiguracaoService` logo empresa: mock localStorage vs `EmpresaController`.
-
-Ver [`../doc-flow/README.md`](../doc-flow/README.md) § Integração frontend.
+Para rodar a demo seguindo este cenário com workarounds documentados,
+ver [`05-demo-roteiro-acme.md`](05-demo-roteiro-acme.md).
 
 ---
 
