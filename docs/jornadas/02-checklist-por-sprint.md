@@ -141,19 +141,19 @@ Bloco curto no início da sprint pra fechar dívida técnica que ficou exposta n
 **Objetivo:** job assíncrono monta pacote MVP (upload manual).
 
 ### Backend
-- [ ] Migrations: ProximaEntrega, Entrega (+ changelog/auditoria entrega)
-- [ ] API wizard entrega: rascunho, salvar passo, finalizar
-- [ ] Seleção módulos: contratados vs release, versão atual vs nova
-- [ ] **Delta MVP:** metadados + artefatos uploadados (sem Git)
-- [ ] Geração @Async: copiar artefatos release → montar ZIP
-- [ ] Etapa FUNC/REGRAS: render templates + ClienteFuncionalidade
-- [ ] PDF release-notes filtrado cliente
-- [ ] manifest.json + SHA256SUMS.txt
-- [ ] Atualizar `ClienteProdutoModulo.versaoAtual` ao concluir
-- [ ] Reentrega (`entregaOriginalId`)
+- [x] Migrations: ProximaEntrega, Entrega + EntregaModulo + EntregaModuloArtefato — F1.7, F1.8, F1.9, F1.10
+- [x] API wizard entrega: rascunho (criar), salvar passo (atualizarRascunho), finalizar (geracao/iniciar) — F1.8, F1.11
+- [x] Seleção módulos: contratados vs release, versão atual vs nova — F1.9
+- [x] **Delta MVP:** metadados + artefatos uploadados (sem Git) — F1.10
+- [x] Geração @Async: copiar artefatos release → montar ZIP — F1.11
+- [x] Etapa FUNC/REGRAS: render templates + ClienteFuncionalidade — F1.12
+- [x] PDF release-notes filtrado cliente — F1.13
+- [x] manifest.json + SHA256SUMS.txt — F1.14
+- [x] Atualizar `ClienteProdutoModulo.versaoAtual` ao concluir — F1.11
+- [x] Reentrega (`entregaOriginalId`) — F1.15
 
 ### DoD
-- [ ] `POST` gerar entrega ACME → pacote em pasta local → status CONCLUIDA → versão 1.5.0 registrada
+- [ ] `POST` gerar entrega ACME → pacote em pasta local → status CONCLUIDA → versão 1.5.0 registrada (validação manual via Postman — endpoints prontos)
 
 **Specs:** `18`–`21`, ROADMAP F1.7–F1.15
 

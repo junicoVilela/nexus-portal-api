@@ -76,4 +76,15 @@ public class EntregaController {
   public EntregaResponse cancelar(@PathVariable UUID id) {
     return EntregaResponse.from(service.cancelar(id));
   }
+
+  /**
+   * Cria uma nova entrega RASCUNHO clonando seleção + delta da entrega original.
+   * Útil quando uma entrega CONCLUIDA precisa ser refeita (por bug detectado
+   * em produção, por exemplo) ou quando uma FALHA precisa de retry com ajustes.
+   */
+  @PostMapping("/{id}/reentregar")
+  @ResponseStatus(HttpStatus.CREATED)
+  public EntregaResponse reentregar(@PathVariable UUID id) {
+    return EntregaResponse.from(service.reentregar(id));
+  }
 }

@@ -19,6 +19,8 @@ import br.com.softon.portal.releaseorchestrator.entity.StatusEntrega;
 import br.com.softon.portal.releaseorchestrator.entity.StatusProximaEntrega;
 import br.com.softon.portal.releaseorchestrator.entity.TipoRelease;
 import br.com.softon.portal.releaseorchestrator.repository.OrchestratorClienteProdutoRepository;
+import br.com.softon.portal.releaseorchestrator.repository.OrchestratorEntregaModuloArtefatoRepository;
+import br.com.softon.portal.releaseorchestrator.repository.OrchestratorEntregaModuloRepository;
 import br.com.softon.portal.releaseorchestrator.repository.OrchestratorEntregaRepository;
 import br.com.softon.portal.releaseorchestrator.repository.OrchestratorProximaEntregaRepository;
 import br.com.softon.portal.releaseorchestrator.repository.ProdutoRhRepository;
@@ -44,6 +46,8 @@ class EntregaServiceTest {
 
   @Mock OrchestratorEntregaRepository repository;
   @Mock OrchestratorProximaEntregaRepository proximaEntregaRepository;
+  @Mock OrchestratorEntregaModuloRepository entregaModuloRepository;
+  @Mock OrchestratorEntregaModuloArtefatoRepository deltaRepository;
   @Mock ClienteService clienteService;
   @Mock ProdutoRhRepository produtoRepository;
   @Mock ReleaseRepository releaseRepository;
@@ -225,6 +229,57 @@ class EntregaServiceTest {
     Entrega cancelada = service.cancelar(id);
     assertThat(cancelada.getStatus()).isEqualTo(StatusEntrega.CANCELADA);
     assertThat(cancelada.getDataConclusao()).isNotNull();
+  }
+
+  @Test
+  void reentregar_clonaCamposBasicosEMarcaEntregaOriginalId() throws Exception {
+    UUID origemId = UUID.randomUUID();
+    Entrega origem = new Entrega(cliente, produto, release, AmbientePadrao.HOM,
+        UUID.randomUUID(), "Entrega original");
+    origem.alterarStatus(StatusEntrega.CONCLUIDA);
+    setId(origem, origemId);
+    when(repository.findById(origemId)).thenReturn(Optional.of(origem));
+    when(repository.save(any(Entrega.class))).thenAnswer(inv -> {
+      Entrega e = inv.getArgument(0);
+      setId(e, UUID.randomUUID());
+      return e;
+    });
+    when(entregaModuloRepository
+        .findByEntrega_IdOrderByOrdemAscModuloProduto_NomeAsc(origemId))
+        .thenReturn(java.util.List.of());
+    when(deltaRepository.findByEntrega_Id(origemId)).thenReturn(java.util.List.of());
+
+    Entrega nova = service.reentregar(origemId);
+
+    assertThat(nova.getEntregaOriginalId()).isEqualTo(origemId);
+    assertThat(nova.getCliente()).isEqualTo(cliente);
+    assertThat(nova.getProduto()).isEqualTo(produto);
+    assertThat(nova.getRelease()).isEqualTo(release);
+    assertThat(nova.getAmbiente()).isEqualTo(AmbientePadrao.HOM);
+    assertThat(nova.getStatus()).isEqualTo(StatusEntrega.RASCUNHO);
+    assertThat(nova.getObservacoes()).isEqualTo("Entrega original");
+  }
+
+  @Test
+  void reentregar_rejeitaQuandoOriginalNaoEstaEmEstadoTerminal() throws Exception {
+    UUID origemId = UUID.randomUUID();
+    Entrega origem = new Entrega(cliente, produto, release, AmbientePadrao.PROD, null, null);
+    origem.marcarEmGeracao();
+    setId(origem, origemId);
+    when(repository.findById(origemId)).thenReturn(Optional.of(origem));
+
+    assertThatThrownBy(() -> service.reentregar(origemId))
+        .isInstanceOf(BusinessException.class)
+        .hasMessageContaining("terminal");
+  }
+
+  @Test
+  void reentregar_lancaNotFoundQuandoOriginalInexistente() {
+    UUID origemId = UUID.randomUUID();
+    when(repository.findById(origemId)).thenReturn(Optional.empty());
+
+    assertThatThrownBy(() -> service.reentregar(origemId))
+        .isInstanceOf(NotFoundException.class);
   }
 
   @Test
