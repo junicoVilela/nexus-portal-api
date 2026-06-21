@@ -38,3 +38,4 @@ docflow:
 release-orchestrator:
   storage:
     artefatos-dir: ./target/test-storage/artefatos
+    entregas-dir: ./target/test-storage/entregas

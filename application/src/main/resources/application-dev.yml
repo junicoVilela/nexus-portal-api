@@ -50,6 +50,7 @@ docflow:
 release-orchestrator:
   storage:
     artefatos-dir: ${ARTEFATOS_DIR:./storage/artefatos}
+    entregas-dir: ${ENTREGAS_DIR:./storage/entregas}
 
 logging:
   level:
