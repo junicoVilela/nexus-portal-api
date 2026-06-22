@@ -285,8 +285,7 @@ Bloco curto no início da sprint pra fechar dívida técnica que ficou exposta n
 
 ### Backend
 - [x] Serviço delta: `GitHubReleasesAdapter.compare()` resolve commits FROM..TO via GitHub Compare API
-- [x] BANCO: listar `.sql` alterados → `GithubDeltaBancoService` filtra por `caminhoRepo` e classifica via `prefixoDDL`/`prefixoDML` em `ConfigBancoModulo`
-  - **Unificação em arquivos DDL.sql/DML.sql** ainda pendente — hoje cada `.sql` vira artefato separado no pacote
+- [x] BANCO: listar `.sql` alterados → `GithubDeltaBancoService` filtra por `caminhoRepo`, classifica via `prefixoDDL`/`prefixoDML` (`ConfigBancoModulo`) e **concatena em `DDL.sql` + `DML.sql`** com header de procedência por script
 - [x] KETTLE: listar `.ktr`/`.kjb` alterados — `GithubDeltaKettleService` com `ConfigKettleModulo`
   - **Resolução de dependências entre transformações/subjobs** ainda pendente
 - [x] `POST /entregas/{id}/delta/calcular` + persistir preview (com override de `fromTag` por módulo + justificativa)
