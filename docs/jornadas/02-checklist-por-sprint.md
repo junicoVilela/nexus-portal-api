@@ -10,21 +10,23 @@ Plano executável em sprints de **~2 semanas**. Ajuste a duração conforme o ti
 
 ## Visão rápida
 
-| Sprint | Foco | Saída verificável |
-|---|---|---|
-| S0 | PRÉ — DocFlow integrado | Login real → publicação funciona |
-| S1 | F0 backend — módulos + artefatos | API upload por módulo na release |
-| S2 | F0 front — artefatos + PDF | Tela upload + PDF na release |
-| S3 | F1 backend — cadastros cliente | CRUD cliente + produtos contratados |
-| S4 | F1 backend — entrega core | Assistente API + geração pacote local |
-| S5 | F1 front — clientes + agenda | Telas cliente + próximas entregas |
-| S6 | F1 front — assistente + geração | Wizard 5 passos + polling geração |
-| S7 | DocFlow + entrega integrada | Jornada ACME manual end-to-end |
-| S8 | 🔧 F2.0 — Jenkins + GitHub (piloto) | Tag v0.0.1 → asset na Release |
-| S9 | F2 portal — GitHub adapter | Download asset TO_TAG na geração |
-| S10 | F2 portal — delta Git | Diff BANCO/KETTLE FROM..TO |
-| S11 | F2 front + operação | Cadastro GitHub/Jenkins + build status |
-| S12+ | F3 / F4 | FTP, observabilidade (conforme prioridade) |
+Legenda código: ✅ código pronto · 🟡 código parcial · 🔧 operacional (fora do monorepo) · 📋 não iniciado
+
+| Sprint | Foco | Saída verificável | Status |
+|---|---|---|---|
+| S0 | PRÉ — DocFlow integrado | Login real → publicação funciona | ✅ |
+| S1 | F0 backend — módulos + artefatos | API upload por módulo na release | ✅ |
+| S2 | F0 front — artefatos + PDF | Tela upload + PDF na release | ✅ |
+| S3 | F1 backend — cadastros cliente | CRUD cliente + produtos contratados | ✅ |
+| S4 | F1 backend — entrega core | Assistente API + geração pacote local | ✅ |
+| S5 | F1 front — clientes + agenda | Telas cliente + próximas entregas | 🟡 (funcionalidades `05` pendente) |
+| S6 | F1 front — assistente + geração | Wizard 5 passos + polling geração | ✅ (tela `19` e `21` substituídas) |
+| S7 | DocFlow + entrega integrada | Jornada ACME manual end-to-end | 🟡 (roteiro pronto; validação manual pendente) |
+| S8 | 🔧 F2.0 — Jenkins + GitHub (piloto) | Tag v0.0.1 → asset na Release | 🟡 templates prontos · 🔧 aplicação nos repos pendente |
+| S9 | F2 portal — GitHub adapter | Download asset TO_TAG na geração | ✅ |
+| S10 | F2 portal — delta Git | Diff BANCO/KETTLE FROM..TO | 🟡 (unificação DDL/DML, dependências KETTLE, multi-dialeto pendentes) |
+| S11 | F2 front + operação | Cadastro GitHub/Jenkins + build status | 🟡 (sem trigger via portal, sem webhook, sem badge) |
+| S12+ | F3 / F4 | FTP, observabilidade (conforme prioridade) | 📋 |
 
 **Trilha paralela 🔧 (S2–S8):** Jenkinsfile nos repos — não bloqueia S1–S7 se MVP usa upload manual.
 
@@ -164,15 +166,16 @@ Bloco curto no início da sprint pra fechar dívida técnica que ficou exposta n
 **Objetivo:** operador planeja entregas.
 
 ### Frontend
-- [ ] Shell `/orchestrator/*` (ou prefixo acordado)
-- [ ] Lista + cadastro clientes (`02`, `03`)
-- [ ] Visão geral cliente (`04`)
-- [ ] Abas: funcionalidades (`05`), produtos contratados (`06`), config entrega (`07`)
-- [ ] Agenda próximas entregas (`16`, `17`)
-- [ ] Dashboard entregas KPIs básicos (`01` orchestrator) — P1
+- [x] Shell `/release-orchestrator/*` com sidebar + command palette
+- [x] Lista + cadastro clientes (`02`, `03`) — `clientes-list` + `cliente-form` com CanDeactivate
+- [x] Visão geral cliente (`04`) — `cliente-detalhe` com 5 abas (Geral, Contatos, Produtos, Config entrega, Próximas entregas)
+- [x] ~~Abas: funcionalidades (`05`)~~ produtos contratados (`06`) + módulos por produto, config entrega (`07`)
+  - **Funcionalidades (`05`)** ainda pendente (matriz cliente × funcionalidades)
+- [x] Agenda próximas entregas (`16`, `17`) — lista filtrável + form CRUD + ações de status
+- [x] Dashboard entregas KPIs básicos (`01` orchestrator) — KPIs entregas + agenda + recentes
 
 ### DoD
-- [ ] Gestor cadastra ACME, planeja entrega v1.5.0 para sábado, status PLANEJADA/APROVADA
+- [ ] Gestor cadastra ACME, planeja entrega v1.5.0 para sábado, status PLANEJADA/APROVADA (validação manual pendente)
 
 ---
 
@@ -181,15 +184,15 @@ Bloco curto no início da sprint pra fechar dívida técnica que ficou exposta n
 **Objetivo:** wizard completo + acompanhamento.
 
 ### Frontend
-- [ ] Assistente 5 passos (`18`): Cliente → Produto → Versões → Módulos → Revisão
-- [ ] Tela seleção módulos (`19`): contratado, versão atual/nova, mudança detectada
-- [ ] Tela geração com progresso 11 etapas (`21`)
-- [ ] Detalhe entrega (`22`): download, reentregar
-- [ ] Histórico entregas (`23`)
-- [ ] Polling status GERANDO (padrão DocFlow publicações)
+- [x] Assistente 5 passos (`18`): Cliente → Produto → Versões → Módulos → Revisão — wizard com prefil por queryParam
+- [ ] ~~Tela seleção módulos (`19`)~~ — substituído pelo passo 4 do wizard (toggle por módulo com badges fora-do-contrato e mudança detectada). Tela dedicada com FROM/TO editável virou `/entregas/:id/delta` na S10.
+- [ ] ~~Tela geração com progresso 11 etapas (`21`)~~ — substituído por polling 5s em `/entregas/:id` (backend não expõe etapas individuais ainda; F2.10 ou F4)
+- [x] Detalhe entrega (`22`): download pacote ZIP, download PDF, reentregar
+- [x] Histórico entregas (`23`) — `/entregas` com filtros persistidos
+- [x] Polling status GERANDO em EM_GERACAO
 
 ### DoD
-- [ ] Operador gera pacote ACME pelo wizard sem Postman; baixa ZIP; histórico visível
+- [ ] Operador gera pacote ACME pelo wizard sem Postman; baixa ZIP; histórico visível (validação manual pendente)
 
 ---
 
@@ -208,11 +211,11 @@ Bloco curto no início da sprint pra fechar dívida técnica que ficou exposta n
 - [ ] Publicação DocFlow ACME `2026.06.1`
 
 ### QA
-- [ ] Roteiro único documentado (15–30 min demo)
-- [ ] Bugs críticos integração DocFlow resolvidos (S0)
+- [x] Roteiro único documentado (15–30 min demo) — [`05-demo-roteiro-acme.md`](05-demo-roteiro-acme.md) + auditoria de gaps em [`06-gaps-jornada-acme.md`](06-gaps-jornada-acme.md)
+- [ ] Bugs críticos integração DocFlow resolvidos (S0) (validação manual pendente)
 
 ### DoD Fase 1
-- [ ] Critérios ROADMAP F1 atendidos (cadastro, planejar, gerar, histórico, reentregar)
+- [ ] Critérios ROADMAP F1 atendidos (cadastro, planejar, gerar, histórico, reentregar) (validação manual pendente — endpoints + telas prontos)
 
 ---
 
@@ -228,8 +231,14 @@ Bloco curto no início da sprint pra fechar dívida técnica que ficou exposta n
 - [ ] `gh` CLI no agente (opcional — fallback para curl)
 - [ ] Smoke test `smoke-test` rodando java + mvn com sucesso
 
+### Templates (no monorepo)
+- [x] [`templates/Jenkinsfile`](../release-orchestrator/templates/Jenkinsfile) — pipeline declarativo build-on-tag pronto pra copiar
+- [x] [`templates/VERSIONING.md`](../release-orchestrator/templates/VERSIONING.md) — guia operacional do repo
+- [x] [`templates/README.md`](../release-orchestrator/templates/README.md) — checklist por tipo de módulo (WEB/BATCH/BANCO/KETTLE)
+- [x] [`templates/README-versionamento.md`](../release-orchestrator/templates/README-versionamento.md) — snippet pro README de cada repo
+
 ### Por repositório (spec `39`)
-- [ ] Repo WEB `softon/dtec-ld`: `Jenkinsfile` build-on-tag
+- [ ] Repo WEB `softon/dtec-ld`: `Jenkinsfile` build-on-tag (aplicar template)
 - [ ] (Se separado) repo DB: pastas `db/`, convenção DDL_### / DML_###
 - [ ] (Se separado) repo Kettle: pasta `kettle/` ou `pdi/`
 - [ ] Job Jenkins `dtec-ld-build` apontando ao repo
@@ -255,17 +264,17 @@ Bloco curto no início da sprint pra fechar dívida técnica que ficou exposta n
 **Objetivo:** geração baixa assets do GitHub (TO_TAG).
 
 ### Backend
-- [ ] Campos Produto: `repositorioGithub`, `branchPadrao`, `padraoTag`
-- [ ] `GitHubReleasesAdapter` + credencial (env/vault)
-- [ ] Download asset → storage local (cache)
-- [ ] Geração etapa 3: WEB/BATCH from GitHub em vez de upload
+- [x] Campos Produto: `repositorioGithub`, `branchPadrao`, `padraoTag` + `githubToken` (V9 migration)
+- [x] `GitHubReleasesAdapter` (RestClient + GitHub API v2022-11-28) + credencial em `tb_produto_rh.github_token`
+- [x] Download asset → storage local (cache em `{artefatos-dir}/github-cache/{produto}/{release}/{modulo}/`)
+- [x] Geração etapa 3: WEB/BATCH from GitHub via `GithubAssetSyncService` quando upload manual ausente
 - [ ] (Opcional) sync automático pós PUBLICADA release
 
 ### Frontend
-- [ ] Form produto: seção GitHub (`09`) + teste conexão
+- [x] Form produto: seção GitHub (`09`) + teste conexão com preview de releases recentes
 
 ### DoD
-- [ ] Entrega ACME com WEB baixado da Release v1.5.0 (upload manual desligado para WEB)
+- [ ] Entrega ACME com WEB baixado da Release v1.5.0 (upload manual desligado para WEB) (validação manual pendente)
 
 **ROADMAP:** F2.1–F2.4, F2.9
 
@@ -276,19 +285,22 @@ Bloco curto no início da sprint pra fechar dívida técnica que ficou exposta n
 **Objetivo:** diff `FROM_TAG..TO_TAG` por cliente.
 
 ### Backend
-- [ ] Serviço delta: resolve commits das tags via GitHub API
-- [ ] BANCO: listar `.sql` alterados → classificar DDL/DML → unificar arquivos
-- [ ] KETTLE: listar `.ktr`/`.kjb` alterados + dependências
-- [ ] `POST /entregas/{id}/delta/calcular` + persistir preview
-- [ ] Geração etapas 4–5 usam diff (fallback upload se tag ausente)
-- [ ] Config por módulo: pasta repo, dialeto oracle/sqlserver
+- [x] Serviço delta: `GitHubReleasesAdapter.compare()` resolve commits FROM..TO via GitHub Compare API
+- [x] BANCO: listar `.sql` alterados → `GithubDeltaBancoService` filtra por `caminhoRepo` e classifica via `prefixoDDL`/`prefixoDML` em `ConfigBancoModulo`
+  - **Unificação em arquivos DDL.sql/DML.sql** ainda pendente — hoje cada `.sql` vira artefato separado no pacote
+- [x] KETTLE: listar `.ktr`/`.kjb` alterados — `GithubDeltaKettleService` com `ConfigKettleModulo`
+  - **Resolução de dependências entre transformações/subjobs** ainda pendente
+- [x] `POST /entregas/{id}/delta/calcular` + persistir preview (com override de `fromTag` por módulo + justificativa)
+- [x] Geração etapas 4–5 usam diff (fallback upload manual quando tag/asset ausente)
+- [x] Config por módulo: `caminhoRepo` em JSON via `configEspecifica`
+  - **Multi-dialeto oracle+sqlserver** (subpastas/sufixo) ainda pendente
 
 ### Frontend
-- [ ] Tela range/delta (`20`): FROM/TO, preview arquivos, recalcular
-- [ ] Wizard passo 4 modo Automático mostra "+N SQL" real
+- [x] Tela range/delta (`20`): `/entregas/:id/delta` com FROM editável + justificativa + preview de arquivos + recalcular
+- [ ] Wizard passo 4 modo Automático mostra "+N SQL" real — passo 4 hoje mostra resumo agregado pós-cálculo, não contagem por tipo durante a edição
 
 ### DoD
-- [ ] ACME v1.4.0→v1.5.0: preview lista scripts corretos; pacote contém só delta SQL
+- [ ] ACME v1.4.0→v1.5.0: preview lista scripts corretos; pacote contém só delta SQL (validação manual pendente)
 
 **Specs:** `19`, `20`, ROADMAP F2.8
 
@@ -299,17 +311,18 @@ Bloco curto no início da sprint pra fechar dívida técnica que ficou exposta n
 **Objetivo:** visibilidade de build; webhook opcional.
 
 ### Backend
-- [ ] Campos Produto: `jenkinsUrl`, `jenkinsJob`, `triggerMode`
-- [ ] Cliente Jenkins + trigger build (P2)
+- [x] Campos Produto: `jenkinsUrl`, `jenkinsJob`, `jenkinsUser`, `jenkinsToken`, `jenkinsTriggerMode` (V10 migration)
+- [x] Cliente Jenkins (`JenkinsAdapter` com Basic auth) — `jobExiste()` + `ultimoBuild()` + endpoint `testar-jenkins`
+  - **Trigger de build via portal** ainda pendente (P2) — só leitura no MVP
 - [ ] Webhook GitHub/Jenkins → atualizar status artefato na release (P2)
 
 ### Frontend
-- [ ] Seção Jenkins no produto (`09`)
-- [ ] Badge "Build em andamento" / SUCCESS / FAILED na release (F2.10)
-- [ ] Suporte operacional (`27`) — P1 se não feito
+- [x] Seção Jenkins no produto (`09`) — form completo + Testar conexão com preview do último build
+- [ ] Badge "Build em andamento" / SUCCESS / FAILED na release (F2.10) — depende do webhook
+- [ ] Suporte operacional (`27`) — P1 se não feito (hoje histórico filtrado faz o papel)
 
 ### DoD
-- [ ] Tag push → Jenkins roda → portal mostra build OK → entrega usa assets fresh
+- [ ] Tag push → Jenkins roda → portal mostra build OK → entrega usa assets fresh (validação manual pendente)
 
 **ROADMAP:** F2.5–F2.7, F2.10
 
