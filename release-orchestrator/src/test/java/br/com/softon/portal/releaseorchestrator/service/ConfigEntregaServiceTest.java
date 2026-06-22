@@ -12,6 +12,7 @@ import br.com.softon.portal.releaseorchestrator.entity.AmbientePadrao;
 import br.com.softon.portal.releaseorchestrator.entity.Cliente;
 import br.com.softon.portal.releaseorchestrator.entity.ConfigEntrega;
 import br.com.softon.portal.releaseorchestrator.entity.TipoDestinoEntrega;
+import br.com.softon.portal.releaseorchestrator.integration.publish.PublishService;
 import br.com.softon.portal.releaseorchestrator.repository.OrchestratorConfigEntregaRepository;
 import br.com.softon.portal.shared.exception.BusinessException;
 import br.com.softon.portal.shared.exception.NotFoundException;
@@ -32,6 +33,8 @@ class ConfigEntregaServiceTest {
 
   @Mock OrchestratorConfigEntregaRepository repository;
   @Mock ClienteService clienteService;
+  @Mock EncryptionService encryptionService;
+  @Mock PublishService publishService;
   @InjectMocks ConfigEntregaService service;
 
   Cliente cliente;
@@ -50,7 +53,8 @@ class ConfigEntregaServiceTest {
 
     ConfigEntrega c = service.salvar(clienteId, new ConfigEntregaRequest(
         TipoDestinoEntrega.PASTA, "/var/lib/softon/entregas/acme", true,
-        "ops@acme.com"));
+        "ops@acme.com",
+        null, null, null, null, null, null));
 
     assertThat(c.getTipoDestino()).isEqualTo(TipoDestinoEntrega.PASTA);
     assertThat(c.getCaminhoBase()).isEqualTo("/var/lib/softon/entregas/acme");
@@ -65,24 +69,27 @@ class ConfigEntregaServiceTest {
     when(repository.findByCliente_Id(clienteId)).thenReturn(Optional.of(existente));
 
     ConfigEntrega c = service.salvar(clienteId, new ConfigEntregaRequest(
-        TipoDestinoEntrega.PASTA, "/var/lib/softon/entregas/acme", false, null));
+        TipoDestinoEntrega.PASTA, "/var/lib/softon/entregas/acme", false, null,
+        null, null, null, null, null, null));
 
     assertThat(c.getCaminhoBase()).isEqualTo("/var/lib/softon/entregas/acme");
     verify(repository, never()).save(any(ConfigEntrega.class));
   }
 
   @Test
-  void salvar_rejeitaTipoNaoPasta() {
+  void salvar_rejeitaFtpSemHost() {
     assertThatThrownBy(() -> service.salvar(clienteId, new ConfigEntregaRequest(
-        TipoDestinoEntrega.FTP, "/x", false, null)))
+        TipoDestinoEntrega.FTP, "/x", false, null,
+        null, null, null, null, null, null)))
         .isInstanceOf(BusinessException.class)
-        .hasMessageContaining("PASTA");
+        .hasMessageContaining("Host");
   }
 
   @Test
   void salvar_rejeitaCaminhoVazio() {
     assertThatThrownBy(() -> service.salvar(clienteId, new ConfigEntregaRequest(
-        TipoDestinoEntrega.PASTA, "", false, null)))
+        TipoDestinoEntrega.PASTA, "", false, null,
+        null, null, null, null, null, null)))
         .isInstanceOf(BusinessException.class)
         .hasMessageContaining("obrigatório");
   }
@@ -90,7 +97,8 @@ class ConfigEntregaServiceTest {
   @Test
   void salvar_rejeitaPathTraversal() {
     assertThatThrownBy(() -> service.salvar(clienteId, new ConfigEntregaRequest(
-        TipoDestinoEntrega.PASTA, "/var/../etc", false, null)))
+        TipoDestinoEntrega.PASTA, "/var/../etc", false, null,
+        null, null, null, null, null, null)))
         .isInstanceOf(BusinessException.class)
         .hasMessageContaining("..");
   }
@@ -98,7 +106,8 @@ class ConfigEntregaServiceTest {
   @Test
   void salvar_rejeitaPathRelativo() {
     assertThatThrownBy(() -> service.salvar(clienteId, new ConfigEntregaRequest(
-        TipoDestinoEntrega.PASTA, "relativo/path", false, null)))
+        TipoDestinoEntrega.PASTA, "relativo/path", false, null,
+        null, null, null, null, null, null)))
         .isInstanceOf(BusinessException.class)
         .hasMessageContaining("absoluto");
   }

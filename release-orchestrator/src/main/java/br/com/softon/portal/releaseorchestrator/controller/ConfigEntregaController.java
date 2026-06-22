@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -33,5 +34,14 @@ public class ConfigEntregaController {
   public ConfigEntregaResponse salvar(@PathVariable UUID clienteId,
       @Valid @RequestBody ConfigEntregaRequest request) {
     return ConfigEntregaResponse.from(service.salvar(clienteId, request));
+  }
+
+  /**
+   * Testa a conexão com o destino salvo. Retorna mensagem amigável em texto.
+   * Erro de configuração ou conexão é mapeado para 422 via BusinessException.
+   */
+  @PostMapping("/testar")
+  public String testar(@PathVariable UUID clienteId) {
+    return service.testarConexao(clienteId);
   }
 }

@@ -54,6 +54,29 @@ public class ConfigEntrega extends AuditableEntity {
   @Column(name = "emails_notificacao", length = 1000)
   private String emailsNotificacao;
 
+  /** Required quando tipoDestino = FTP/SFTP. */
+  @Column(name = "host", length = 200)
+  private String host;
+
+  /** Default 21 (FTP) ou 22 (SFTP); aplicado no service quando nulo. */
+  @Column(name = "porta")
+  private Integer porta;
+
+  @Column(name = "usuario", length = 120)
+  private String usuario;
+
+  /** Senha cifrada em AES-GCM (base64). Setter preserva quando recebe vazio. */
+  @Column(name = "senha_cifrada", length = 1000)
+  private String senhaCifrada;
+
+  /** FTP em modo passivo. Default TRUE. */
+  @Column(name = "modo_passivo")
+  private Boolean modoPassivo;
+
+  /** SFTP: valida fingerprint do servidor antes de conectar. Default TRUE. */
+  @Column(name = "strict_host_check")
+  private Boolean strictHostCheck;
+
   public ConfigEntrega(Cliente cliente, TipoDestinoEntrega tipoDestino, String caminhoBase) {
     this.cliente = cliente;
     this.tipoDestino = tipoDestino;
@@ -67,5 +90,26 @@ public class ConfigEntrega extends AuditableEntity {
     this.caminhoBase = caminhoBase;
     this.exigirAprovacao = exigirAprovacao;
     this.emailsNotificacao = emailsNotificacao;
+  }
+
+  /**
+   * Atualiza campos do destino remoto. {@code senhaCifrada} em branco/nulo
+   * preserva o valor atual (segurança: nunca devolvemos a senha no GET, então
+   * a UI manda em branco quando o operador não alterou).
+   */
+  public void atualizarDestinoRemoto(String host, Integer porta, String usuario,
+      String senhaCifrada, Boolean modoPassivo, Boolean strictHostCheck) {
+    this.host = host;
+    this.porta = porta;
+    this.usuario = usuario;
+    if (senhaCifrada != null && !senhaCifrada.isBlank()) {
+      this.senhaCifrada = senhaCifrada;
+    }
+    this.modoPassivo = modoPassivo;
+    this.strictHostCheck = strictHostCheck;
+  }
+
+  public boolean temSenhaConfigurada() {
+    return senhaCifrada != null && !senhaCifrada.isBlank();
   }
 }

@@ -12,6 +12,13 @@ public record ConfigEntregaResponse(
     String caminhoBase,
     boolean exigirAprovacao,
     String emailsNotificacao,
+    String host,
+    Integer porta,
+    String usuario,
+    /** True quando há senha cadastrada; o valor cifrado nunca é devolvido. */
+    boolean senhaConfigurada,
+    Boolean modoPassivo,
+    Boolean strictHostCheck,
     OffsetDateTime updatedAt) {
 
   public static ConfigEntregaResponse from(ConfigEntrega c) {
@@ -22,6 +29,12 @@ public record ConfigEntregaResponse(
         c.getCaminhoBase(),
         c.isExigirAprovacao(),
         c.getEmailsNotificacao(),
+        c.getHost(),
+        c.getPorta(),
+        c.getUsuario(),
+        c.temSenhaConfigurada(),
+        c.getModoPassivo(),
+        c.getStrictHostCheck(),
         c.getUpdatedAt());
   }
 }
