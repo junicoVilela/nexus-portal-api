@@ -1,5 +1,6 @@
 package br.com.softon.portal.releaseorchestrator.service;
 
+import br.com.softon.portal.releaseorchestrator.dto.request.CalcularDeltaRequest;
 import br.com.softon.portal.releaseorchestrator.dto.response.DeltaResumoResponse;
 import br.com.softon.portal.releaseorchestrator.entity.ArtefatoReleaseModulo;
 import br.com.softon.portal.releaseorchestrator.entity.Entrega;
@@ -12,6 +13,7 @@ import br.com.softon.portal.releaseorchestrator.repository.OrchestratorEntregaMo
 import br.com.softon.portal.shared.exception.BusinessException;
 import jakarta.transaction.Transactional;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,6 +52,19 @@ public class DeltaEntregaService {
 
   @Transactional
   public DeltaResumoResponse calcular(UUID entregaId) {
+    return calcular(entregaId, null);
+  }
+
+  /**
+   * Calcula o delta aceitando overrides por módulo (FROM_TAG). Quando
+   * informado, o {@code fromTag} sobrescreve o valor padrão de
+   * {@link EntregaModulo#getVersaoFrom()} e é persistido no próprio módulo
+   * (registro audit-friendly).
+   *
+   * @param req se null ou vazio, calcula com defaults.
+   */
+  @Transactional
+  public DeltaResumoResponse calcular(UUID entregaId, CalcularDeltaRequest req) {
     Entrega entrega = entregaService.buscar(entregaId);
     if (!entrega.getStatus().editavel()) {
       throw new BusinessException(
@@ -63,6 +78,15 @@ public class DeltaEntregaService {
           "Seleção de módulos vazia. Inicialize os módulos antes de calcular o delta.");
     }
 
+    Map<UUID, String> fromOverridePorModulo = new HashMap<>();
+    if (req != null && req.modulos() != null) {
+      for (var ov : req.modulos()) {
+        if (ov.fromTag() != null && !ov.fromTag().isBlank()) {
+          fromOverridePorModulo.put(ov.moduloProdutoId(), ov.fromTag().trim());
+        }
+      }
+    }
+
     repository.deleteByEntregaModulo_Entrega_Id(entregaId);
 
     List<DeltaResumoResponse.ModuloResumo> resumoPorModulo = new ArrayList<>();
@@ -71,6 +95,12 @@ public class DeltaEntregaService {
 
     for (EntregaModulo em : linhas) {
       if (!em.isSelecionado()) continue;
+
+      // Aplica override de FROM se houver — persistido para auditoria.
+      String overrideFrom = fromOverridePorModulo.get(em.getModuloProduto().getId());
+      if (overrideFrom != null) {
+        em.setVersaoFrom(overrideFrom);
+      }
 
       List<ArtefatoReleaseModulo> artefatos = artefatoRepository
           .findByRelease_IdAndModuloProduto_IdOrderByCreatedAtDesc(

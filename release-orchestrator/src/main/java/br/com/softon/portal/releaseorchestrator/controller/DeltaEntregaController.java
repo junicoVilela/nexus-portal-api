@@ -1,9 +1,11 @@
 package br.com.softon.portal.releaseorchestrator.controller;
 
+import br.com.softon.portal.releaseorchestrator.dto.request.CalcularDeltaRequest;
 import br.com.softon.portal.releaseorchestrator.dto.response.DeltaResumoResponse;
 import br.com.softon.portal.releaseorchestrator.dto.response.EntregaModuloArtefatoResponse;
 import br.com.softon.portal.releaseorchestrator.service.DeltaEntregaService;
 import br.com.softon.portal.shared.security.SecurityRoles;
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +13,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -36,7 +39,8 @@ public class DeltaEntregaController {
   }
 
   @PostMapping("/calcular")
-  public DeltaResumoResponse calcular(@PathVariable UUID entregaId) {
-    return service.calcular(entregaId);
+  public DeltaResumoResponse calcular(@PathVariable UUID entregaId,
+      @Valid @RequestBody(required = false) CalcularDeltaRequest request) {
+    return service.calcular(entregaId, request);
   }
 }
