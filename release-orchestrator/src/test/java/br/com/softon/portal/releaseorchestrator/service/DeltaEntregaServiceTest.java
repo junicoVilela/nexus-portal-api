@@ -43,6 +43,7 @@ class DeltaEntregaServiceTest {
   @Mock OrchestratorEntregaModuloRepository entregaModuloRepository;
   @Mock ArtefatoReleaseModuloRepository artefatoRepository;
   @Mock EntregaService entregaService;
+  @Mock GithubAssetSyncService githubAssetSyncService;
   @InjectMocks DeltaEntregaService service;
 
   Cliente cliente;

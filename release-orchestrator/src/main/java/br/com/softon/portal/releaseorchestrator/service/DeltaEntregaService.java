@@ -5,6 +5,7 @@ import br.com.softon.portal.releaseorchestrator.entity.ArtefatoReleaseModulo;
 import br.com.softon.portal.releaseorchestrator.entity.Entrega;
 import br.com.softon.portal.releaseorchestrator.entity.EntregaModulo;
 import br.com.softon.portal.releaseorchestrator.entity.EntregaModuloArtefato;
+import br.com.softon.portal.releaseorchestrator.integration.github.GitHubException;
 import br.com.softon.portal.releaseorchestrator.repository.ArtefatoReleaseModuloRepository;
 import br.com.softon.portal.releaseorchestrator.repository.OrchestratorEntregaModuloArtefatoRepository;
 import br.com.softon.portal.releaseorchestrator.repository.OrchestratorEntregaModuloRepository;
@@ -36,6 +37,10 @@ public class DeltaEntregaService {
   private final OrchestratorEntregaModuloRepository entregaModuloRepository;
   private final ArtefatoReleaseModuloRepository artefatoRepository;
   private final EntregaService entregaService;
+  private final GithubAssetSyncService githubAssetSyncService;
+
+  private static final org.slf4j.Logger log =
+      org.slf4j.LoggerFactory.getLogger(DeltaEntregaService.class);
 
   public List<EntregaModuloArtefato> listar(UUID entregaId) {
     entregaService.buscar(entregaId);
@@ -69,6 +74,19 @@ public class DeltaEntregaService {
       List<ArtefatoReleaseModulo> artefatos = artefatoRepository
           .findByRelease_IdAndModuloProduto_IdOrderByCreatedAtDesc(
               entrega.getRelease().getId(), em.getModuloProduto().getId());
+
+      // F2.1: se não há artefato uploadado e o produto tem GitHub configurado,
+      // tenta baixar o asset da release. Falha silenciosa (delta fica vazio
+      // para o módulo) — operador decide se aborta ou prossegue.
+      if (artefatos.isEmpty()) {
+        try {
+          artefatos = githubAssetSyncService.sincronizar(
+              entrega.getRelease(), em.getModuloProduto());
+        } catch (GitHubException ex) {
+          log.warn("Falha ao sincronizar asset GitHub para módulo {}: {}",
+              em.getModuloProduto().getCodigo(), ex.getMessage());
+        }
+      }
 
       int ordem = 0;
       long bytesDoModulo = 0;
