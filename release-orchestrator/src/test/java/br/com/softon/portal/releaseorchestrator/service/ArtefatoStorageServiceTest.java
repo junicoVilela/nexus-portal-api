@@ -83,6 +83,6 @@ class ArtefatoStorageServiceTest {
   }
 
   private ArtefatoStorageService service(String dir) {
-    return new ArtefatoStorageService(new ReleaseOrchestratorStorageProperties(dir, null));
+    return new ArtefatoStorageService(new ReleaseOrchestratorStorageProperties(dir, null, 90));
   }
 }

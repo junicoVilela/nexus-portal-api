@@ -92,7 +92,7 @@ class GeracaoEntregaServiceTest {
     contrato = new ClienteProduto(cliente, produto, AmbientePadrao.PROD);
     setId(contrato, UUID.randomUUID());
 
-    storage = new ReleaseOrchestratorStorageProperties(null, "/tmp/entregas");
+    storage = new ReleaseOrchestratorStorageProperties(null, "/tmp/entregas", 90);
     service = new GeracaoEntregaService(entregaRepository, entregaModuloRepository,
         deltaRepository, clienteProdutoRepository, cpmRepository, empacotador,
         renderizador, storage, configEntregaRepository, publishService, meterRegistry);
@@ -156,7 +156,7 @@ class GeracaoEntregaServiceTest {
 
   @Test
   void iniciar_rejeitaQuandoStorageEntregasNaoConfigurado() {
-    storage = new ReleaseOrchestratorStorageProperties(null, null);
+    storage = new ReleaseOrchestratorStorageProperties(null, null, 90);
     service = new GeracaoEntregaService(entregaRepository, entregaModuloRepository,
         deltaRepository, clienteProdutoRepository, cpmRepository, empacotador,
         renderizador, storage, configEntregaRepository, publishService, meterRegistry);

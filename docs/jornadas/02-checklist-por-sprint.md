@@ -360,8 +360,9 @@ Bloco curto no início da sprint pra fechar dívida técnica que ficou exposta n
 
 ### F4 fase 2 — extensões
 - [x] Health: github, jenkins, storage (HealthIndicator beans em `release-orchestrator/health/`)
+- [x] Retenção de pacotes (`RetencaoPacotesJob` daily 03:00; default 90 dias; preserva SHA-256 para auditoria)
 - [ ] E2E Playwright: release → entrega → download
-- [ ] Backup + retenção de pacotes (job @Scheduled)
+- [ ] Backup remoto de pacotes (P2 — se necessário)
 
 **ROADMAP:** F4.*
 

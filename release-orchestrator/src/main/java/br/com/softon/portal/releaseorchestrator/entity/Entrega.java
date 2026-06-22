@@ -128,6 +128,18 @@ public class Entrega extends AuditableEntity {
     this.tamanhoBytes = tamanhoBytes;
   }
 
+  /**
+   * Marca que o pacote ZIP foi descartado por retenção (F4 fase 2).
+   * O status CONCLUIDA é preservado (histórico intacto); apenas as
+   * referências ao arquivo são limpas para que a UI não ofereça download
+   * de algo inexistente. {@link #arquivoPacoteSha256} fica como registro
+   * de auditoria.
+   */
+  public void marcarPacoteDescartado() {
+    this.arquivoPacoteCaminho = null;
+    this.tamanhoBytes = null;
+  }
+
   public void marcarFalha(String motivo) {
     this.status = StatusEntrega.FALHA;
     this.dataConclusao = OffsetDateTime.now();
