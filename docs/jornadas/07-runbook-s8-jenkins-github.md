@@ -2,22 +2,154 @@
 
 Operacional para fechar a [Sprint 8](02-checklist-por-sprint.md) — **fora do
 portal** — colocando o piloto DTEC-LD em build-on-tag com publicação no GitHub
-Releases. Cobre PAT, job no Jenkins, primeira tag de teste e validação.
+Releases. Cobre instalação do Jenkins do zero, PAT, job, primeira tag de
+teste e validação.
 
 > Templates de arquivos: [`../release-orchestrator/templates/`](../release-orchestrator/templates/)
 > Convenção mestre: [`../release-orchestrator/40-guia-versao-tag.md`](../release-orchestrator/40-guia-versao-tag.md)
 
 ---
 
-## 0. Pré-requisitos
+## 0. Instalação do Jenkins (from zero)
+
+Pule esta seção se já existir um Jenkins acessível ao time. Caso contrário,
+o caminho mais rápido é Docker; se houver requisito de servidor dedicado,
+ver §0.5.
+
+### 0.1 Container Docker (recomendado para PoC e times pequenos)
+
+```bash
+# Volume nomeado para persistir configs e jobs entre reinícios
+docker volume create jenkins_home
+
+docker run -d \
+  --name jenkins \
+  --restart unless-stopped \
+  -p 8080:8080 -p 50000:50000 \
+  -v jenkins_home:/var/jenkins_home \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  jenkins/jenkins:lts-jdk21
+```
+
+- `8080`: UI HTTP. Coloque atrás de um nginx/Traefik se for expor publicamente.
+- `50000`: porta de agentes (não precisa expor externamente no MVP).
+- Volume `jenkins_home` guarda tudo — não deletar.
+- Imagem `lts-jdk21` já vem com JDK 21; evita configurar tool depois.
+
+### 0.2 Senha inicial e setup wizard
+
+```bash
+docker exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword
+```
+
+1. Abra `http://localhost:8080` (ou o host onde o container roda).
+2. Cole a senha. **Install suggested plugins** — já inclui Pipeline, Git,
+   GitHub, Credentials Binding.
+3. Crie o usuário admin com senha forte.
+4. URL do Jenkins: confirme a URL pública (será usada no webhook GitHub).
+
+### 0.3 Plugins adicionais necessários
+
+Após o wizard, em **Manage Jenkins → Plugins → Available plugins**, instale:
+
+| Plugin | Para que serve |
+|---|---|
+| `Pipeline` | Já vem com "suggested" — confirme |
+| `GitHub` | Webhooks `/github-webhook/` |
+| `GitHub Branch Source` | Trigger por tag |
+| `Generic Webhook Trigger` | Alternativa flexível pro disparo por tag |
+| `Credentials Binding` | Bind do PAT em variável de ambiente |
+| `Pipeline: Stage View` (opcional) | UI bonita do pipeline |
+| `Timestamper` | Timestamps nos logs (já usado no Jenkinsfile template) |
+
+Reinicie ao final da instalação (checkbox "Restart Jenkins when installation
+is complete and no jobs are running").
+
+### 0.4 Tools globais
+
+**Manage Jenkins → Tools**:
+
+- **JDK installations**:
+  - Name: `jdk-21`
+  - Install automatically (Adoptium) ou caminho local
+- **Maven installations**:
+  - Name: `maven-3.9`
+  - Install automatically (Apache Maven 3.9.x)
+
+> Estes nomes são referenciados literalmente no
+> [`../release-orchestrator/templates/Jenkinsfile`](../release-orchestrator/templates/Jenkinsfile)
+> — se mudar, ajuste o template também.
+
+### 0.5 gh CLI no agente
+
+Se for usar o `gh` no upload de assets (mais limpo que `curl`):
+
+```bash
+# Para o container LTS oficial (Debian-based):
+docker exec -u root jenkins bash -c '
+  curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+    | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg && \
+  echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] \
+    https://cli.github.com/packages stable main" \
+    > /etc/apt/sources.list.d/github-cli.list && \
+  apt update && apt install -y gh
+'
+docker exec jenkins gh --version
+```
+
+Se faltar `gh`, o Jenkinsfile template cai para `curl` direto na API REST.
+
+### 0.6 Instalação em servidor dedicado (alternativa)
+
+Quando o container não couber (firewall corporativo, requisito de SSO via
+LDAP, agentes Windows etc.), instale o pacote `.deb`/`.rpm` oficial. Resumo
+do passo-a-passo:
+
+1. JDK 21 disponível no sistema (`apt install temurin-21-jdk` ou equivalente).
+2. Adicionar repositório APT/YUM do Jenkins LTS:
+   `https://www.jenkins.io/doc/book/installing/linux/`
+3. `systemctl enable --now jenkins`.
+4. Senha inicial em `/var/lib/jenkins/secrets/initialAdminPassword`.
+5. Repetir §0.3 e §0.4 dentro da UI.
+
+### 0.7 Smoke test do Jenkins
+
+Antes de seguir, valide que tudo funciona com um job dummy:
+
+1. **New Item → Pipeline**, nome `smoke-test`.
+2. Pipeline script:
+   ```groovy
+   pipeline {
+     agent any
+     tools { maven 'maven-3.9'; jdk 'jdk-21' }
+     stages {
+       stage('Sanity') {
+         steps {
+           sh 'java -version'
+           sh 'mvn -v'
+         }
+       }
+     }
+   }
+   ```
+3. **Build Now** → console deve mostrar Java 21 e Maven 3.9 ativos.
+
+Se OK, apague o job e siga para §1.
+
+---
+
+## 0. Pré-requisitos (resumo)
+
+Após §0.1–§0.7, você deve ter:
 
 | Item | Onde | Como conferir |
 |---|---|---|
-| Jenkins acessível | `https://jenkins.softon.{{ tld }}` | login funciona, Console online |
-| Plugins | Jenkins → "Manage Plugins" | `Pipeline`, `GitHub`, `Credentials Binding`, `Generic Webhook Trigger` |
-| Tool `maven-3.9` | Jenkins → "Global Tool Configuration" | versão instalada e nomeada `maven-3.9` |
+| Jenkins acessível | URL pública do Jenkins | login funciona, Console online |
+| Plugins | Jenkins → "Manage Plugins" | `Pipeline`, `GitHub`, `GitHub Branch Source`, `Credentials Binding`, `Generic Webhook Trigger`, `Timestamper` |
+| Tool `maven-3.9` | Jenkins → "Tools" | versão instalada e nomeada `maven-3.9` |
 | Tool `jdk-21` | idem | JDK 21 nomeado `jdk-21` |
 | `gh` CLI (opcional) | agente do Jenkins | `gh --version` ≥ 2.0 |
+| Smoke test `smoke-test` | Jenkins → Build History | SUCCESS, mostra java + mvn |
 
 Se faltar `gh`, o `Jenkinsfile` cai para `curl` direto na API REST.
 

@@ -220,6 +220,14 @@ Bloco curto no início da sprint pra fechar dívida técnica que ficou exposta n
 
 **Objetivo:** tag no repo → asset no GitHub Release. **Fora do portal.**
 
+### Jenkins from zero (runbook `07` §0)
+- [ ] Servidor/container Jenkins instalado (docker `jenkins/jenkins:lts-jdk21` ou pacote LTS)
+- [ ] Setup wizard concluído: admin, URL pública definida
+- [ ] Plugins: Pipeline, GitHub, GitHub Branch Source, Credentials Binding, Generic Webhook Trigger, Timestamper
+- [ ] Tools globais: `maven-3.9`, `jdk-21`
+- [ ] `gh` CLI no agente (opcional — fallback para curl)
+- [ ] Smoke test `smoke-test` rodando java + mvn com sucesso
+
 ### Por repositório (spec `39`)
 - [ ] Repo WEB `softon/dtec-ld`: `Jenkinsfile` build-on-tag
 - [ ] (Se separado) repo DB: pastas `db/`, convenção DDL_### / DML_###
