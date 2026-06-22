@@ -26,7 +26,7 @@ Legenda código: ✅ código pronto · 🟡 código parcial · 🔧 operacional 
 | S9 | F2 portal — GitHub adapter | Download asset TO_TAG na geração | ✅ |
 | S10 | F2 portal — delta Git | Diff BANCO/KETTLE FROM..TO | ✅ |
 | S11 | F2 front + operação | Cadastro GitHub/Jenkins + build status | 🟡 (sem trigger via portal, sem webhook, sem badge) |
-| S12+ | F3 / F4 | FTP, observabilidade (conforme prioridade) | 🟡 F3 fase 1 ✅ · transferência real e F4 📋 |
+| S12+ | F3 / F4 | FTP, observabilidade (conforme prioridade) | 🟡 F3 fases 1+2 ✅ · S3/MinIO e retry job 📋 · F4 📋 |
 
 **Trilha paralela 🔧 (S2–S8):** Jenkinsfile nos repos — não bloqueia S1–S7 se MVP usa upload manual.
 
@@ -335,13 +335,15 @@ Bloco curto no início da sprint pra fechar dívida técnica que ficou exposta n
 - [x] Endpoint POST `/clientes/{id}/config-entrega/testar`
 - [x] UI: form inline editável na aba "Config. entrega" com campos condicionais FTP/SFTP + botão "Testar conexão" + render de OK/erro
 
-### F3 fase 2 — transferência real (pendente)
-- [ ] FTP via Apache Commons Net (real publicar + testar conexão)
-- [ ] SFTP via JSch/Apache MINA SSHD
-- [ ] Hook no `GeracaoEntregaService` ao concluir empacotamento (publish strategy)
+### F3 fase 2 — transferência real ✅
+- [x] FTP via Apache Commons Net (publicar + testar conexão funcionais; modo passivo/ativo)
+- [x] SFTP via JSch (mwiede fork — `com.github.mwiede:jsch:0.2.18`) com strict host check opcional
+- [x] Hook no `GeracaoEntregaService` ao concluir empacotamento — publica via `PublishService` quando destino ≠ PASTA
+
+### F3 fase 3 — extensões P2 (pendente)
 - [ ] Bucket S3/MinIO (P2)
 - [ ] Retry job + notificação Slack/e-mail
-- [ ] DoD: pacote publicado no FTP do ACME automaticamente
+- [ ] DoD: pacote publicado no FTP do ACME automaticamente (validação manual)
 
 **ROADMAP:** F3.*
 

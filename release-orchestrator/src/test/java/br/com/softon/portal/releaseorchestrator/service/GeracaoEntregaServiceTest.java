@@ -24,8 +24,10 @@ import br.com.softon.portal.releaseorchestrator.entity.ReleaseStatus;
 import br.com.softon.portal.releaseorchestrator.entity.StatusEntrega;
 import br.com.softon.portal.releaseorchestrator.entity.TipoModulo;
 import br.com.softon.portal.releaseorchestrator.entity.TipoRelease;
+import br.com.softon.portal.releaseorchestrator.integration.publish.PublishService;
 import br.com.softon.portal.releaseorchestrator.repository.OrchestratorClienteProdutoModuloRepository;
 import br.com.softon.portal.releaseorchestrator.repository.OrchestratorClienteProdutoRepository;
+import br.com.softon.portal.releaseorchestrator.repository.OrchestratorConfigEntregaRepository;
 import br.com.softon.portal.releaseorchestrator.repository.OrchestratorEntregaModuloArtefatoRepository;
 import br.com.softon.portal.releaseorchestrator.repository.OrchestratorEntregaModuloRepository;
 import br.com.softon.portal.releaseorchestrator.repository.OrchestratorEntregaRepository;
@@ -54,6 +56,8 @@ class GeracaoEntregaServiceTest {
   @Mock OrchestratorClienteProdutoModuloRepository cpmRepository;
   @Mock EmpacotadorEntrega empacotador;
   @Mock RenderizadorFuncionalidades renderizador;
+  @Mock OrchestratorConfigEntregaRepository configEntregaRepository;
+  @Mock PublishService publishService;
 
   GeracaoEntregaService service;
   ReleaseOrchestratorStorageProperties storage;
@@ -88,7 +92,7 @@ class GeracaoEntregaServiceTest {
     storage = new ReleaseOrchestratorStorageProperties(null, "/tmp/entregas");
     service = new GeracaoEntregaService(entregaRepository, entregaModuloRepository,
         deltaRepository, clienteProdutoRepository, cpmRepository, empacotador,
-        renderizador, storage);
+        renderizador, storage, configEntregaRepository, publishService);
 
     when(renderizador.renderizar(any(), any())).thenReturn(List.of());
     when(entregaModuloRepository
@@ -151,7 +155,7 @@ class GeracaoEntregaServiceTest {
     storage = new ReleaseOrchestratorStorageProperties(null, null);
     service = new GeracaoEntregaService(entregaRepository, entregaModuloRepository,
         deltaRepository, clienteProdutoRepository, cpmRepository, empacotador,
-        renderizador, storage);
+        renderizador, storage, configEntregaRepository, publishService);
     when(entregaRepository.findById(entregaId)).thenReturn(Optional.of(entrega));
 
     assertThatThrownBy(() -> service.iniciar(entregaId))

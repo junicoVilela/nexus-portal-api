@@ -77,6 +77,18 @@
       <groupId>org.thymeleaf</groupId>
       <artifactId>thymeleaf</artifactId>
     </dependency>
+    <!-- F3 fase 2: cliente FTP -->
+    <dependency>
+      <groupId>commons-net</groupId>
+      <artifactId>commons-net</artifactId>
+      <version>3.10.0</version>
+    </dependency>
+    <!-- F3 fase 2: cliente SFTP (fork mantido) -->
+    <dependency>
+      <groupId>com.github.mwiede</groupId>
+      <artifactId>jsch</artifactId>
+      <version>0.2.18</version>
+    </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-test</artifactId>
