@@ -9,22 +9,34 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * {@code ModuloProduto.configEspecifica}.
  *
  * Exemplo:
- * <pre>{ "caminhoRepo": "kettle/dtec-ld" }</pre>
+ * <pre>{
+ *   "caminhoRepo": "kettle/dtec-ld",
+ *   "incluirDependencias": true
+ * }</pre>
  *
- * Default quando ausente: caminhoRepo = "" (raiz).
+ * Defaults quando ausentes:
+ * <ul>
+ *   <li>caminhoRepo: "" (raiz do repo)</li>
+ *   <li>incluirDependencias: false — opt-in</li>
+ * </ul>
  *
- * <p>Dependências entre transformações/jobs (incluirDependencias) ficam para
- * uma iteração futura — exigiria parser de .ktr/.kjb para resolver subjobs.
+ * <p>Quando {@code incluirDependencias=true}, o
+ * {@link GithubDeltaKettleService} parseia cada .ktr/.kjb alterado e
+ * inclui transformações/subjobs referenciados (1 nível de profundidade).
+ * Referências via variáveis Kettle ({@code ${PDI_HOME}/x.ktr}) são
+ * ignoradas — só paths literais resolvem.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record ConfigKettleModulo(String caminhoRepo) {
+public record ConfigKettleModulo(
+    String caminhoRepo,
+    boolean incluirDependencias) {
 
   public ConfigKettleModulo {
     if (caminhoRepo == null) caminhoRepo = "";
   }
 
   public static ConfigKettleModulo padrao() {
-    return new ConfigKettleModulo("");
+    return new ConfigKettleModulo("", false);
   }
 
   public static ConfigKettleModulo de(String json, ObjectMapper mapper) {

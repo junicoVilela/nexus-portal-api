@@ -24,7 +24,7 @@ Legenda código: ✅ código pronto · 🟡 código parcial · 🔧 operacional 
 | S7 | DocFlow + entrega integrada | Jornada ACME manual end-to-end | 🟡 (roteiro pronto; validação manual pendente) |
 | S8 | 🔧 F2.0 — Jenkins + GitHub (piloto) | Tag v0.0.1 → asset na Release | 🟡 templates prontos · 🔧 aplicação nos repos pendente |
 | S9 | F2 portal — GitHub adapter | Download asset TO_TAG na geração | ✅ |
-| S10 | F2 portal — delta Git | Diff BANCO/KETTLE FROM..TO | 🟡 (dependências KETTLE — único gap restante) |
+| S10 | F2 portal — delta Git | Diff BANCO/KETTLE FROM..TO | ✅ |
 | S11 | F2 front + operação | Cadastro GitHub/Jenkins + build status | 🟡 (sem trigger via portal, sem webhook, sem badge) |
 | S12+ | F3 / F4 | FTP, observabilidade (conforme prioridade) | 📋 |
 
@@ -286,8 +286,7 @@ Bloco curto no início da sprint pra fechar dívida técnica que ficou exposta n
 ### Backend
 - [x] Serviço delta: `GitHubReleasesAdapter.compare()` resolve commits FROM..TO via GitHub Compare API
 - [x] BANCO: listar `.sql` alterados → `GithubDeltaBancoService` filtra por `caminhoRepo`, classifica via `prefixoDDL`/`prefixoDML` (`ConfigBancoModulo`) e **concatena em `DDL.sql` + `DML.sql`** com header de procedência por script
-- [x] KETTLE: listar `.ktr`/`.kjb` alterados — `GithubDeltaKettleService` com `ConfigKettleModulo`
-  - **Resolução de dependências entre transformações/subjobs** ainda pendente
+- [x] KETTLE: listar `.ktr`/`.kjb` alterados — `GithubDeltaKettleService` com `ConfigKettleModulo`. Resolução de dependências via flag `incluirDependencias=true`: parser regex extrai `<filename>` literais, ignora variáveis Kettle/paths absolutos, resolve relativo + profundidade arbitrária (proteção contra ciclos)
 - [x] `POST /entregas/{id}/delta/calcular` + persistir preview (com override de `fromTag` por módulo + justificativa)
 - [x] Geração etapas 4–5 usam diff (fallback upload manual quando tag/asset ausente)
 - [x] Config por módulo: `caminhoRepo` em JSON via `configEspecifica`, com suporte a **multi-dialeto** via campo `dialetos: [{nome, caminhoRepo}]` — artefatos saem em subpastas (`oracle/DDL.sql`, `sqlserver/DDL.sql`) preservadas no ZIP final
