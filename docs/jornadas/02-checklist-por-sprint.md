@@ -358,8 +358,8 @@ Bloco curto no início da sprint pra fechar dívida técnica que ficou exposta n
 - [x] Métricas Micrometer: `entrega.geracao.duration` (Timer com percentis 50/95/99), `entrega.geracao.resultado{status=sucesso|falha|cancelada}` (Counter)
 - [x] Endpoints actuator habilitados: `/actuator/health`, `/actuator/info`, `/actuator/metrics`, `/actuator/prometheus` (todos permitAll para scrape)
 
-### F4 fase 2 — extensões (pendente)
-- [ ] Health: github, jenkins, storage (HealthIndicator beans)
+### F4 fase 2 — extensões
+- [x] Health: github, jenkins, storage (HealthIndicator beans em `release-orchestrator/health/`)
 - [ ] E2E Playwright: release → entrega → download
 - [ ] Backup + retenção de pacotes (job @Scheduled)
 

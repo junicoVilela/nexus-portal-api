@@ -82,6 +82,11 @@
       <groupId>io.micrometer</groupId>
       <artifactId>micrometer-core</artifactId>
     </dependency>
+    <!-- F4 observability: HealthIndicator API (autoconfig vem da app principal) -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-health</artifactId>
+    </dependency>
     <!-- F3 fase 2: cliente FTP -->
     <dependency>
       <groupId>commons-net</groupId>
