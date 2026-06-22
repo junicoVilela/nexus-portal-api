@@ -26,6 +26,8 @@ import br.com.softon.portal.releaseorchestrator.entity.TipoModulo;
 import br.com.softon.portal.releaseorchestrator.entity.TipoRelease;
 import br.com.softon.portal.releaseorchestrator.integration.publish.PublishService;
 import br.com.softon.portal.releaseorchestrator.repository.OrchestratorClienteProdutoModuloRepository;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import br.com.softon.portal.releaseorchestrator.repository.OrchestratorClienteProdutoRepository;
 import br.com.softon.portal.releaseorchestrator.repository.OrchestratorConfigEntregaRepository;
 import br.com.softon.portal.releaseorchestrator.repository.OrchestratorEntregaModuloArtefatoRepository;
@@ -58,6 +60,7 @@ class GeracaoEntregaServiceTest {
   @Mock RenderizadorFuncionalidades renderizador;
   @Mock OrchestratorConfigEntregaRepository configEntregaRepository;
   @Mock PublishService publishService;
+  MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   GeracaoEntregaService service;
   ReleaseOrchestratorStorageProperties storage;
@@ -92,7 +95,8 @@ class GeracaoEntregaServiceTest {
     storage = new ReleaseOrchestratorStorageProperties(null, "/tmp/entregas");
     service = new GeracaoEntregaService(entregaRepository, entregaModuloRepository,
         deltaRepository, clienteProdutoRepository, cpmRepository, empacotador,
-        renderizador, storage, configEntregaRepository, publishService);
+        renderizador, storage, configEntregaRepository, publishService, meterRegistry);
+    service.registrarMetricas();
 
     when(renderizador.renderizar(any(), any())).thenReturn(List.of());
     when(entregaModuloRepository
@@ -155,7 +159,8 @@ class GeracaoEntregaServiceTest {
     storage = new ReleaseOrchestratorStorageProperties(null, null);
     service = new GeracaoEntregaService(entregaRepository, entregaModuloRepository,
         deltaRepository, clienteProdutoRepository, cpmRepository, empacotador,
-        renderizador, storage, configEntregaRepository, publishService);
+        renderizador, storage, configEntregaRepository, publishService, meterRegistry);
+    service.registrarMetricas();
     when(entregaRepository.findById(entregaId)).thenReturn(Optional.of(entrega));
 
     assertThatThrownBy(() -> service.iniciar(entregaId))

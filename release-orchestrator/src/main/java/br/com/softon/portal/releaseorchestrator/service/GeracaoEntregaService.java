@@ -9,6 +9,10 @@ import br.com.softon.portal.releaseorchestrator.entity.StatusEntrega;
 import br.com.softon.portal.releaseorchestrator.entity.TipoDestinoEntrega;
 import br.com.softon.portal.releaseorchestrator.integration.publish.PublishException;
 import br.com.softon.portal.releaseorchestrator.integration.publish.PublishService;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
+import jakarta.annotation.PostConstruct;
 import br.com.softon.portal.releaseorchestrator.repository.OrchestratorClienteProdutoModuloRepository;
 import br.com.softon.portal.releaseorchestrator.repository.OrchestratorClienteProdutoRepository;
 import br.com.softon.portal.releaseorchestrator.repository.OrchestratorConfigEntregaRepository;
@@ -24,6 +28,7 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -54,6 +59,33 @@ public class GeracaoEntregaService {
   private final ReleaseOrchestratorStorageProperties storage;
   private final OrchestratorConfigEntregaRepository configEntregaRepository;
   private final PublishService publishService;
+  private final MeterRegistry meterRegistry;
+
+  // Métricas F4 — lazy-init via @PostConstruct para garantir registro idempotente.
+  private Timer timerGeracao;
+  private Counter counterSucesso;
+  private Counter counterFalha;
+  private Counter counterCancelada;
+
+  @PostConstruct
+  void registrarMetricas() {
+    this.timerGeracao = Timer.builder("entrega.geracao.duration")
+        .description("Tempo total de geração de uma entrega (empacotador + publish + persistência)")
+        .publishPercentiles(0.5, 0.95, 0.99)
+        .register(meterRegistry);
+    this.counterSucesso = Counter.builder("entrega.geracao.resultado")
+        .description("Total de gerações de entrega por desfecho")
+        .tag("status", "sucesso")
+        .register(meterRegistry);
+    this.counterFalha = Counter.builder("entrega.geracao.resultado")
+        .description("Total de gerações de entrega por desfecho")
+        .tag("status", "falha")
+        .register(meterRegistry);
+    this.counterCancelada = Counter.builder("entrega.geracao.resultado")
+        .description("Total de gerações de entrega por desfecho")
+        .tag("status", "cancelada")
+        .register(meterRegistry);
+  }
 
   /**
    * Valida que a entrega tem delta calculado e dispara geração assíncrona.
@@ -96,14 +128,20 @@ public class GeracaoEntregaService {
     Entrega entrega = entregaRepository.findById(entregaId).orElse(null);
     if (entrega == null) {
       log.warn("Entrega {} desapareceu antes da geração assíncrona", entregaId);
+      counterCancelada.increment();
       return;
     }
     if (entrega.getStatus() != StatusEntrega.EM_GERACAO) {
       log.warn("Entrega {} não está em EM_GERACAO ({}), abortando geração",
           entregaId, entrega.getStatus());
+      counterCancelada.increment();
       return;
     }
 
+    // MDC enrichment para logs JSON estruturados (F4).
+    MDC.put("entregaId", entregaId.toString());
+    MDC.put("clienteId", entrega.getCliente().getId().toString());
+    Timer.Sample sample = Timer.start(meterRegistry);
     try {
       List<EntregaModuloArtefato> delta = deltaRepository.findByEntrega_Id(entregaId);
       List<EntregaModulo> linhas = entregaModuloRepository
@@ -120,9 +158,15 @@ public class GeracaoEntregaService {
       entrega.marcarConcluida(pacote.caminho(), pacote.sha256(), pacote.tamanhoBytes());
       log.info("Entrega {} concluída ({} itens, {} bytes, sha256={})",
           entregaId, pacote.totalItens(), pacote.tamanhoBytes(), pacote.sha256());
+      counterSucesso.increment();
     } catch (IOException | RuntimeException ex) {
       log.error("Falha gerando entrega {}: {}", entregaId, ex.getMessage(), ex);
       entrega.marcarFalha(ex.getMessage());
+      counterFalha.increment();
+    } finally {
+      sample.stop(timerGeracao);
+      MDC.remove("entregaId");
+      MDC.remove("clienteId");
     }
   }
 

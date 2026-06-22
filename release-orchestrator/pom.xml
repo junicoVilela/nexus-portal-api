@@ -77,6 +77,11 @@
       <groupId>org.thymeleaf</groupId>
       <artifactId>thymeleaf</artifactId>
     </dependency>
+    <!-- F4 observability: Timer/Counter API (registry vem da app principal) -->
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-core</artifactId>
+    </dependency>
     <!-- F3 fase 2: cliente FTP -->
     <dependency>
       <groupId>commons-net</groupId>

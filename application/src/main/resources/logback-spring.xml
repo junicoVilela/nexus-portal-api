@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  F4 observability — config dual:
+  - dev/test: padrão Spring Boot (legível)
+  - prod: JSON estruturado via logstash-logback-encoder; correlationId
+          aparece em todo evento via MDC.
+-->
+<configuration>
+
+  <springProperty scope="context" name="appName" source="spring.application.name"
+                  defaultValue="softon-portal-api"/>
+
+  <!-- DEV: padrão Spring Boot (mantém legibilidade no console local). -->
+  <springProfile name="!prod">
+    <include resource="org/springframework/boot/logging/logback/base.xml"/>
+  </springProfile>
+
+  <!-- PROD: JSON estruturado. Cada linha = um evento serializável. -->
+  <springProfile name="prod">
+    <appender name="JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+      <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+        <includeMdcKeyName>correlationId</includeMdcKeyName>
+        <includeMdcKeyName>entregaId</includeMdcKeyName>
+        <includeMdcKeyName>clienteId</includeMdcKeyName>
+        <customFields>{"app":"${appName}"}</customFields>
+        <fieldNames>
+          <timestamp>@timestamp</timestamp>
+          <message>message</message>
+          <thread>thread</thread>
+          <logger>logger</logger>
+          <level>level</level>
+          <levelValue>[ignore]</levelValue>
+        </fieldNames>
+      </encoder>
+    </appender>
+
+    <root level="INFO">
+      <appender-ref ref="JSON_CONSOLE"/>
+    </root>
+
+    <!-- Ruído de bibliotecas em INFO; só INFO+ pro nosso código. -->
+    <logger name="org.hibernate" level="WARN"/>
+    <logger name="org.springframework" level="INFO"/>
+    <logger name="br.com.softon" level="INFO"/>
+  </springProfile>
+
+</configuration>

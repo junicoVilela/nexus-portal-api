@@ -2,16 +2,38 @@ spring:
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:dev}
   application:
-    name: doc-flow-backend
+    name: softon-portal-api
 
 server:
   port: ${SERVER_PORT:8080}
 
 management:
+  endpoints:
+    web:
+      exposure:
+        # Endpoints expostos: health/info público; prometheus em /actuator/prometheus
+        # para scrape do Prometheus / Grafana Agent.
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when_authorized
+      probes:
+        enabled: true
   health:
     mail:
       enabled: ${MAIL_HEALTH_ENABLED:false}
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        entrega.geracao.duration: true
 
 logging:
   pattern:
+    # Dev/test: console legível com correlationId; prod usa logback-spring.xml (JSON).
     console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%X{correlationId}] %logger{36} - %msg%n"

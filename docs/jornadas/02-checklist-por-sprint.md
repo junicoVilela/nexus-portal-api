@@ -26,7 +26,7 @@ Legenda código: ✅ código pronto · 🟡 código parcial · 🔧 operacional 
 | S9 | F2 portal — GitHub adapter | Download asset TO_TAG na geração | ✅ |
 | S10 | F2 portal — delta Git | Diff BANCO/KETTLE FROM..TO | ✅ |
 | S11 | F2 front + operação | Cadastro GitHub/Jenkins + build status | 🟡 (sem trigger via portal, sem webhook, sem badge) |
-| S12+ | F3 / F4 | FTP, observabilidade (conforme prioridade) | 🟡 F3 fases 1+2 ✅ · S3/MinIO e retry job 📋 · F4 📋 |
+| S12+ | F3 / F4 | FTP, observabilidade (conforme prioridade) | 🟡 F3 fases 1+2 ✅ · F4 fase 1 ✅ · S3/MinIO + retry + healthchecks + E2E 📋 |
 
 **Trilha paralela 🔧 (S2–S8):** Jenkinsfile nos repos — não bloqueia S1–S7 se MVP usa upload manual.
 
@@ -351,11 +351,17 @@ Bloco curto no início da sprint pra fechar dívida técnica que ficou exposta n
 
 ## Sprint 13+ — F4 Observabilidade
 
-- [ ] Logs JSON + correlationId na geração
-- [ ] Métricas: tempo geração, falhas, delta duration
-- [ ] Health: github, jenkins, storage
+### F4 fase 1 — logs JSON + métricas ✅
+- [x] Logs JSON estruturados via logback-spring.xml (profile prod com logstash-encoder; dev mantém padrão legível)
+- [x] CorrelationIdFilter já existia em shared; agora propagado para @Async via AsyncMdcConfig + ThreadPoolTaskExecutor com MdcTaskDecorator
+- [x] MDC enrichment em GeracaoEntregaService (entregaId, clienteId) — aparece em todo log JSON da geração
+- [x] Métricas Micrometer: `entrega.geracao.duration` (Timer com percentis 50/95/99), `entrega.geracao.resultado{status=sucesso|falha|cancelada}` (Counter)
+- [x] Endpoints actuator habilitados: `/actuator/health`, `/actuator/info`, `/actuator/metrics`, `/actuator/prometheus` (todos permitAll para scrape)
+
+### F4 fase 2 — extensões (pendente)
+- [ ] Health: github, jenkins, storage (HealthIndicator beans)
 - [ ] E2E Playwright: release → entrega → download
-- [ ] Backup + retenção pacotes
+- [ ] Backup + retenção de pacotes (job @Scheduled)
 
 **ROADMAP:** F4.*
 
