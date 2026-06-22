@@ -76,6 +76,45 @@ public class GitHubReleasesAdapter {
   }
 
   /**
+   * Lista arquivos alterados entre dois refs/tags via GitHub Compare API.
+   * Inclui added, modified, renamed, removed. Caller filtra conforme o caso.
+   *
+   * <p>Endpoint: GET /repos/{owner}/{repo}/compare/{base}...{head}
+   */
+  public List<GitHubFileChange> compare(String repositorio, String base, String head,
+      String token) {
+    String url = String.format("/repos/%s/compare/%s...%s", repositorio, base, head);
+    CompareDto dto = executar(token, url, CompareDto.class);
+    if (dto == null || dto.files() == null) return List.of();
+    return Arrays.stream(dto.files()).map(FileDto::toDomain).toList();
+  }
+
+  /**
+   * Baixa o conteúdo bruto de um arquivo num ref específico (tag/branch/commit).
+   * Caller fecha o stream.
+   *
+   * <p>Endpoint: GET /repos/{owner}/{repo}/contents/{path}?ref={ref}
+   * com Accept: application/vnd.github.raw
+   */
+  public InputStream baixarArquivo(String repositorio, String path, String ref, String token) {
+    String pathEncoded = java.net.URLEncoder.encode(path, java.nio.charset.StandardCharsets.UTF_8)
+        .replace("%2F", "/"); // mantém barras de subpath
+    String url = String.format("/repos/%s/contents/%s?ref=%s", repositorio, pathEncoded, ref);
+    RestClient client = RestClient.builder()
+        .baseUrl(BASE_URL)
+        .defaultHeader(HttpHeaders.ACCEPT, "application/vnd.github.raw")
+        .defaultHeader("X-GitHub-Api-Version", API_VERSION)
+        .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+        .build();
+    try {
+      return client.get().uri(url).retrieve().body(InputStream.class);
+    } catch (HttpStatusCodeException e) {
+      throw new GitHubException("Falha ao baixar " + path + " em " + ref + " de " + repositorio,
+          e.getStatusCode().value(), e);
+    }
+  }
+
+  /**
    * Baixa um asset do GitHub. Caller é responsável por fechar o stream.
    *
    * @throws GitHubException 404 se o asset não existir.
@@ -143,6 +182,25 @@ public class GitHubReleasesAdapter {
       List<GitHubRelease.Asset> dominio = assets == null ? List.of()
           : Arrays.stream(assets).map(GitHubAssetDto::toDomain).toList();
       return new GitHubRelease(tagName, name, draft, prerelease, publishedAt, dominio);
+    }
+  }
+
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  record CompareDto(FileDto[] files) {}
+
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  record FileDto(
+      String filename,
+      @JsonProperty("previous_filename") String previousFilename,
+      String status,
+      int additions,
+      int deletions,
+      int changes,
+      String sha) {
+
+    GitHubFileChange toDomain() {
+      return new GitHubFileChange(filename, previousFilename, status, additions, deletions,
+          changes, sha);
     }
   }
 

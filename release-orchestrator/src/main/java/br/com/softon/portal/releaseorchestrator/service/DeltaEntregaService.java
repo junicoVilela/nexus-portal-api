@@ -38,6 +38,7 @@ public class DeltaEntregaService {
   private final ArtefatoReleaseModuloRepository artefatoRepository;
   private final EntregaService entregaService;
   private final GithubAssetSyncService githubAssetSyncService;
+  private final GithubDeltaBancoService githubDeltaBancoService;
 
   private static final org.slf4j.Logger log =
       org.slf4j.LoggerFactory.getLogger(DeltaEntregaService.class);
@@ -75,15 +76,22 @@ public class DeltaEntregaService {
           .findByRelease_IdAndModuloProduto_IdOrderByCreatedAtDesc(
               entrega.getRelease().getId(), em.getModuloProduto().getId());
 
-      // F2.1: se não há artefato uploadado e o produto tem GitHub configurado,
-      // tenta baixar o asset da release. Falha silenciosa (delta fica vazio
-      // para o módulo) — operador decide se aborta ou prossegue.
+      // F2.1/F2.10: sem artefato uploadado, despacha pelo tipo de módulo:
+      //   WEB/BATCH → GithubAssetSyncService (download de asset da release)
+      //   BANCO     → GithubDeltaBancoService (delta de .sql entre tags)
+      // Falha silenciosa: delta fica vazio + log; operador decide se aborta.
       if (artefatos.isEmpty()) {
         try {
-          artefatos = githubAssetSyncService.sincronizar(
-              entrega.getRelease(), em.getModuloProduto());
+          var modulo = em.getModuloProduto();
+          artefatos = switch (modulo.getTipo()) {
+            case WEB, BATCH -> githubAssetSyncService.sincronizar(
+                entrega.getRelease(), modulo);
+            case BANCO -> githubDeltaBancoService.sincronizar(
+                entrega.getRelease(), modulo, em.getVersaoFrom());
+            default -> artefatos;
+          };
         } catch (GitHubException ex) {
-          log.warn("Falha ao sincronizar asset GitHub para módulo {}: {}",
+          log.warn("Falha ao sincronizar GitHub para módulo {}: {}",
               em.getModuloProduto().getCodigo(), ex.getMessage());
         }
       }
