@@ -36,6 +36,7 @@ public class ProdutoRhController {
 
     private final ProdutoRhService service;
     private final br.com.softon.portal.releaseorchestrator.service.GithubIntegrationService githubService;
+    private final br.com.softon.portal.releaseorchestrator.service.JenkinsIntegrationService jenkinsService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -96,5 +97,16 @@ public class ProdutoRhController {
                 request != null
                         ? request
                         : new br.com.softon.portal.releaseorchestrator.dto.request.TestarGithubRequest(null, null));
+    }
+
+    @PostMapping("/{id}/testar-jenkins")
+    public br.com.softon.portal.releaseorchestrator.dto.response.TestarJenkinsResponse testarJenkins(
+            @PathVariable UUID id,
+            @Valid @RequestBody(required = false)
+            br.com.softon.portal.releaseorchestrator.dto.request.TestarJenkinsRequest request) {
+        return jenkinsService.testar(id,
+                request != null
+                        ? request
+                        : new br.com.softon.portal.releaseorchestrator.dto.request.TestarJenkinsRequest(null, null, null, null));
     }
 }

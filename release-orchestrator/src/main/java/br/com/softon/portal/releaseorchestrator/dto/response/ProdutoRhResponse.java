@@ -17,6 +17,12 @@ public record ProdutoRhResponse(
         String padraoTag,
         /** True quando há token cadastrado (não devolve o valor por segurança). */
         boolean githubTokenConfigurado,
+        String jenkinsUrl,
+        String jenkinsJob,
+        String jenkinsUser,
+        String jenkinsTriggerMode,
+        /** True quando há token Jenkins cadastrado. */
+        boolean jenkinsTokenConfigurado,
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt
 ) {
@@ -26,6 +32,9 @@ public record ProdutoRhResponse(
                 p.getCor(), p.getResponsavelId(), p.isAtivo(),
                 p.getRepositorioGithub(), p.getBranchPadrao(), p.getPadraoTag(),
                 p.getGithubToken() != null && !p.getGithubToken().isBlank(),
+                p.getJenkinsUrl(), p.getJenkinsJob(), p.getJenkinsUser(),
+                p.getJenkinsTriggerMode(),
+                p.getJenkinsToken() != null && !p.getJenkinsToken().isBlank(),
                 p.getCreatedAt(), p.getUpdatedAt());
     }
 }

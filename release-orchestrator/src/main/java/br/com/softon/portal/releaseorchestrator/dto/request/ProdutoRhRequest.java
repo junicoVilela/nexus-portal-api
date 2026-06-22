@@ -16,5 +16,12 @@ public record ProdutoRhRequest(
         @Size(max = 80)  String branchPadrao,
         @Size(max = 200) String padraoTag,
         /** PAT. Enviar em branco em PUT preserva o token atual. */
-        @Size(max = 500) String githubToken
+        @Size(max = 500) String githubToken,
+        /* --- Integração Jenkins (Fase 2, opcional) --- */
+        @Size(max = 300) String jenkinsUrl,
+        @Size(max = 200) String jenkinsJob,
+        @Size(max = 120) String jenkinsUser,
+        /** API token Jenkins. Enviar em branco em PUT preserva o atual. */
+        @Size(max = 500) String jenkinsToken,
+        @Size(max = 30)  String jenkinsTriggerMode
 ) {}

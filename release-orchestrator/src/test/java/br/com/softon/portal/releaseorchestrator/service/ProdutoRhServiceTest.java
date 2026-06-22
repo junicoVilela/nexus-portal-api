@@ -50,7 +50,7 @@ class ProdutoRhServiceTest {
     @Test
     @DisplayName("Deve criar produto com sucesso")
     void deveCriarProduto() {
-        ProdutoRhRequest request = new ProdutoRhRequest("Sistema X", "SX", null, "#2563eb", null, true, null, null, null, null);
+        ProdutoRhRequest request = new ProdutoRhRequest("Sistema X", "SX", null, "#2563eb", null, true, null, null, null, null, null, null, null, null, null);
         when(repository.existsBySiglaIgnoreCase("SX")).thenReturn(false);
         when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -64,7 +64,7 @@ class ProdutoRhServiceTest {
     @Test
     @DisplayName("Deve lançar BusinessException ao criar com sigla duplicada")
     void deveLancarErroSiglaDuplicada() {
-        ProdutoRhRequest request = new ProdutoRhRequest("Sistema Y", "SX", null, "#2563eb", null, true, null, null, null, null);
+        ProdutoRhRequest request = new ProdutoRhRequest("Sistema Y", "SX", null, "#2563eb", null, true, null, null, null, null, null, null, null, null, null);
         when(repository.existsBySiglaIgnoreCase("SX")).thenReturn(true);
 
         assertThatThrownBy(() -> service.criar(request))

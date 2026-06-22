@@ -58,6 +58,23 @@ public class ProdutoRh extends AuditableEntity {
   @Column(name = "github_token", length = 500)
   private String githubToken;
 
+  /** URL base do Jenkins. Nulo desabilita integração. */
+  @Column(name = "jenkins_url", length = 300)
+  private String jenkinsUrl;
+
+  @Column(name = "jenkins_job", length = 200)
+  private String jenkinsJob;
+
+  @Column(name = "jenkins_user", length = 120)
+  private String jenkinsUser;
+
+  /** API token Jenkins. MVP texto plano. */
+  @Column(name = "jenkins_token", length = 500)
+  private String jenkinsToken;
+
+  @Column(name = "jenkins_trigger_mode", length = 30)
+  private String jenkinsTriggerMode;
+
   public ProdutoRh(String nome, String sigla, String descricao, String cor,
       UUID responsavelId, boolean ativo) {
     this.nome = nome;
@@ -91,6 +108,22 @@ public class ProdutoRh extends AuditableEntity {
   public boolean temIntegracaoGithub() {
     return repositorioGithub != null && !repositorioGithub.isBlank()
         && githubToken != null && !githubToken.isBlank();
+  }
+
+  public void atualizarIntegracaoJenkins(String jenkinsUrl, String jenkinsJob,
+      String jenkinsUser, String jenkinsToken, String triggerMode) {
+    this.jenkinsUrl = jenkinsUrl;
+    this.jenkinsJob = jenkinsJob;
+    this.jenkinsUser = jenkinsUser;
+    if (jenkinsToken != null && !jenkinsToken.isBlank()) {
+      this.jenkinsToken = jenkinsToken;
+    }
+    this.jenkinsTriggerMode = triggerMode;
+  }
+
+  public boolean temIntegracaoJenkins() {
+    return jenkinsUrl != null && !jenkinsUrl.isBlank()
+        && jenkinsJob != null && !jenkinsJob.isBlank();
   }
 
   public void alterarStatus(boolean ativo) {

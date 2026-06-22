@@ -33,6 +33,7 @@ public class ProdutoRhService {
         request.nome().trim(), sigla, request.descricao(),
         request.cor(), request.responsavelId(), ativo);
     aplicarIntegracaoGithub(produto, request);
+    aplicarIntegracaoJenkins(produto, request);
     return repository.save(produto);
   }
 
@@ -47,7 +48,22 @@ public class ProdutoRhService {
     produto.atualizar(request.nome().trim(), sigla, request.descricao(),
         request.cor(), request.responsavelId(), ativo);
     aplicarIntegracaoGithub(produto, request);
+    aplicarIntegracaoJenkins(produto, request);
     return produto;
+  }
+
+  private void aplicarIntegracaoJenkins(ProdutoRh produto, ProdutoRhRequest req) {
+    String url = req.jenkinsUrl();
+    if (url != null) url = url.trim();
+    if (url != null && url.isBlank()) url = null;
+    if (url != null && url.endsWith("/")) url = url.substring(0, url.length() - 1);
+    String job = req.jenkinsJob();
+    if (job != null && job.isBlank()) job = null;
+    String user = req.jenkinsUser();
+    if (user != null && user.isBlank()) user = null;
+    String triggerMode = req.jenkinsTriggerMode();
+    if (triggerMode == null || triggerMode.isBlank()) triggerMode = "BUILD_ON_TAG";
+    produto.atualizarIntegracaoJenkins(url, job, user, req.jenkinsToken(), triggerMode);
   }
 
   private void aplicarIntegracaoGithub(ProdutoRh produto, ProdutoRhRequest req) {
