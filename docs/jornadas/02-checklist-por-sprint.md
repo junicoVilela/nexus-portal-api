@@ -19,7 +19,7 @@ Legenda código: ✅ código pronto · 🟡 código parcial · 🔧 operacional 
 | S2 | F0 front — artefatos + PDF | Tela upload + PDF na release | ✅ |
 | S3 | F1 backend — cadastros cliente | CRUD cliente + produtos contratados | ✅ |
 | S4 | F1 backend — entrega core | Assistente API + geração pacote local | ✅ |
-| S5 | F1 front — clientes + agenda | Telas cliente + próximas entregas | 🟡 (funcionalidades `05` pendente) |
+| S5 | F1 front — clientes + agenda | Telas cliente + próximas entregas | ✅ |
 | S6 | F1 front — assistente + geração | Wizard 5 passos + polling geração | ✅ (tela `19` e `21` substituídas) |
 | S7 | DocFlow + entrega integrada | Jornada ACME manual end-to-end | 🟡 (roteiro pronto; validação manual pendente) |
 | S8 | 🔧 F2.0 — Jenkins + GitHub (piloto) | Tag v0.0.1 → asset na Release | 🟡 templates prontos · 🔧 aplicação nos repos pendente |
@@ -169,8 +169,7 @@ Bloco curto no início da sprint pra fechar dívida técnica que ficou exposta n
 - [x] Shell `/release-orchestrator/*` com sidebar + command palette
 - [x] Lista + cadastro clientes (`02`, `03`) — `clientes-list` + `cliente-form` com CanDeactivate
 - [x] Visão geral cliente (`04`) — `cliente-detalhe` com 5 abas (Geral, Contatos, Produtos, Config entrega, Próximas entregas)
-- [x] ~~Abas: funcionalidades (`05`)~~ produtos contratados (`06`) + módulos por produto, config entrega (`07`)
-  - **Funcionalidades (`05`)** ainda pendente (matriz cliente × funcionalidades)
+- [x] Abas: funcionalidades (`05`) matriz cliente × domínio × funcionalidade, produtos contratados (`06`) + módulos por produto, config entrega (`07`)
 - [x] Agenda próximas entregas (`16`, `17`) — lista filtrável + form CRUD + ações de status
 - [x] Dashboard entregas KPIs básicos (`01` orchestrator) — KPIs entregas + agenda + recentes
 
