@@ -41,6 +41,7 @@ public class DeltaEntregaService {
   private final EntregaService entregaService;
   private final GithubAssetSyncService githubAssetSyncService;
   private final GithubDeltaBancoService githubDeltaBancoService;
+  private final GithubDeltaKettleService githubDeltaKettleService;
 
   private static final org.slf4j.Logger log =
       org.slf4j.LoggerFactory.getLogger(DeltaEntregaService.class);
@@ -117,6 +118,8 @@ public class DeltaEntregaService {
             case WEB, BATCH -> githubAssetSyncService.sincronizar(
                 entrega.getRelease(), modulo);
             case BANCO -> githubDeltaBancoService.sincronizar(
+                entrega.getRelease(), modulo, em.getVersaoFrom());
+            case KETTLE -> githubDeltaKettleService.sincronizar(
                 entrega.getRelease(), modulo, em.getVersaoFrom());
             default -> artefatos;
           };
