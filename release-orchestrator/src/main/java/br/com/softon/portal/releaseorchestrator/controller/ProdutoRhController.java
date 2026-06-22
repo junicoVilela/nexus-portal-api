@@ -35,6 +35,7 @@ import lombok.RequiredArgsConstructor;
 public class ProdutoRhController {
 
     private final ProdutoRhService service;
+    private final br.com.softon.portal.releaseorchestrator.service.GithubIntegrationService githubService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -80,5 +81,20 @@ public class ProdutoRhController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void excluir(@PathVariable UUID id) {
         service.excluir(id);
+    }
+
+    /**
+     * Testa a integração GitHub. Aceita body opcional com override de
+     * repositório e token (útil para validar antes de salvar o produto).
+     */
+    @PostMapping("/{id}/testar-github")
+    public br.com.softon.portal.releaseorchestrator.dto.response.TestarGithubResponse testarGithub(
+            @PathVariable UUID id,
+            @Valid @RequestBody(required = false)
+            br.com.softon.portal.releaseorchestrator.dto.request.TestarGithubRequest request) {
+        return githubService.testar(id,
+                request != null
+                        ? request
+                        : new br.com.softon.portal.releaseorchestrator.dto.request.TestarGithubRequest(null, null));
     }
 }

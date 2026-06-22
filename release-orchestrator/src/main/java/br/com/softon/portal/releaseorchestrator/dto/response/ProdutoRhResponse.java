@@ -12,6 +12,11 @@ public record ProdutoRhResponse(
         String cor,
         UUID responsavelId,
         boolean ativo,
+        String repositorioGithub,
+        String branchPadrao,
+        String padraoTag,
+        /** True quando há token cadastrado (não devolve o valor por segurança). */
+        boolean githubTokenConfigurado,
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt
 ) {
@@ -19,6 +24,8 @@ public record ProdutoRhResponse(
         return new ProdutoRhResponse(
                 p.getId(), p.getNome(), p.getSigla(), p.getDescricao(),
                 p.getCor(), p.getResponsavelId(), p.isAtivo(),
+                p.getRepositorioGithub(), p.getBranchPadrao(), p.getPadraoTag(),
+                p.getGithubToken() != null && !p.getGithubToken().isBlank(),
                 p.getCreatedAt(), p.getUpdatedAt());
     }
 }

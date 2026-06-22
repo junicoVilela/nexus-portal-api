@@ -10,5 +10,11 @@ public record ProdutoRhRequest(
         @Size(max = 500)           String descricao,
         @NotBlank @Size(max = 20)  String cor,
         UUID responsavelId,
-        Boolean ativo
+        Boolean ativo,
+        /* --- Integração GitHub (Fase 2, opcional) --- */
+        @Size(max = 200) String repositorioGithub,
+        @Size(max = 80)  String branchPadrao,
+        @Size(max = 200) String padraoTag,
+        /** PAT. Enviar em branco em PUT preserva o token atual. */
+        @Size(max = 500) String githubToken
 ) {}

@@ -29,9 +29,11 @@ public class ProdutoRhService {
       throw new BusinessException("Já existe um produto com a sigla informada.");
     }
     boolean ativo = request.ativo() == null || request.ativo();
-    return repository.save(new ProdutoRh(
+    ProdutoRh produto = new ProdutoRh(
         request.nome().trim(), sigla, request.descricao(),
-        request.cor(), request.responsavelId(), ativo));
+        request.cor(), request.responsavelId(), ativo);
+    aplicarIntegracaoGithub(produto, request);
+    return repository.save(produto);
   }
 
   @Transactional
@@ -44,7 +46,31 @@ public class ProdutoRhService {
     boolean ativo = request.ativo() == null || request.ativo();
     produto.atualizar(request.nome().trim(), sigla, request.descricao(),
         request.cor(), request.responsavelId(), ativo);
+    aplicarIntegracaoGithub(produto, request);
     return produto;
+  }
+
+  private void aplicarIntegracaoGithub(ProdutoRh produto, ProdutoRhRequest req) {
+    String repo = req.repositorioGithub();
+    if (repo != null && !repo.isBlank()) {
+      repo = normalizarRepositorio(repo.trim());
+    }
+    String branch = req.branchPadrao();
+    if (branch == null || branch.isBlank()) branch = "main";
+    String padraoTag = req.padraoTag();
+    if (padraoTag == null || padraoTag.isBlank()) padraoTag = "^v\\d+\\.\\d+\\.\\d+$";
+    produto.atualizarIntegracaoGithub(repo, branch, padraoTag, req.githubToken());
+  }
+
+  /**
+   * Aceita URL completa ou owner/repo e normaliza para owner/repo.
+   * Ex.: https://github.com/softon/dtec-ld → softon/dtec-ld
+   */
+  private String normalizarRepositorio(String input) {
+    String s = input.replaceFirst("(?i)^https?://github.com/", "");
+    s = s.replaceFirst("\\.git$", "");
+    s = s.replaceFirst("/$", "");
+    return s;
   }
 
   @Transactional

@@ -42,6 +42,22 @@ public class ProdutoRh extends AuditableEntity {
   @Column(nullable = false)
   private boolean ativo = true;
 
+  /** owner/repo no GitHub (ex.: softon/dtec-ld). Nulo desabilita integração. */
+  @Column(name = "repositorio_github", length = 200)
+  private String repositorioGithub;
+
+  /** Branch base. Default 'main'. */
+  @Column(name = "branch_padrao", length = 80)
+  private String branchPadrao;
+
+  /** Regex de tags válidas. Default ^v\d+\.\d+\.\d+$. */
+  @Column(name = "padrao_tag", length = 200)
+  private String padraoTag;
+
+  /** PAT GitHub. MVP texto plano; pós-MVP referência a credencial. */
+  @Column(name = "github_token", length = 500)
+  private String githubToken;
+
   public ProdutoRh(String nome, String sigla, String descricao, String cor,
       UUID responsavelId, boolean ativo) {
     this.nome = nome;
@@ -60,6 +76,21 @@ public class ProdutoRh extends AuditableEntity {
     this.cor = cor;
     this.responsavelId = responsavelId;
     this.ativo = ativo;
+  }
+
+  public void atualizarIntegracaoGithub(String repositorioGithub, String branchPadrao,
+      String padraoTag, String githubToken) {
+    this.repositorioGithub = repositorioGithub;
+    this.branchPadrao = branchPadrao;
+    this.padraoTag = padraoTag;
+    if (githubToken != null && !githubToken.isBlank()) {
+      this.githubToken = githubToken;
+    }
+  }
+
+  public boolean temIntegracaoGithub() {
+    return repositorioGithub != null && !repositorioGithub.isBlank()
+        && githubToken != null && !githubToken.isBlank();
   }
 
   public void alterarStatus(boolean ativo) {
