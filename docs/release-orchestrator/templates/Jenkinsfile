@@ -1,0 +1,139 @@
+// =============================================================================
+// Jenkinsfile — build-on-tag para produtos Softon
+// =============================================================================
+// Copie este arquivo para a raiz do repositório do produto (`Jenkinsfile`)
+// e ajuste os valores em PIPELINE_CONFIG abaixo. Documentação completa em
+// softon-portal-api/docs/release-orchestrator/39-entregaveis-cicd-repositorios.md
+//
+// Pré-requisitos no Jenkins:
+//   - Credencial String 'github-pat-softon'  → Personal Access Token com
+//     escopo `repo` (upload de releases). Ver runbook S8.
+//   - Tool 'maven-3.9' configurada (ou ajuste em options.tool)
+//   - Plugin Pipeline + GitHub Branch Source
+//
+// Trigger:
+//   - O job deve ter "Build when a change is pushed to GitHub" + filtro
+//     de tag `v*.*.*` (configurado no job, não aqui). Em monorepos, use
+//     `when { tag pattern: ... }`.
+// =============================================================================
+
+pipeline {
+  agent any
+
+  options {
+    timestamps()
+    timeout(time: 30, unit: 'MINUTES')
+    buildDiscarder(logRotator(numToKeepStr: '20'))
+  }
+
+  environment {
+    // ----- ajuste por produto -----
+    PRODUTO_SIGLA    = 'dtecld'          // minúsculo, usado no nome do asset
+    MODULO_CODIGO    = 'dtec-web'         // ex: dtec-web, dtec-batch
+    ARTIFACT_EXT     = 'war'              // war | jar | zip | tar.gz
+    BUILD_CMD        = 'mvn -B -ntp clean package -DskipTests'
+    BUILD_OUTPUT_DIR = 'target'           // dir onde o artefato é gerado
+    // ------------------------------
+
+    GH_TOKEN = credentials('github-pat-softon')
+  }
+
+  tools {
+    maven 'maven-3.9'
+    jdk   'jdk-21'
+  }
+
+  stages {
+
+    stage('Checkout tag') {
+      steps {
+        script {
+          // TAG_NAME é exposto pelo Jenkins quando o build é disparado por tag
+          if (!env.TAG_NAME) {
+            error 'Este pipeline só dispara em tag. Configure o job filter v*.*.*'
+          }
+          if (!env.TAG_NAME ==~ /^v\d+\.\d+\.\d+$/) {
+            error "Tag '${env.TAG_NAME}' não corresponde ao padrão vMAJOR.MINOR.PATCH."
+          }
+          echo "Build da tag ${env.TAG_NAME}"
+        }
+        checkout([
+          $class: 'GitSCM',
+          branches: [[name: "refs/tags/${env.TAG_NAME}"]],
+          userRemoteConfigs: scm.userRemoteConfigs,
+        ])
+      }
+    }
+
+    stage('Build') {
+      steps {
+        sh "${env.BUILD_CMD}"
+      }
+    }
+
+    stage('Locate artifact') {
+      steps {
+        script {
+          def found = sh(
+            script: "ls -1 ${env.BUILD_OUTPUT_DIR}/*.${env.ARTIFACT_EXT} | head -n 1",
+            returnStdout: true,
+          ).trim()
+          if (!found) {
+            error "Nenhum artefato .${env.ARTIFACT_EXT} encontrado em ${env.BUILD_OUTPUT_DIR}/"
+          }
+          env.ARTIFACT_PATH = found
+          // Versão sem prefixo 'v' (1.5.0 em vez de v1.5.0)
+          env.VERSAO = env.TAG_NAME.replaceFirst(/^v/, '')
+          env.ASSET_NAME = "${env.PRODUTO_SIGLA}-${env.MODULO_CODIGO}-${env.VERSAO}.${env.ARTIFACT_EXT}"
+          echo "Artefato: ${env.ARTIFACT_PATH} → ${env.ASSET_NAME}"
+        }
+      }
+    }
+
+    stage('Publish to GitHub Release') {
+      when { expression { return env.GH_TOKEN } }
+      steps {
+        sh '''
+          set -eu
+          # gh CLI deve estar disponível no agente; tente instalar/baixar se faltar
+          if ! command -v gh >/dev/null 2>&1; then
+            echo "gh CLI não encontrado; usando API REST" >&2
+            REPO_FULL=$(git config --get remote.origin.url | sed -E 's#.*github.com[:/](.*)\\.git#\\1#')
+            RELEASE_ID=$(curl -fsS \
+              -H "Authorization: token ${GH_TOKEN}" \
+              "https://api.github.com/repos/${REPO_FULL}/releases/tags/${TAG_NAME}" \
+              | sed -n 's/.*"id": *\\([0-9]*\\).*/\\1/p' | head -n1)
+            if [ -z "${RELEASE_ID}" ]; then
+              RELEASE_ID=$(curl -fsS \
+                -H "Authorization: token ${GH_TOKEN}" \
+                -d "{\\"tag_name\\":\\"${TAG_NAME}\\",\\"name\\":\\"${TAG_NAME}\\"}" \
+                "https://api.github.com/repos/${REPO_FULL}/releases" \
+                | sed -n 's/.*"id": *\\([0-9]*\\).*/\\1/p' | head -n1)
+            fi
+            curl -fsS \
+              -H "Authorization: token ${GH_TOKEN}" \
+              -H "Content-Type: application/octet-stream" \
+              --data-binary "@${ARTIFACT_PATH}" \
+              "https://uploads.github.com/repos/${REPO_FULL}/releases/${RELEASE_ID}/assets?name=${ASSET_NAME}"
+          else
+            gh release view "${TAG_NAME}" >/dev/null 2>&1 \
+              || gh release create "${TAG_NAME}" --title "${TAG_NAME}" --notes "Build automático"
+            gh release upload "${TAG_NAME}" "${ARTIFACT_PATH}#${ASSET_NAME}" --clobber
+          fi
+        '''
+      }
+    }
+  }
+
+  post {
+    success {
+      echo "✅ Release ${env.TAG_NAME} publicada com asset ${env.ASSET_NAME}"
+    }
+    failure {
+      echo "❌ Build falhou na tag ${env.TAG_NAME}"
+    }
+    always {
+      archiveArtifacts artifacts: "${env.BUILD_OUTPUT_DIR}/*.${env.ARTIFACT_EXT}", allowEmptyArchive: true
+    }
+  }
+}
