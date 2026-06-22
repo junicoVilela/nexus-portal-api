@@ -24,7 +24,7 @@ Legenda código: ✅ código pronto · 🟡 código parcial · 🔧 operacional 
 | S7 | DocFlow + entrega integrada | Jornada ACME manual end-to-end | 🟡 (roteiro pronto; validação manual pendente) |
 | S8 | 🔧 F2.0 — Jenkins + GitHub (piloto) | Tag v0.0.1 → asset na Release | 🟡 templates prontos · 🔧 aplicação nos repos pendente |
 | S9 | F2 portal — GitHub adapter | Download asset TO_TAG na geração | ✅ |
-| S10 | F2 portal — delta Git | Diff BANCO/KETTLE FROM..TO | 🟡 (dependências KETTLE + contagem "+N SQL" no wizard ainda pendentes) |
+| S10 | F2 portal — delta Git | Diff BANCO/KETTLE FROM..TO | 🟡 (dependências KETTLE — único gap restante) |
 | S11 | F2 front + operação | Cadastro GitHub/Jenkins + build status | 🟡 (sem trigger via portal, sem webhook, sem badge) |
 | S12+ | F3 / F4 | FTP, observabilidade (conforme prioridade) | 📋 |
 
@@ -294,7 +294,7 @@ Bloco curto no início da sprint pra fechar dívida técnica que ficou exposta n
 
 ### Frontend
 - [x] Tela range/delta (`20`): `/entregas/:id/delta` com FROM editável + justificativa + preview de arquivos + recalcular
-- [ ] Wizard passo 4 modo Automático mostra "+N SQL" real — passo 4 hoje mostra resumo agregado pós-cálculo, não contagem por tipo durante a edição
+- [x] Wizard passo 4 mostra "+N" arquivos por módulo após botão "Calcular preview" — coluna "Delta" exibe contagem destacada + tamanho; total agregado também aparece no header da tabela
 
 ### DoD
 - [ ] ACME v1.4.0→v1.5.0: preview lista scripts corretos; pacote contém só delta SQL (validação manual pendente)
