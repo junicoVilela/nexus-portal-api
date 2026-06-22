@@ -32,20 +32,28 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Calcula o delta de um módulo BANCO entre duas tags Git e produz dois
- * arquivos unificados — {@code DDL.sql} e {@code DML.sql} — concatenando
- * todos os scripts alterados que casam com os prefixos configurados em
- * {@link ConfigBancoModulo}. F2.10 + spec 20 §5.2.
+ * Calcula o delta de um módulo BANCO entre duas tags Git e produz arquivos
+ * unificados — {@code DDL.sql} e {@code DML.sql} — por dialeto configurado
+ * em {@link ConfigBancoModulo}. F2.10 + spec 20 §5.2.
+ *
+ * <p>Mono-dialeto (config legada): artefatos saem na raiz como
+ * {@code DDL.sql} / {@code DML.sql}.
+ *
+ * <p>Multi-dialeto: artefatos saem em subpastas nomeadas pelo dialeto:
+ * {@code oracle/DDL.sql}, {@code sqlserver/DDL.sql} etc. O empacotador do
+ * pacote final honra os {@code /} no {@code nomeArquivo} e preserva a
+ * hierarquia no ZIP.
  *
  * <p>Política:
  * <ul>
  *   <li>FROM_TAG = última versão entregue ao cliente (parâmetro).</li>
  *   <li>TO_TAG = tag da release alvo (v + release.versao).</li>
- *   <li>Arquivos filtrados por caminhoRepo + extensão .sql.</li>
+ *   <li>Compare API chamado uma vez; resultado particionado por dialeto.</li>
+ *   <li>Arquivos filtrados por caminhoRepo (do dialeto) + extensão .sql.</li>
  *   <li>Status added/modified/renamed entram; removed sai.</li>
  *   <li>Ordenação alfabética por nome do arquivo dentro de cada bloco.</li>
  *   <li>Arquivos que não casam com prefixoDDL nem prefixoDML são ignorados
- *       (log warn) — a convenção do projeto deve ser estrita.</li>
+ *       (log warn).</li>
  *   <li>Apenas blocos não-vazios viram artefato.</li>
  * </ul>
  *
@@ -73,7 +81,6 @@ public class GithubDeltaBancoService {
     ConfigBancoModulo cfg = ConfigBancoModulo.de(modulo.getConfigEspecifica(), objectMapper);
     String toTag = "v" + release.getVersao();
 
-    // Limpa cache anterior pra esta release+módulo — refresh forçado.
     var existentes = artefatoRepository
         .findByRelease_IdAndModuloProduto_IdOrderByCreatedAtDesc(release.getId(), modulo.getId());
     if (!existentes.isEmpty()) {
@@ -91,13 +98,30 @@ public class GithubDeltaBancoService {
       return List.of();
     }
 
-    // Particiona arquivos por classificação.
+    List<ArtefatoReleaseModulo> criados = new ArrayList<>();
+    try {
+      Path baseDir = preparaDir(release, modulo);
+      for (ConfigBancoModulo.Dialeto dialeto : cfg.dialetosResolvidos()) {
+        criados.addAll(processarDialeto(release, modulo, produto, toTag,
+            baseDir, cfg, dialeto, arquivos));
+      }
+    } catch (IOException | RuntimeException e) {
+      log.warn("Falha ao concatenar delta BANCO {}/{}..{}: {}",
+          produto.getRepositorioGithub(), fromTag, toTag, e.getMessage());
+    }
+    return criados;
+  }
+
+  private List<ArtefatoReleaseModulo> processarDialeto(Release release, ModuloProduto modulo,
+      ProdutoRh produto, String toTag, Path baseDir, ConfigBancoModulo cfg,
+      ConfigBancoModulo.Dialeto dialeto, List<GitHubFileChange> arquivos) throws IOException {
+
     List<GitHubFileChange> ddl = new ArrayList<>();
     List<GitHubFileChange> dml = new ArrayList<>();
     for (GitHubFileChange f : arquivos) {
       if (!f.foiAdicionadoOuModificado()) continue;
       if (!f.filename().toLowerCase().endsWith(".sql")) continue;
-      if (!cfg.dentroDoEscopo(f.filename())) continue;
+      if (!cfg.dentroDoEscopo(f.filename(), dialeto)) continue;
 
       String nomeBase = nomeBase(f.filename());
       if (cfg.ehDDL(nomeBase)) {
@@ -109,28 +133,27 @@ public class GithubDeltaBancoService {
       }
     }
 
-    // Ordenação alfabética por nome do arquivo (default da spec).
     Comparator<GitHubFileChange> byName =
         Comparator.comparing(f -> nomeBase(f.filename()).toLowerCase());
     ddl.sort(byName);
     dml.sort(byName);
 
-    List<ArtefatoReleaseModulo> criados = new ArrayList<>();
-    try {
-      Path dir = preparaDir(release, modulo);
-      if (!ddl.isEmpty()) {
-        criados.add(concatenarESalvar(release, modulo, produto, toTag, dir, "DDL.sql", ddl));
-      }
-      if (!dml.isEmpty()) {
-        criados.add(concatenarESalvar(release, modulo, produto, toTag, dir, "DML.sql", dml));
-      }
-    } catch (IOException | RuntimeException e) {
-      log.warn("Falha ao concatenar delta BANCO {}/{}..{}: {}",
-          produto.getRepositorioGithub(), fromTag, toTag, e.getMessage());
-    }
+    Path dialetoDir = dialeto.ehNomeado()
+        ? Files.createDirectories(baseDir.resolve(dialeto.nome()))
+        : baseDir;
 
-    log.info("Delta BANCO {}: DDL={} DML={} ({}..{})",
-        modulo.getCodigo(), ddl.size(), dml.size(), fromTag, toTag);
+    List<ArtefatoReleaseModulo> criados = new ArrayList<>();
+    if (!ddl.isEmpty()) {
+      criados.add(concatenarESalvar(release, modulo, produto, toTag, dialetoDir,
+          nomeArtefato(dialeto, "DDL.sql"), ddl));
+    }
+    if (!dml.isEmpty()) {
+      criados.add(concatenarESalvar(release, modulo, produto, toTag, dialetoDir,
+          nomeArtefato(dialeto, "DML.sql"), dml));
+    }
+    log.info("Delta BANCO {} [{}]: DDL={} DML={}",
+        modulo.getCodigo(), dialeto.ehNomeado() ? dialeto.nome() : "default",
+        ddl.size(), dml.size());
     return criados;
   }
 
@@ -139,9 +162,10 @@ public class GithubDeltaBancoService {
    * arquivo de saída, com cabeçalho por script para preservar a procedência.
    */
   private ArtefatoReleaseModulo concatenarESalvar(Release release, ModuloProduto modulo,
-      ProdutoRh produto, String tag, Path dir, String nomeSaida,
+      ProdutoRh produto, String tag, Path dir, String nomeArtefato,
       List<GitHubFileChange> arquivos) throws IOException {
-    Path saida = dir.resolve(nomeSaida);
+    String nomeSimples = nomeBase(nomeArtefato);
+    Path saida = dir.resolve(nomeSimples);
     MessageDigest digest = sha256();
     try (OutputStream out = new BufferedOutputStream(Files.newOutputStream(saida));
         DigestOutputStream dig = new DigestOutputStream(out, digest)) {
@@ -163,9 +187,13 @@ public class GithubDeltaBancoService {
     String hash = HexFormat.of().formatHex(digest.digest());
     long tamanho = Files.size(saida);
     String observacao = "Delta GitHub concatenado: " + arquivos.size() + " arquivos";
-    var artefato = new ArtefatoReleaseModulo(release, modulo, nomeSaida,
+    var artefato = new ArtefatoReleaseModulo(release, modulo, nomeArtefato,
         saida.toAbsolutePath().toString(), hash, tamanho, observacao);
     return artefatoRepository.save(artefato);
+  }
+
+  private String nomeArtefato(ConfigBancoModulo.Dialeto dialeto, String fileName) {
+    return dialeto.ehNomeado() ? dialeto.nome() + "/" + fileName : fileName;
   }
 
   private Path preparaDir(Release release, ModuloProduto modulo) throws IOException {

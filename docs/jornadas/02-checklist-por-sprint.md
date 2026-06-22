@@ -24,7 +24,7 @@ Legenda código: ✅ código pronto · 🟡 código parcial · 🔧 operacional 
 | S7 | DocFlow + entrega integrada | Jornada ACME manual end-to-end | 🟡 (roteiro pronto; validação manual pendente) |
 | S8 | 🔧 F2.0 — Jenkins + GitHub (piloto) | Tag v0.0.1 → asset na Release | 🟡 templates prontos · 🔧 aplicação nos repos pendente |
 | S9 | F2 portal — GitHub adapter | Download asset TO_TAG na geração | ✅ |
-| S10 | F2 portal — delta Git | Diff BANCO/KETTLE FROM..TO | 🟡 (unificação DDL/DML, dependências KETTLE, multi-dialeto pendentes) |
+| S10 | F2 portal — delta Git | Diff BANCO/KETTLE FROM..TO | 🟡 (dependências KETTLE + contagem "+N SQL" no wizard ainda pendentes) |
 | S11 | F2 front + operação | Cadastro GitHub/Jenkins + build status | 🟡 (sem trigger via portal, sem webhook, sem badge) |
 | S12+ | F3 / F4 | FTP, observabilidade (conforme prioridade) | 📋 |
 
@@ -290,8 +290,7 @@ Bloco curto no início da sprint pra fechar dívida técnica que ficou exposta n
   - **Resolução de dependências entre transformações/subjobs** ainda pendente
 - [x] `POST /entregas/{id}/delta/calcular` + persistir preview (com override de `fromTag` por módulo + justificativa)
 - [x] Geração etapas 4–5 usam diff (fallback upload manual quando tag/asset ausente)
-- [x] Config por módulo: `caminhoRepo` em JSON via `configEspecifica`
-  - **Multi-dialeto oracle+sqlserver** (subpastas/sufixo) ainda pendente
+- [x] Config por módulo: `caminhoRepo` em JSON via `configEspecifica`, com suporte a **multi-dialeto** via campo `dialetos: [{nome, caminhoRepo}]` — artefatos saem em subpastas (`oracle/DDL.sql`, `sqlserver/DDL.sql`) preservadas no ZIP final
 
 ### Frontend
 - [x] Tela range/delta (`20`): `/entregas/:id/delta` com FROM editável + justificativa + preview de arquivos + recalcular
