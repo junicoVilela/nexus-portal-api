@@ -17,15 +17,9 @@ management:
   endpoint:
     health:
       show-details: when_authorized
-      probes:
-        enabled: true
   health:
     mail:
       enabled: ${MAIL_HEALTH_ENABLED:false}
-    livenessstate:
-      enabled: true
-    readinessstate:
-      enabled: true
   metrics:
     tags:
       application: ${spring.application.name}
