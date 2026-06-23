@@ -66,6 +66,32 @@ public class Release extends AuditableEntity {
   @Column(columnDefinition = "TEXT")
   private String observacoes;
 
+  /** Status do último build reportado pelo Jenkins via webhook (S11 P2). */
+  @Column(name = "ultimo_build_status", length = 30)
+  private String ultimoBuildStatus;
+
+  @Column(name = "ultimo_build_numero")
+  private Integer ultimoBuildNumero;
+
+  @Column(name = "ultimo_build_url", length = 500)
+  private String ultimoBuildUrl;
+
+  @Column(name = "ultimo_build_at")
+  private java.time.OffsetDateTime ultimoBuildAt;
+
+  /**
+   * Atualiza o snapshot de build reportado pelo Jenkins. Chamado pelo
+   * {@code JenkinsWebhookController} a cada notificação.
+   *
+   * @param status EM_ANDAMENTO, SUCCESS, FAILED, UNSTABLE ou ABORTED.
+   */
+  public void atualizarBuildStatus(String status, Integer numero, String url) {
+    this.ultimoBuildStatus = status;
+    this.ultimoBuildNumero = numero;
+    this.ultimoBuildUrl = url;
+    this.ultimoBuildAt = java.time.OffsetDateTime.now();
+  }
+
   public Release(ProdutoRh produto, String versao, String titulo, TipoRelease tipo,
       ReleaseStatus status, LocalDate dataPrevista, UUID responsavelId,
       String resumo, String observacoes) {

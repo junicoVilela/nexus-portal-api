@@ -34,4 +34,14 @@ public interface ReleaseRepository extends JpaRepository<Release, UUID>,
 
     @Query("SELECT COUNT(r) FROM Release r WHERE r.produto.id = :produtoId")
     long countByProdutoId(@Param("produtoId") UUID produtoId);
+
+    /**
+     * Lookup pelo par (sigla do produto, versão) — usado pelo webhook do
+     * Jenkins, que recebe apenas dados textuais e precisa resolver a Release
+     * sem id. Case-insensitive na sigla.
+     */
+    @Query("SELECT r FROM Release r WHERE upper(r.produto.sigla) = upper(:sigla) "
+            + "AND r.versao = :versao")
+    Optional<Release> findByProdutoSiglaAndVersao(@Param("sigla") String sigla,
+            @Param("versao") String versao);
 }

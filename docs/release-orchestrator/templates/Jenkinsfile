@@ -28,14 +28,17 @@ pipeline {
 
   environment {
     // ----- ajuste por produto -----
-    PRODUTO_SIGLA    = 'dtecld'          // minúsculo, usado no nome do asset
+    PRODUTO_SIGLA    = 'DTECLD'           // sigla maiúscula igual ao cadastro do portal
     MODULO_CODIGO    = 'dtec-web'         // ex: dtec-web, dtec-batch
     ARTIFACT_EXT     = 'war'              // war | jar | zip | tar.gz
     BUILD_CMD        = 'mvn -B -ntp clean package -DskipTests'
     BUILD_OUTPUT_DIR = 'target'           // dir onde o artefato é gerado
+    // Webhook do portal: URL absoluta + secret. S11 P2 — badge na release.
+    PORTAL_WEBHOOK_URL = 'https://portal.softon.local/api/v1/release-orchestrator/webhooks/jenkins'
     // ------------------------------
 
-    GH_TOKEN = credentials('github-pat-softon')
+    GH_TOKEN     = credentials('github-pat-softon')
+    PORTAL_SECRET = credentials('softon-portal-webhook-secret')
   }
 
   tools {
@@ -128,12 +131,50 @@ pipeline {
   post {
     success {
       echo "✅ Release ${env.TAG_NAME} publicada com asset ${env.ASSET_NAME}"
+      notificarPortal('SUCCESS')
     }
     failure {
       echo "❌ Build falhou na tag ${env.TAG_NAME}"
+      notificarPortal('FAILED')
+    }
+    aborted {
+      notificarPortal('ABORTED')
+    }
+    unstable {
+      notificarPortal('UNSTABLE')
     }
     always {
       archiveArtifacts artifacts: "${env.BUILD_OUTPUT_DIR}/*.${env.ARTIFACT_EXT}", allowEmptyArchive: true
     }
+  }
+}
+
+// =============================================================================
+// Função auxiliar: notifica o portal Softon sobre o status do build (S11 P2).
+// Falha silenciosa — se o portal estiver fora, não invalida o build.
+// =============================================================================
+def notificarPortal(String status) {
+  if (!env.PORTAL_WEBHOOK_URL || !env.PORTAL_SECRET || !env.TAG_NAME) {
+    echo "Portal webhook não configurado (PORTAL_WEBHOOK_URL/PORTAL_SECRET ausentes) — skip."
+    return
+  }
+  def versao = env.TAG_NAME.replaceFirst(/^v/, '')
+  def payload = """{
+    "produtoSigla": "${env.PRODUTO_SIGLA}",
+    "versao": "${versao}",
+    "status": "${status}",
+    "numero": ${env.BUILD_NUMBER ?: 'null'},
+    "url": "${env.BUILD_URL ?: ''}"
+  }"""
+  try {
+    sh """
+      curl -fsS -X POST '${env.PORTAL_WEBHOOK_URL}' \
+        -H 'Content-Type: application/json' \
+        -H 'X-Webhook-Secret: ${env.PORTAL_SECRET}' \
+        --data '${payload}' \
+        --max-time 10 || echo 'Portal webhook falhou (não bloqueia build).'
+    """
+  } catch (e) {
+    echo "Erro inesperado no webhook do portal: ${e.message}"
   }
 }

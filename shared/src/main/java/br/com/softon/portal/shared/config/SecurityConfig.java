@@ -49,6 +49,7 @@ public class SecurityConfig {
             .requestMatchers("/actuator/health", "/actuator/health/**",
                 "/actuator/info", "/actuator/prometheus", "/actuator/metrics/**").permitAll()
             .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
+            .requestMatchers(HttpMethod.POST, "/api/v1/release-orchestrator/webhooks/**").permitAll()
             .requestMatchers("/api/v1/preview/**").permitAll()
             .requestMatchers(HttpMethod.GET, "/api/v1/public/publicacoes/download").permitAll()
             .requestMatchers(HttpMethod.GET, "/api/v1/docflow/paginas/*/anexos/*/download").permitAll()

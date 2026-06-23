@@ -24,6 +24,11 @@ public record ReleaseResponse(
         String resumo,
         String observacoes,
         Long totalItens,
+        /* S11 P2 — último build reportado pelo Jenkins via webhook */
+        String ultimoBuildStatus,
+        Integer ultimoBuildNumero,
+        String ultimoBuildUrl,
+        OffsetDateTime ultimoBuildAt,
         String createdBy,
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt
@@ -50,6 +55,10 @@ public record ReleaseResponse(
                 r.getResumo(),
                 r.getObservacoes(),
                 totalItens,
+                r.getUltimoBuildStatus(),
+                r.getUltimoBuildNumero(),
+                r.getUltimoBuildUrl(),
+                r.getUltimoBuildAt(),
                 r.getCreatedBy(),
                 r.getCreatedAt(),
                 r.getUpdatedAt());

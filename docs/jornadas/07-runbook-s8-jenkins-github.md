@@ -80,7 +80,27 @@ is complete and no jobs are running").
 > [`../release-orchestrator/templates/Jenkinsfile`](../release-orchestrator/templates/Jenkinsfile)
 > — se mudar, ajuste o template também.
 
-### 0.5 gh CLI no agente
+### 0.5 Credencial do webhook do portal (S11 P2)
+
+Para o badge "Build em andamento / SUCCESS / FAILED" aparecer no detalhe
+da release no portal, o Jenkins precisa notificar o portal a cada
+transição de status. O Jenkinsfile template já tem essa lógica em
+`notificarPortal()`; só falta o shared secret.
+
+1. No portal, configure a env var `RELEASE_ORCHESTRATOR_WEBHOOKS_JENKINS_SECRET`
+   com um valor aleatório (32+ chars). Ex.: `openssl rand -hex 32`.
+2. No Jenkins, **Manage Credentials → Add Credentials**:
+   - Kind: `Secret text`
+   - ID: `softon-portal-webhook-secret` (igual ao referenciado no
+     Jenkinsfile template via `credentials('softon-portal-webhook-secret')`)
+   - Secret: o mesmo valor configurado no passo 1
+3. Ajuste `PORTAL_WEBHOOK_URL` no Jenkinsfile para a URL pública do portal
+   (`https://portal.softon.tld/api/v1/release-orchestrator/webhooks/jenkins`).
+
+> Quando o secret está vazio no portal, o endpoint do webhook retorna
+> `403` em qualquer chamada — modo seguro por padrão.
+
+### 0.6 gh CLI no agente
 
 Se for usar o `gh` no upload de assets (mais limpo que `curl`):
 
@@ -99,7 +119,7 @@ docker exec jenkins gh --version
 
 Se faltar `gh`, o Jenkinsfile template cai para `curl` direto na API REST.
 
-### 0.6 Instalação em servidor dedicado (alternativa)
+### 0.7 Instalação em servidor dedicado (alternativa)
 
 Quando o container não couber (firewall corporativo, requisito de SSO via
 LDAP, agentes Windows etc.), instale o pacote `.deb`/`.rpm` oficial. Resumo
@@ -112,7 +132,7 @@ do passo-a-passo:
 4. Senha inicial em `/var/lib/jenkins/secrets/initialAdminPassword`.
 5. Repetir §0.3 e §0.4 dentro da UI.
 
-### 0.7 Smoke test do Jenkins
+### 0.8 Smoke test do Jenkins
 
 Antes de seguir, valide que tudo funciona com um job dummy:
 

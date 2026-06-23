@@ -25,7 +25,7 @@ Legenda código: ✅ código pronto · 🟡 código parcial · 🔧 operacional 
 | S8 | 🔧 F2.0 — Jenkins + GitHub (piloto) | Tag v0.0.1 → asset na Release | 🟡 templates prontos · 🔧 aplicação nos repos pendente |
 | S9 | F2 portal — GitHub adapter | Download asset TO_TAG na geração | ✅ |
 | S10 | F2 portal — delta Git | Diff BANCO/KETTLE FROM..TO | ✅ |
-| S11 | F2 front + operação | Cadastro GitHub/Jenkins + build status | 🟡 (sem trigger via portal, sem webhook, sem badge) |
+| S11 | F2 front + operação | Cadastro GitHub/Jenkins + build status | 🟡 (sem trigger de build via portal — webhook+badge ✅) |
 | S12+ | F3 / F4 | FTP, observabilidade (conforme prioridade) | 🟡 F3 fases 1+2 ✅ · F4 fase 1 ✅ · S3/MinIO + retry + healthchecks + E2E 📋 |
 
 **Trilha paralela 🔧 (S2–S8):** Jenkinsfile nos repos — não bloqueia S1–S7 se MVP usa upload manual.
@@ -310,11 +310,11 @@ Bloco curto no início da sprint pra fechar dívida técnica que ficou exposta n
 - [x] Campos Produto: `jenkinsUrl`, `jenkinsJob`, `jenkinsUser`, `jenkinsToken`, `jenkinsTriggerMode` (V10 migration)
 - [x] Cliente Jenkins (`JenkinsAdapter` com Basic auth) — `jobExiste()` + `ultimoBuild()` + endpoint `testar-jenkins`
   - **Trigger de build via portal** ainda pendente (P2) — só leitura no MVP
-- [ ] Webhook GitHub/Jenkins → atualizar status artefato na release (P2)
+- [x] Webhook Jenkins → atualizar status build na release (S11 P2) — endpoint `POST /webhooks/jenkins` com shared secret + `JenkinsWebhookService.processar` resolve por `(produtoSigla, versao)` e atualiza `Release.ultimoBuildStatus`. Jenkinsfile template já notifica o portal em success/failure/aborted/unstable.
 
 ### Frontend
 - [x] Seção Jenkins no produto (`09`) — form completo + Testar conexão com preview do último build
-- [ ] Badge "Build em andamento" / SUCCESS / FAILED na release (F2.10) — depende do webhook
+- [x] Badge "Build em andamento" / SUCCESS / FAILED na release (F2.10) — badge clicável no header do detalhe da release linka pro build no Jenkins
 - [ ] Suporte operacional (`27`) — P1 se não feito (hoje histórico filtrado faz o papel)
 
 ### DoD
