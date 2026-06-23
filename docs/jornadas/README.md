@@ -18,6 +18,10 @@ Narrativas **end-to-end** que complementam as specs por tela. Use este índice q
 | 02 | [Checklist por sprint](02-checklist-por-sprint.md) | Plano executável S0–S13+ com DoD por sprint |
 | 03 | [Plano 90 dias + tarefas](03-plano-90-dias-e-tarefas.md) | Marcos fixos, calendário, backlog Jira/Linear S0–S7 |
 | 04 | [Kickoff + prompts execução](04-kickoff-e-prompts-execucao.md) | One-pager + textos para pedir implementação no Cursor |
+| 05 | [Roteiro de demo — ACME](05-demo-roteiro-acme.md) | Script 15–30 min com 6 cenas para demonstrar o portal |
+| 06 | [Auditoria de gaps — ACME](06-gaps-jornada-acme.md) | Lacunas vs cenário feliz, classificadas por severidade |
+| 07 | [Runbook S8 — Jenkins + GitHub](07-runbook-s8-jenkins-github.md) | From-zero do Jenkins + tag → release no GitHub |
+| 08 | [Runbook primeira publicação](08-runbook-primeira-publicacao.md) | End-to-end: máquina, banco, cadastros, primeira entrega |
 
 ## Documentação relacionada
 
