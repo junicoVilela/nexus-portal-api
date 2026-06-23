@@ -77,6 +77,22 @@ public class ConfigEntrega extends AuditableEntity {
   @Column(name = "strict_host_check")
   private Boolean strictHostCheck;
 
+  /** Required quando tipoDestino = BUCKET. */
+  @Column(name = "bucket", length = 200)
+  private String bucket;
+
+  /** Endpoint custom (MinIO, Backblaze, etc). Vazio = AWS S3 padrão. */
+  @Column(name = "endpoint", length = 500)
+  private String endpoint;
+
+  /** Região S3 (us-east-1, sa-east-1...). Default us-east-1 quando endpoint custom. */
+  @Column(name = "regiao", length = 60)
+  private String regiao;
+
+  /** Path-style: TRUE para MinIO/endpoints custom; FALSE (default) para AWS S3. */
+  @Column(name = "path_style_access")
+  private Boolean pathStyleAccess;
+
   public ConfigEntrega(Cliente cliente, TipoDestinoEntrega tipoDestino, String caminhoBase) {
     this.cliente = cliente;
     this.tipoDestino = tipoDestino;
@@ -111,5 +127,22 @@ public class ConfigEntrega extends AuditableEntity {
 
   public boolean temSenhaConfigurada() {
     return senhaCifrada != null && !senhaCifrada.isBlank();
+  }
+
+  /**
+   * Atualiza campos do destino BUCKET (S3/MinIO). Reaproveita o trio
+   * {@code usuario}/{@code senhaCifrada} para access-key/secret-key (mesmo
+   * esquema de cifragem). Senha em branco preserva valor atual.
+   */
+  public void atualizarDestinoBucket(String bucket, String endpoint, String regiao,
+      Boolean pathStyleAccess, String accessKey, String secretCifrada) {
+    this.bucket = bucket;
+    this.endpoint = endpoint;
+    this.regiao = regiao;
+    this.pathStyleAccess = pathStyleAccess;
+    this.usuario = accessKey;
+    if (secretCifrada != null && !secretCifrada.isBlank()) {
+      this.senhaCifrada = secretCifrada;
+    }
   }
 }

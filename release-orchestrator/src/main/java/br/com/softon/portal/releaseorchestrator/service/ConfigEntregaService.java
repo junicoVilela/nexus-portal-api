@@ -52,24 +52,30 @@ public class ConfigEntregaService {
 
     return repository.findByCliente_Id(clienteId)
         .map(existente -> {
-          existente.atualizar(
-              request.tipoDestino(), request.caminhoBase(),
-              exigirAprovacao, request.emailsNotificacao());
-          existente.atualizarDestinoRemoto(request.host(), request.porta(),
-              request.usuario(), senhaCifrada,
-              request.modoPassivo(), request.strictHostCheck());
+          aplicar(existente, request, exigirAprovacao, senhaCifrada);
           return existente;
         })
         .orElseGet(() -> {
           ConfigEntrega novo = new ConfigEntrega(cliente, request.tipoDestino(),
               request.caminhoBase());
-          novo.atualizar(request.tipoDestino(), request.caminhoBase(),
-              exigirAprovacao, request.emailsNotificacao());
-          novo.atualizarDestinoRemoto(request.host(), request.porta(),
-              request.usuario(), senhaCifrada,
-              request.modoPassivo(), request.strictHostCheck());
+          aplicar(novo, request, exigirAprovacao, senhaCifrada);
           return repository.save(novo);
         });
+  }
+
+  private void aplicar(ConfigEntrega cfg, ConfigEntregaRequest request,
+      boolean exigirAprovacao, String senhaCifrada) {
+    cfg.atualizar(request.tipoDestino(), request.caminhoBase(),
+        exigirAprovacao, request.emailsNotificacao());
+    if (request.tipoDestino() == TipoDestinoEntrega.BUCKET) {
+      cfg.atualizarDestinoBucket(request.bucket(), request.endpoint(),
+          request.regiao(), request.pathStyleAccess(),
+          request.usuario(), senhaCifrada);
+    } else {
+      cfg.atualizarDestinoRemoto(request.host(), request.porta(),
+          request.usuario(), senhaCifrada,
+          request.modoPassivo(), request.strictHostCheck());
+    }
   }
 
   /**
@@ -95,10 +101,22 @@ public class ConfigEntregaService {
       validarPasta(request);
     } else if (tipo == TipoDestinoEntrega.FTP || tipo == TipoDestinoEntrega.SFTP) {
       validarRemoto(request);
+    } else if (tipo == TipoDestinoEntrega.BUCKET) {
+      validarBucket(request);
     } else {
       throw new BusinessException(
           "Destino " + tipo + " ainda não suportado (fase F3 pendente).");
     }
+  }
+
+  private void validarBucket(ConfigEntregaRequest request) {
+    if (request.bucket() == null || request.bucket().isBlank()) {
+      throw new BusinessException("Bucket obrigatório para destino BUCKET.");
+    }
+    if (request.usuario() == null || request.usuario().isBlank()) {
+      throw new BusinessException("Access key (usuário) obrigatória para destino BUCKET.");
+    }
+    // Secret key vazia é permitida quando já há senha cadastrada (preserva).
   }
 
   private void validarPasta(ConfigEntregaRequest request) {

@@ -94,6 +94,27 @@ public class Entrega extends AuditableEntity {
   @Column(name = "falha_motivo", columnDefinition = "TEXT")
   private String falhaMotivo;
 
+  /* --- Publicação remota (F3 P2) --- */
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "status_publicacao", nullable = false, length = 20)
+  private StatusPublicacao statusPublicacao = StatusPublicacao.NAO_APLICAVEL;
+
+  @Column(name = "tentativas_publicacao", nullable = false)
+  private int tentativasPublicacao;
+
+  @Column(name = "proxima_tentativa_em")
+  private OffsetDateTime proximaTentativaEm;
+
+  @Column(name = "ultima_falha_publicacao", columnDefinition = "TEXT")
+  private String ultimaFalhaPublicacao;
+
+  @Column(name = "data_publicacao")
+  private OffsetDateTime dataPublicacao;
+
+  @Column(name = "destino_publicacao", length = 700)
+  private String destinoPublicacao;
+
   public Entrega(Cliente cliente, ProdutoRh produto, Release release,
       AmbientePadrao ambiente, UUID responsavelId, String observacoes) {
     this.cliente = cliente;
@@ -149,5 +170,54 @@ public class Entrega extends AuditableEntity {
   public void marcarCancelada() {
     this.status = StatusEntrega.CANCELADA;
     this.dataConclusao = OffsetDateTime.now();
+  }
+
+  /* --- Publicação remota (F3 P2) --- */
+
+  /** Agenda primeira tentativa imediata (chamado quando a geração conclui). */
+  public void marcarPublicacaoPendente(OffsetDateTime proximaTentativa) {
+    this.statusPublicacao = StatusPublicacao.PENDENTE;
+    this.tentativasPublicacao = 0;
+    this.proximaTentativaEm = proximaTentativa;
+    this.ultimaFalhaPublicacao = null;
+    this.dataPublicacao = null;
+    this.destinoPublicacao = null;
+  }
+
+  /** Sucesso: registra destino e zera agendamento. */
+  public void marcarPublicacaoOk(String destino) {
+    this.statusPublicacao = StatusPublicacao.OK;
+    this.dataPublicacao = OffsetDateTime.now();
+    this.destinoPublicacao = destino;
+    this.proximaTentativaEm = null;
+    this.ultimaFalhaPublicacao = null;
+    this.tentativasPublicacao = this.tentativasPublicacao + 1;
+  }
+
+  /**
+   * Falha temporária: incrementa tentativas e agenda próxima. Caller decide
+   * o backoff (geralmente exponencial).
+   */
+  public void marcarTentativaPublicacaoFalhou(String motivo, OffsetDateTime proximaTentativa) {
+    this.statusPublicacao = StatusPublicacao.PENDENTE;
+    this.tentativasPublicacao = this.tentativasPublicacao + 1;
+    this.proximaTentativaEm = proximaTentativa;
+    this.ultimaFalhaPublicacao = motivo;
+  }
+
+  /** Esgotou max-tentativas: marca como FALHA definitivo. */
+  public void marcarPublicacaoFalhouDefinitivo(String motivo) {
+    this.statusPublicacao = StatusPublicacao.FALHA;
+    this.tentativasPublicacao = this.tentativasPublicacao + 1;
+    this.proximaTentativaEm = null;
+    this.ultimaFalhaPublicacao = motivo;
+  }
+
+  /** Operador disparou reprocesso manual via UI. */
+  public void reagendarPublicacao() {
+    this.statusPublicacao = StatusPublicacao.PENDENTE;
+    this.tentativasPublicacao = 0;
+    this.proximaTentativaEm = OffsetDateTime.now();
+    this.ultimaFalhaPublicacao = null;
   }
 }

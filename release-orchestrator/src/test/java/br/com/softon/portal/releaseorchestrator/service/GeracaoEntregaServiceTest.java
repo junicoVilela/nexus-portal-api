@@ -24,12 +24,10 @@ import br.com.softon.portal.releaseorchestrator.entity.ReleaseStatus;
 import br.com.softon.portal.releaseorchestrator.entity.StatusEntrega;
 import br.com.softon.portal.releaseorchestrator.entity.TipoModulo;
 import br.com.softon.portal.releaseorchestrator.entity.TipoRelease;
-import br.com.softon.portal.releaseorchestrator.integration.publish.PublishService;
 import br.com.softon.portal.releaseorchestrator.repository.OrchestratorClienteProdutoModuloRepository;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import br.com.softon.portal.releaseorchestrator.repository.OrchestratorClienteProdutoRepository;
-import br.com.softon.portal.releaseorchestrator.repository.OrchestratorConfigEntregaRepository;
 import br.com.softon.portal.releaseorchestrator.repository.OrchestratorEntregaModuloArtefatoRepository;
 import br.com.softon.portal.releaseorchestrator.repository.OrchestratorEntregaModuloRepository;
 import br.com.softon.portal.releaseorchestrator.repository.OrchestratorEntregaRepository;
@@ -58,8 +56,7 @@ class GeracaoEntregaServiceTest {
   @Mock OrchestratorClienteProdutoModuloRepository cpmRepository;
   @Mock EmpacotadorEntrega empacotador;
   @Mock RenderizadorFuncionalidades renderizador;
-  @Mock OrchestratorConfigEntregaRepository configEntregaRepository;
-  @Mock PublishService publishService;
+  @Mock PublicacaoRemotaService publicacaoRemotaService;
   MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   GeracaoEntregaService service;
@@ -95,7 +92,7 @@ class GeracaoEntregaServiceTest {
     storage = new ReleaseOrchestratorStorageProperties(null, "/tmp/entregas", 90);
     service = new GeracaoEntregaService(entregaRepository, entregaModuloRepository,
         deltaRepository, clienteProdutoRepository, cpmRepository, empacotador,
-        renderizador, storage, configEntregaRepository, publishService, meterRegistry);
+        renderizador, storage, publicacaoRemotaService, meterRegistry);
     service.registrarMetricas();
 
     when(renderizador.renderizar(any(), any())).thenReturn(List.of());
@@ -159,7 +156,7 @@ class GeracaoEntregaServiceTest {
     storage = new ReleaseOrchestratorStorageProperties(null, null, 90);
     service = new GeracaoEntregaService(entregaRepository, entregaModuloRepository,
         deltaRepository, clienteProdutoRepository, cpmRepository, empacotador,
-        renderizador, storage, configEntregaRepository, publishService, meterRegistry);
+        renderizador, storage, publicacaoRemotaService, meterRegistry);
     service.registrarMetricas();
     when(entregaRepository.findById(entregaId)).thenReturn(Optional.of(entrega));
 

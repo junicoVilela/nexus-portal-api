@@ -18,4 +18,9 @@ public record ConfigEntregaRequest(
     /** Senha em texto plano. Enviar em branco no PUT preserva a senha atual. */
     @Size(max = 500) String senha,
     Boolean modoPassivo,
-    Boolean strictHostCheck) {}
+    Boolean strictHostCheck,
+    /* --- Destino BUCKET (S3/MinIO) --- */
+    @Size(max = 200) String bucket,
+    @Size(max = 500) String endpoint,
+    @Size(max = 60) String regiao,
+    Boolean pathStyleAccess) {}

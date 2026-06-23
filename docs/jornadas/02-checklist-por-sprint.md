@@ -26,7 +26,7 @@ Legenda código: ✅ código pronto · 🟡 código parcial · 🔧 operacional 
 | S9 | F2 portal — GitHub adapter | Download asset TO_TAG na geração | ✅ |
 | S10 | F2 portal — delta Git | Diff BANCO/KETTLE FROM..TO | ✅ |
 | S11 | F2 front + operação | Cadastro GitHub/Jenkins + build status | 🟡 (sem trigger de build via portal — webhook+badge ✅) |
-| S12+ | F3 / F4 | FTP, observabilidade (conforme prioridade) | 🟡 F3 fases 1+2 ✅ · F4 fase 1 ✅ · S3/MinIO + retry + healthchecks + E2E 📋 |
+| S12+ | F3 / F4 | FTP, observabilidade (conforme prioridade) | ✅ F3 fases 1+2+3 (FTP/SFTP/BUCKET + retry job) · F4 fases 1+2 (logs/health/retenção/E2E) |
 
 **Trilha paralela 🔧 (S2–S8):** Jenkinsfile nos repos — não bloqueia S1–S7 se MVP usa upload manual.
 
@@ -340,9 +340,11 @@ Bloco curto no início da sprint pra fechar dívida técnica que ficou exposta n
 - [x] SFTP via JSch (mwiede fork — `com.github.mwiede:jsch:0.2.18`) com strict host check opcional
 - [x] Hook no `GeracaoEntregaService` ao concluir empacotamento — publica via `PublishService` quando destino ≠ PASTA
 
-### F3 fase 3 — extensões P2 (pendente)
-- [ ] Bucket S3/MinIO (P2)
-- [ ] Retry job + notificação Slack/e-mail
+### F3 fase 3 — extensões P2
+- [x] Bucket S3/MinIO via AWS SDK v2 — `S3PublishStrategy` aceita endpoint custom (MinIO/Backblaze) + path-style. Reusa `usuario`/`senha_cifrada` como access-key/secret-key cifrada em AES-GCM. Migration V13 adiciona colunas `bucket`/`endpoint`/`regiao`/`path_style_access`.
+- [x] Retry job de publicação remota — Migration V14 (`status_publicacao`, `tentativas_publicacao`, `proxima_tentativa_em`, `ultima_falha_publicacao`, `data_publicacao`, `destino_publicacao`). `PublicacaoRemotaService` faz tentativa com backoff exponencial (5, 10, 20, 40, 80 min até `backoff-max-minutos`). `PublicacaoRetryJob` `@Scheduled` (default a cada 2 min). Quando esgota `max-tentativas` (default 5) marca FALHA definitivo. Endpoint `POST /entregas/{id}/publicacao/reagendar` para reprocesso manual.
+- [x] UI: badge "Publicação remota" no detalhe da entrega com tom (PENDENTE/OK/FALHA), próxima tentativa, destino final, motivo da última falha e botão "Tentar agora".
+- [ ] Notificação Slack/e-mail quando FALHA definitivo (P3 — backlog)
 - [ ] DoD: pacote publicado no FTP do ACME automaticamente (validação manual)
 
 **ROADMAP:** F3.*

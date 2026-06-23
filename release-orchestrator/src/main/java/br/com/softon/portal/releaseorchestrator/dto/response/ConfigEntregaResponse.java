@@ -19,6 +19,10 @@ public record ConfigEntregaResponse(
     boolean senhaConfigurada,
     Boolean modoPassivo,
     Boolean strictHostCheck,
+    String bucket,
+    String endpoint,
+    String regiao,
+    Boolean pathStyleAccess,
     OffsetDateTime updatedAt) {
 
   public static ConfigEntregaResponse from(ConfigEntrega c) {
@@ -35,6 +39,10 @@ public record ConfigEntregaResponse(
         c.temSenhaConfigurada(),
         c.getModoPassivo(),
         c.getStrictHostCheck(),
+        c.getBucket(),
+        c.getEndpoint(),
+        c.getRegiao(),
+        c.getPathStyleAccess(),
         c.getUpdatedAt());
   }
 }

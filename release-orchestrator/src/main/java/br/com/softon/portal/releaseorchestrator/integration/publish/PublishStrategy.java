@@ -11,8 +11,9 @@ import java.nio.file.Path;
  * <p>Implementações:
  * <ul>
  *   <li>{@link LocalFolderPublishStrategy} — copia para pasta local (MVP, S1–S11).</li>
- *   <li>{@link FtpPublishStrategy} — upload via FTP (stub).</li>
- *   <li>{@link SftpPublishStrategy} — upload via SFTP (stub).</li>
+ *   <li>{@link FtpPublishStrategy} — upload via FTP (Apache Commons Net).</li>
+ *   <li>{@link SftpPublishStrategy} — upload via SFTP (JSch).</li>
+ *   <li>{@link S3PublishStrategy} — upload para bucket S3/MinIO (AWS SDK v2).</li>
  * </ul>
  *
  * <p>O dispatcher {@link PublishService} escolhe a estratégia certa pelo

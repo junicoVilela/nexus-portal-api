@@ -5,6 +5,7 @@ import br.com.softon.portal.releaseorchestrator.dto.request.CriarEntregaRequest;
 import br.com.softon.portal.releaseorchestrator.dto.response.EntregaResponse;
 import br.com.softon.portal.releaseorchestrator.entity.StatusEntrega;
 import br.com.softon.portal.releaseorchestrator.service.EntregaService;
+import br.com.softon.portal.releaseorchestrator.service.PublicacaoRemotaService;
 import br.com.softon.portal.shared.api.PageResponse;
 import br.com.softon.portal.shared.api.PageableUtils;
 import br.com.softon.portal.shared.api.SortDirection;
@@ -41,6 +42,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class EntregaController {
 
   private final EntregaService service;
+  private final PublicacaoRemotaService publicacaoRemotaService;
 
   @PreAuthorize(SecurityRoles.READ)
   @GetMapping
@@ -119,5 +121,15 @@ public class EntregaController {
   @ResponseStatus(HttpStatus.CREATED)
   public EntregaResponse reentregar(@PathVariable UUID id) {
     return EntregaResponse.from(service.reentregar(id));
+  }
+
+  /**
+   * Reagenda a publicação remota de uma entrega — útil quando o destino
+   * estava fora, o operador corrigiu config e quer disparar nova tentativa
+   * sem esperar o backoff. Zera o contador de tentativas e marca PENDENTE.
+   */
+  @PostMapping("/{id}/publicacao/reagendar")
+  public EntregaResponse reagendarPublicacao(@PathVariable UUID id) {
+    return EntregaResponse.from(publicacaoRemotaService.reagendar(id));
   }
 }

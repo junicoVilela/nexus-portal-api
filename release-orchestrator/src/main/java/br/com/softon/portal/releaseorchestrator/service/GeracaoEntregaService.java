@@ -6,16 +6,12 @@ import br.com.softon.portal.releaseorchestrator.entity.Entrega;
 import br.com.softon.portal.releaseorchestrator.entity.EntregaModulo;
 import br.com.softon.portal.releaseorchestrator.entity.EntregaModuloArtefato;
 import br.com.softon.portal.releaseorchestrator.entity.StatusEntrega;
-import br.com.softon.portal.releaseorchestrator.entity.TipoDestinoEntrega;
-import br.com.softon.portal.releaseorchestrator.integration.publish.PublishException;
-import br.com.softon.portal.releaseorchestrator.integration.publish.PublishService;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import jakarta.annotation.PostConstruct;
 import br.com.softon.portal.releaseorchestrator.repository.OrchestratorClienteProdutoModuloRepository;
 import br.com.softon.portal.releaseorchestrator.repository.OrchestratorClienteProdutoRepository;
-import br.com.softon.portal.releaseorchestrator.repository.OrchestratorConfigEntregaRepository;
 import br.com.softon.portal.releaseorchestrator.repository.OrchestratorEntregaModuloArtefatoRepository;
 import br.com.softon.portal.releaseorchestrator.repository.OrchestratorEntregaModuloRepository;
 import br.com.softon.portal.releaseorchestrator.repository.OrchestratorEntregaRepository;
@@ -57,8 +53,7 @@ public class GeracaoEntregaService {
   private final EmpacotadorEntrega empacotador;
   private final RenderizadorFuncionalidades renderizador;
   private final ReleaseOrchestratorStorageProperties storage;
-  private final OrchestratorConfigEntregaRepository configEntregaRepository;
-  private final PublishService publishService;
+  private final PublicacaoRemotaService publicacaoRemotaService;
   private final MeterRegistry meterRegistry;
 
   // Métricas F4 — lazy-init via @PostConstruct para garantir registro idempotente.
@@ -153,9 +148,9 @@ public class GeracaoEntregaService {
           entrega.getRelease().getVersao());
       var pacote = empacotador.empacotar(entrega, delta, virtuais, destino);
 
-      publicarSeRemoto(entrega, Path.of(pacote.caminho()));
       atualizarVersoesAtuaisDoCliente(entrega);
       entrega.marcarConcluida(pacote.caminho(), pacote.sha256(), pacote.tamanhoBytes());
+      publicacaoRemotaService.agendarSeRemoto(entrega);
       log.info("Entrega {} concluída ({} itens, {} bytes, sha256={})",
           entregaId, pacote.totalItens(), pacote.tamanhoBytes(), pacote.sha256());
       counterSucesso.increment();
@@ -168,25 +163,6 @@ public class GeracaoEntregaService {
       MDC.remove("entregaId");
       MDC.remove("clienteId");
     }
-  }
-
-  /**
-   * Quando a config de entrega do cliente aponta para FTP/SFTP, dispara o
-   * upload do pacote logo após empacotar. PASTA é destino local (pacote já
-   * está no disco final), então é noop. Falha de publish lança
-   * {@link PublishException} — a entrega é marcada como FALHA pelo catch
-   * geral em {@link #executar(UUID)}.
-   */
-  private void publicarSeRemoto(Entrega entrega, Path pacote) {
-    var config = configEntregaRepository
-        .findByCliente_Id(entrega.getCliente().getId())
-        .orElse(null);
-    if (config == null || config.getTipoDestino() == TipoDestinoEntrega.PASTA) {
-      return;
-    }
-    var resultado = publishService.publicar(config, pacote);
-    log.info("Pacote publicado em {} ({} bytes)",
-        resultado.destino(), resultado.tamanhoBytes());
   }
 
   /**

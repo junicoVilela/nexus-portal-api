@@ -99,6 +99,19 @@
       <artifactId>jsch</artifactId>
       <version>0.2.18</version>
     </dependency>
+    <!-- F3 P2: cliente S3 (AWS S3 + MinIO via endpoint custom) -->
+    <dependency>
+      <groupId>software.amazon.awssdk</groupId>
+      <artifactId>s3</artifactId>
+      <version>2.28.16</version>
+      <exclusions>
+        <!-- Evita logger backend conflitante; o portal usa logback-classic. -->
+        <exclusion>
+          <groupId>commons-logging</groupId>
+          <artifactId>commons-logging</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-test</artifactId>

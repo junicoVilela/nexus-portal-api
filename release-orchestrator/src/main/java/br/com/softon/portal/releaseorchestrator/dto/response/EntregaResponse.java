@@ -3,6 +3,7 @@ package br.com.softon.portal.releaseorchestrator.dto.response;
 import br.com.softon.portal.releaseorchestrator.entity.AmbientePadrao;
 import br.com.softon.portal.releaseorchestrator.entity.Entrega;
 import br.com.softon.portal.releaseorchestrator.entity.StatusEntrega;
+import br.com.softon.portal.releaseorchestrator.entity.StatusPublicacao;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
@@ -28,6 +29,13 @@ public record EntregaResponse(
     Long tamanhoBytes,
     String observacoes,
     String falhaMotivo,
+    /* --- Publicação remota (F3 P2) --- */
+    StatusPublicacao statusPublicacao,
+    int tentativasPublicacao,
+    OffsetDateTime proximaTentativaEm,
+    String ultimaFalhaPublicacao,
+    OffsetDateTime dataPublicacao,
+    String destinoPublicacao,
     OffsetDateTime createdAt,
     OffsetDateTime updatedAt) {
 
@@ -54,6 +62,12 @@ public record EntregaResponse(
         e.getTamanhoBytes(),
         e.getObservacoes(),
         e.getFalhaMotivo(),
+        e.getStatusPublicacao(),
+        e.getTentativasPublicacao(),
+        e.getProximaTentativaEm(),
+        e.getUltimaFalhaPublicacao(),
+        e.getDataPublicacao(),
+        e.getDestinoPublicacao(),
         e.getCreatedAt(),
         e.getUpdatedAt());
   }
