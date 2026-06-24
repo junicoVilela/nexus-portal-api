@@ -22,6 +22,7 @@ Narrativas **end-to-end** que complementam as specs por tela. Use este índice q
 | 06 | [Auditoria de gaps — ACME](06-gaps-jornada-acme.md) | Lacunas vs cenário feliz, classificadas por severidade |
 | 07 | [Runbook S8 — Jenkins + GitHub](07-runbook-s8-jenkins-github.md) | From-zero do Jenkins + tag → release no GitHub |
 | 08 | [Runbook primeira publicação](08-runbook-primeira-publicacao.md) | End-to-end: máquina, banco, cadastros, primeira entrega |
+| 09 | [Passo a passo local tela a tela](09-passo-a-passo-local-tela-a-tela.md) | Localhost: subir back + front, login, cadastros e wizard clicando |
 
 ## Documentação relacionada
 
