@@ -1,0 +1,122 @@
+# Stack Docker centralizada do Softon Portal — desenvolvimento local.
+#
+# Sobe o que você precisa, na hora que precisar:
+#
+#   docker compose up -d                      # mínimo (Postgres)
+#   docker compose --profile ci up -d         # + Jenkins
+#   docker compose --profile bucket up -d     # + MinIO
+#   docker compose --profile sftp up -d       # + SFTP
+#   docker compose --profile all up -d        # tudo de uma vez
+#
+# Spec: docs/jornadas/10-fluxo-local-completo-com-jenkins.md
+
+name: softon-portal
+
+services:
+  # =====================================================================
+  # Postgres — banco do portal.
+  # Sempre sobe (sem profile). Defaults batem com application-dev.yml.
+  # =====================================================================
+  postgres:
+    image: postgres:15
+    container_name: softon-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-softon_intranet}
+      POSTGRES_USER: ${POSTGRES_USER:-softon_intranet}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-softon!@#}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - softon-pgdata:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-softon_intranet} -d ${POSTGRES_DB:-softon_intranet}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # =====================================================================
+  # Jenkins — CI build-on-tag.
+  # Profile: ci
+  # =====================================================================
+  jenkins:
+    profiles: ["ci", "all"]
+    build:
+      context: ./jenkins
+      dockerfile: Dockerfile
+    image: softon-portal/jenkins:latest
+    container_name: softon-jenkins
+    restart: unless-stopped
+    ports:
+      # 8090 evita conflito com o portal API (8080) rodando no host.
+      - "${JENKINS_PORT:-8090}:8080"
+      - "${JENKINS_AGENT_PORT:-50000}:50000"
+    environment:
+      JENKINS_ADMIN_USER: ${JENKINS_ADMIN_USER:-admin}
+      JENKINS_ADMIN_PASSWORD: ${JENKINS_ADMIN_PASSWORD:-admin}
+      JENKINS_URL: ${JENKINS_URL:-http://localhost:8090/}
+      GITHUB_USER: ${GITHUB_USER:-}
+      GITHUB_PAT: ${GITHUB_PAT:-}
+      PORTAL_WEBHOOK_SECRET: ${PORTAL_WEBHOOK_SECRET:-}
+    volumes:
+      - softon-jenkins-home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+    extra_hosts:
+      # Permite Jenkinsfile chamar http://host.docker.internal:8080 (portal local).
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "http://localhost:8080/login"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+
+  # =====================================================================
+  # MinIO — bucket S3-compatível para testar destino BUCKET (F3 P2).
+  # Profile: bucket
+  # =====================================================================
+  minio:
+    profiles: ["bucket", "all"]
+    image: minio/minio:latest
+    container_name: softon-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    ports:
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    volumes:
+      - softon-minio-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  # =====================================================================
+  # SFTP — destino remoto pra testar publicação via SFTP (F3).
+  # Profile: sftp
+  # =====================================================================
+  sftp:
+    profiles: ["sftp", "all"]
+    image: atmoz/sftp:latest
+    container_name: softon-sftp
+    restart: unless-stopped
+    ports:
+      - "${SFTP_PORT:-2222}:22"
+    volumes:
+      - softon-sftp-data:/home/${SFTP_USER:-foo}/upload
+    command: "${SFTP_USER:-foo}:${SFTP_PASSWORD:-senha}:::upload"
+
+volumes:
+  softon-pgdata:
+    name: softon-pgdata
+  softon-jenkins-home:
+    name: softon-jenkins-home
+  softon-minio-data:
+    name: softon-minio-data
+  softon-sftp-data:
+    name: softon-sftp-data

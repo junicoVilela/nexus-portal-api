@@ -22,14 +22,13 @@ Como tudo roda em `localhost`, planeje as portas antes:
 |---|---|---|
 | PostgreSQL | 5432 | — |
 | **Portal API** | **8080** | ⚠ conflita com Jenkins default |
-| **Jenkins** | **8090** | ← vamos mudar a default 8080 pra 8090 |
+| **Jenkins** | **8090** | ← já configurado em `infra/docker` pra evitar conflito |
 | Portal Frontend | 4200 | — |
 | MinIO API | 9000 | — |
 | MinIO Console | 9001 | — |
 | SFTP (atmoz) | 2222 | — |
 
-> Vamos rodar **Jenkins em 8090** pra liberar 8080 pro portal. Todos os
-> exemplos abaixo já estão ajustados.
+> Todas as portas são customizáveis no `.env` de `infra/docker/`.
 
 ---
 
@@ -50,161 +49,95 @@ frente.
 
 ---
 
-## §2 — Subir Postgres, Portal API e Frontend
+## §2 — Subir TODA a infraestrutura com 1 comando
 
-Esse pedaço é o mesmo do guia 09 §1-§4. Resumo rápido:
+A pasta [`infra/docker/`](../../infra/docker/) centraliza Postgres +
+Jenkins (+ MinIO/SFTP opcionais). Tudo declarativo, com plugins e
+credenciais do Jenkins **já provisionados** via JCasC. Detalhes
+completos em [`infra/docker/README.md`](../../infra/docker/README.md).
+
+### 2.1 Preparar o `.env`
 
 ```bash
-# Postgres
-docker run -d --name softon-postgres \
-  -e POSTGRES_DB=softon_intranet \
-  -e POSTGRES_USER=softon_intranet \
-  -e POSTGRES_PASSWORD='softon!@#' \
-  -p 5432:5432 -v softon-pgdata:/var/lib/postgresql/data \
-  postgres:15
+cd softon-portal-api/infra/docker
+cp .env.example .env
 
-# Portal API — exporte o webhook secret antes de subir
+# Gere o secret do webhook (vamos usar agora e exportar pro backend depois)
+WEBHOOK=$(openssl rand -hex 32)
+echo "WEBHOOK_SECRET=$WEBHOOK"
+
+# Edite o .env preenchendo:
+#   GITHUB_USER=seuuser
+#   GITHUB_PAT=ghp_...      (gere em github.com → Settings → Tokens)
+#   PORTAL_WEBHOOK_SECRET=<cole o $WEBHOOK acima>
+$EDITOR .env
+```
+
+> **Anote o `WEBHOOK_SECRET`.** O backend precisa do mesmo valor na
+> variável `RELEASE_ORCHESTRATOR_WEBHOOKS_JENKINS_SECRET`. Se divergir,
+> webhook devolve 403.
+
+### 2.2 Subir Postgres + Jenkins
+
+```bash
+docker compose --profile ci up -d
+# Logs em tempo real (opcional):
+docker compose --profile ci logs -f jenkins
+```
+
+Aguarde ~2 min na primeira vez (Jenkins instala tools `jdk-21` e
+`maven-3.9` via JCasC). Quando estiver pronto:
+
+```bash
+curl -fs http://localhost:8090/login >/dev/null && echo "Jenkins OK"
+```
+
+### 2.3 Subir o backend e o frontend (em terminais separados)
+
+```bash
+# Backend
 cd softon-portal-api
 mkdir -p storage/{artefatos,entregas,publicacoes}
-export RELEASE_ORCHESTRATOR_WEBHOOKS_JENKINS_SECRET=$(openssl rand -hex 32)
-echo "ANOTE ISSO: $RELEASE_ORCHESTRATOR_WEBHOOKS_JENKINS_SECRET"
+export RELEASE_ORCHESTRATOR_WEBHOOKS_JENKINS_SECRET=$WEBHOOK  # mesmo do .env
 ./mvnw -pl application spring-boot:run -Dspring-boot.run.profiles=dev
 ```
 
-> Anote o `WEBHOOK_SECRET` em um arquivo temporário — vamos colar dentro
-> do Jenkins no §4. Se rebuildar o portal sem exportar de novo, o secret
-> some e o webhook volta a dar 403.
-
-Em outro terminal:
-
 ```bash
+# Frontend
 cd softon-portal-web/frontend
 npm ci && npm start
 ```
 
-Aguarde:
-- Portal API em `http://localhost:8080/actuator/health` → `UP`
-- Frontend em `http://localhost:4200` → tela de login
+Confira:
+- Portal API: `curl http://localhost:8080/actuator/health` → `UP`
+- Frontend: `http://localhost:4200` → tela de login
 
-Faça login (`admin@softon.com.br` / `admin`).
+Login: `admin@softon.com.br` / `admin`.
 
 ---
 
-## §3 — Subir Jenkins local
+## §3 — O que o Compose já provisionou no Jenkins
 
-### 3.1 Container
+Você **não precisa configurar nada na UI**. O `infra/docker/jenkins/`
+contém Dockerfile + JCasC que provisionam tudo no boot:
 
-```bash
-docker volume create jenkins_home
+| Provisionamento | Onde está | Valor |
+|---|---|---|
+| Admin local | `casc.yaml` lê de `$JENKINS_ADMIN_USER`/`$JENKINS_ADMIN_PASSWORD` | default `admin`/`admin` |
+| Tool `jdk-21` | `casc.yaml` → tool/jdk | Adoptium auto-install |
+| Tool `maven-3.9` | `casc.yaml` → tool/maven | 3.9.9 auto-install |
+| Credencial `github-pat-softon` | `casc.yaml` lê de `$GITHUB_PAT` | (do `.env`) |
+| Credencial `github-user-pat` | `casc.yaml` lê de `$GITHUB_USER`/`$GITHUB_PAT` | (do `.env`) — pra clone HTTPS |
+| Credencial `softon-portal-webhook-secret` | `casc.yaml` lê de `$PORTAL_WEBHOOK_SECRET` | (do `.env`) |
+| Plugins (Pipeline, GitHub, JCasC, Stage View, Timestamper, etc.) | `plugins.txt` versionado | instalados na build da imagem |
+| `gh` CLI | `Dockerfile` | `apt install gh` |
 
-docker run -d \
-  --name jenkins \
-  --restart unless-stopped \
-  -p 8090:8080 -p 50000:50000 \
-  -v jenkins_home:/var/jenkins_home \
-  -v /var/run/docker.sock:/var/run/docker.sock \
-  jenkins/jenkins:lts-jdk21
-```
+Acesse `http://localhost:8090` e logue com `admin`/`admin`. Confira em
+**Manage Jenkins → Credentials** que as 3 credenciais estão lá, e em
+**Manage Jenkins → Tools** que `jdk-21` e `maven-3.9` estão configuradas.
 
-> A primeira porta `8090` é o host; `8080` interna do container. Acesse
-> Jenkins em `http://localhost:8090`.
-
-### 3.2 Senha inicial
-
-```bash
-docker exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword
-```
-
-Cole a senha em `http://localhost:8090`.
-
-### 3.3 Setup wizard
-
-1. **Install suggested plugins** (Pipeline, Git, GitHub, Credentials, etc).
-2. Espere a instalação terminar (~5 min).
-3. Crie o usuário admin local:
-   - User: `admin`
-   - Password: `admin` (local dev — não use em prod)
-   - Nome completo, e-mail
-4. **Jenkins URL:** confirme `http://localhost:8090/` (default).
-5. **Start using Jenkins**.
-
-### 3.4 Plugins adicionais
-
-Em **Manage Jenkins → Plugins → Available plugins**, instale:
-
-| Plugin | Pra quê |
-|---|---|
-| `GitHub Branch Source` | Trigger por tag |
-| `Pipeline: Stage View` | UI bonita do pipeline |
-| `Timestamper` | Timestamps no log (Jenkinsfile template usa) |
-
-Marque **Restart Jenkins when installation is complete and no jobs are
-running** → aguarde reiniciar.
-
-### 3.5 Tools (JDK + Maven)
-
-**Manage Jenkins → Tools**:
-
-- **JDK installations** → Add JDK
-  - Name: `jdk-21`
-  - ✅ Install automatically → Adoptium → `jdk-21.0.x+x`
-- **Maven installations** → Add Maven
-  - Name: `maven-3.9`
-  - ✅ Install automatically → `3.9.9`
-
-**Save** no fim.
-
-> Os nomes `jdk-21` e `maven-3.9` são referenciados literalmente no
-> template Jenkinsfile (`tools { maven 'maven-3.9'; jdk 'jdk-21' }`).
-
-### 3.6 Credencial GitHub (PAT)
-
-No GitHub:
-1. **Settings → Developer settings → Personal access tokens (classic)**
-2. **Generate new token (classic)**, escopo `repo` + `workflow`.
-3. Copie o token (`ghp_...`).
-
-No Jenkins, **Manage Jenkins → Credentials → System → Global credentials → Add Credentials**:
-
-| Campo | Valor |
-|---|---|
-| Kind | `Secret text` |
-| ID | `github-pat-softon` (**exato**, hardcoded no Jenkinsfile) |
-| Secret | cole o PAT |
-| Description | `GitHub PAT - upload de releases` |
-
-### 3.7 Credencial do webhook do portal
-
-Mesmo lugar (Global credentials → Add Credentials):
-
-| Campo | Valor |
-|---|---|
-| Kind | `Secret text` |
-| ID | `softon-portal-webhook-secret` (**exato**) |
-| Secret | cole aqui o `WEBHOOK_SECRET` que você exportou no §2 |
-| Description | `Webhook secret do Softon Portal` |
-
-### 3.8 Smoke test do Jenkins
-
-**New Item → Pipeline**, nome `smoke-test`. Pipeline script:
-
-```groovy
-pipeline {
-  agent any
-  tools { maven 'maven-3.9'; jdk 'jdk-21' }
-  stages {
-    stage('Sanity') {
-      steps {
-        sh 'java -version'
-        sh 'mvn -v'
-      }
-    }
-  }
-}
-```
-
-**Save → Build Now**. Console deve mostrar Java 21 + Maven 3.9. Se OK,
-**Delete** esse job (foi só pra confirmar).
+> Quer mudar algo? Edite `infra/docker/jenkins/casc.yaml` e rode
+> `docker compose build jenkins && docker compose --profile ci up -d`.
 
 ---
 
@@ -609,15 +542,14 @@ Quando esse fluxo estiver redondo, evolua:
 ## §13 — Resetar tudo (se precisar)
 
 ```bash
-# Para tudo
-docker stop jenkins softon-postgres
-docker rm jenkins softon-postgres
-docker volume rm jenkins_home softon-pgdata
+# Derruba serviços e apaga volumes
+cd softon-portal-api/infra/docker
+docker compose --profile all down -v
 
 # Portal + frontend: Ctrl+C nos terminais
 
 # Artefatos gerados
-rm -rf softon-portal-api/storage/* /tmp/softon-entregas
+rm -rf ../../storage/* /tmp/softon-entregas
 ```
 
 Volta pra §2 e refaz limpo.

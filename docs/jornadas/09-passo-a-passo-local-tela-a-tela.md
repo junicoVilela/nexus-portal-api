@@ -34,38 +34,30 @@ psql --version   # 15.x
 
 ## §1 — Subir o PostgreSQL local
 
-Você tem duas opções; escolha uma.
-
-### Opção A — Docker (recomendado, mais rápido)
+A forma mais simples é usar a stack Docker centralizada em
+[`infra/docker/`](../../infra/docker/), que já tem tudo configurado:
 
 ```bash
-docker run -d \
-  --name softon-postgres \
-  -e POSTGRES_DB=softon_intranet \
-  -e POSTGRES_USER=softon_intranet \
-  -e POSTGRES_PASSWORD='softon!@#' \
-  -p 5432:5432 \
-  -v softon-pgdata:/var/lib/postgresql/data \
-  postgres:15
+cd softon-portal-api/infra/docker
+cp .env.example .env       # defaults batem com application-dev.yml
+docker compose up -d       # sobe só o Postgres (sem profiles)
+docker compose ps          # confere que está UP (healthy)
 ```
 
-Confere com `docker ps`. Se já tem container antigo, `docker rm -f softon-postgres`.
-
-### Opção B — Postgres nativo
-
-Como `postgres`:
-
-```sql
-CREATE USER softon_intranet WITH PASSWORD 'softon!@#';
-CREATE DATABASE softon_intranet OWNER softon_intranet ENCODING 'UTF8';
-\c softon_intranet
-GRANT ALL ON SCHEMA public TO softon_intranet;
-```
-
-> Defaults usados pelo perfil `dev` (em `application-dev.yml`):
-> `jdbc:postgresql://localhost:5432/softon_intranet`, user `softon_intranet`,
-> senha `softon!@#`. Se você usar outros valores, exporte
+> Defaults: db `softon_intranet`, user `softon_intranet`, senha `softon!@#`,
+> porta `5432`. Para mudar, edite o `.env` e (atenção!) exporte
 > `DB_URL`/`DB_USERNAME`/`DB_PASSWORD` antes de subir o backend.
+
+Quer só validar a conexão antes de seguir?
+
+```bash
+docker compose exec postgres pg_isready -U softon_intranet
+# /var/run/postgresql:5432 - accepting connections
+```
+
+> Detalhes do que mais o compose oferece (Jenkins, MinIO, SFTP via
+> profiles) em [`infra/docker/README.md`](../../infra/docker/README.md).
+> Pra este guia tela-a-tela com upload manual, só Postgres basta.
 
 ---
 
@@ -283,13 +275,11 @@ Antes de salvar, crie a pasta: `mkdir -p /tmp/softon-entregas/acme`.
 
 ##### Opção 2 — SFTP local (se quiser testar publicação remota)
 
-Suba um SFTP rápido com Docker:
+Suba o serviço SFTP via profile do compose centralizado:
 
 ```bash
-docker run -d --name sftp-test \
-  -p 2222:22 \
-  -v sftp-data:/home/foo/upload \
-  atmoz/sftp foo:senha:::upload
+cd infra/docker
+docker compose --profile sftp up -d
 ```
 
 E configure:
@@ -306,14 +296,11 @@ E configure:
 
 ##### Opção 3 — BUCKET (S3/MinIO local)
 
-Suba MinIO:
+Suba MinIO via profile do compose centralizado:
 
 ```bash
-docker run -d --name minio \
-  -p 9000:9000 -p 9001:9001 \
-  -e MINIO_ROOT_USER=minioadmin \
-  -e MINIO_ROOT_PASSWORD=minioadmin \
-  minio/minio server /data --console-address ":9001"
+cd infra/docker
+docker compose --profile bucket up -d
 ```
 
 Acesse `http://localhost:9001`, login `minioadmin/minioadmin`, crie um bucket
@@ -566,13 +553,11 @@ PDF é baixado direto pelo browser.
 ## §14 — Resetar tudo se algo deu errado
 
 ```bash
-# Apaga banco e refaz do zero (perde TUDO)
-docker rm -f softon-postgres
-docker volume rm softon-pgdata
-# repete §1.1 e §2
+cd softon-portal-api/infra/docker
+docker compose --profile all down -v    # tudo + volumes
 
-# Apaga pacotes gerados
-rm -rf softon-portal-api/storage/{artefatos,entregas,publicacoes}/*
+# Pacotes gerados pelo backend
+rm -rf ../../storage/{artefatos,entregas,publicacoes}/*
 ```
 
 > No primeiro startup o Flyway aplica V1..V14 do zero e o seed cria o
