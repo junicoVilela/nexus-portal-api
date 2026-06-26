@@ -3,6 +3,9 @@
 -- Identidade: usuários de login (JWT / roles legado)
 -- =============================================================================
 
+-- -----------------------------------------------------------------------------
+-- Tabelas
+-- -----------------------------------------------------------------------------
 
 CREATE TABLE tb_usuario (
   id         UUID         NOT NULL,
@@ -16,13 +19,12 @@ CREATE TABLE tb_usuario (
   updated_at TIMESTAMPTZ  NOT NULL DEFAULT now(),
   created_by VARCHAR(120),
   updated_by VARCHAR(120),
-  CONSTRAINT pk_tb_usuario PRIMARY KEY (id)
+  CONSTRAINT pk_tb_usuario PRIMARY KEY (id),
+  CONSTRAINT uq_tb_usuario_username UNIQUE (username)
 );
 
--- -- constraints -- --
-
-ALTER TABLE tb_usuario ADD CONSTRAINT uq_tb_usuario_username UNIQUE (username);
-
--- -- índices -- --
+-- -----------------------------------------------------------------------------
+-- Índices
+-- -----------------------------------------------------------------------------
 
 -- (sem índices adicionais nesta versão)

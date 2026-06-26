@@ -4,6 +4,9 @@
 -- Manuais: clientes, projetos, módulos, páginas, publicações, vínculos, preview
 -- =============================================================================
 
+-- -----------------------------------------------------------------------------
+-- Tabelas (constraints declaradas inline; nada de ALTER TABLE posterior).
+-- -----------------------------------------------------------------------------
 
 CREATE TABLE tb_cliente (
   id                UUID         NOT NULL,
@@ -18,7 +21,8 @@ CREATE TABLE tb_cliente (
   updated_at        TIMESTAMPTZ  NOT NULL DEFAULT now(),
   created_by        VARCHAR(120),
   updated_by        VARCHAR(120),
-  CONSTRAINT pk_tb_cliente PRIMARY KEY (id)
+  CONSTRAINT pk_tb_cliente PRIMARY KEY (id),
+  CONSTRAINT uq_tb_cliente_slug UNIQUE (slug)
 );
 
 CREATE TABLE tb_projeto (
@@ -31,7 +35,8 @@ CREATE TABLE tb_projeto (
   updated_at TIMESTAMPTZ  NOT NULL DEFAULT now(),
   created_by VARCHAR(120),
   updated_by VARCHAR(120),
-  CONSTRAINT pk_tb_projeto PRIMARY KEY (id)
+  CONSTRAINT pk_tb_projeto PRIMARY KEY (id),
+  CONSTRAINT uq_tb_projeto_slug UNIQUE (slug)
 );
 
 CREATE TABLE tb_modulo (
@@ -46,7 +51,9 @@ CREATE TABLE tb_modulo (
   updated_at TIMESTAMPTZ  NOT NULL DEFAULT now(),
   created_by VARCHAR(120),
   updated_by VARCHAR(120),
-  CONSTRAINT pk_tb_modulo PRIMARY KEY (id)
+  CONSTRAINT pk_tb_modulo PRIMARY KEY (id),
+  CONSTRAINT uq_tb_modulo_projeto_slug UNIQUE (projeto_id, slug),
+  CONSTRAINT fk_tb_modulo_projeto FOREIGN KEY (projeto_id) REFERENCES tb_projeto(id) ON DELETE CASCADE
 );
 
 CREATE TABLE tb_pagina (
@@ -67,7 +74,11 @@ CREATE TABLE tb_pagina (
   created_by    VARCHAR(120),
   updated_by    VARCHAR(120),
   search_vector TSVECTOR,
-  CONSTRAINT pk_tb_pagina PRIMARY KEY (id)
+  CONSTRAINT pk_tb_pagina PRIMARY KEY (id),
+  CONSTRAINT uq_tb_pagina_slug UNIQUE (slug),
+  CONSTRAINT uq_tb_pagina_codigo_tela UNIQUE (codigo_tela),
+  CONSTRAINT fk_tb_pagina_modulo FOREIGN KEY (modulo_id) REFERENCES tb_modulo(id),
+  CONSTRAINT fk_tb_pagina_parent FOREIGN KEY (parent_id) REFERENCES tb_pagina(id) ON DELETE CASCADE
 );
 
 CREATE TABLE tb_pagina_revisao (
@@ -84,7 +95,10 @@ CREATE TABLE tb_pagina_revisao (
   parent_id     UUID,
   created_at    TIMESTAMPTZ  NOT NULL DEFAULT now(),
   created_by    VARCHAR(120),
-  CONSTRAINT pk_tb_pagina_revisao PRIMARY KEY (id)
+  CONSTRAINT pk_tb_pagina_revisao PRIMARY KEY (id),
+  CONSTRAINT fk_tb_pagina_revisao_pagina FOREIGN KEY (pagina_id) REFERENCES tb_pagina(id) ON DELETE CASCADE,
+  CONSTRAINT fk_tb_pagina_revisao_modulo FOREIGN KEY (modulo_id) REFERENCES tb_modulo(id),
+  CONSTRAINT fk_tb_pagina_revisao_parent FOREIGN KEY (parent_id) REFERENCES tb_pagina(id)
 );
 
 CREATE TABLE tb_pagina_anexo (
@@ -98,7 +112,8 @@ CREATE TABLE tb_pagina_anexo (
   updated_at    TIMESTAMPTZ  NOT NULL DEFAULT now(),
   created_by    VARCHAR(120),
   updated_by    VARCHAR(120),
-  CONSTRAINT pk_tb_pagina_anexo PRIMARY KEY (id)
+  CONSTRAINT pk_tb_pagina_anexo PRIMARY KEY (id),
+  CONSTRAINT fk_tb_pagina_anexo_pagina FOREIGN KEY (pagina_id) REFERENCES tb_pagina(id) ON DELETE CASCADE
 );
 
 CREATE TABLE tb_publicacao (
@@ -117,28 +132,38 @@ CREATE TABLE tb_publicacao (
   updated_at          TIMESTAMPTZ  NOT NULL DEFAULT now(),
   created_by          VARCHAR(120),
   updated_by          VARCHAR(120),
-  CONSTRAINT pk_tb_publicacao PRIMARY KEY (id)
+  CONSTRAINT pk_tb_publicacao PRIMARY KEY (id),
+  CONSTRAINT fk_tb_publicacao_cliente FOREIGN KEY (cliente_id) REFERENCES tb_cliente(id)
 );
 
 CREATE TABLE tb_cliente_projeto (
   id         UUID NOT NULL,
   cliente_id UUID NOT NULL,
   projeto_id UUID NOT NULL,
-  CONSTRAINT pk_tb_cliente_projeto PRIMARY KEY (id)
+  CONSTRAINT pk_tb_cliente_projeto PRIMARY KEY (id),
+  CONSTRAINT uq_tb_cliente_projeto UNIQUE (cliente_id, projeto_id),
+  CONSTRAINT fk_tb_cliente_projeto_cliente FOREIGN KEY (cliente_id) REFERENCES tb_cliente(id) ON DELETE CASCADE,
+  CONSTRAINT fk_tb_cliente_projeto_projeto FOREIGN KEY (projeto_id) REFERENCES tb_projeto(id) ON DELETE CASCADE
 );
 
 CREATE TABLE tb_cliente_modulo (
   id         UUID NOT NULL,
   cliente_id UUID NOT NULL,
   modulo_id  UUID NOT NULL,
-  CONSTRAINT pk_tb_cliente_modulo PRIMARY KEY (id)
+  CONSTRAINT pk_tb_cliente_modulo PRIMARY KEY (id),
+  CONSTRAINT uq_tb_cliente_modulo UNIQUE (cliente_id, modulo_id),
+  CONSTRAINT fk_tb_cliente_modulo_cliente FOREIGN KEY (cliente_id) REFERENCES tb_cliente(id) ON DELETE CASCADE,
+  CONSTRAINT fk_tb_cliente_modulo_modulo  FOREIGN KEY (modulo_id)  REFERENCES tb_modulo(id)  ON DELETE CASCADE
 );
 
 CREATE TABLE tb_cliente_pagina (
   id         UUID NOT NULL,
   cliente_id UUID NOT NULL,
   pagina_id  UUID NOT NULL,
-  CONSTRAINT pk_tb_cliente_pagina PRIMARY KEY (id)
+  CONSTRAINT pk_tb_cliente_pagina PRIMARY KEY (id),
+  CONSTRAINT uq_tb_cliente_pagina UNIQUE (cliente_id, pagina_id),
+  CONSTRAINT fk_tb_cliente_pagina_cliente FOREIGN KEY (cliente_id) REFERENCES tb_cliente(id) ON DELETE CASCADE,
+  CONSTRAINT fk_tb_cliente_pagina_pagina  FOREIGN KEY (pagina_id)  REFERENCES tb_pagina(id)  ON DELETE CASCADE
 );
 
 CREATE TABLE tb_auditoria_evento (
@@ -160,7 +185,9 @@ CREATE TABLE tb_preview_token (
   ativo      BOOLEAN      NOT NULL DEFAULT TRUE,
   created_at TIMESTAMPTZ  NOT NULL DEFAULT now(),
   created_by VARCHAR(120),
-  CONSTRAINT pk_tb_preview_token PRIMARY KEY (id)
+  CONSTRAINT pk_tb_preview_token PRIMARY KEY (id),
+  CONSTRAINT uq_tb_preview_token_token UNIQUE (token),
+  CONSTRAINT fk_tb_preview_token_cliente FOREIGN KEY (cliente_id) REFERENCES tb_cliente(id)
 );
 
 CREATE TABLE tb_publicacao_changelog (
@@ -170,94 +197,21 @@ CREATE TABLE tb_publicacao_changelog (
   pagina_titulo VARCHAR(200) NOT NULL,
   tipo_mudanca  VARCHAR(30)  NOT NULL,
   created_at    TIMESTAMPTZ  NOT NULL DEFAULT now(),
-  CONSTRAINT pk_tb_publicacao_changelog PRIMARY KEY (id)
+  CONSTRAINT pk_tb_publicacao_changelog PRIMARY KEY (id),
+  CONSTRAINT fk_tb_publicacao_changelog_publicacao FOREIGN KEY (publicacao_id) REFERENCES tb_publicacao(id) ON DELETE CASCADE
 );
 
--- -- constraints -- --
-
--- Unicidade
-ALTER TABLE tb_cliente  ADD CONSTRAINT uq_tb_cliente_slug        UNIQUE (slug);
-ALTER TABLE tb_projeto  ADD CONSTRAINT uq_tb_projeto_slug        UNIQUE (slug);
-ALTER TABLE tb_modulo   ADD CONSTRAINT uq_tb_modulo_projeto_slug UNIQUE (projeto_id, slug);
-ALTER TABLE tb_pagina   ADD CONSTRAINT uq_tb_pagina_slug         UNIQUE (slug);
-ALTER TABLE tb_pagina   ADD CONSTRAINT uq_tb_pagina_codigo_tela  UNIQUE (codigo_tela);
-ALTER TABLE tb_preview_token ADD CONSTRAINT uq_tb_preview_token_token UNIQUE (token);
-
-ALTER TABLE tb_cliente_projeto ADD CONSTRAINT uq_tb_cliente_projeto UNIQUE (cliente_id, projeto_id);
-ALTER TABLE tb_cliente_modulo  ADD CONSTRAINT uq_tb_cliente_modulo  UNIQUE (cliente_id, modulo_id);
-ALTER TABLE tb_cliente_pagina  ADD CONSTRAINT uq_tb_cliente_pagina  UNIQUE (cliente_id, pagina_id);
-
--- Chaves estrangeiras
-ALTER TABLE tb_modulo
-  ADD CONSTRAINT fk_tb_modulo_projeto
-  FOREIGN KEY (projeto_id) REFERENCES tb_projeto(id) ON DELETE CASCADE;
-
-ALTER TABLE tb_pagina
-  ADD CONSTRAINT fk_tb_pagina_modulo
-  FOREIGN KEY (modulo_id) REFERENCES tb_modulo(id);
-
-ALTER TABLE tb_pagina
-  ADD CONSTRAINT fk_tb_pagina_parent
-  FOREIGN KEY (parent_id) REFERENCES tb_pagina(id) ON DELETE CASCADE;
-
-ALTER TABLE tb_pagina_revisao
-  ADD CONSTRAINT fk_tb_pagina_revisao_pagina
-  FOREIGN KEY (pagina_id) REFERENCES tb_pagina(id) ON DELETE CASCADE;
-
-ALTER TABLE tb_pagina_revisao
-  ADD CONSTRAINT fk_tb_pagina_revisao_modulo
-  FOREIGN KEY (modulo_id) REFERENCES tb_modulo(id);
-
-ALTER TABLE tb_pagina_revisao
-  ADD CONSTRAINT fk_tb_pagina_revisao_parent
-  FOREIGN KEY (parent_id) REFERENCES tb_pagina(id);
-
-ALTER TABLE tb_pagina_anexo
-  ADD CONSTRAINT fk_tb_pagina_anexo_pagina
-  FOREIGN KEY (pagina_id) REFERENCES tb_pagina(id) ON DELETE CASCADE;
-
-ALTER TABLE tb_publicacao
-  ADD CONSTRAINT fk_tb_publicacao_cliente
-  FOREIGN KEY (cliente_id) REFERENCES tb_cliente(id);
-
-ALTER TABLE tb_cliente_projeto
-  ADD CONSTRAINT fk_tb_cliente_projeto_cliente
-  FOREIGN KEY (cliente_id) REFERENCES tb_cliente(id) ON DELETE CASCADE;
-
-ALTER TABLE tb_cliente_projeto
-  ADD CONSTRAINT fk_tb_cliente_projeto_projeto
-  FOREIGN KEY (projeto_id) REFERENCES tb_projeto(id) ON DELETE CASCADE;
-
-ALTER TABLE tb_cliente_modulo
-  ADD CONSTRAINT fk_tb_cliente_modulo_cliente
-  FOREIGN KEY (cliente_id) REFERENCES tb_cliente(id) ON DELETE CASCADE;
-
-ALTER TABLE tb_cliente_modulo
-  ADD CONSTRAINT fk_tb_cliente_modulo_modulo
-  FOREIGN KEY (modulo_id) REFERENCES tb_modulo(id) ON DELETE CASCADE;
-
-ALTER TABLE tb_cliente_pagina
-  ADD CONSTRAINT fk_tb_cliente_pagina_cliente
-  FOREIGN KEY (cliente_id) REFERENCES tb_cliente(id) ON DELETE CASCADE;
-
-ALTER TABLE tb_cliente_pagina
-  ADD CONSTRAINT fk_tb_cliente_pagina_pagina
-  FOREIGN KEY (pagina_id) REFERENCES tb_pagina(id) ON DELETE CASCADE;
-
-ALTER TABLE tb_preview_token
-  ADD CONSTRAINT fk_tb_preview_token_cliente
-  FOREIGN KEY (cliente_id) REFERENCES tb_cliente(id);
-
-ALTER TABLE tb_publicacao_changelog
-  ADD CONSTRAINT fk_tb_publicacao_changelog_publicacao
-  FOREIGN KEY (publicacao_id) REFERENCES tb_publicacao(id) ON DELETE CASCADE;
-
+-- -----------------------------------------------------------------------------
 -- Comentários de coluna
-COMMENT ON COLUMN tb_cliente.tema_cor_primaria IS 'Cor accent do manual (manifest/PWA); ex.: #1a73e8';
-COMMENT ON COLUMN tb_cliente.tema_cor_fundo    IS 'Cor de fundo base do tema; ex.: #f8f9fa';
-COMMENT ON COLUMN tb_publicacao.relatorio_validacao IS 'JSON com resultado da validação do ZIP (arquivos obrigatórios, etc.)';
+-- -----------------------------------------------------------------------------
 
--- -- índices -- --
+COMMENT ON COLUMN tb_cliente.tema_cor_primaria       IS 'Cor accent do manual (manifest/PWA); ex.: #1a73e8';
+COMMENT ON COLUMN tb_cliente.tema_cor_fundo          IS 'Cor de fundo base do tema; ex.: #f8f9fa';
+COMMENT ON COLUMN tb_publicacao.relatorio_validacao  IS 'JSON com resultado da validação do ZIP (arquivos obrigatórios, etc.)';
+
+-- -----------------------------------------------------------------------------
+-- Índices
+-- -----------------------------------------------------------------------------
 
 CREATE INDEX idx_tb_modulo_projeto             ON tb_modulo              (projeto_id);
 CREATE INDEX idx_tb_pagina_modulo_status       ON tb_pagina              (modulo_id, status);

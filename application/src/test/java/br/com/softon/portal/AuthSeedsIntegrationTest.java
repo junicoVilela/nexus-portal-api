@@ -19,9 +19,14 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
- * Sobe Postgres efêmero, aplica V1–V17 e valida que os 3 usuários seed conseguem
- * logar e que o /auth/me devolve o grupo RBAC esperado. Pega regressões nos seeds
- * (ex.: bug do hash BCrypt do `revisor` em V12) antes do smoke manual.
+ * Sobe Postgres efêmero, aplica todas as migrations e valida que os 4 usuários
+ * seed conseguem logar e que o /auth/me devolve o grupo RBAC esperado.
+ *
+ * <p>O catálogo RBAC seed (V5) cobre apenas SEGURANCA + SISTEMA com permissões
+ * distribuídas: ADMIN tem tudo, EDITOR faz a gestão operacional (CRUD em
+ * USUARIO/GRUPO_ACESSO/ACESSO_TEMPORARIO + ações especiais), REVISOR audita
+ * (LER + VISUALIZAR) e LEITOR tem só :LER. Funcionalidades de outros módulos
+ * (DOC_FLOW, RELEASE_ORCHESTRATOR, ...) entram em migrations futuras.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
@@ -46,24 +51,45 @@ class AuthSeedsIntegrationTest {
   }
 
   @Test
-  void editor_loga_e_pertence_ao_grupo_EDITOR() throws Exception {
+  void editor_loga_e_faz_gestao_operacional_do_modulo_seguranca() throws Exception {
     Map<String, Object> me = loginEBuscarMe("editor", "editor");
     assertThat(grupos(me)).containsExactly("EDITOR");
-    assertThat(permissoes(me)).contains("CLIENTE:CRIAR", "PAGINA:EDITAR", "PUBLICACAO:LER");
+    // CRUD em USUARIO/GRUPO_ACESSO/ACESSO_TEMPORARIO
+    assertThat(permissoes(me)).contains(
+        "USUARIO:CRIAR", "USUARIO:EDITAR", "USUARIO:EXCLUIR",
+        "GRUPO_ACESSO:CRIAR", "GRUPO_ACESSO:EDITAR",
+        "ACESSO_TEMPORARIO:CRIAR", "ACESSO_TEMPORARIO:EDITAR");
+    // Ações especiais que o operador executa
+    assertThat(permissoes(me)).contains(
+        "USUARIO:RESETAR_SENHA", "USUARIO:BLOQUEAR",
+        "GRUPO_ACESSO:VINCULAR_PERMISSAO",
+        "SESSAO:REVOGAR", "ACESSO_TEMPORARIO:REVOGAR");
+    // EDITAR em POLITICA_SENHA
+    assertThat(permissoes(me)).contains("POLITICA_SENHA:EDITAR");
+    // Mas NÃO mexe no catálogo nem visualiza auditoria/histórico
+    assertThat(permissoes(me))
+        .doesNotContain("DOMINIO:CRIAR", "FUNCIONALIDADE:CRIAR", "PERMISSAO:CRIAR")
+        .doesNotContain("AUDITORIA:VISUALIZAR", "HISTORICO_LOGIN:VISUALIZAR");
   }
 
   @Test
-  void revisor_loga_e_pertence_ao_grupo_REVISOR() throws Exception {
+  void revisor_loga_e_so_le_o_modulo_seguranca() throws Exception {
     Map<String, Object> me = loginEBuscarMe("revisor", "revisor");
     assertThat(grupos(me)).containsExactly("REVISOR");
+    // Vê histórico de login e trilha de auditoria
+    assertThat(permissoes(me)).contains(
+        "AUDITORIA:VISUALIZAR", "HISTORICO_LOGIN:VISUALIZAR");
+    // LER em todas as funcionalidades
+    assertThat(permissoes(me)).contains(
+        "USUARIO:LER", "GRUPO_ACESSO:LER", "DOMINIO:LER", "FUNCIONALIDADE:LER",
+        "PERMISSAO:LER", "ESCOPO:LER", "AUDITORIA:LER", "HISTORICO_LOGIN:LER",
+        "POLITICA_SENHA:LER", "SESSAO:LER", "ACESSO_TEMPORARIO:LER",
+        "CONFIGURACAO:LER");
+    // Não cria/edita/exclui nada
     assertThat(permissoes(me))
-        .containsExactlyInAnyOrder(
-            "CLIENTE:LER",
-            "MODULO:LER",
-            "PAGINA:EDITAR",
-            "PAGINA:LER",
-            "PROJETO:LER",
-            "PUBLICACAO:LER");
+        .noneMatch(p -> p.endsWith(":CRIAR")
+            || p.endsWith(":EDITAR")
+            || p.endsWith(":EXCLUIR"));
   }
 
   @Test
