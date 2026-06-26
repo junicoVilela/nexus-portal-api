@@ -1,40 +1,41 @@
 # Plugins essenciais do Jenkins para o pipeline build-on-tag do portal.
-# Versões pinadas para reprodutibilidade — atualize manualmente conforme
-# saírem CVEs/novas LTS. Linhas em branco e comentários são ignorados
-# pelo jenkins-plugin-cli.
+#
+# Sem versão pinada: o jenkins-plugin-cli baixa a versão mais nova
+# compatível com a imagem base (lts-jdk21). Trade-off: reproduzibilidade
+# vs. resolução automática de dependências. Pra produção, rode
+# `jenkins-plugin-cli --list` dentro do container depois de buildar e
+# congele versões aqui.
+#
+# Linhas em branco e comentários são ignorados pelo CLI.
 
 # --- Pipeline + suporte declarativo ---
-workflow-aggregator:608.v67378e9d3db_1
-pipeline-stage-view:2.34
-pipeline-graph-view:296.vea_71c4c_3f1d_3
-pipeline-utility-steps:2.19.0
+workflow-aggregator
+pipeline-stage-view
+pipeline-graph-view
+pipeline-utility-steps
 
 # --- Git / GitHub ---
-git:5.6.0
-github:1.39.0
-github-branch-source:1810.v913306b_e5d5d
+git
+github
+github-branch-source
 
 # --- Triggers e webhooks ---
-generic-webhook-trigger:2.3.1
+generic-webhook-trigger
 
 # --- Credenciais ---
-credentials:1413.va_51c53703df1
-credentials-binding:687.v619cb_15e923f
-plain-credentials:183.va_de8f1dd5a_2b_
+credentials
+credentials-binding
+plain-credentials
 
 # --- Configuration as Code (JCasC) ---
-configuration-as-code:1932.v75cb_b_f1b_698d
-job-dsl:1.91
-
-# --- Tools ---
-maven-plugin:3.24
-config-file-provider:976.v83f6dcfca_9da
+configuration-as-code
+job-dsl
 
 # --- UX ---
-timestamper:1.27
-ansicolor:1.0.5
-locale:404.va_1d68b_a_3f5b_2
+timestamper
+ansicolor
+locale
 
-# --- Segurança / atualizações ---
-matrix-auth:3.2.6
-mailer:481.v6eecc36919c2
+# --- Segurança / autorização ---
+matrix-auth
+mailer

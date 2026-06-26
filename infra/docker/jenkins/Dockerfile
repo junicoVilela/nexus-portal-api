@@ -25,11 +25,14 @@ USER jenkins
 
 # Skip setup wizard — JCasC cria admin + tools + credentials no boot.
 ENV JAVA_OPTS="-Djenkins.install.runSetupWizard=false"
-ENV CASC_JENKINS_CONFIG=/var/jenkins_home/casc.yaml
+# IMPORTANTE: caminho FORA de /var/jenkins_home — o volume Docker mascara
+# qualquer coisa que copiarmos pra lá no build, então o casc.yaml fica
+# em /usr/share/jenkins/casc/ que pertence à imagem (não ao volume).
+ENV CASC_JENKINS_CONFIG=/usr/share/jenkins/casc/casc.yaml
 
 # Instala plugins reproduzíveis a partir do plugins.txt.
 COPY --chown=jenkins:jenkins plugins.txt /usr/share/jenkins/ref/plugins.txt
 RUN jenkins-plugin-cli --plugin-file /usr/share/jenkins/ref/plugins.txt
 
-# Copia a configuração JCasC para o jenkins_home no startup.
-COPY --chown=jenkins:jenkins casc.yaml /var/jenkins_home/casc.yaml
+# Copia a configuração JCasC para fora do volume.
+COPY --chown=jenkins:jenkins casc.yaml /usr/share/jenkins/casc/casc.yaml
