@@ -20,15 +20,117 @@ Separação:
 ```text
 shared/config            ← infraestrutura técnica (SecurityConfig, filtros,
                            JwtService, GatewayAuthFilter, CorrelationIdFilter)
+shared/security          ← constantes de SpEL (Permissoes, SecurityRoles)
 {modulo}/...             ← regra de negócio de autorização do próprio módulo
 ```
 
 Importante: nenhum módulo fica sob um pacote `modules/`. Cada módulo é um
 sub-pacote direto de `br.com.softon.portal`.
 
-Anotações `@PreAuthorize("hasRole('ADMIN')")` /
-`@PreAuthorize("hasAnyRole('ADMIN','EDITOR')")` ficam no Controller (ou
-no método) e cobrem o nível de role exigido pelo recurso.
+### Modelo de autorização — granular por permissão
+
+**A autorização padrão é por permissão granular** (`FUNCIONALIDADE:ACAO`),
+não por role. Isso significa que **cada endpoint** carrega uma
+`@PreAuthorize("hasAuthority('X:Y')")` no método, e o catálogo de
+permissões em `tb_permissao` é a fonte da verdade.
+
+As permissões disponíveis estão em
+`shared/src/main/java/br/com/softon/portal/shared/security/Permissoes.java`.
+Use as constantes (não digite strings) — compile-time inlining mantém as
+anotações com SpEL literal, sem custo extra.
+
+#### Padrão obrigatório ao criar/alterar um Controller
+
+1. **Não use `@PreAuthorize` no nível de classe.** Cada método anota a
+   permissão que exige.
+2. **Mapeie verbo HTTP → ação no catálogo:**
+   - `GET` → `:LER`
+   - `POST` → `:CRIAR` (ou `:EDITAR` se for ação sobre recurso existente)
+   - `PUT` / `PATCH` → `:EDITAR`
+   - `DELETE` → `:EXCLUIR`
+3. **Sub-recursos (`/{id}/sub-coisa`) usam a permissão do agregado pai.**
+   Ex.: `/api/v1/release-orchestrator/releases/{id}/itens` usa
+   `RELEASE_LER` / `RELEASE_EDITAR`, não cria nova funcionalidade.
+4. **Ações que escapam do CRUD ganham permissão especial** quando
+   semanticamente diferentes — ex.: `USUARIO:RESETAR_SENHA`,
+   `GRUPO_ACESSO:VINCULAR_PERMISSAO`. Adicione a permissão ao seed
+   (próxima migration `V*__rbac__*`) e a constante em `Permissoes.java`.
+5. **Adicionou uma funcionalidade nova ao módulo?** Crie a migration que
+   semeia o `tb_funcionalidade` + CRUD em `tb_permissao` + vínculos aos
+   grupos base (ADMIN/EDITOR/LEITOR/REVISOR), seguindo o padrão de V8/V9.
+   Adicione as constantes correspondentes em `Permissoes.java`.
+
+#### Quando usar `SecurityRoles` em vez de `Permissoes`
+
+`SecurityRoles.WRITE` / `READ` / `ADMIN_ONLY` continuam existindo, mas o
+uso é restrito a:
+
+- Endpoints sem mapeamento natural para uma funcionalidade do catálogo
+  (ex.: ferramentas internas, exportações cross-domínio).
+- Endpoints expostos via gateway que validam só por role (ex.: webhooks
+  com chave compartilhada — tipicamente são `permitAll`).
+- Casos transitórios durante refatoração.
+
+Em código novo, o default é `Permissoes.X_Y`.
+
+### Exemplo canônico
+
+`UsuarioController` é o exemplo de referência. Estrutura completa:
+
+```java
+@RestController
+@RequestMapping("/api/v1/docflow/usuarios")
+@RequiredArgsConstructor
+public class UsuarioController {
+
+  private final UsuarioService usuarioService;
+
+  // Listagem: leitura
+  @GetMapping
+  @PreAuthorize(Permissoes.USUARIO_LER)
+  public PageResponse<UsuarioResponse> listar(/* ... */) { /* ... */ }
+
+  // Busca por id: leitura
+  @GetMapping("/{id}")
+  @PreAuthorize(Permissoes.USUARIO_LER)
+  public UsuarioResponse buscar(@PathVariable UUID id) { /* ... */ }
+
+  // Criação: escrita básica
+  @PostMapping
+  @ResponseStatus(HttpStatus.CREATED)
+  @PreAuthorize(Permissoes.USUARIO_CRIAR)
+  public UsuarioResponse criar(@Valid @RequestBody CriarUsuarioRequest req) { /* ... */ }
+
+  // Edição: escrita básica
+  @PutMapping("/{id}")
+  @PreAuthorize(Permissoes.USUARIO_EDITAR)
+  public UsuarioResponse atualizar(@PathVariable UUID id,
+      @Valid @RequestBody AtualizarUsuarioRequest req) { /* ... */ }
+
+  // Ação especial: NÃO usa USUARIO_EDITAR — tem permissão própria porque
+  // operacionalmente é uma ação separada (a permissão existe no seed V5
+  // exatamente por isso).
+  @PostMapping("/{id}/alterar-senha")
+  @PreAuthorize(Permissoes.USUARIO_RESETAR)
+  public void alterarSenha(@PathVariable UUID id,
+      @Valid @RequestBody AlterarSenhaRequest req) { /* ... */ }
+}
+```
+
+### Como o JWT carrega isso
+
+- No login (`UsuarioService.autenticar`), o `JwtService.gerarToken` recebe
+  `roles` **e** `permissoes` (estas vindas de `RbacService.permissoesDoUsuario`).
+- O `JwtAuthFilter` (acesso direto) e o `GatewayAuthFilter` (via gateway)
+  populam o `SecurityContext` com **dois tipos de `GrantedAuthority`**:
+  - `ROLE_<ROLE>` — habilita `hasRole(...)`.
+  - `<PERMISSAO>` (sem prefixo) — habilita `hasAuthority('FUNC:ACAO')`.
+- O gateway (`HubDocFlowEdgeAuthFilter`) extrai as permissões do JWT e
+  encaminha no header `X-Gateway-Permissoes`.
+
+**Caveat:** o token é uma snapshot. Mudanças de permissão exigem
+logout/login para refletir no `SecurityContext`. Se for caso pontual e
+urgente, revogue a sessão.
 
 ## Auditoria automática
 

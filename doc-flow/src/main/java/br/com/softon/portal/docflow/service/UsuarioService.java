@@ -30,7 +30,8 @@ public class UsuarioService {
     if (!passwordEncoder.matches(rawPassword, usuario.getPassword())) {
       throw new BusinessException("Usuário ou senha inválidos.");
     }
-    return jwtService.gerarToken(usuario.getUsername(), usuario.roleList());
+    List<String> permissoes = rbacService.permissoesDoUsuario(usuario.getId());
+    return jwtService.gerarToken(usuario.getUsername(), usuario.roleList(), permissoes);
   }
 
   public MeResponse me(String username) {

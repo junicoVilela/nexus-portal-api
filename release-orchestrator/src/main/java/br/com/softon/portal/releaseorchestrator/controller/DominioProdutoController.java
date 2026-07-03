@@ -4,7 +4,7 @@ import br.com.softon.portal.releaseorchestrator.dto.request.AlterarStatusCatalog
 import br.com.softon.portal.releaseorchestrator.dto.request.DominioProdutoRequest;
 import br.com.softon.portal.releaseorchestrator.dto.response.DominioProdutoResponse;
 import br.com.softon.portal.releaseorchestrator.service.DominioProdutoService;
-import br.com.softon.portal.shared.security.SecurityRoles;
+import br.com.softon.portal.shared.security.Permissoes;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -25,18 +25,17 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RestController("orchestratorDominioProdutoController")
 @RequestMapping("/api/v1/release-orchestrator/produtos/{produtoId}/dominios")
-@PreAuthorize(SecurityRoles.WRITE)
 public class DominioProdutoController {
 
   private final DominioProdutoService service;
 
-  @PreAuthorize(SecurityRoles.READ)
+  @PreAuthorize(Permissoes.PRODUTO_LER)
   @GetMapping
   public List<DominioProdutoResponse> listar(@PathVariable UUID produtoId) {
     return service.listar(produtoId).stream().map(DominioProdutoResponse::from).toList();
   }
 
-  @PreAuthorize(SecurityRoles.READ)
+  @PreAuthorize(Permissoes.PRODUTO_LER)
   @GetMapping("/{id}")
   public DominioProdutoResponse buscar(@PathVariable UUID produtoId, @PathVariable UUID id) {
     return DominioProdutoResponse.from(service.buscar(produtoId, id));
@@ -44,18 +43,21 @@ public class DominioProdutoController {
 
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
+  @PreAuthorize(Permissoes.PRODUTO_EDITAR)
   public DominioProdutoResponse criar(@PathVariable UUID produtoId,
       @Valid @RequestBody DominioProdutoRequest request) {
     return DominioProdutoResponse.from(service.criar(produtoId, request));
   }
 
   @PutMapping("/{id}")
+  @PreAuthorize(Permissoes.PRODUTO_EDITAR)
   public DominioProdutoResponse atualizar(@PathVariable UUID produtoId, @PathVariable UUID id,
       @Valid @RequestBody DominioProdutoRequest request) {
     return DominioProdutoResponse.from(service.atualizar(produtoId, id, request));
   }
 
   @PatchMapping("/{id}/status")
+  @PreAuthorize(Permissoes.PRODUTO_EDITAR)
   public DominioProdutoResponse alterarStatus(@PathVariable UUID produtoId, @PathVariable UUID id,
       @Valid @RequestBody AlterarStatusCatalogoRequest request) {
     return DominioProdutoResponse.from(service.alterarStatus(produtoId, id, request.ativo()));
@@ -63,6 +65,7 @@ public class DominioProdutoController {
 
   @DeleteMapping("/{id}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
+  @PreAuthorize(Permissoes.PRODUTO_EDITAR)
   public void excluir(@PathVariable UUID produtoId, @PathVariable UUID id) {
     service.excluir(produtoId, id);
   }

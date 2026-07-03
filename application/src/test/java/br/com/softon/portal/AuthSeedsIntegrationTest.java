@@ -22,11 +22,19 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * Sobe Postgres efêmero, aplica todas as migrations e valida que os 4 usuários
  * seed conseguem logar e que o /auth/me devolve o grupo RBAC esperado.
  *
- * <p>O catálogo RBAC seed (V5) cobre apenas SEGURANCA + SISTEMA com permissões
- * distribuídas: ADMIN tem tudo, EDITOR faz a gestão operacional (CRUD em
- * USUARIO/GRUPO_ACESSO/ACESSO_TEMPORARIO + ações especiais), REVISOR audita
- * (LER + VISUALIZAR) e LEITOR tem só :LER. Funcionalidades de outros módulos
- * (DOC_FLOW, RELEASE_ORCHESTRATOR, ...) entram em migrations futuras.
+ * <p>Distribuição esperada por grupo após V5/V8/V9:
+ * <ul>
+ *   <li><b>ADMIN</b>: todas as permissões ativas do catálogo (SEGURANCA, SISTEMA,
+ *       DOC_FLOW, RELEASE_ORCHESTRATOR).</li>
+ *   <li><b>EDITOR</b>: CRUD operacional em SEGURANCA (USUARIO/GRUPO_ACESSO/
+ *       ACESSO_TEMPORARIO) + ações especiais, CRUD nas funcionalidades de
+ *       DOC_FLOW (CLIENTE/PROJETO/MODULO/PAGINA/PUBLICACAO/EMPRESA) e
+ *       RELEASE_ORCHESTRATOR (RELEASE/PRODUTO/TEMPLATE/CLIENTE_RO/ENTREGA/
+ *       PROXIMA_ENTREGA).</li>
+ *   <li><b>REVISOR</b>: :LER em todas as funcionalidades + VISUALIZAR de
+ *       histórico/auditoria.</li>
+ *   <li><b>LEITOR</b>: somente :LER em todas as funcionalidades.</li>
+ * </ul>
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
@@ -47,7 +55,14 @@ class AuthSeedsIntegrationTest {
   void admin_loga_e_pertence_ao_grupo_ADMIN() throws Exception {
     Map<String, Object> me = loginEBuscarMe("admin", "admin");
     assertThat(grupos(me)).containsExactly("ADMIN");
-    assertThat(permissoes(me)).hasSizeGreaterThan(50);
+    // V5(SEGURANCA+SISTEMA): 55 ~ V8(+DOC_FLOW+RELEASE): +32 ~ V9(+EMPRESA+CLIENTE_RO+ENTREGA+PROXIMA_ENTREGA): +16
+    assertThat(permissoes(me)).hasSizeGreaterThan(95);
+    // Sanity: catálogo SEGURANCA + DOC_FLOW + RELEASE_ORCHESTRATOR coberto
+    assertThat(permissoes(me)).contains(
+        "USUARIO:LER", "GRUPO_ACESSO:LER",
+        "CLIENTE:LER", "PROJETO:LER", "PUBLICACAO:CRIAR",
+        "RELEASE:LER", "PRODUTO:LER", "TEMPLATE:LER",
+        "EMPRESA:EDITAR", "CLIENTE_RO:LER", "ENTREGA:CRIAR", "PROXIMA_ENTREGA:LER");
   }
 
   @Test
@@ -66,25 +81,33 @@ class AuthSeedsIntegrationTest {
         "SESSAO:REVOGAR", "ACESSO_TEMPORARIO:REVOGAR");
     // EDITAR em POLITICA_SENHA
     assertThat(permissoes(me)).contains("POLITICA_SENHA:EDITAR");
-    // Mas NÃO mexe no catálogo nem visualiza auditoria/histórico
+    // CRUD nas funcionalidades de DOC_FLOW e RELEASE_ORCHESTRATOR
+    assertThat(permissoes(me)).contains(
+        "CLIENTE:CRIAR", "PROJETO:CRIAR", "MODULO:CRIAR",
+        "PAGINA:CRIAR", "PUBLICACAO:CRIAR",
+        "RELEASE:CRIAR", "PRODUTO:CRIAR", "TEMPLATE:CRIAR",
+        "ENTREGA:CRIAR", "PROXIMA_ENTREGA:CRIAR", "CLIENTE_RO:CRIAR");
+    // Mas NÃO mexe no catálogo RBAC nem visualiza auditoria/histórico
     assertThat(permissoes(me))
         .doesNotContain("DOMINIO:CRIAR", "FUNCIONALIDADE:CRIAR", "PERMISSAO:CRIAR")
         .doesNotContain("AUDITORIA:VISUALIZAR", "HISTORICO_LOGIN:VISUALIZAR");
   }
 
   @Test
-  void revisor_loga_e_so_le_o_modulo_seguranca() throws Exception {
+  void revisor_loga_e_so_le_o_catalogo() throws Exception {
     Map<String, Object> me = loginEBuscarMe("revisor", "revisor");
     assertThat(grupos(me)).containsExactly("REVISOR");
     // Vê histórico de login e trilha de auditoria
     assertThat(permissoes(me)).contains(
         "AUDITORIA:VISUALIZAR", "HISTORICO_LOGIN:VISUALIZAR");
-    // LER em todas as funcionalidades
+    // LER em funcionalidades de todos os domínios
     assertThat(permissoes(me)).contains(
         "USUARIO:LER", "GRUPO_ACESSO:LER", "DOMINIO:LER", "FUNCIONALIDADE:LER",
         "PERMISSAO:LER", "ESCOPO:LER", "AUDITORIA:LER", "HISTORICO_LOGIN:LER",
         "POLITICA_SENHA:LER", "SESSAO:LER", "ACESSO_TEMPORARIO:LER",
-        "CONFIGURACAO:LER");
+        "CONFIGURACAO:LER",
+        "CLIENTE:LER", "PROJETO:LER", "PUBLICACAO:LER",
+        "RELEASE:LER", "PRODUTO:LER", "ENTREGA:LER", "PROXIMA_ENTREGA:LER");
     // Não cria/edita/exclui nada
     assertThat(permissoes(me))
         .noneMatch(p -> p.endsWith(":CRIAR")
@@ -99,6 +122,9 @@ class AuthSeedsIntegrationTest {
     assertThat(permissoes(me)).isNotEmpty();
     // Todas as permissões de LEITOR são :LER
     assertThat(permissoes(me)).allMatch(p -> p.endsWith(":LER"));
+    // Cobre os 4 domínios
+    assertThat(permissoes(me)).contains(
+        "USUARIO:LER", "CLIENTE:LER", "RELEASE:LER", "CONFIGURACAO:LER");
   }
 
   @SuppressWarnings("unchecked")

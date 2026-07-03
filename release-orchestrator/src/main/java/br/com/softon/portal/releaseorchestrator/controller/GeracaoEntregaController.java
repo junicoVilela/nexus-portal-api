@@ -2,7 +2,7 @@ package br.com.softon.portal.releaseorchestrator.controller;
 
 import br.com.softon.portal.releaseorchestrator.dto.response.EntregaResponse;
 import br.com.softon.portal.releaseorchestrator.service.GeracaoEntregaService;
-import br.com.softon.portal.shared.security.SecurityRoles;
+import br.com.softon.portal.shared.security.Permissoes;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RestController("orchestratorGeracaoEntregaController")
 @RequestMapping("/api/v1/release-orchestrator/entregas/{entregaId}/geracao")
-@PreAuthorize(SecurityRoles.WRITE)
 public class GeracaoEntregaController {
 
   private final GeracaoEntregaService service;
@@ -28,6 +27,7 @@ public class GeracaoEntregaController {
    */
   @PostMapping("/iniciar")
   @ResponseStatus(HttpStatus.ACCEPTED)
+  @PreAuthorize(Permissoes.ENTREGA_EDITAR)
   public EntregaResponse iniciar(@PathVariable UUID entregaId) {
     return EntregaResponse.from(service.iniciar(entregaId));
   }

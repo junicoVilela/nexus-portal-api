@@ -9,7 +9,7 @@ import br.com.softon.portal.shared.api.PageResponse;
 import br.com.softon.portal.shared.api.PageableUtils;
 import br.com.softon.portal.shared.api.SortDirection;
 import br.com.softon.portal.shared.api.SortUtils;
-import br.com.softon.portal.shared.security.SecurityRoles;
+import br.com.softon.portal.shared.security.Permissoes;
 import jakarta.validation.Valid;
 import java.time.LocalDate;
 import java.util.List;
@@ -34,12 +34,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RestController("orchestratorProximaEntregaController")
 @RequestMapping("/api/v1/release-orchestrator/proximas-entregas")
-@PreAuthorize(SecurityRoles.WRITE)
 public class ProximaEntregaController {
 
   private final ProximaEntregaService service;
 
-  @PreAuthorize(SecurityRoles.READ)
+  @PreAuthorize(Permissoes.PROXIMA_ENTREGA_LER)
   @GetMapping
   public PageResponse<ProximaEntregaResponse> listar(
       @RequestParam(required = false) UUID clienteId,
@@ -60,7 +59,7 @@ public class ProximaEntregaController {
         ProximaEntregaResponse::from);
   }
 
-  @PreAuthorize(SecurityRoles.READ)
+  @PreAuthorize(Permissoes.PROXIMA_ENTREGA_LER)
   @GetMapping("/{id}")
   public ProximaEntregaResponse buscar(@PathVariable UUID id) {
     return ProximaEntregaResponse.from(service.buscar(id));
@@ -68,17 +67,20 @@ public class ProximaEntregaController {
 
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
+  @PreAuthorize(Permissoes.PROXIMA_ENTREGA_CRIAR)
   public ProximaEntregaResponse criar(@Valid @RequestBody ProximaEntregaRequest request) {
     return ProximaEntregaResponse.from(service.criar(request));
   }
 
   @PutMapping("/{id}")
+  @PreAuthorize(Permissoes.PROXIMA_ENTREGA_EDITAR)
   public ProximaEntregaResponse atualizar(@PathVariable UUID id,
       @Valid @RequestBody ProximaEntregaRequest request) {
     return ProximaEntregaResponse.from(service.atualizar(id, request));
   }
 
   @PatchMapping("/{id}/status")
+  @PreAuthorize(Permissoes.PROXIMA_ENTREGA_EDITAR)
   public ProximaEntregaResponse alterarStatus(@PathVariable UUID id,
       @Valid @RequestBody AlterarStatusProximaEntregaRequest request) {
     return ProximaEntregaResponse.from(service.alterarStatus(id, request.status()));
@@ -86,6 +88,7 @@ public class ProximaEntregaController {
 
   @DeleteMapping("/{id}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
+  @PreAuthorize(Permissoes.PROXIMA_ENTREGA_EXCLUIR)
   public void excluir(@PathVariable UUID id) {
     service.excluir(id);
   }

@@ -6,6 +6,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -37,8 +38,15 @@ public class JwtAuthFilter extends OncePerRequestFilter {
           String username = claims.getSubject();
           @SuppressWarnings("unchecked")
           List<String> roles = claims.get("roles", List.class);
-          List<SimpleGrantedAuthority> authorities = roles == null ? List.of() :
-              roles.stream().map(r -> new SimpleGrantedAuthority("ROLE_" + r)).toList();
+          @SuppressWarnings("unchecked")
+          List<String> permissoes = claims.get("permissoes", List.class);
+          List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+          if (roles != null) {
+            roles.forEach(r -> authorities.add(new SimpleGrantedAuthority("ROLE_" + r)));
+          }
+          if (permissoes != null) {
+            permissoes.forEach(p -> authorities.add(new SimpleGrantedAuthority(p)));
+          }
           var auth = new UsernamePasswordAuthenticationToken(username, null, authorities);
           SecurityContextHolder.getContext().setAuthentication(auth);
         }

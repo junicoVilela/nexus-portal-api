@@ -8,7 +8,7 @@ import java.util.UUID;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import br.com.softon.portal.shared.security.SecurityRoles;
+import br.com.softon.portal.shared.security.Permissoes;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -26,7 +26,7 @@ public class PreviewController {
   private final PreviewTokenService previewTokenService;
 
   @PostMapping("/api/v1/preview-tokens")
-  @PreAuthorize(SecurityRoles.WRITE)
+  @PreAuthorize(Permissoes.PUBLICACAO_EDITAR)
   public PreviewTokenResponse gerarToken(
       @RequestParam UUID clienteId,
       @RequestParam(defaultValue = "72") int horasValidade,
@@ -36,18 +36,18 @@ public class PreviewController {
   }
 
   @GetMapping("/api/v1/preview-tokens")
-  @PreAuthorize(SecurityRoles.WRITE)
+  @PreAuthorize(Permissoes.PUBLICACAO_LER)
   public List<PreviewTokenResponse> listar(@RequestParam UUID clienteId) {
     return previewTokenService.listar(clienteId).stream().map(PreviewTokenResponse::from).toList();
   }
 
   @DeleteMapping("/api/v1/preview-tokens/{id}")
-  @PreAuthorize(SecurityRoles.WRITE)
+  @PreAuthorize(Permissoes.PUBLICACAO_EDITAR)
   public void revogar(@PathVariable UUID id, Principal principal) {
     previewTokenService.revogar(id, principal);
   }
 
-  @PreAuthorize(SecurityRoles.READ)
+  // /api/v1/preview/{token} é público (permitAll em SecurityConfig).
   @GetMapping(value = "/api/v1/preview/{token}", produces = MediaType.TEXT_HTML_VALUE)
   public ResponseEntity<String> preview(@PathVariable String token) {
     String html = previewTokenService.renderizarPreview(token);

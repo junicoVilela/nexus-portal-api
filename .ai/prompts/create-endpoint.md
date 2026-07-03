@@ -12,6 +12,16 @@ Crie um novo endpoint em um módulo existente.
 - Atualizar mapper se necessário.
 - Criar teste se houver regra de negócio.
 - Não criar abstrações desnecessárias.
+- **Sempre** anotar o método com `@PreAuthorize` granular usando
+  `Permissoes.X_Y` (ver SECURITY_STANDARDS.md). O default por verbo HTTP:
+  - `GET` → `:LER`
+  - `POST` → `:CRIAR` (ou `:EDITAR` em ações sobre recurso existente)
+  - `PUT` / `PATCH` → `:EDITAR`
+  - `DELETE` → `:EXCLUIR`
+- Se a ação não cabe no CRUD (ex.: PUBLICAR, REVOGAR, RESETAR), crie a
+  permissão especial na próxima migration `V*__rbac__*` e a constante em
+  `Permissoes.java` antes de usar.
+- Sub-recursos (`/{id}/algo`) reutilizam a permissão do agregado pai.
 
 ## Padrão
 

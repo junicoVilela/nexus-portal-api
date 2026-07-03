@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
-import br.com.softon.portal.shared.security.SecurityRoles;
+import br.com.softon.portal.shared.security.Permissoes;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,12 +24,11 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/v1/release-orchestrator/releases/{releaseId}/itens")
-@PreAuthorize(SecurityRoles.WRITE)
 public class ReleaseItemController {
 
     private final ReleaseItemService service;
 
-    @PreAuthorize(SecurityRoles.READ)
+    @PreAuthorize(Permissoes.RELEASE_LER)
     @GetMapping
     public List<ReleaseItemResponse> listar(@PathVariable UUID releaseId) {
         return service.listar(releaseId).stream()
@@ -39,12 +38,14 @@ public class ReleaseItemController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize(Permissoes.RELEASE_EDITAR)
     public ReleaseItemResponse adicionar(@PathVariable UUID releaseId,
                                          @Valid @RequestBody ReleaseItemRequest request) {
         return ReleaseItemResponse.from(service.adicionar(releaseId, request));
     }
 
     @PutMapping("/{itemId}")
+    @PreAuthorize(Permissoes.RELEASE_EDITAR)
     public ReleaseItemResponse atualizar(@PathVariable UUID releaseId,
                                           @PathVariable UUID itemId,
                                           @Valid @RequestBody ReleaseItemRequest request) {
@@ -53,12 +54,14 @@ public class ReleaseItemController {
 
     @DeleteMapping("/{itemId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize(Permissoes.RELEASE_EDITAR)
     public void remover(@PathVariable UUID releaseId, @PathVariable UUID itemId) {
         service.remover(releaseId, itemId);
     }
 
     @PutMapping("/reordenar")
     @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize(Permissoes.RELEASE_EDITAR)
     public void reordenar(@PathVariable UUID releaseId,
                           @Valid @RequestBody ReordenarItensRequest request) {
         service.reordenar(releaseId, request);
@@ -66,6 +69,7 @@ public class ReleaseItemController {
 
     @PostMapping("/{itemId}/duplicar")
     @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize(Permissoes.RELEASE_EDITAR)
     public ReleaseItemResponse duplicar(@PathVariable UUID releaseId,
                                          @PathVariable UUID itemId) {
         return ReleaseItemResponse.from(service.duplicar(releaseId, itemId));

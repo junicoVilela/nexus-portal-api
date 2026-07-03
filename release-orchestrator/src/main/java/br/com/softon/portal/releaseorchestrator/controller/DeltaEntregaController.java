@@ -4,7 +4,7 @@ import br.com.softon.portal.releaseorchestrator.dto.request.CalcularDeltaRequest
 import br.com.softon.portal.releaseorchestrator.dto.response.DeltaResumoResponse;
 import br.com.softon.portal.releaseorchestrator.dto.response.EntregaModuloArtefatoResponse;
 import br.com.softon.portal.releaseorchestrator.service.DeltaEntregaService;
-import br.com.softon.portal.shared.security.SecurityRoles;
+import br.com.softon.portal.shared.security.Permissoes;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -20,25 +20,25 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RestController("orchestratorDeltaEntregaController")
 @RequestMapping("/api/v1/release-orchestrator/entregas/{entregaId}/delta")
-@PreAuthorize(SecurityRoles.WRITE)
 public class DeltaEntregaController {
 
   private final DeltaEntregaService service;
 
-  @PreAuthorize(SecurityRoles.READ)
+  @PreAuthorize(Permissoes.ENTREGA_LER)
   @GetMapping
   public List<EntregaModuloArtefatoResponse> listar(@PathVariable UUID entregaId) {
     return service.listar(entregaId).stream()
         .map(EntregaModuloArtefatoResponse::from).toList();
   }
 
-  @PreAuthorize(SecurityRoles.READ)
+  @PreAuthorize(Permissoes.ENTREGA_LER)
   @GetMapping("/resumo")
   public DeltaResumoResponse resumo(@PathVariable UUID entregaId) {
     return service.resumo(entregaId);
   }
 
   @PostMapping("/calcular")
+  @PreAuthorize(Permissoes.ENTREGA_EDITAR)
   public DeltaResumoResponse calcular(@PathVariable UUID entregaId,
       @Valid @RequestBody(required = false) CalcularDeltaRequest request) {
     return service.calcular(entregaId, request);

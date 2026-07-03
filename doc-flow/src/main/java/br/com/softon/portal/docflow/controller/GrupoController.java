@@ -11,6 +11,7 @@ import br.com.softon.portal.shared.api.PageResponse;
 import br.com.softon.portal.shared.api.PageableUtils;
 import br.com.softon.portal.shared.api.SortDirection;
 import br.com.softon.portal.shared.api.SortUtils;
+import br.com.softon.portal.shared.security.Permissoes;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -33,34 +34,38 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/v1/docflow/grupos")
-@PreAuthorize("hasRole('ADMIN')")
 public class GrupoController {
 
   private final GrupoService grupoService;
 
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
+  @PreAuthorize(Permissoes.GRUPO_ACESSO_CRIAR)
   public GrupoResponse criar(@Valid @RequestBody GrupoRequest request) {
     return GrupoResponse.from(grupoService.criar(request), List.of());
   }
 
   @PutMapping("/{id}")
+  @PreAuthorize(Permissoes.GRUPO_ACESSO_EDITAR)
   public GrupoResponse atualizar(@PathVariable UUID id, @Valid @RequestBody GrupoRequest request) {
     return GrupoResponse.from(grupoService.atualizar(id, request), List.of());
   }
 
   @PatchMapping("/{id}/status")
+  @PreAuthorize(Permissoes.GRUPO_ACESSO_EDITAR)
   public GrupoResponse alterarStatus(@PathVariable UUID id, @Valid @RequestBody AlterarStatusGrupoRequest request) {
     return GrupoResponse.from(grupoService.alterarStatus(id, request.ativo()), List.of());
   }
 
   @DeleteMapping("/{id}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
+  @PreAuthorize(Permissoes.GRUPO_ACESSO_EXCLUIR)
   public void excluir(@PathVariable UUID id) {
     grupoService.excluir(id);
   }
 
   @GetMapping
+  @PreAuthorize(Permissoes.GRUPO_ACESSO_LER)
   public PageResponse<GrupoResponse> listar(
       @RequestParam(required = false) String nome,
       @RequestParam(required = false) String sort,
@@ -76,29 +81,34 @@ public class GrupoController {
   }
 
   @GetMapping("/{id}")
+  @PreAuthorize(Permissoes.GRUPO_ACESSO_LER)
   public GrupoResponse buscar(@PathVariable UUID id) {
     Grupo grupo = grupoService.buscar(id);
     return GrupoResponse.from(grupo, grupoService.listarPermissoes(id));
   }
 
   @GetMapping("/{id}/usuarios")
+  @PreAuthorize(Permissoes.GRUPO_ACESSO_LER)
   public List<UUID> listarMembros(@PathVariable UUID id) {
     return grupoService.listarMembros(id);
   }
 
   @PutMapping("/{id}/usuarios")
   @ResponseStatus(HttpStatus.NO_CONTENT)
+  @PreAuthorize(Permissoes.GRUPO_ACESSO_EDITAR)
   public void salvarMembros(@PathVariable UUID id, @Valid @RequestBody GrupoUsuariosRequest request) {
     grupoService.salvarMembros(id, request);
   }
 
   @GetMapping("/{id}/permissoes")
+  @PreAuthorize(Permissoes.GRUPO_ACESSO_LER)
   public List<String> listarPermissoes(@PathVariable UUID id) {
     return grupoService.listarPermissoes(id);
   }
 
   @PutMapping("/{id}/permissoes")
   @ResponseStatus(HttpStatus.NO_CONTENT)
+  @PreAuthorize(Permissoes.GRUPO_ACESSO_VINCULAR_PERMISSAO)
   public void salvarPermissoes(@PathVariable UUID id, @Valid @RequestBody GrupoPermissoesRequest request) {
     grupoService.salvarPermissoes(id, request);
   }

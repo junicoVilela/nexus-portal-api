@@ -20,7 +20,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
-import br.com.softon.portal.shared.security.SecurityRoles;
+import br.com.softon.portal.shared.security.Permissoes;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -37,19 +37,20 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/v1/release-orchestrator/releases")
-@PreAuthorize(SecurityRoles.WRITE)
 public class ReleaseController {
 
     private final ReleaseService service;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize(Permissoes.RELEASE_CRIAR)
     public ReleaseResponse criar(@Valid @RequestBody ReleaseRequest request) {
         Release release = service.criar(request);
         return ReleaseResponse.from(release, service.contarItens(release.getId()));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize(Permissoes.RELEASE_EDITAR)
     public ReleaseResponse atualizar(@PathVariable UUID id,
                                      @Valid @RequestBody ReleaseRequest request) {
         Release release = service.atualizar(id, request);
@@ -57,6 +58,7 @@ public class ReleaseController {
     }
 
     @PatchMapping("/{id}/status")
+    @PreAuthorize(Permissoes.RELEASE_EDITAR)
     public ReleaseResponse alterarStatus(@PathVariable UUID id,
                                          @Valid @RequestBody AlterarStatusReleaseRequest request) {
         Release release = service.alterarStatus(id, request);
@@ -64,12 +66,14 @@ public class ReleaseController {
     }
 
     @PostMapping("/{id}/publicar")
+    @PreAuthorize(Permissoes.RELEASE_EDITAR)
     public ReleaseResponse publicar(@PathVariable UUID id) {
         Release release = service.publicar(id);
         return ReleaseResponse.from(release, service.contarItens(release.getId()));
     }
 
     @PostMapping("/{id}/cancelar")
+    @PreAuthorize(Permissoes.RELEASE_EDITAR)
     public ReleaseResponse cancelar(@PathVariable UUID id,
                                     @RequestBody(required = false) CancelarReleaseRequest request) {
         String motivo = request != null ? request.motivo() : null;
@@ -79,12 +83,13 @@ public class ReleaseController {
 
     @PostMapping("/{id}/duplicar")
     @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize(Permissoes.RELEASE_CRIAR)
     public ReleaseResponse duplicar(@PathVariable UUID id) {
         Release release = service.duplicar(id);
         return ReleaseResponse.from(release, 0L);
     }
 
-    @PreAuthorize(SecurityRoles.READ)
+    @PreAuthorize(Permissoes.RELEASE_LER)
     @GetMapping("/{id}/historico")
     public List<ReleaseHistoricoResponse> historico(@PathVariable UUID id) {
         return service.buscarHistorico(id).stream()
@@ -92,13 +97,13 @@ public class ReleaseController {
                 .toList();
     }
 
-    @PreAuthorize(SecurityRoles.READ)
+    @PreAuthorize(Permissoes.RELEASE_LER)
     @GetMapping("/{id}/validar")
     public RevisaoValidacaoResponse validar(@PathVariable UUID id) {
         return service.validar(id);
     }
 
-    @PreAuthorize(SecurityRoles.READ)
+    @PreAuthorize(Permissoes.RELEASE_LER)
     @GetMapping
     public PageResponse<ReleaseResponse> listar(
             @RequestParam(required = false) String q,
@@ -119,7 +124,7 @@ public class ReleaseController {
                 r -> ReleaseResponse.from(r, service.contarItens(r.getId())));
     }
 
-    @PreAuthorize(SecurityRoles.READ)
+    @PreAuthorize(Permissoes.RELEASE_LER)
     @GetMapping("/{id}")
     public ReleaseResponse buscar(@PathVariable UUID id) {
         Release release = service.buscar(id);
@@ -128,6 +133,7 @@ public class ReleaseController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize(Permissoes.RELEASE_EXCLUIR)
     public void excluir(@PathVariable UUID id) {
         service.excluir(id);
     }

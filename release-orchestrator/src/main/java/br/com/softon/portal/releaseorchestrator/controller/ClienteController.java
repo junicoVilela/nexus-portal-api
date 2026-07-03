@@ -8,7 +8,7 @@ import br.com.softon.portal.shared.api.PageResponse;
 import br.com.softon.portal.shared.api.PageableUtils;
 import br.com.softon.portal.shared.api.SortDirection;
 import br.com.softon.portal.shared.api.SortUtils;
-import br.com.softon.portal.shared.security.SecurityRoles;
+import br.com.softon.portal.shared.security.Permissoes;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -31,24 +31,26 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RestController("orchestratorClienteController")
 @RequestMapping("/api/v1/release-orchestrator/clientes")
-@PreAuthorize(SecurityRoles.WRITE)
 public class ClienteController {
 
   private final ClienteService service;
 
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
+  @PreAuthorize(Permissoes.CLIENTE_RO_CRIAR)
   public ClienteResponse criar(@Valid @RequestBody ClienteRequest request) {
     return ClienteResponse.from(service.criar(request));
   }
 
   @PutMapping("/{id}")
+  @PreAuthorize(Permissoes.CLIENTE_RO_EDITAR)
   public ClienteResponse atualizar(@PathVariable UUID id,
       @Valid @RequestBody ClienteRequest request) {
     return ClienteResponse.from(service.atualizar(id, request));
   }
 
   @PatchMapping("/{id}/status")
+  @PreAuthorize(Permissoes.CLIENTE_RO_EDITAR)
   public ClienteResponse alterarStatus(@PathVariable UUID id,
       @Valid @RequestBody AlterarStatusClienteRequest request) {
     return ClienteResponse.from(service.alterarStatus(id, request.ativo()));
@@ -56,17 +58,18 @@ public class ClienteController {
 
   @DeleteMapping("/{id}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
+  @PreAuthorize(Permissoes.CLIENTE_RO_EXCLUIR)
   public void excluir(@PathVariable UUID id) {
     service.excluir(id);
   }
 
-  @PreAuthorize(SecurityRoles.READ)
+  @PreAuthorize(Permissoes.CLIENTE_RO_LER)
   @GetMapping("/{id}")
   public ClienteResponse buscar(@PathVariable UUID id) {
     return ClienteResponse.from(service.buscar(id));
   }
 
-  @PreAuthorize(SecurityRoles.READ)
+  @PreAuthorize(Permissoes.CLIENTE_RO_LER)
   @GetMapping
   public PageResponse<ClienteResponse> listar(
       @RequestParam(required = false) String q,

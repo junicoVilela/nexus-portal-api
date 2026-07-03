@@ -3,7 +3,7 @@ package br.com.softon.portal.releaseorchestrator.controller;
 import br.com.softon.portal.releaseorchestrator.dto.request.ContatoRequest;
 import br.com.softon.portal.releaseorchestrator.dto.response.ContatoResponse;
 import br.com.softon.portal.releaseorchestrator.service.ContatoService;
-import br.com.softon.portal.shared.security.SecurityRoles;
+import br.com.softon.portal.shared.security.Permissoes;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -23,18 +23,17 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RestController("orchestratorContatoController")
 @RequestMapping("/api/v1/release-orchestrator/clientes/{clienteId}/contatos")
-@PreAuthorize(SecurityRoles.WRITE)
 public class ContatoController {
 
   private final ContatoService service;
 
-  @PreAuthorize(SecurityRoles.READ)
+  @PreAuthorize(Permissoes.CLIENTE_RO_LER)
   @GetMapping
   public List<ContatoResponse> listar(@PathVariable UUID clienteId) {
     return service.listar(clienteId).stream().map(ContatoResponse::from).toList();
   }
 
-  @PreAuthorize(SecurityRoles.READ)
+  @PreAuthorize(Permissoes.CLIENTE_RO_LER)
   @GetMapping("/{id}")
   public ContatoResponse buscar(@PathVariable UUID clienteId, @PathVariable UUID id) {
     return ContatoResponse.from(service.buscar(clienteId, id));
@@ -42,12 +41,14 @@ public class ContatoController {
 
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
+  @PreAuthorize(Permissoes.CLIENTE_RO_EDITAR)
   public ContatoResponse criar(@PathVariable UUID clienteId,
       @Valid @RequestBody ContatoRequest request) {
     return ContatoResponse.from(service.criar(clienteId, request));
   }
 
   @PutMapping("/{id}")
+  @PreAuthorize(Permissoes.CLIENTE_RO_EDITAR)
   public ContatoResponse atualizar(@PathVariable UUID clienteId, @PathVariable UUID id,
       @Valid @RequestBody ContatoRequest request) {
     return ContatoResponse.from(service.atualizar(clienteId, id, request));
@@ -55,6 +56,7 @@ public class ContatoController {
 
   @DeleteMapping("/{id}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
+  @PreAuthorize(Permissoes.CLIENTE_RO_EDITAR)
   public void excluir(@PathVariable UUID clienteId, @PathVariable UUID id) {
     service.excluir(clienteId, id);
   }

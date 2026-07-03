@@ -1,6 +1,7 @@
 package br.com.softon.portal.docflow.controller;
 
 import br.com.softon.portal.docflow.service.EmpresaLogoService;
+import br.com.softon.portal.shared.security.Permissoes;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -25,7 +26,7 @@ public class EmpresaController {
 
   @PostMapping(value = "/logo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize(Permissoes.EMPRESA_EDITAR)
   public void uploadLogo(@RequestParam MultipartFile file) {
     empresaLogoService.salvarLogo(file);
   }
@@ -37,7 +38,7 @@ public class EmpresaController {
 
   @DeleteMapping("/logo")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize(Permissoes.EMPRESA_EDITAR)
   public void deleteLogo() {
     empresaLogoService.removerLogo();
   }

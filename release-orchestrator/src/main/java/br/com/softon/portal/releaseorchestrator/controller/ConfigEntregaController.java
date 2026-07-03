@@ -3,7 +3,7 @@ package br.com.softon.portal.releaseorchestrator.controller;
 import br.com.softon.portal.releaseorchestrator.dto.request.ConfigEntregaRequest;
 import br.com.softon.portal.releaseorchestrator.dto.response.ConfigEntregaResponse;
 import br.com.softon.portal.releaseorchestrator.service.ConfigEntregaService;
-import br.com.softon.portal.shared.security.SecurityRoles;
+import br.com.softon.portal.shared.security.Permissoes;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -19,18 +19,18 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RestController("orchestratorConfigEntregaController")
 @RequestMapping("/api/v1/release-orchestrator/clientes/{clienteId}/config-entrega")
-@PreAuthorize(SecurityRoles.WRITE)
 public class ConfigEntregaController {
 
   private final ConfigEntregaService service;
 
-  @PreAuthorize(SecurityRoles.READ)
+  @PreAuthorize(Permissoes.CLIENTE_RO_LER)
   @GetMapping
   public ConfigEntregaResponse buscar(@PathVariable UUID clienteId) {
     return ConfigEntregaResponse.from(service.buscar(clienteId));
   }
 
   @PutMapping
+  @PreAuthorize(Permissoes.CLIENTE_RO_EDITAR)
   public ConfigEntregaResponse salvar(@PathVariable UUID clienteId,
       @Valid @RequestBody ConfigEntregaRequest request) {
     return ConfigEntregaResponse.from(service.salvar(clienteId, request));
@@ -41,6 +41,7 @@ public class ConfigEntregaController {
    * Erro de configuração ou conexão é mapeado para 422 via BusinessException.
    */
   @PostMapping("/testar")
+  @PreAuthorize(Permissoes.CLIENTE_RO_EDITAR)
   public String testar(@PathVariable UUID clienteId) {
     return service.testarConexao(clienteId);
   }

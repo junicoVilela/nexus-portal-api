@@ -16,7 +16,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import br.com.softon.portal.shared.security.SecurityRoles;
+import br.com.softon.portal.shared.security.Permissoes;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -37,23 +37,24 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/v1/docflow/clientes")
-@PreAuthorize(SecurityRoles.WRITE)
 public class ClienteController {
   private final ClienteService clienteService;
   private final ClienteLogoService clienteLogoService;
 
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
+  @PreAuthorize(Permissoes.CLIENTE_CRIAR)
   public ClienteResponse criar(@Valid @RequestBody ClienteRequest request) {
     return ClienteResponse.from(clienteService.criar(request));
   }
 
   @PutMapping("/{id}")
+  @PreAuthorize(Permissoes.CLIENTE_EDITAR)
   public ClienteResponse atualizar(@PathVariable UUID id, @Valid @RequestBody ClienteRequest request) {
     return ClienteResponse.from(clienteService.atualizar(id, request));
   }
 
-  @PreAuthorize(SecurityRoles.READ)
+  @PreAuthorize(Permissoes.CLIENTE_LER)
   @GetMapping
   public PageResponse<ClienteResponse> listar(
       @RequestParam(required = false) String nome,
@@ -69,7 +70,7 @@ public class ClienteController {
         ClienteResponse::from);
   }
 
-  @PreAuthorize(SecurityRoles.READ)
+  @PreAuthorize(Permissoes.CLIENTE_LER)
   @GetMapping("/{id}")
   public ClienteResponse buscar(@PathVariable UUID id) {
     return ClienteResponse.from(clienteService.buscar(id));
@@ -77,23 +78,26 @@ public class ClienteController {
 
   @PutMapping("/{id}/modulos")
   @ResponseStatus(HttpStatus.NO_CONTENT)
+  @PreAuthorize(Permissoes.CLIENTE_EDITAR)
   public void vincularModulos(@PathVariable UUID id, @RequestBody VinculosRequest request) {
     clienteService.vincularModulos(id, request.moduloIds());
   }
 
   @PutMapping("/{id}/projetos")
   @ResponseStatus(HttpStatus.NO_CONTENT)
+  @PreAuthorize(Permissoes.CLIENTE_EDITAR)
   public void vincularProjetos(@PathVariable UUID id, @RequestBody VinculosRequest request) {
     clienteService.vincularProjetos(id, request.projetoIds());
   }
 
   @PutMapping("/{id}/paginas")
   @ResponseStatus(HttpStatus.NO_CONTENT)
+  @PreAuthorize(Permissoes.CLIENTE_EDITAR)
   public void vincularPaginas(@PathVariable UUID id, @RequestBody VinculosRequest request) {
     clienteService.vincularPaginas(id, request.paginaIds());
   }
 
-  @PreAuthorize(SecurityRoles.READ)
+  @PreAuthorize(Permissoes.CLIENTE_LER)
   @GetMapping("/{id}/vinculos")
   public Map<String, List<UUID>> vinculos(@PathVariable UUID id) {
     return Map.of(
@@ -104,17 +108,18 @@ public class ClienteController {
 
   @PostMapping("/{id}/copiar-vinculos")
   @ResponseStatus(HttpStatus.NO_CONTENT)
+  @PreAuthorize(Permissoes.CLIENTE_EDITAR)
   public void copiarVinculos(@PathVariable UUID id, @Valid @RequestBody CopiarVinculosRequest request) {
     clienteService.copiarVinculos(request.origemClienteId(), id);
   }
 
   @PostMapping(value = "/{id}/logo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   @ResponseStatus(HttpStatus.NO_CONTENT)
+  @PreAuthorize(Permissoes.CLIENTE_EDITAR)
   public void uploadLogo(@PathVariable UUID id, @RequestParam MultipartFile file) {
     clienteLogoService.salvarLogo(id, file);
   }
 
-  @PreAuthorize(SecurityRoles.READ)
   @GetMapping("/{id}/logo")
   public ResponseEntity<Resource> getLogo(@PathVariable UUID id) {
     return clienteLogoService.servir(id);
@@ -122,6 +127,7 @@ public class ClienteController {
 
   @DeleteMapping("/{id}/logo")
   @ResponseStatus(HttpStatus.NO_CONTENT)
+  @PreAuthorize(Permissoes.CLIENTE_EDITAR)
   public void deleteLogo(@PathVariable UUID id) {
     clienteLogoService.removerLogo(id);
   }

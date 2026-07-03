@@ -14,7 +14,7 @@ import java.util.UUID;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
-import br.com.softon.portal.shared.security.SecurityRoles;
+import br.com.softon.portal.shared.security.Permissoes;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -31,7 +31,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/v1/release-orchestrator/produtos")
-@PreAuthorize(SecurityRoles.WRITE)
 public class ProdutoRhController {
 
     private final ProdutoRhService service;
@@ -40,23 +39,26 @@ public class ProdutoRhController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize(Permissoes.PRODUTO_CRIAR)
     public ProdutoRhResponse criar(@Valid @RequestBody ProdutoRhRequest request) {
         return ProdutoRhResponse.from(service.criar(request));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize(Permissoes.PRODUTO_EDITAR)
     public ProdutoRhResponse atualizar(@PathVariable UUID id,
                                        @Valid @RequestBody ProdutoRhRequest request) {
         return ProdutoRhResponse.from(service.atualizar(id, request));
     }
 
     @PatchMapping("/{id}/status")
+    @PreAuthorize(Permissoes.PRODUTO_EDITAR)
     public ProdutoRhResponse alterarStatus(@PathVariable UUID id,
                                            @Valid @RequestBody AlterarStatusProdutoRequest request) {
         return ProdutoRhResponse.from(service.alterarStatus(id, request));
     }
 
-    @PreAuthorize(SecurityRoles.READ)
+    @PreAuthorize(Permissoes.PRODUTO_LER)
     @GetMapping
     public PageResponse<ProdutoRhResponse> listar(
             @RequestParam(required = false) String nome,
@@ -72,7 +74,7 @@ public class ProdutoRhController {
                 ProdutoRhResponse::from);
     }
 
-    @PreAuthorize(SecurityRoles.READ)
+    @PreAuthorize(Permissoes.PRODUTO_LER)
     @GetMapping("/{id}")
     public ProdutoRhResponse buscar(@PathVariable UUID id) {
         return ProdutoRhResponse.from(service.buscar(id));
@@ -80,6 +82,7 @@ public class ProdutoRhController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize(Permissoes.PRODUTO_EXCLUIR)
     public void excluir(@PathVariable UUID id) {
         service.excluir(id);
     }
@@ -89,6 +92,7 @@ public class ProdutoRhController {
      * repositório e token (útil para validar antes de salvar o produto).
      */
     @PostMapping("/{id}/testar-github")
+    @PreAuthorize(Permissoes.PRODUTO_EDITAR)
     public br.com.softon.portal.releaseorchestrator.dto.response.TestarGithubResponse testarGithub(
             @PathVariable UUID id,
             @Valid @RequestBody(required = false)
@@ -100,6 +104,7 @@ public class ProdutoRhController {
     }
 
     @PostMapping("/{id}/testar-jenkins")
+    @PreAuthorize(Permissoes.PRODUTO_EDITAR)
     public br.com.softon.portal.releaseorchestrator.dto.response.TestarJenkinsResponse testarJenkins(
             @PathVariable UUID id,
             @Valid @RequestBody(required = false)

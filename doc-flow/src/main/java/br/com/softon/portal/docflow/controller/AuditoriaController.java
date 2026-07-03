@@ -6,6 +6,7 @@ import br.com.softon.portal.shared.api.PageResponse;
 import br.com.softon.portal.shared.api.PageableUtils;
 import br.com.softon.portal.shared.api.SortDirection;
 import br.com.softon.portal.shared.api.SortUtils;
+import br.com.softon.portal.shared.security.Permissoes;
 import java.util.List;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -19,12 +20,12 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/v1/docflow/auditoria")
-@PreAuthorize("hasRole('ADMIN')")
 public class AuditoriaController {
 
   private final AuditoriaService auditoriaService;
 
   @GetMapping
+  @PreAuthorize(Permissoes.AUDITORIA_VISUALIZAR)
   public PageResponse<AuditoriaResponse> recentes(
       @RequestParam(required = false) String sort,
       @RequestParam(required = false) SortDirection dir,

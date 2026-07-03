@@ -3,7 +3,7 @@ package br.com.softon.portal.releaseorchestrator.controller;
 import br.com.softon.portal.releaseorchestrator.dto.request.SalvarClienteFuncionalidadeRequest;
 import br.com.softon.portal.releaseorchestrator.dto.response.ClienteFuncionalidadeResponse;
 import br.com.softon.portal.releaseorchestrator.service.ClienteFuncionalidadeService;
-import br.com.softon.portal.shared.security.SecurityRoles;
+import br.com.softon.portal.shared.security.Permissoes;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -23,7 +23,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RestController("orchestratorClienteFuncionalidadeController")
 @RequestMapping("/api/v1/release-orchestrator/clientes/{clienteId}/funcionalidades")
-@PreAuthorize(SecurityRoles.WRITE)
 public class ClienteFuncionalidadeController {
 
   private final ClienteFuncionalidadeService service;
@@ -33,7 +32,7 @@ public class ClienteFuncionalidadeController {
    * ao produto. Funcionalidades não presentes na matriz não aparecem aqui;
    * a UI deve renderizá-las como desabilitadas.
    */
-  @PreAuthorize(SecurityRoles.READ)
+  @PreAuthorize(Permissoes.CLIENTE_RO_LER)
   @GetMapping
   public List<ClienteFuncionalidadeResponse> listar(@PathVariable UUID clienteId,
       @RequestParam(required = false) UUID produtoId) {
@@ -44,6 +43,7 @@ public class ClienteFuncionalidadeController {
   }
 
   @PutMapping("/{funcionalidadeId}")
+  @PreAuthorize(Permissoes.CLIENTE_RO_EDITAR)
   public ClienteFuncionalidadeResponse salvar(@PathVariable UUID clienteId,
       @PathVariable UUID funcionalidadeId,
       @Valid @RequestBody SalvarClienteFuncionalidadeRequest request) {
@@ -53,6 +53,7 @@ public class ClienteFuncionalidadeController {
 
   @DeleteMapping("/{funcionalidadeId}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
+  @PreAuthorize(Permissoes.CLIENTE_RO_EDITAR)
   public void remover(@PathVariable UUID clienteId, @PathVariable UUID funcionalidadeId) {
     service.remover(clienteId, funcionalidadeId);
   }

@@ -56,11 +56,18 @@ br.com.softon.portal.{nomeModulo}.dto.response
 - Entity JPA (com `extends AuditableEntity` quando necessário)
 - Repository Spring Data JPA
 - Service com regras de negócio
-- Controller REST com `@RequestMapping("/api/v1/{recursos}")`
+- Controller REST com `@RequestMapping("/api/v1/{recursos}")` — **cada
+  endpoint anotado com `@PreAuthorize(Permissoes.X_Y)`** granular.
 - Request DTOs (record com Bean Validation)
 - Response DTOs (record simples)
 - Exception específica em `exception/` (quando necessário)
-- Migration Flyway em `src/main/resources/db/migration/`
+- Migration Flyway em `src/main/resources/db/migration/`:
+  - DDL da tabela `tb_{recurso}`.
+  - **Seed RBAC**: incluir a funcionalidade em `tb_funcionalidade`,
+    permissões CRUD em `tb_permissao`, e vínculos em `tb_grupo_permissao`
+    para ADMIN/EDITOR/LEITOR/REVISOR. Seguir o padrão de V8/V9.
+- Constantes em `shared/security/Permissoes.java` para cada permissão da
+  nova funcionalidade.
 - Teste unitário do Service para regras de negócio
 
 ## Padrões

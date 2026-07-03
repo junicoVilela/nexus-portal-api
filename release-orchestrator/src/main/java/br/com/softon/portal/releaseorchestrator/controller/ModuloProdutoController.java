@@ -11,7 +11,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
-import br.com.softon.portal.shared.security.SecurityRoles;
+import br.com.softon.portal.shared.security.Permissoes;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -26,18 +26,17 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/v1/release-orchestrator/produtos/{produtoId}/modulos")
-@PreAuthorize(SecurityRoles.WRITE)
 public class ModuloProdutoController {
 
   private final ModuloProdutoService service;
 
-  @PreAuthorize(SecurityRoles.READ)
+  @PreAuthorize(Permissoes.PRODUTO_LER)
   @GetMapping
   public List<ModuloProdutoResponse> listar(@PathVariable UUID produtoId) {
     return service.listar(produtoId).stream().map(ModuloProdutoResponse::from).toList();
   }
 
-  @PreAuthorize(SecurityRoles.READ)
+  @PreAuthorize(Permissoes.PRODUTO_LER)
   @GetMapping("/{id}")
   public ModuloProdutoResponse buscar(@PathVariable UUID produtoId, @PathVariable UUID id) {
     return ModuloProdutoResponse.from(service.buscar(produtoId, id));
@@ -45,18 +44,21 @@ public class ModuloProdutoController {
 
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
+  @PreAuthorize(Permissoes.PRODUTO_EDITAR)
   public ModuloProdutoResponse criar(@PathVariable UUID produtoId,
       @Valid @RequestBody CriarModuloProdutoRequest request) {
     return ModuloProdutoResponse.from(service.criar(produtoId, request));
   }
 
   @PutMapping("/{id}")
+  @PreAuthorize(Permissoes.PRODUTO_EDITAR)
   public ModuloProdutoResponse atualizar(@PathVariable UUID produtoId, @PathVariable UUID id,
       @Valid @RequestBody AtualizarModuloProdutoRequest request) {
     return ModuloProdutoResponse.from(service.atualizar(produtoId, id, request));
   }
 
   @PatchMapping("/{id}/status")
+  @PreAuthorize(Permissoes.PRODUTO_EDITAR)
   public ModuloProdutoResponse alterarStatus(@PathVariable UUID produtoId, @PathVariable UUID id,
       @Valid @RequestBody AlterarStatusModuloRequest request) {
     return ModuloProdutoResponse.from(service.alterarStatus(produtoId, id, request.ativo()));
@@ -64,6 +66,7 @@ public class ModuloProdutoController {
 
   @DeleteMapping("/{id}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
+  @PreAuthorize(Permissoes.PRODUTO_EDITAR)
   public void excluir(@PathVariable UUID produtoId, @PathVariable UUID id) {
     service.excluir(produtoId, id);
   }

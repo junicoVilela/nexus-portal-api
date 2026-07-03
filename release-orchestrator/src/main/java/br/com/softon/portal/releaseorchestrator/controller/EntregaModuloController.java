@@ -3,7 +3,7 @@ package br.com.softon.portal.releaseorchestrator.controller;
 import br.com.softon.portal.releaseorchestrator.dto.request.AlterarSelecaoModuloRequest;
 import br.com.softon.portal.releaseorchestrator.dto.response.EntregaModuloResponse;
 import br.com.softon.portal.releaseorchestrator.service.EntregaModuloService;
-import br.com.softon.portal.shared.security.SecurityRoles;
+import br.com.softon.portal.shared.security.Permissoes;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -20,12 +20,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RestController("orchestratorEntregaModuloController")
 @RequestMapping("/api/v1/release-orchestrator/entregas/{entregaId}/modulos")
-@PreAuthorize(SecurityRoles.WRITE)
 public class EntregaModuloController {
 
   private final EntregaModuloService service;
 
-  @PreAuthorize(SecurityRoles.READ)
+  @PreAuthorize(Permissoes.ENTREGA_LER)
   @GetMapping
   public List<EntregaModuloResponse> listar(@PathVariable UUID entregaId) {
     return service.listar(entregaId).stream().map(EntregaModuloResponse::from).toList();
@@ -36,12 +35,14 @@ public class EntregaModuloController {
    * ser chamado várias vezes em RASCUNHO (limpa estado anterior).
    */
   @PostMapping("/inicializar")
+  @PreAuthorize(Permissoes.ENTREGA_EDITAR)
   public List<EntregaModuloResponse> inicializar(@PathVariable UUID entregaId) {
     return service.inicializar(entregaId).stream()
         .map(EntregaModuloResponse::from).toList();
   }
 
   @PatchMapping("/{moduloProdutoId}/selecao")
+  @PreAuthorize(Permissoes.ENTREGA_EDITAR)
   public EntregaModuloResponse alterarSelecao(@PathVariable UUID entregaId,
       @PathVariable UUID moduloProdutoId,
       @Valid @RequestBody AlterarSelecaoModuloRequest request) {

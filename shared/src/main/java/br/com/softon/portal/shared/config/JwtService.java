@@ -30,10 +30,11 @@ public class JwtService {
     this.downloadExpirationMs = downloadExpirationMs;
   }
 
-  public String gerarToken(String username, List<String> roles) {
+  public String gerarToken(String username, List<String> roles, List<String> permissoes) {
     return Jwts.builder()
         .subject(username)
         .claim("roles", roles)
+        .claim("permissoes", permissoes == null ? List.of() : permissoes)
         .issuedAt(new Date())
         .expiration(new Date(System.currentTimeMillis() + expirationMs))
         .signWith(secretKey)

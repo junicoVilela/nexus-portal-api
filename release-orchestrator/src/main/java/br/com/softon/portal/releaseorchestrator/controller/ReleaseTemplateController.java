@@ -14,7 +14,7 @@ import java.util.UUID;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
-import br.com.softon.portal.shared.security.SecurityRoles;
+import br.com.softon.portal.shared.security.Permissoes;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -31,30 +31,32 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/v1/release-orchestrator/templates")
-@PreAuthorize(SecurityRoles.WRITE)
 public class ReleaseTemplateController {
 
     private final ReleaseTemplateService service;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize(Permissoes.TEMPLATE_CRIAR)
     public ReleaseTemplateResponse criar(@Valid @RequestBody ReleaseTemplateRequest request) {
         return ReleaseTemplateResponse.from(service.criar(request));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize(Permissoes.TEMPLATE_EDITAR)
     public ReleaseTemplateResponse atualizar(@PathVariable UUID id,
                                              @Valid @RequestBody ReleaseTemplateRequest request) {
         return ReleaseTemplateResponse.from(service.atualizar(id, request));
     }
 
     @PatchMapping("/{id}/status")
+    @PreAuthorize(Permissoes.TEMPLATE_EDITAR)
     public ReleaseTemplateResponse alterarStatus(@PathVariable UUID id,
                                                   @Valid @RequestBody AlterarStatusTemplateRequest request) {
         return ReleaseTemplateResponse.from(service.alterarStatus(id, request));
     }
 
-    @PreAuthorize(SecurityRoles.READ)
+    @PreAuthorize(Permissoes.TEMPLATE_LER)
     @GetMapping
     public PageResponse<ReleaseTemplateResponse> listar(
             @RequestParam(required = false) String nome,
@@ -70,7 +72,7 @@ public class ReleaseTemplateController {
                 ReleaseTemplateResponse::from);
     }
 
-    @PreAuthorize(SecurityRoles.READ)
+    @PreAuthorize(Permissoes.TEMPLATE_LER)
     @GetMapping("/{id}")
     public ReleaseTemplateResponse buscar(@PathVariable UUID id) {
         return ReleaseTemplateResponse.from(service.buscar(id));
@@ -78,6 +80,7 @@ public class ReleaseTemplateController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize(Permissoes.TEMPLATE_EXCLUIR)
     public void excluir(@PathVariable UUID id) {
         service.excluir(id);
     }

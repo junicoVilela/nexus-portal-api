@@ -4,7 +4,7 @@ import br.com.softon.portal.releaseorchestrator.dto.request.AlterarStatusCatalog
 import br.com.softon.portal.releaseorchestrator.dto.request.FuncionalidadeProdutoRequest;
 import br.com.softon.portal.releaseorchestrator.dto.response.FuncionalidadeProdutoResponse;
 import br.com.softon.portal.releaseorchestrator.service.FuncionalidadeProdutoService;
-import br.com.softon.portal.shared.security.SecurityRoles;
+import br.com.softon.portal.shared.security.Permissoes;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -25,12 +25,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RestController("orchestratorFuncionalidadeProdutoController")
 @RequestMapping("/api/v1/release-orchestrator/produtos/{produtoId}/dominios/{dominioId}/funcionalidades")
-@PreAuthorize(SecurityRoles.WRITE)
 public class FuncionalidadeProdutoController {
 
   private final FuncionalidadeProdutoService service;
 
-  @PreAuthorize(SecurityRoles.READ)
+  @PreAuthorize(Permissoes.PRODUTO_LER)
   @GetMapping
   public List<FuncionalidadeProdutoResponse> listar(@PathVariable UUID produtoId,
       @PathVariable UUID dominioId) {
@@ -38,7 +37,7 @@ public class FuncionalidadeProdutoController {
         .map(FuncionalidadeProdutoResponse::from).toList();
   }
 
-  @PreAuthorize(SecurityRoles.READ)
+  @PreAuthorize(Permissoes.PRODUTO_LER)
   @GetMapping("/{id}")
   public FuncionalidadeProdutoResponse buscar(@PathVariable UUID produtoId,
       @PathVariable UUID dominioId, @PathVariable UUID id) {
@@ -47,6 +46,7 @@ public class FuncionalidadeProdutoController {
 
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
+  @PreAuthorize(Permissoes.PRODUTO_EDITAR)
   public FuncionalidadeProdutoResponse criar(@PathVariable UUID produtoId,
       @PathVariable UUID dominioId,
       @Valid @RequestBody FuncionalidadeProdutoRequest request) {
@@ -54,6 +54,7 @@ public class FuncionalidadeProdutoController {
   }
 
   @PutMapping("/{id}")
+  @PreAuthorize(Permissoes.PRODUTO_EDITAR)
   public FuncionalidadeProdutoResponse atualizar(@PathVariable UUID produtoId,
       @PathVariable UUID dominioId, @PathVariable UUID id,
       @Valid @RequestBody FuncionalidadeProdutoRequest request) {
@@ -62,6 +63,7 @@ public class FuncionalidadeProdutoController {
   }
 
   @PatchMapping("/{id}/status")
+  @PreAuthorize(Permissoes.PRODUTO_EDITAR)
   public FuncionalidadeProdutoResponse alterarStatus(@PathVariable UUID produtoId,
       @PathVariable UUID dominioId, @PathVariable UUID id,
       @Valid @RequestBody AlterarStatusCatalogoRequest request) {
@@ -71,6 +73,7 @@ public class FuncionalidadeProdutoController {
 
   @DeleteMapping("/{id}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
+  @PreAuthorize(Permissoes.PRODUTO_EDITAR)
   public void excluir(@PathVariable UUID produtoId, @PathVariable UUID dominioId,
       @PathVariable UUID id) {
     service.excluir(produtoId, dominioId, id);

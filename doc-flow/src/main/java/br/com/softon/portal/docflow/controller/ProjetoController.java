@@ -11,7 +11,7 @@ import java.util.List;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
-import br.com.softon.portal.shared.security.SecurityRoles;
+import br.com.softon.portal.shared.security.Permissoes;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -28,22 +28,23 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/v1/docflow/projetos")
-@PreAuthorize(SecurityRoles.WRITE)
 public class ProjetoController {
   private final ProjetoService projetoService;
 
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
+  @PreAuthorize(Permissoes.PROJETO_CRIAR)
   public ProjetoResponse criar(@Valid @RequestBody ProjetoRequest request) {
     return ProjetoResponse.from(projetoService.criar(request));
   }
 
   @PutMapping("/{id}")
+  @PreAuthorize(Permissoes.PROJETO_EDITAR)
   public ProjetoResponse atualizar(@PathVariable UUID id, @Valid @RequestBody ProjetoRequest request) {
     return ProjetoResponse.from(projetoService.atualizar(id, request));
   }
 
-  @PreAuthorize(SecurityRoles.READ)
+  @PreAuthorize(Permissoes.PROJETO_LER)
   @GetMapping
   public PageResponse<ProjetoResponse> listar(
       @RequestParam(required = false) String nome,
@@ -59,7 +60,7 @@ public class ProjetoController {
         ProjetoResponse::from);
   }
 
-  @PreAuthorize(SecurityRoles.READ)
+  @PreAuthorize(Permissoes.PROJETO_LER)
   @GetMapping("/{id}")
   public ProjetoResponse buscar(@PathVariable UUID id) {
     return ProjetoResponse.from(projetoService.buscar(id));

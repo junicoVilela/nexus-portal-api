@@ -3,7 +3,7 @@ package br.com.softon.portal.releaseorchestrator.controller;
 import br.com.softon.portal.releaseorchestrator.dto.request.SalvarClienteProdutoModuloRequest;
 import br.com.softon.portal.releaseorchestrator.dto.response.ClienteProdutoModuloResponse;
 import br.com.softon.portal.releaseorchestrator.service.ClienteProdutoModuloService;
-import br.com.softon.portal.shared.security.SecurityRoles;
+import br.com.softon.portal.shared.security.Permissoes;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -22,12 +22,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RestController("orchestratorClienteProdutoModuloController")
 @RequestMapping("/api/v1/release-orchestrator/clientes/{clienteId}/produtos/{clienteProdutoId}/modulos")
-@PreAuthorize(SecurityRoles.WRITE)
 public class ClienteProdutoModuloController {
 
   private final ClienteProdutoModuloService service;
 
-  @PreAuthorize(SecurityRoles.READ)
+  @PreAuthorize(Permissoes.CLIENTE_RO_LER)
   @GetMapping
   public List<ClienteProdutoModuloResponse> listar(@PathVariable UUID clienteId,
       @PathVariable UUID clienteProdutoId) {
@@ -36,6 +35,7 @@ public class ClienteProdutoModuloController {
   }
 
   @PutMapping("/{moduloProdutoId}")
+  @PreAuthorize(Permissoes.CLIENTE_RO_EDITAR)
   public ClienteProdutoModuloResponse salvar(@PathVariable UUID clienteId,
       @PathVariable UUID clienteProdutoId,
       @PathVariable UUID moduloProdutoId,
@@ -46,6 +46,7 @@ public class ClienteProdutoModuloController {
 
   @DeleteMapping("/{moduloProdutoId}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
+  @PreAuthorize(Permissoes.CLIENTE_RO_EDITAR)
   public void remover(@PathVariable UUID clienteId, @PathVariable UUID clienteProdutoId,
       @PathVariable UUID moduloProdutoId) {
     service.remover(clienteId, clienteProdutoId, moduloProdutoId);

@@ -10,7 +10,7 @@ import br.com.softon.portal.shared.api.PageResponse;
 import br.com.softon.portal.shared.api.PageableUtils;
 import br.com.softon.portal.shared.api.SortDirection;
 import br.com.softon.portal.shared.api.SortUtils;
-import br.com.softon.portal.shared.security.SecurityRoles;
+import br.com.softon.portal.shared.security.Permissoes;
 import jakarta.validation.Valid;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -38,13 +38,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RestController("orchestratorEntregaController")
 @RequestMapping("/api/v1/release-orchestrator/entregas")
-@PreAuthorize(SecurityRoles.WRITE)
 public class EntregaController {
 
   private final EntregaService service;
   private final PublicacaoRemotaService publicacaoRemotaService;
 
-  @PreAuthorize(SecurityRoles.READ)
+  @PreAuthorize(Permissoes.ENTREGA_LER)
   @GetMapping
   public PageResponse<EntregaResponse> listar(
       @RequestParam(required = false) UUID clienteId,
@@ -63,7 +62,7 @@ public class EntregaController {
         EntregaResponse::from);
   }
 
-  @PreAuthorize(SecurityRoles.READ)
+  @PreAuthorize(Permissoes.ENTREGA_LER)
   @GetMapping("/{id}")
   public EntregaResponse buscar(@PathVariable UUID id) {
     return EntregaResponse.from(service.buscar(id));
@@ -73,7 +72,7 @@ public class EntregaController {
    * Stream do pacote ZIP gerado para a entrega. Disponível apenas após
    * CONCLUIDA — antes disso o caminho não existe ou está sendo escrito.
    */
-  @PreAuthorize(SecurityRoles.READ)
+  @PreAuthorize(Permissoes.ENTREGA_LER)
   @GetMapping("/{id}/pacote/download")
   public ResponseEntity<Resource> downloadPacote(@PathVariable UUID id) {
     var entrega = service.buscar(id);
@@ -97,17 +96,20 @@ public class EntregaController {
 
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
+  @PreAuthorize(Permissoes.ENTREGA_CRIAR)
   public EntregaResponse criar(@Valid @RequestBody CriarEntregaRequest request) {
     return EntregaResponse.from(service.criar(request));
   }
 
   @PutMapping("/{id}/rascunho")
+  @PreAuthorize(Permissoes.ENTREGA_EDITAR)
   public EntregaResponse atualizarRascunho(@PathVariable UUID id,
       @Valid @RequestBody AtualizarEntregaRascunhoRequest request) {
     return EntregaResponse.from(service.atualizarRascunho(id, request));
   }
 
   @PostMapping("/{id}/cancelar")
+  @PreAuthorize(Permissoes.ENTREGA_EDITAR)
   public EntregaResponse cancelar(@PathVariable UUID id) {
     return EntregaResponse.from(service.cancelar(id));
   }
@@ -119,6 +121,7 @@ public class EntregaController {
    */
   @PostMapping("/{id}/reentregar")
   @ResponseStatus(HttpStatus.CREATED)
+  @PreAuthorize(Permissoes.ENTREGA_CRIAR)
   public EntregaResponse reentregar(@PathVariable UUID id) {
     return EntregaResponse.from(service.reentregar(id));
   }
@@ -129,6 +132,7 @@ public class EntregaController {
    * sem esperar o backoff. Zera o contador de tentativas e marca PENDENTE.
    */
   @PostMapping("/{id}/publicacao/reagendar")
+  @PreAuthorize(Permissoes.ENTREGA_EDITAR)
   public EntregaResponse reagendarPublicacao(@PathVariable UUID id) {
     return EntregaResponse.from(publicacaoRemotaService.reagendar(id));
   }

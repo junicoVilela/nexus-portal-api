@@ -10,7 +10,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import br.com.softon.portal.shared.security.SecurityRoles;
+import br.com.softon.portal.shared.security.Permissoes;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,12 +20,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/v1/release-orchestrator/releases/{releaseId}/pdf")
-@PreAuthorize(SecurityRoles.WRITE)
 public class ReleasePdfController {
 
   private final ReleasePdfService service;
 
-  @PreAuthorize(SecurityRoles.READ)
+  @PreAuthorize(Permissoes.RELEASE_LER)
   @GetMapping
   public ResponseEntity<Resource> gerar(@PathVariable UUID releaseId,
       @RequestParam(defaultValue = "CLIENTE") TipoPdfRelease tipo) {
