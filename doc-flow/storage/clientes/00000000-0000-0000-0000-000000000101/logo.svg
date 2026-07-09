@@ -1,7 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="140" height="40" viewBox="0 0 140 40">
-  <rect width="140" height="40" rx="6" fill="#1B4A6B"/>
-  <rect x="6" y="6" width="28" height="28" rx="4" fill="white" opacity=".15"/>
-  <text x="20" y="25" font-family="Arial,sans-serif" font-size="14" font-weight="900" fill="white" text-anchor="middle">B</text>
-  <text x="88" y="18" font-family="Arial,sans-serif" font-size="9" font-weight="700" fill="rgba(255,255,255,.8)" text-anchor="middle">BANCO DA</text>
-  <text x="88" y="31" font-family="Arial,sans-serif" font-size="10" font-weight="900" fill="white" text-anchor="middle">AMAZÔNIA</text>
-</svg>

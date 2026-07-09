@@ -27,3 +27,4 @@ Thumbs.db
 
 # Runtime storage (uploads, ZIPs gerados, tmp)
 application/storage/
+doc-flow/storage/
