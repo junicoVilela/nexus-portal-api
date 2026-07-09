@@ -2,7 +2,9 @@ package br.com.softon.rbac.controller;
 
 import br.com.softon.rbac.dto.request.AlterarSenhaRequest;
 import br.com.softon.rbac.dto.request.AtualizarUsuarioRequest;
+import br.com.softon.rbac.dto.request.BloqueioUsuarioRequest;
 import br.com.softon.rbac.dto.request.CriarUsuarioRequest;
+import br.com.softon.rbac.dto.request.UsuarioGruposRequest;
 import br.com.softon.rbac.dto.response.UsuarioResponse;
 import br.com.softon.rbac.service.UsuarioService;
 import br.com.softon.portal.shared.api.PageResponse;
@@ -76,5 +78,26 @@ public class UsuarioController {
   @PreAuthorize(Permissoes.USUARIO_RESETAR)
   public void alterarSenha(@PathVariable UUID id, @Valid @RequestBody AlterarSenhaRequest request, Principal principal) {
     usuarioService.alterarSenha(id, request.novaSenha(), principal);
+  }
+
+  @GetMapping("/{id}/grupos")
+  @PreAuthorize(Permissoes.USUARIO_LER)
+  public List<UUID> listarGrupos(@PathVariable UUID id) {
+    return usuarioService.listarGrupos(id);
+  }
+
+  @PutMapping("/{id}/grupos")
+  @PreAuthorize(Permissoes.USUARIO_EDITAR)
+  public List<UUID> salvarGrupos(@PathVariable UUID id,
+      @Valid @RequestBody UsuarioGruposRequest request, Principal principal) {
+    return usuarioService.salvarGrupos(id, request.grupoIds(), principal);
+  }
+
+  @PostMapping("/{id}/bloqueio")
+  @PreAuthorize(Permissoes.USUARIO_BLOQUEAR)
+  public UsuarioResponse alterarBloqueio(@PathVariable UUID id,
+      @Valid @RequestBody BloqueioUsuarioRequest request, Principal principal) {
+    return UsuarioResponse.from(
+        usuarioService.alterarBloqueio(id, request.bloqueado(), principal));
   }
 }

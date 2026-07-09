@@ -4,12 +4,16 @@ import br.com.softon.rbac.dto.response.MeResponse;
 import br.com.softon.rbac.entity.Usuario;
 import br.com.softon.rbac.repository.UsuarioRepository;
 import br.com.softon.rbac.service.RbacService;
+import br.com.softon.rbac.entity.Grupo;
+import br.com.softon.rbac.repository.GrupoRepository;
 import br.com.softon.portal.shared.config.JwtService;
 import br.com.softon.portal.shared.exception.BusinessException;
 import br.com.softon.portal.shared.exception.NotFoundException;
 import jakarta.transaction.Transactional;
 import java.security.Principal;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -22,6 +26,7 @@ import org.springframework.stereotype.Service;
 public class UsuarioService {
 
   private final UsuarioRepository usuarioRepository;
+  private final GrupoRepository grupoRepository;
   private final PasswordEncoder passwordEncoder;
   private final JwtService jwtService;
   private final RbacService rbacService;
@@ -30,6 +35,9 @@ public class UsuarioService {
   public String autenticar(String username, String rawPassword) {
     Usuario usuario = usuarioRepository.findByUsernameAndAtivoTrue(username)
         .orElseThrow(() -> new BusinessException("Usuário ou senha inválidos."));
+    if (usuario.isBloqueado()) {
+      throw new BusinessException("Usuário bloqueado. Contate um administrador.");
+    }
     if (!passwordEncoder.matches(rawPassword, usuario.getPassword())) {
       throw new BusinessException("Usuário ou senha inválidos.");
     }
@@ -87,7 +95,64 @@ public class UsuarioService {
   public void alterarSenha(UUID id, String novaSenha, Principal principal) {
     Usuario usuario = buscar(id);
     usuario.alterarSenha(passwordEncoder.encode(novaSenha));
+    usuario.marcarTrocaSenhaProximoLogin(true);
     auditoriaService.registrar("Usuario", id, "RESETAR_SENHA",
         "Senha do usuário " + usuario.getUsername() + " alterada.", principal);
+  }
+
+  @Transactional
+  public Usuario alterarBloqueio(UUID id, boolean bloquear, Principal principal) {
+    Usuario usuario = buscar(id);
+    if (bloquear) {
+      usuario.bloquear();
+    } else {
+      usuario.desbloquear();
+    }
+    auditoriaService.registrar("Usuario", id, bloquear ? "BLOQUEAR" : "DESBLOQUEAR",
+        "Usuário " + usuario.getUsername() + (bloquear ? " bloqueado." : " desbloqueado."),
+        principal);
+    return usuario;
+  }
+
+  public List<UUID> listarGrupos(UUID usuarioId) {
+    buscar(usuarioId);
+    return grupoRepository.findComUsuario(usuarioId).stream().map(Grupo::getId).toList();
+  }
+
+  /**
+   * Substitui o conjunto de grupos do usuário pelos {@code grupoIds} informados.
+   * Aplica a mudança pelos dois lados (adiciona nos grupos que ganharam o usuário,
+   * remove dos que perderam) já que a coluna vive em tb_grupo_usuario e é a
+   * entidade Grupo que a mantém como @ElementCollection.
+   */
+  @Transactional
+  public List<UUID> salvarGrupos(UUID usuarioId, List<UUID> grupoIds, Principal principal) {
+    Usuario usuario = buscar(usuarioId);
+    Set<UUID> alvo = new HashSet<>(grupoIds == null ? List.of() : grupoIds);
+    Set<UUID> atuais = new HashSet<>(grupoRepository.findComUsuario(usuarioId).stream()
+        .map(Grupo::getId).toList());
+
+    Set<UUID> paraAdicionar = new HashSet<>(alvo);
+    paraAdicionar.removeAll(atuais);
+    Set<UUID> paraRemover = new HashSet<>(atuais);
+    paraRemover.removeAll(alvo);
+
+    grupoRepository.findAllById(paraAdicionar).forEach(g -> {
+      List<UUID> novaLista = new java.util.ArrayList<>(g.getUsuarios());
+      if (!novaLista.contains(usuarioId)) {
+        novaLista.add(usuarioId);
+      }
+      g.atualizarUsuarios(novaLista);
+    });
+    grupoRepository.findAllById(paraRemover).forEach(g -> {
+      List<UUID> novaLista = new java.util.ArrayList<>(g.getUsuarios());
+      novaLista.remove(usuarioId);
+      g.atualizarUsuarios(novaLista);
+    });
+
+    auditoriaService.registrar("Usuario", usuarioId, "VINCULAR_GRUPOS",
+        "Grupos do usuário " + usuario.getUsername() + " atualizados (" + alvo.size() + ").",
+        principal);
+    return alvo.stream().toList();
   }
 }

@@ -39,6 +39,15 @@ public class Usuario extends AuditableEntity {
   @Column(nullable = false)
   private boolean ativo = true;
 
+  @Column(nullable = false)
+  private boolean bloqueado = false;
+
+  @Column(name = "tentativas_invalidas", nullable = false)
+  private int tentativasInvalidas = 0;
+
+  @Column(name = "trocar_senha_proximo_login", nullable = false)
+  private boolean trocarSenhaProximoLogin = false;
+
   public Usuario(String username, String password, String nome, String email) {
     this.username = username;
     this.password = password;
@@ -54,5 +63,18 @@ public class Usuario extends AuditableEntity {
 
   public void alterarSenha(String encodedPassword) {
     this.password = encodedPassword;
+  }
+
+  public void bloquear() {
+    this.bloqueado = true;
+  }
+
+  public void desbloquear() {
+    this.bloqueado = false;
+    this.tentativasInvalidas = 0;
+  }
+
+  public void marcarTrocaSenhaProximoLogin(boolean flag) {
+    this.trocarSenhaProximoLogin = flag;
   }
 }

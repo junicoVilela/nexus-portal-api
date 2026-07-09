@@ -10,6 +10,9 @@ public record UsuarioResponse(
     String nome,
     String email,
     boolean ativo,
+    boolean bloqueado,
+    int tentativasInvalidas,
+    boolean trocarSenhaProximoLogin,
     OffsetDateTime createdAt,
     OffsetDateTime updatedAt,
     String createdBy,
@@ -17,6 +20,7 @@ public record UsuarioResponse(
 
   public static UsuarioResponse from(Usuario u) {
     return new UsuarioResponse(u.getId(), u.getUsername(), u.getNome(), u.getEmail(),
-        u.isAtivo(), u.getCreatedAt(), u.getUpdatedAt(), u.getCreatedBy(), u.getUpdatedBy());
+        u.isAtivo(), u.isBloqueado(), u.getTentativasInvalidas(), u.isTrocarSenhaProximoLogin(),
+        u.getCreatedAt(), u.getUpdatedAt(), u.getCreatedBy(), u.getUpdatedBy());
   }
 }

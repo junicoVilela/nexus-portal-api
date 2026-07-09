@@ -54,16 +54,53 @@ public class RbacService {
         .toList();
   }
 
-  public List<UUID> idsPorCodigos(List<String> codigos) {
-    if (codigos == null || codigos.isEmpty()) {
+  /**
+   * Resolve UUIDs de permissão a partir de uma lista que pode conter tanto
+   * códigos (formato FUNCIONALIDADE:ACAO) quanto UUIDs. Aceita mistura.
+   * Permite ao frontend enviar IDs (que já tem em cache) sem exigir que
+   * ele conheça o código canônico.
+   */
+  public List<UUID> idsPorCodigos(List<String> codigosOuIds) {
+    if (codigosOuIds == null || codigosOuIds.isEmpty()) {
       return List.of();
     }
-    Set<String> distintos = new LinkedHashSet<>(codigos);
-    List<Permissao> encontradas = permissaoRepository.findByCodigoIn(distintos);
-    if (encontradas.size() != distintos.size()) {
-      throw new BusinessException(
-          "Uma ou mais permissões informadas não existem no catálogo.");
+    Set<String> distintos = new LinkedHashSet<>(codigosOuIds);
+    Set<UUID> uuids = new LinkedHashSet<>();
+    Set<String> codigos = new LinkedHashSet<>();
+    for (String valor : distintos) {
+      UUID uuid = tentarUuid(valor);
+      if (uuid != null) {
+        uuids.add(uuid);
+      } else {
+        codigos.add(valor);
+      }
     }
-    return encontradas.stream().map(Permissao::getId).toList();
+
+    Set<UUID> resolvidos = new LinkedHashSet<>();
+    if (!uuids.isEmpty()) {
+      List<Permissao> porId = permissaoRepository.findByIdIn(uuids);
+      if (porId.size() != uuids.size()) {
+        throw new BusinessException(
+            "Uma ou mais permissões informadas não existem no catálogo.");
+      }
+      porId.forEach(p -> resolvidos.add(p.getId()));
+    }
+    if (!codigos.isEmpty()) {
+      List<Permissao> porCodigo = permissaoRepository.findByCodigoIn(codigos);
+      if (porCodigo.size() != codigos.size()) {
+        throw new BusinessException(
+            "Uma ou mais permissões informadas não existem no catálogo.");
+      }
+      porCodigo.forEach(p -> resolvidos.add(p.getId()));
+    }
+    return List.copyOf(resolvidos);
+  }
+
+  private static UUID tentarUuid(String valor) {
+    try {
+      return UUID.fromString(valor);
+    } catch (IllegalArgumentException ignored) {
+      return null;
+    }
   }
 }

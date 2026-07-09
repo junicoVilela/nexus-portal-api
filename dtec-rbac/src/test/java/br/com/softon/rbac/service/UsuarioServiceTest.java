@@ -32,6 +32,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 class UsuarioServiceTest {
 
   @Mock UsuarioRepository usuarioRepository;
+  @Mock br.com.softon.rbac.repository.GrupoRepository grupoRepository;
   @Mock PasswordEncoder passwordEncoder;
   @Mock JwtService jwtService;
   @Mock RbacService rbacService;
@@ -45,7 +46,7 @@ class UsuarioServiceTest {
 
   @BeforeEach
   void setUp() throws Exception {
-    service = new UsuarioService(usuarioRepository, passwordEncoder, jwtService, rbacService, auditoriaService);
+    service = new UsuarioService(usuarioRepository, grupoRepository, passwordEncoder, jwtService, rbacService, auditoriaService);
     userId = UUID.randomUUID();
     usuario = new Usuario("admin", "hash", "Administrador", "a@x.com");
     setId(usuario, userId);

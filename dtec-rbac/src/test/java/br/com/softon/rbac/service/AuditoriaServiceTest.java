@@ -72,7 +72,8 @@ class AuditoriaServiceTest {
   void listar_paginadoDelegaAoRepositorio() {
     Page<AuditoriaEvento> page = new PageImpl<>(List.of());
     Pageable p = Pageable.unpaged();
-    when(auditoriaRepository.findAll(p)).thenReturn(page);
+    when(auditoriaRepository.findAll(org.mockito.ArgumentMatchers.<org.springframework.data.jpa.domain.Specification<AuditoriaEvento>>any(), org.mockito.ArgumentMatchers.eq(p)))
+        .thenReturn(page);
 
     assertThat(service.listar(p)).isSameAs(page);
   }

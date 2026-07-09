@@ -19,4 +19,7 @@ public interface GrupoRepository extends JpaRepository<Grupo, UUID>, JpaSpecific
 
   @Query("SELECT g FROM Grupo g WHERE g.ativo = true AND :usuarioId MEMBER OF g.usuarios")
   List<Grupo> findAtivosComUsuario(@Param("usuarioId") UUID usuarioId);
+
+  @Query("SELECT g FROM Grupo g WHERE :usuarioId MEMBER OF g.usuarios")
+  List<Grupo> findComUsuario(@Param("usuarioId") UUID usuarioId);
 }
