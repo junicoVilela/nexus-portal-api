@@ -80,7 +80,7 @@ Transições: `POST /paginas/{id}/enviar-revisao`, `/aprovar`, `/publicar`, `/ar
 | `EmpresaController` | `/docflow/empresa/logo` | Logo global nos manuais |
 | `AuthController` | `/api/v1/auth` | Login JWT |
 | `UsuarioController` | `/docflow/usuarios` | CRUD (ADMIN) |
-| `GrupoController` | `/docflow/grupos` | CRUD + membros + permissões (ADMIN) |
+| `GrupoController` | `/rbac/grupos` | CRUD + membros + permissões (ADMIN) — módulo `dtec-rbac` |
 | `AuditoriaController` | `/docflow/auditoria` | Listagem (ADMIN) |
 
 Serviços de geração: `GeradorPacoteService`, `GeradorPdfService`, `PublicacaoWorkerService` (@Async).

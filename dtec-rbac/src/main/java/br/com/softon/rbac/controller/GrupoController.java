@@ -33,7 +33,7 @@ import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/api/v1/docflow/grupos")
+@RequestMapping("/api/v1/rbac/grupos")
 public class GrupoController {
 
   private final GrupoService grupoService;
