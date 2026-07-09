@@ -7,8 +7,6 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import java.util.Arrays;
-import java.util.List;
 import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -38,32 +36,23 @@ public class Usuario extends AuditableEntity {
   @Column(length = 200)
   private String email;
 
-  @Column(nullable = false, length = 200)
-  private String roles = "EDITOR";
-
   @Column(nullable = false)
   private boolean ativo = true;
 
-  public Usuario(String username, String password, String nome, String email, String roles) {
+  public Usuario(String username, String password, String nome, String email) {
     this.username = username;
     this.password = password;
     this.nome = nome;
     this.email = email;
-    this.roles = roles == null ? "EDITOR" : roles;
   }
 
-  public void atualizar(String nome, String email, String roles, boolean ativo) {
+  public void atualizar(String nome, String email, boolean ativo) {
     this.nome = nome;
     this.email = email;
-    this.roles = roles == null ? "EDITOR" : roles;
     this.ativo = ativo;
   }
 
   public void alterarSenha(String encodedPassword) {
     this.password = encodedPassword;
-  }
-
-  public List<String> roleList() {
-    return Arrays.stream(roles.split(",")).map(String::trim).filter(r -> !r.isBlank()).toList();
   }
 }

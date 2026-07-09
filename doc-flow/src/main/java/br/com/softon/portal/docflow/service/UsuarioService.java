@@ -32,7 +32,7 @@ public class UsuarioService {
       throw new BusinessException("Usuário ou senha inválidos.");
     }
     List<String> permissoes = rbacService.permissoesDoUsuario(usuario.getId());
-    return jwtService.gerarToken(usuario.getUsername(), usuario.roleList(), permissoes);
+    return jwtService.gerarToken(usuario.getUsername(), permissoes);
   }
 
   public MeResponse me(String username) {
@@ -43,7 +43,6 @@ public class UsuarioService {
         usuario.getUsername(),
         usuario.getNome(),
         usuario.getEmail(),
-        usuario.roleList(),
         rbacService.gruposDoUsuario(usuario.getId()),
         rbacService.permissoesDoUsuario(usuario.getId()));
   }
@@ -62,18 +61,18 @@ public class UsuarioService {
   }
 
   @Transactional
-  public Usuario criar(String username, String rawPassword, String nome, String email, String roles) {
+  public Usuario criar(String username, String rawPassword, String nome, String email) {
     if (usuarioRepository.existsByUsername(username)) {
       throw new BusinessException("Já existe usuário com esse nome.");
     }
     return usuarioRepository.save(new Usuario(username, passwordEncoder.encode(rawPassword),
-        nome, email, roles));
+        nome, email));
   }
 
   @Transactional
-  public Usuario atualizar(UUID id, String nome, String email, String roles, boolean ativo) {
+  public Usuario atualizar(UUID id, String nome, String email, boolean ativo) {
     Usuario usuario = buscar(id);
-    usuario.atualizar(nome, email, roles, ativo);
+    usuario.atualizar(nome, email, ativo);
     return usuario;
   }
 

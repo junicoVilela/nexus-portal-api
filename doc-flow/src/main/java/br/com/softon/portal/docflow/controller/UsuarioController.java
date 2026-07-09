@@ -60,7 +60,7 @@ public class UsuarioController {
   @PreAuthorize(Permissoes.USUARIO_CRIAR)
   public UsuarioResponse criar(@Valid @RequestBody CriarUsuarioRequest request) {
     return UsuarioResponse.from(usuarioService.criar(request.username(), request.password(),
-        request.nome(), request.email(), request.roles()));
+        request.nome(), request.email()));
   }
 
   @PutMapping("/{id}")
@@ -68,7 +68,7 @@ public class UsuarioController {
   public UsuarioResponse atualizar(@PathVariable UUID id,
       @Valid @RequestBody AtualizarUsuarioRequest request) {
     return UsuarioResponse.from(usuarioService.atualizar(id, request.nome(), request.email(),
-        request.roles(), request.ativo()));
+        request.ativo()));
   }
 
   @PostMapping("/{id}/alterar-senha")

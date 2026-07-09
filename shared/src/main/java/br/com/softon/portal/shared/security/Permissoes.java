@@ -11,8 +11,9 @@ package br.com.softon.portal.shared.security;
  * for adicionada ao seed (ex.: {@code RELEASE:PUBLICAR}), adicione a constante
  * aqui também.
  *
- * <p>Para casos sem granularidade necessária (webhooks, endpoints públicos por
- * key, etc.) continue usando {@link SecurityRoles}.
+ * <p>Endpoints públicos (webhooks com chave compartilhada, downloads
+ * autenticados por token, previews) usam {@code permitAll} no {@code
+ * SecurityConfig} em vez de {@code @PreAuthorize}.
  */
 public final class Permissoes {
 

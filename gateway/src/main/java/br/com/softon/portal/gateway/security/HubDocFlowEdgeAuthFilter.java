@@ -28,7 +28,6 @@ public class HubDocFlowEdgeAuthFilter extends OncePerRequestFilter {
 
   public static final String HEADER_GATEWAY_KEY = "X-Gateway-Key";
   public static final String HEADER_GATEWAY_USER = "X-Gateway-User";
-  public static final String HEADER_GATEWAY_ROLES = "X-Gateway-Roles";
   public static final String HEADER_GATEWAY_PERMISSOES = "X-Gateway-Permissoes";
 
   private static final String DOC_FLOW_API_PREFIX = "/api/doc-flow";
@@ -105,17 +104,13 @@ public class HubDocFlowEdgeAuthFilter extends OncePerRequestFilter {
     Claims claims = jwtService.validar(token);
     String username = claims.getSubject();
     @SuppressWarnings("unchecked")
-    List<String> roles = claims.get("roles", List.class);
-    @SuppressWarnings("unchecked")
     List<String> permissoes = claims.get("permissoes", List.class);
-    String rolesHeader = (roles == null || roles.isEmpty()) ? "" : String.join(",", roles);
     String permissoesHeader = (permissoes == null || permissoes.isEmpty()) ? "" : String.join(",", permissoes);
 
     HeaderMergingRequest wrapped =
         new HeaderMergingRequest(request, Map.of(
             HEADER_GATEWAY_KEY, gatewayApiKey,
             HEADER_GATEWAY_USER, username != null ? username : "",
-            HEADER_GATEWAY_ROLES, rolesHeader,
             HEADER_GATEWAY_PERMISSOES, permissoesHeader));
     filterChain.doFilter(wrapped, response);
   }

@@ -20,7 +20,7 @@ Separação:
 ```text
 shared/config            ← infraestrutura técnica (SecurityConfig, filtros,
                            JwtService, GatewayAuthFilter, CorrelationIdFilter)
-shared/security          ← constantes de SpEL (Permissoes, SecurityRoles)
+shared/security          ← constantes de SpEL (Permissoes)
 {modulo}/...             ← regra de negócio de autorização do próprio módulo
 ```
 
@@ -60,18 +60,13 @@ anotações com SpEL literal, sem custo extra.
    grupos base (ADMIN/EDITOR/LEITOR/REVISOR), seguindo o padrão de V8/V9.
    Adicione as constantes correspondentes em `Permissoes.java`.
 
-#### Quando usar `SecurityRoles` em vez de `Permissoes`
+#### `SecurityRoles` foi removido
 
-`SecurityRoles.WRITE` / `READ` / `ADMIN_ONLY` continuam existindo, mas o
-uso é restrito a:
-
-- Endpoints sem mapeamento natural para uma funcionalidade do catálogo
-  (ex.: ferramentas internas, exportações cross-domínio).
-- Endpoints expostos via gateway que validam só por role (ex.: webhooks
-  com chave compartilhada — tipicamente são `permitAll`).
-- Casos transitórios durante refatoração.
-
-Em código novo, o default é `Permissoes.X_Y`.
+O modelo antigo baseado em roles CSV (coluna `tb_usuario.roles` +
+`hasRole('ADMIN')`) foi eliminado em V10 — autorização é 100% via
+permissão granular. Se precisar de um "modo admin puro" para uma
+ação sem funcionalidade no catálogo, crie a permissão dedicada em
+`tb_funcionalidade` + `tb_permissao` e vincule ao grupo ADMIN.
 
 ### Exemplo canônico
 

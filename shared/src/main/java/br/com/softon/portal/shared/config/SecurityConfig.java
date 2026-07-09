@@ -85,7 +85,6 @@ public class SecurityConfig {
         "Authorization", "Content-Type", CorrelationIdFilter.HEADER_NAME,
         GatewayAuthFilter.HEADER_GATEWAY_KEY,
         GatewayAuthFilter.HEADER_GATEWAY_USER,
-        GatewayAuthFilter.HEADER_GATEWAY_ROLES,
         GatewayAuthFilter.HEADER_GATEWAY_PERMISSOES));
     config.setExposedHeaders(List.of("Content-Disposition", CorrelationIdFilter.HEADER_NAME));
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

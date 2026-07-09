@@ -6,6 +6,5 @@ public record CriarUsuarioRequest(
     @NotBlank String username,
     @NotBlank String password,
     String nome,
-    String email,
-    String roles) {
+    String email) {
 }

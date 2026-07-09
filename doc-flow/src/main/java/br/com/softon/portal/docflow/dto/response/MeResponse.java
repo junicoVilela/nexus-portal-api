@@ -9,7 +9,6 @@ public record MeResponse(
     String username,
     String nome,
     String email,
-    List<String> roles,
     List<GrupoMeResponse> grupos,
     List<String> permissoes) {
 }

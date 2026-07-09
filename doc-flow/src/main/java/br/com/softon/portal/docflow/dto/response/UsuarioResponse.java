@@ -9,7 +9,6 @@ public record UsuarioResponse(
     String username,
     String nome,
     String email,
-    String roles,
     boolean ativo,
     OffsetDateTime createdAt,
     OffsetDateTime updatedAt,
@@ -17,7 +16,7 @@ public record UsuarioResponse(
     String updatedBy) {
 
   public static UsuarioResponse from(Usuario u) {
-    return new UsuarioResponse(u.getId(), u.getUsername(), u.getNome(), u.getEmail(), u.getRoles(),
+    return new UsuarioResponse(u.getId(), u.getUsername(), u.getNome(), u.getEmail(),
         u.isAtivo(), u.getCreatedAt(), u.getUpdatedAt(), u.getCreatedBy(), u.getUpdatedBy());
   }
 }
