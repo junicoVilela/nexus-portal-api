@@ -8,10 +8,10 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-@SpringBootApplication(scanBasePackages = "br.com.softon.portal")
-@ConfigurationPropertiesScan(basePackages = "br.com.softon.portal")
-@EntityScan(basePackages = "br.com.softon.portal")
-@EnableJpaRepositories(basePackages = "br.com.softon.portal")
+@SpringBootApplication(scanBasePackages = "br.com.softon")
+@ConfigurationPropertiesScan(basePackages = "br.com.softon")
+@EntityScan(basePackages = "br.com.softon")
+@EnableJpaRepositories(basePackages = "br.com.softon")
 @EnableAsync
 @EnableScheduling
 public class SoftonPortalApplication {

@@ -1,6 +1,6 @@
-package br.com.softon.portal.docflow.repository;
+package br.com.softon.rbac.repository;
 
-import br.com.softon.portal.docflow.entity.Grupo;
+import br.com.softon.rbac.entity.Grupo;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;

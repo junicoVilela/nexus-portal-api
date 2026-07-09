@@ -1,5 +1,6 @@
 package br.com.softon.portal.docflow.dto.response;
 
+import br.com.softon.rbac.dto.response.GrupoMeResponse;
 import java.util.List;
 import java.util.UUID;
 

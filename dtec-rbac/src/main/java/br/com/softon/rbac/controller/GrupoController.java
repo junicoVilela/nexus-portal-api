@@ -1,12 +1,12 @@
-package br.com.softon.portal.docflow.controller;
+package br.com.softon.rbac.controller;
 
-import br.com.softon.portal.docflow.dto.request.AlterarStatusGrupoRequest;
-import br.com.softon.portal.docflow.dto.request.GrupoPermissoesRequest;
-import br.com.softon.portal.docflow.dto.request.GrupoRequest;
-import br.com.softon.portal.docflow.dto.request.GrupoUsuariosRequest;
-import br.com.softon.portal.docflow.dto.response.GrupoResponse;
-import br.com.softon.portal.docflow.entity.Grupo;
-import br.com.softon.portal.docflow.service.GrupoService;
+import br.com.softon.rbac.dto.request.AlterarStatusGrupoRequest;
+import br.com.softon.rbac.dto.request.GrupoPermissoesRequest;
+import br.com.softon.rbac.dto.request.GrupoRequest;
+import br.com.softon.rbac.dto.request.GrupoUsuariosRequest;
+import br.com.softon.rbac.dto.response.GrupoResponse;
+import br.com.softon.rbac.entity.Grupo;
+import br.com.softon.rbac.service.GrupoService;
 import br.com.softon.portal.shared.api.PageResponse;
 import br.com.softon.portal.shared.api.PageableUtils;
 import br.com.softon.portal.shared.api.SortDirection;

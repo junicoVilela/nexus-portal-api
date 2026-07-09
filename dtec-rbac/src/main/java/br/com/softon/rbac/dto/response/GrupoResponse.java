@@ -1,6 +1,6 @@
-package br.com.softon.portal.docflow.dto.response;
+package br.com.softon.rbac.dto.response;
 
-import br.com.softon.portal.docflow.entity.Grupo;
+import br.com.softon.rbac.entity.Grupo;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;

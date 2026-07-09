@@ -20,6 +20,7 @@
 
   <modules>
     <module>shared</module>
+    <module>dtec-rbac</module>
     <module>doc-flow</module>
     <module>release-orchestrator</module>
     <module>gateway</module>

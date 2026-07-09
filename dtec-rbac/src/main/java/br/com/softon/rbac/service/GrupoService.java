@@ -1,10 +1,10 @@
-package br.com.softon.portal.docflow.service;
+package br.com.softon.rbac.service;
 
-import br.com.softon.portal.docflow.dto.request.GrupoPermissoesRequest;
-import br.com.softon.portal.docflow.dto.request.GrupoRequest;
-import br.com.softon.portal.docflow.dto.request.GrupoUsuariosRequest;
-import br.com.softon.portal.docflow.entity.Grupo;
-import br.com.softon.portal.docflow.repository.GrupoRepository;
+import br.com.softon.rbac.dto.request.GrupoPermissoesRequest;
+import br.com.softon.rbac.dto.request.GrupoRequest;
+import br.com.softon.rbac.dto.request.GrupoUsuariosRequest;
+import br.com.softon.rbac.entity.Grupo;
+import br.com.softon.rbac.repository.GrupoRepository;
 import br.com.softon.portal.shared.exception.BusinessException;
 import br.com.softon.portal.shared.exception.NotFoundException;
 import jakarta.transaction.Transactional;

@@ -1,14 +1,14 @@
-package br.com.softon.portal.docflow.service;
+package br.com.softon.rbac.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import br.com.softon.portal.docflow.entity.Grupo;
-import br.com.softon.portal.docflow.entity.Permissao;
-import br.com.softon.portal.docflow.repository.GrupoRepository;
-import br.com.softon.portal.docflow.repository.PermissaoRepository;
+import br.com.softon.rbac.entity.Grupo;
+import br.com.softon.rbac.entity.Permissao;
+import br.com.softon.rbac.repository.GrupoRepository;
+import br.com.softon.rbac.repository.PermissaoRepository;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;

@@ -1,4 +1,4 @@
-package br.com.softon.portal.docflow.dto.response;
+package br.com.softon.rbac.dto.response;
 
 import java.util.UUID;
 

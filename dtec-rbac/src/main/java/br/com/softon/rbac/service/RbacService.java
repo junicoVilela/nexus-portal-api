@@ -1,10 +1,10 @@
-package br.com.softon.portal.docflow.service;
+package br.com.softon.rbac.service;
 
-import br.com.softon.portal.docflow.dto.response.GrupoMeResponse;
-import br.com.softon.portal.docflow.entity.Grupo;
-import br.com.softon.portal.docflow.entity.Permissao;
-import br.com.softon.portal.docflow.repository.GrupoRepository;
-import br.com.softon.portal.docflow.repository.PermissaoRepository;
+import br.com.softon.rbac.dto.response.GrupoMeResponse;
+import br.com.softon.rbac.entity.Grupo;
+import br.com.softon.rbac.entity.Permissao;
+import br.com.softon.rbac.repository.GrupoRepository;
+import br.com.softon.rbac.repository.PermissaoRepository;
 import br.com.softon.portal.shared.exception.BusinessException;
 import java.util.Comparator;
 import java.util.LinkedHashSet;

@@ -1,4 +1,4 @@
-package br.com.softon.portal.docflow.entity;
+package br.com.softon.rbac.entity;
 
 import br.com.softon.portal.shared.domain.AuditableEntity;
 import jakarta.persistence.Column;
@@ -19,22 +19,22 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
-@Table(name = "tb_funcionalidade")
-public class Funcionalidade extends AuditableEntity {
+@Table(name = "tb_permissao")
+public class Permissao extends AuditableEntity {
 
   @Id
   @GeneratedValue(strategy = GenerationType.UUID)
   private UUID id;
 
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
-  @JoinColumn(name = "dominio_id", nullable = false)
-  private Dominio dominio;
+  @JoinColumn(name = "funcionalidade_id", nullable = false)
+  private Funcionalidade funcionalidade;
 
-  @Column(nullable = false, length = 80)
+  @Column(nullable = false, length = 40)
+  private String acao;
+
+  @Column(nullable = false, unique = true, length = 120)
   private String codigo;
-
-  @Column(nullable = false, length = 150)
-  private String nome;
 
   @Column(length = 500)
   private String descricao;

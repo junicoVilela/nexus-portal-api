@@ -3,6 +3,7 @@ package br.com.softon.portal.docflow.service;
 import br.com.softon.portal.docflow.dto.response.MeResponse;
 import br.com.softon.portal.docflow.entity.Usuario;
 import br.com.softon.portal.docflow.repository.UsuarioRepository;
+import br.com.softon.rbac.service.RbacService;
 import br.com.softon.portal.shared.config.JwtService;
 import br.com.softon.portal.shared.exception.BusinessException;
 import br.com.softon.portal.shared.exception.NotFoundException;

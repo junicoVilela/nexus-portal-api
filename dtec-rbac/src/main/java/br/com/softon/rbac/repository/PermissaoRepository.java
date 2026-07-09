@@ -1,6 +1,6 @@
-package br.com.softon.portal.docflow.repository;
+package br.com.softon.rbac.repository;
 
-import br.com.softon.portal.docflow.entity.Permissao;
+import br.com.softon.rbac.entity.Permissao;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
