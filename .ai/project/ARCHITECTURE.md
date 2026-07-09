@@ -12,31 +12,43 @@ flat por camada.
 
 ```text
 softon-portal-api/
-├── shared/             ← módulo Maven compartilhado (todos os módulos dependem)
+├── shared/             ← módulo Maven compartilhado (utilities transversais)
+├── dtec-rbac/          ← lib RBAC/identidade/auditoria (Usuario, Grupo, Permissao,
+│                         Auth, Auditoria — reutilizável em produtos DTEC)
 ├── application/        ← módulo Spring Boot runnable (boot class + application.yml)
-├── doc-flow/           ← módulo Maven do docflow (depende de shared)
-├── release-orchestrator/       ← módulo Maven do release-orchestrator (depende de shared)
-├── gateway/            ← módulo Maven do gateway (depende de shared)
+├── doc-flow/           ← módulo do docflow (Cliente, Projeto, Módulo, Página,
+│                         Publicação, Empresa/logo, Preview)
+├── release-orchestrator/       ← módulo do release-orchestrator
+├── gateway/            ← módulo de reverse-proxy/edge filters
 └── pom.xml
 ```
 
 `application/` contém:
 
-- `SoftonPortalApplication` com `@SpringBootApplication(scanBasePackages = "br.com.softon.portal")`.
+- `SoftonPortalApplication` com `@SpringBootApplication(scanBasePackages = "br.com.softon")` (raiz ampla para pegar `br.com.softon.portal.*` e `br.com.softon.rbac.*`).
 - `src/main/resources/application.yml` (+ `application-dev.yml`, `application-prod.yml`).
+- **Fonte única das migrations Flyway** — todos os módulos compartilham `application/src/main/resources/db/migration/V*.sql`.
 
-## Pacote raiz
+## Pacotes raiz
 
 ```text
-br.com.softon.portal
+br.com.softon.portal   ← doc-flow, release-orchestrator, gateway, shared (o "portal" DTEC)
+br.com.softon.rbac     ← dtec-rbac (lib de identidade/RBAC/auditoria; sem prefixo "portal"
+                         porque é reutilizável fora do portal)
 ```
 
 ## Regra de pacote
 
-Cada módulo de negócio usa o padrão:
+Cada módulo de negócio dentro do portal usa o padrão:
 
 ```text
 br.com.softon.portal.{modulo}.{camada}
+```
+
+O módulo transversal `dtec-rbac` usa:
+
+```text
+br.com.softon.rbac.{camada}
 ```
 
 **Não usar `modules` no caminho do pacote.**
@@ -159,6 +171,34 @@ public class ClienteService {
     private final ModuloService moduloService; // CORRETO
 }
 ```
+
+## Módulo `dtec-rbac` (identidade + autorização + auditoria)
+
+Isolado do `doc-flow` para poder ser reutilizado em outros produtos DTEC. Contém:
+
+```text
+br.com.softon.rbac.entity          ← Usuario, Grupo, Permissao, Dominio,
+                                     Funcionalidade, AuditoriaEvento
+br.com.softon.rbac.repository      ← UsuarioRepository, GrupoRepository,
+                                     PermissaoRepository, AuditoriaRepository
+br.com.softon.rbac.service         ← UsuarioService, GrupoService, RbacService,
+                                     AuditoriaService
+br.com.softon.rbac.controller      ← AuthController, UsuarioController,
+                                     GrupoController, AuditoriaController
+br.com.softon.rbac.dto             ← DTOs de login/me/usuario/grupo/auditoria
+```
+
+Endpoints expostos:
+
+- `/api/v1/auth/login`, `/api/v1/auth/me`
+- `/api/v1/rbac/usuarios`
+- `/api/v1/rbac/grupos`
+- `/api/v1/rbac/auditoria`
+
+Módulos de negócio (`doc-flow`, `release-orchestrator`) declaram
+`dtec-rbac` no `pom.xml` quando precisam do `RbacService` /
+`AuditoriaService`. Não devem depender diretamente de entidades
+`Usuario`/`Grupo` — só via API dos serviços.
 
 ## Shared
 
