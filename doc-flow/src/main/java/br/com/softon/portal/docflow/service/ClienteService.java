@@ -12,6 +12,7 @@ import br.com.softon.portal.docflow.repository.ClienteModuloRepository;
 import br.com.softon.portal.docflow.repository.ClientePaginaRepository;
 import br.com.softon.portal.docflow.repository.ClienteProjetoRepository;
 import br.com.softon.portal.docflow.repository.ClienteRepository;
+import br.com.softon.rbac.service.EscopoResolver;
 import br.com.softon.portal.shared.exception.BusinessException;
 import br.com.softon.portal.shared.exception.NotFoundException;
 import br.com.softon.portal.shared.util.SlugUtils;
@@ -19,6 +20,8 @@ import jakarta.persistence.criteria.Predicate;
 import jakarta.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
@@ -42,6 +45,7 @@ public class ClienteService {
   private final ClientePaginaRepository clientePaginaRepository;
   private final ClienteProjetoRepository clienteProjetoRepository;
   private final ProjetoService projetoService;
+  private final EscopoResolver escopoResolver;
 
   @Transactional
   public Cliente criar(ClienteRequest request) {
@@ -68,25 +72,44 @@ public class ClienteService {
 
   public Page<Cliente> listar(String nome, Pageable pageable) {
     String filtro = lowerBlankToNull(nome);
+    Optional<Set<UUID>> permitidos = escopoResolver.clientesPermitidosDoUsuarioAtual();
     Specification<Cliente> specification = (root, query, criteriaBuilder) -> {
-      if (filtro == null) {
-        return criteriaBuilder.conjunction();
-      }
       List<Predicate> predicates = new ArrayList<>();
-      predicates.add(criteriaBuilder.like(criteriaBuilder.lower(root.get("nome")), "%" + filtro + "%"));
-      predicates.add(criteriaBuilder.like(criteriaBuilder.lower(root.get("slug")), "%" + filtro + "%"));
-      return criteriaBuilder.or(predicates.toArray(Predicate[]::new));
+      if (filtro != null) {
+        predicates.add(criteriaBuilder.or(
+            criteriaBuilder.like(criteriaBuilder.lower(root.get("nome")), "%" + filtro + "%"),
+            criteriaBuilder.like(criteriaBuilder.lower(root.get("slug")), "%" + filtro + "%")));
+      }
+      permitidos.ifPresent(ids -> {
+        if (ids.isEmpty()) {
+          // Whitelist vazia — usuário não vê nenhum cliente.
+          predicates.add(criteriaBuilder.disjunction());
+        } else {
+          predicates.add(root.get("id").in(ids));
+        }
+      });
+      return predicates.isEmpty()
+          ? criteriaBuilder.conjunction()
+          : criteriaBuilder.and(predicates.toArray(Predicate[]::new));
     };
     return clienteRepository.findAll(specification, pageable);
   }
 
   public List<Cliente> listar() {
-    return clienteRepository.findAll(Sort.by("nome"));
+    Optional<Set<UUID>> permitidos = escopoResolver.clientesPermitidosDoUsuarioAtual();
+    List<Cliente> todos = clienteRepository.findAll(Sort.by("nome"));
+    return permitidos.map(ids -> todos.stream().filter(c -> ids.contains(c.getId())).toList())
+        .orElse(todos);
   }
 
   public Cliente buscar(UUID id) {
-    return clienteRepository.findById(id)
+    Cliente cliente = clienteRepository.findById(id)
         .orElseThrow(() -> new NotFoundException("Cliente não encontrado."));
+    if (!escopoResolver.podeAcessarCliente(id)) {
+      // Semanticamente indistinguível de "não existe" — não vaza a existência.
+      throw new NotFoundException("Cliente não encontrado.");
+    }
+    return cliente;
   }
 
   @Transactional

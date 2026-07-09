@@ -9,6 +9,7 @@ import br.com.softon.portal.docflow.entity.PublicacaoChangelog;
 import br.com.softon.portal.docflow.entity.StatusPublicacao;
 import br.com.softon.portal.docflow.repository.PublicacaoChangelogRepository;
 import br.com.softon.portal.docflow.repository.PublicacaoRepository;
+import br.com.softon.rbac.service.EscopoResolver;
 import br.com.softon.portal.shared.exception.BusinessException;
 import br.com.softon.portal.shared.exception.NotFoundException;
 import jakarta.transaction.Transactional;
@@ -16,8 +17,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.Principal;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
@@ -35,6 +39,7 @@ public class PublicacaoService {
   private final GeradorPacoteService geradorPacoteService;
   private final PublicacaoWorkerService publicacaoWorkerService;
   private final PublicacaoChangelogRepository changelogRepository;
+  private final EscopoResolver escopoResolver;
 
   @Transactional
   public Publicacao gerar(UUID clienteId, String versao, String observacao, Principal principal) {
@@ -61,20 +66,48 @@ public class PublicacaoService {
   }
 
   public Page<Publicacao> listar(UUID clienteId, Pageable pageable) {
-    return clienteId == null
-        ? publicacaoRepository.findAll(pageable)
-        : publicacaoRepository.findByCliente_Id(clienteId, pageable);
+    Optional<Set<UUID>> permitidos = escopoResolver.clientesPermitidosDoUsuarioAtual();
+    if (clienteId != null) {
+      if (permitidos.isPresent() && !permitidos.get().contains(clienteId)) {
+        return new PageImpl<>(List.of(), pageable, 0);
+      }
+      return publicacaoRepository.findByCliente_Id(clienteId, pageable);
+    }
+    if (permitidos.isEmpty()) {
+      return publicacaoRepository.findAll(pageable);
+    }
+    Set<UUID> ids = permitidos.get();
+    if (ids.isEmpty()) {
+      return new PageImpl<>(List.of(), pageable, 0);
+    }
+    return publicacaoRepository.findByCliente_IdIn(ids, pageable);
   }
 
   public List<Publicacao> listar(UUID clienteId) {
-    return clienteId == null
-        ? publicacaoRepository.findAllByOrderByCreatedAtDesc()
-        : publicacaoRepository.findByCliente_IdOrderByCreatedAtDesc(clienteId);
+    Optional<Set<UUID>> permitidos = escopoResolver.clientesPermitidosDoUsuarioAtual();
+    if (clienteId != null) {
+      if (permitidos.isPresent() && !permitidos.get().contains(clienteId)) {
+        return List.of();
+      }
+      return publicacaoRepository.findByCliente_IdOrderByCreatedAtDesc(clienteId);
+    }
+    if (permitidos.isEmpty()) {
+      return publicacaoRepository.findAllByOrderByCreatedAtDesc();
+    }
+    Set<UUID> ids = permitidos.get();
+    if (ids.isEmpty()) {
+      return List.of();
+    }
+    return publicacaoRepository.findByCliente_IdInOrderByCreatedAtDesc(ids);
   }
 
   public Publicacao buscar(UUID id) {
-    return publicacaoRepository.findById(id)
+    Publicacao publicacao = publicacaoRepository.findById(id)
         .orElseThrow(() -> new NotFoundException("Publicação não encontrada."));
+    if (!escopoResolver.podeAcessarCliente(publicacao.getCliente().getId())) {
+      throw new NotFoundException("Publicação não encontrada.");
+    }
+    return publicacao;
   }
 
   public List<PaginaResponse> preverPaginas(UUID clienteId) {

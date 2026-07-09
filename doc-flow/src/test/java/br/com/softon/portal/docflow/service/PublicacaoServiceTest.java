@@ -44,6 +44,7 @@ class PublicacaoServiceTest {
   @Mock GeradorPacoteService geradorPacoteService;
   @Mock PublicacaoWorkerService publicacaoWorkerService;
   @Mock PublicacaoChangelogRepository changelogRepository;
+  @Mock br.com.softon.rbac.service.EscopoResolver escopoResolver;
 
   PublicacaoService service;
 
@@ -55,7 +56,9 @@ class PublicacaoServiceTest {
   @BeforeEach
   void setUp() throws Exception {
     service = new PublicacaoService(publicacaoRepository, clienteService,
-        geradorPacoteService, publicacaoWorkerService, changelogRepository);
+        geradorPacoteService, publicacaoWorkerService, changelogRepository, escopoResolver);
+    when(escopoResolver.clientesPermitidosDoUsuarioAtual()).thenReturn(java.util.Optional.empty());
+    when(escopoResolver.podeAcessarCliente(any())).thenReturn(true);
     clienteId = UUID.randomUUID();
     publicacaoId = UUID.randomUUID();
     cliente = new Cliente("ACME", "acme", true);

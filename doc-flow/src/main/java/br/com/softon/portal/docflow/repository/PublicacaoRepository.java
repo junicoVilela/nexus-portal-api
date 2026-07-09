@@ -1,6 +1,7 @@
 package br.com.softon.portal.docflow.repository;
 
 import br.com.softon.portal.docflow.entity.Publicacao;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -22,6 +23,12 @@ public interface PublicacaoRepository extends JpaRepository<Publicacao, UUID> {
 
   @EntityGraph(attributePaths = "cliente")
   Page<Publicacao> findByCliente_Id(UUID clienteId, Pageable pageable);
+
+  @EntityGraph(attributePaths = "cliente")
+  Page<Publicacao> findByCliente_IdIn(Collection<UUID> clienteIds, Pageable pageable);
+
+  @EntityGraph(attributePaths = "cliente")
+  List<Publicacao> findByCliente_IdInOrderByCreatedAtDesc(Collection<UUID> clienteIds);
 
   @Override
   @EntityGraph(attributePaths = "cliente")

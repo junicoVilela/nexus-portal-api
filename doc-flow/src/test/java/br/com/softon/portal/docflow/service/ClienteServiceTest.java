@@ -45,6 +45,7 @@ class ClienteServiceTest {
   @Mock ClientePaginaRepository clientePaginaRepository;
   @Mock ClienteProjetoRepository clienteProjetoRepository;
   @Mock ProjetoService projetoService;
+  @Mock br.com.softon.rbac.service.EscopoResolver escopoResolver;
   @Mock SecurityContext securityContext;
   @Mock Authentication authentication;
 
@@ -53,11 +54,14 @@ class ClienteServiceTest {
   @BeforeEach
   void setUp() {
     service = new ClienteService(clienteRepository, moduloService, paginaService,
-        clienteModuloRepository, clientePaginaRepository, clienteProjetoRepository, projetoService);
+        clienteModuloRepository, clientePaginaRepository, clienteProjetoRepository, projetoService,
+        escopoResolver);
 
     when(securityContext.getAuthentication()).thenReturn(authentication);
     when(authentication.getName()).thenReturn("admin");
     SecurityContextHolder.setContext(securityContext);
+    when(escopoResolver.clientesPermitidosDoUsuarioAtual()).thenReturn(java.util.Optional.empty());
+    when(escopoResolver.podeAcessarCliente(any())).thenReturn(true);
 
     when(clienteRepository.save(any())).thenAnswer((Answer<Cliente>) inv -> inv.getArgument(0));
   }
