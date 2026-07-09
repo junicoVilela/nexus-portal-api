@@ -404,11 +404,11 @@ public class GeradorPacoteService {
           <style>
             :root{%s}
             *{box-sizing:border-box}body{margin:0;color:var(--text);background:var(--bg);font-family:var(--font-ui);font-size:14px;-webkit-font-smoothing:antialiased}
-            .shell{display:grid;grid-template-columns:260px minmax(0,1fr);grid-template-rows:1fr;min-height:100vh;width:100%;align-items:stretch}
+            .shell{display:grid;grid-template-columns:260px minmax(0,1fr);grid-template-rows:1fr;min-height:100vh;width:100%%;align-items:stretch}
             aside{background:var(--surface);color:var(--text);border-right:1px solid var(--border);padding:20px 12px;position:sticky;top:0;height:100vh;overflow:auto;box-shadow:1px 0 0 rgba(0,0,0,.06)}
             .brand-panel{margin:-20px -12px 16px -12px;padding:16px 12px 14px;background:var(--surface);border-bottom:1px solid var(--border)}
             .brand{display:flex;align-items:center;justify-content:center;padding:4px 0}
-            .brand-logo-empresa{width:100%;max-height:56px;object-fit:contain}
+            .brand-logo-empresa{width:100%%;max-height:56px;object-fit:contain}
             .brand-text{font-weight:700;font-size:18px;color:var(--accent);justify-content:center;letter-spacing:-0.01em}
             .preview-versao{color:var(--muted);font-size:12px;line-height:16px;margin:10px 0 0;text-align:center;font-weight:400}
             aside nav{margin-top:4px}
@@ -417,16 +417,16 @@ public class GeradorPacoteService {
             aside a:hover{background:#f1f3f4;color:#202124}
             aside a.active{background:var(--accent-soft);color:#1967d2;font-weight:500}
             aside a span{color:var(--muted);font-size:12px;line-height:16px;font-weight:400}
-            main{padding:24px clamp(16px,2.5vw,28px) 32px;width:100%;min-width:0;max-width:none;margin:0;display:flex;flex-direction:column;align-self:stretch}
+            main{padding:24px clamp(16px,2.5vw,28px) 32px;width:100%%;min-width:0;max-width:none;margin:0;display:flex;flex-direction:column;align-self:stretch}
             .page-client{display:flex;justify-content:flex-end;align-items:center;padding:14px 28px;background:#fafafa;border-bottom:1px solid var(--border)}
             .cliente-logo{height:48px;width:auto;max-width:220px;object-fit:contain}
             .cliente-nome{font-size:14px;font-weight:500;color:#3c4043;white-space:nowrap;font-family:var(--font-ui)}
-            .page{display:none;width:100%;max-width:none;margin:0;background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;box-shadow:0 1px 2px 0 rgba(60,64,67,.3),0 2px 6px 2px rgba(60,64,67,.15);flex:1 1 auto;min-width:0}
+            .page{display:none;width:100%%;max-width:none;margin:0;background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;box-shadow:0 1px 2px 0 rgba(60,64,67,.3),0 2px 6px 2px rgba(60,64,67,.15);flex:1 1 auto;min-width:0}
             .page.active{display:block}.page header{border-bottom:1px solid var(--border);padding:22px 28px 26px}
             .page header span{color:var(--muted);font-size:12px;letter-spacing:.1px;font-family:var(--font-ui)}.page h1{margin:8px 0 0;font-size:clamp(1.35rem,2.1vw,1.625rem);font-weight:600;line-height:1.25;font-family:var(--font-body);color:var(--text)}
             .page p{line-height:1.65;font-family:var(--font-body)}.article-content{padding:28px 28px 34px;line-height:1.65;font-family:var(--font-body);font-size:15px;color:#3c4043}.article-content :first-child{margin-top:0}.article-content :last-child{margin-bottom:0}
             .article-content a{color:var(--accent)}
-            .article-content img{max-width:100%;height:auto;display:block;border-radius:8px;margin:12px 0}
+            .article-content img{max-width:100%%;height:auto;display:block;border-radius:8px;margin:12px 0}
             .article-content figure.photo{margin:12px 0}.article-content figure.photo figcaption{font-size:12px;color:var(--muted);margin-top:6px;font-family:var(--font-ui)}
             @media(max-width:900px){.shell{display:block;grid-template-columns:1fr}aside{position:static;height:auto}main{padding:16px}}
           </style>
