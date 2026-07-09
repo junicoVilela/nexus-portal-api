@@ -19,6 +19,7 @@ import br.com.softon.portal.releaseorchestrator.repository.OrchestratorEntregaRe
 import br.com.softon.portal.releaseorchestrator.repository.OrchestratorProximaEntregaRepository;
 import br.com.softon.portal.releaseorchestrator.repository.ProdutoRhRepository;
 import br.com.softon.portal.releaseorchestrator.repository.ReleaseRepository;
+import br.com.softon.rbac.service.EscopoResolver;
 import br.com.softon.portal.shared.exception.BusinessException;
 import br.com.softon.portal.shared.exception.NotFoundException;
 import jakarta.persistence.criteria.Predicate;
@@ -27,9 +28,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -54,20 +58,35 @@ public class EntregaService {
   private final ProdutoRhRepository produtoRepository;
   private final ReleaseRepository releaseRepository;
   private final OrchestratorClienteProdutoRepository clienteProdutoRepository;
+  private final EscopoResolver escopoResolver;
 
   public Entrega buscar(UUID id) {
-    return repository.findById(id)
+    Entrega entrega = repository.findById(id)
         .orElseThrow(() -> new NotFoundException("Entrega não encontrada."));
+    if (!escopoResolver.podeAcessarCliente(entrega.getCliente().getId())) {
+      throw new NotFoundException("Entrega não encontrada.");
+    }
+    return entrega;
   }
 
   public Page<Entrega> listar(UUID clienteId, UUID produtoId, StatusEntrega status,
       Pageable pageable) {
+    Optional<Set<UUID>> permitidos = escopoResolver.clientesPermitidosDoUsuarioAtual();
+    if (clienteId != null && permitidos.isPresent() && !permitidos.get().contains(clienteId)) {
+      return new PageImpl<>(List.of(), pageable, 0);
+    }
     Specification<Entrega> spec = (root, query, cb) -> {
       List<Predicate> preds = new ArrayList<>();
       if (clienteId != null) preds.add(cb.equal(root.get("cliente").get("id"), clienteId));
       if (produtoId != null) preds.add(cb.equal(root.get("produto").get("id"), produtoId));
       if (status != null) preds.add(cb.equal(root.get("status"), status));
-      return cb.and(preds.toArray(new Predicate[0]));
+      if (clienteId == null) {
+        permitidos.ifPresent(ids -> {
+          if (ids.isEmpty()) preds.add(cb.disjunction());
+          else preds.add(root.get("cliente").get("id").in(ids));
+        });
+      }
+      return preds.isEmpty() ? cb.conjunction() : cb.and(preds.toArray(new Predicate[0]));
     };
     return repository.findAll(spec, pageable);
   }
@@ -119,6 +138,7 @@ public class EntregaService {
       throw new NotFoundException("Entrega original não encontrada para reentrega.");
     }
 
+    escopoResolver.assertPodeEscreverEmCliente(cliente.getId());
     Entrega entrega = new Entrega(cliente, produto, release, ambiente,
         request.responsavelId(), request.observacoes());
     entrega.setProximaEntregaId(proximaEntregaId);
@@ -134,6 +154,7 @@ public class EntregaService {
   @Transactional
   public Entrega atualizarRascunho(UUID id, AtualizarEntregaRascunhoRequest request) {
     Entrega entrega = buscar(id);
+    escopoResolver.assertPodeEscreverEmCliente(entrega.getCliente().getId());
     if (!entrega.getStatus().editavel()) {
       throw new BusinessException(
           "Entrega em " + entrega.getStatus() + " não é editável.");
@@ -199,6 +220,7 @@ public class EntregaService {
   @Transactional
   public Entrega cancelar(UUID id) {
     Entrega entrega = buscar(id);
+    escopoResolver.assertPodeEscreverEmCliente(entrega.getCliente().getId());
     if (entrega.getStatus().terminal()) {
       throw new BusinessException(
           "Entrega " + entrega.getStatus() + " é terminal — não pode ser cancelada.");

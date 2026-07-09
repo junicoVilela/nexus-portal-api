@@ -45,6 +45,7 @@ class ProximaEntregaServiceTest {
   @Mock ProdutoRhRepository produtoRepository;
   @Mock ReleaseRepository releaseRepository;
   @Mock OrchestratorClienteProdutoRepository clienteProdutoRepository;
+  @Mock br.com.softon.rbac.service.EscopoResolver escopoResolver;
   @InjectMocks ProximaEntregaService service;
 
   Cliente cliente;
@@ -56,6 +57,9 @@ class ProximaEntregaServiceTest {
 
   @BeforeEach
   void setUp() throws Exception {
+    org.mockito.Mockito.when(escopoResolver.clientesPermitidosDoUsuarioAtual()).thenReturn(java.util.Optional.empty());
+    org.mockito.Mockito.when(escopoResolver.podeAcessarCliente(org.mockito.ArgumentMatchers.any())).thenReturn(true);
+    org.mockito.Mockito.doNothing().when(escopoResolver).assertPodeEscreverEmCliente(org.mockito.ArgumentMatchers.any());
     cliente = new Cliente("ACME", "ACME", AmbientePadrao.PROD);
     produto = new ProdutoRh("DTEC-LD", "DTECLD", null, "#fff", null, true);
     setId(produto, produtoId);

@@ -34,6 +34,7 @@ class ClienteProdutoServiceTest {
   @Mock OrchestratorClienteProdutoRepository repository;
   @Mock ProdutoRhRepository produtoRepository;
   @Mock ClienteService clienteService;
+  @Mock br.com.softon.rbac.service.EscopoResolver escopoResolver;
   @InjectMocks ClienteProdutoService service;
 
   Cliente cliente;
@@ -43,6 +44,9 @@ class ClienteProdutoServiceTest {
 
   @BeforeEach
   void setUp() {
+    org.mockito.Mockito.when(escopoResolver.clientesPermitidosDoUsuarioAtual()).thenReturn(java.util.Optional.empty());
+    org.mockito.Mockito.when(escopoResolver.podeAcessarCliente(org.mockito.ArgumentMatchers.any())).thenReturn(true);
+    org.mockito.Mockito.doNothing().when(escopoResolver).assertPodeEscreverEmCliente(org.mockito.ArgumentMatchers.any());
     cliente = new Cliente("ACME", "ACME", AmbientePadrao.PROD);
     produto = new ProdutoRh("DTEC-LD", "DTECLD", null, "#fff", null, true);
     when(clienteService.buscar(clienteId)).thenReturn(cliente);

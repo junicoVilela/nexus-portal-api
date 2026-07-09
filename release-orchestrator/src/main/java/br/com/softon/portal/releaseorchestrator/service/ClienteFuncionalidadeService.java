@@ -7,6 +7,7 @@ import br.com.softon.portal.releaseorchestrator.entity.FuncionalidadeProduto;
 import br.com.softon.portal.releaseorchestrator.entity.OrigemFuncionalidade;
 import br.com.softon.portal.releaseorchestrator.repository.OrchestratorClienteFuncionalidadeRepository;
 import br.com.softon.portal.releaseorchestrator.repository.OrchestratorFuncionalidadeProdutoRepository;
+import br.com.softon.rbac.service.EscopoResolver;
 import br.com.softon.portal.shared.exception.NotFoundException;
 import jakarta.transaction.Transactional;
 import java.util.List;
@@ -33,6 +34,7 @@ public class ClienteFuncionalidadeService {
   private final OrchestratorClienteFuncionalidadeRepository repository;
   private final OrchestratorFuncionalidadeProdutoRepository funcionalidadeRepository;
   private final ClienteService clienteService;
+  private final EscopoResolver escopoResolver;
 
   public List<ClienteFuncionalidadeProduto> listarPorCliente(UUID clienteId) {
     clienteService.buscar(clienteId);
@@ -49,6 +51,7 @@ public class ClienteFuncionalidadeService {
   public ClienteFuncionalidadeProduto salvar(UUID clienteId, UUID funcionalidadeId,
       SalvarClienteFuncionalidadeRequest request) {
     Cliente cliente = clienteService.buscar(clienteId);
+    escopoResolver.assertPodeEscreverEmCliente(clienteId);
     FuncionalidadeProduto funcionalidade = funcionalidadeRepository.findById(funcionalidadeId)
         .orElseThrow(() -> new NotFoundException("Funcionalidade não encontrada."));
     OrigemFuncionalidade origem = request.origem() != null
@@ -65,6 +68,8 @@ public class ClienteFuncionalidadeService {
 
   @Transactional
   public void remover(UUID clienteId, UUID funcionalidadeId) {
+    clienteService.buscar(clienteId);
+    escopoResolver.assertPodeEscreverEmCliente(clienteId);
     ClienteFuncionalidadeProduto cf = repository
         .findByCliente_IdAndFuncionalidade_Id(clienteId, funcionalidadeId)
         .orElseThrow(() -> new NotFoundException("Vínculo cliente↔funcionalidade não encontrado."));

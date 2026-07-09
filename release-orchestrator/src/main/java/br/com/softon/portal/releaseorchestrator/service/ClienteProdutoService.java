@@ -7,6 +7,7 @@ import br.com.softon.portal.releaseorchestrator.entity.ClienteProduto;
 import br.com.softon.portal.releaseorchestrator.entity.ProdutoRh;
 import br.com.softon.portal.releaseorchestrator.repository.OrchestratorClienteProdutoRepository;
 import br.com.softon.portal.releaseorchestrator.repository.ProdutoRhRepository;
+import br.com.softon.rbac.service.EscopoResolver;
 import br.com.softon.portal.shared.exception.BusinessException;
 import br.com.softon.portal.shared.exception.NotFoundException;
 import jakarta.transaction.Transactional;
@@ -32,6 +33,7 @@ public class ClienteProdutoService {
   private final OrchestratorClienteProdutoRepository repository;
   private final ProdutoRhRepository produtoRepository;
   private final ClienteService clienteService;
+  private final EscopoResolver escopoResolver;
 
   public List<ClienteProduto> listar(UUID clienteId) {
     clienteService.buscar(clienteId);
@@ -39,6 +41,7 @@ public class ClienteProdutoService {
   }
 
   public ClienteProduto buscar(UUID clienteId, UUID id) {
+    clienteService.buscar(clienteId);
     return repository.findByCliente_IdAndId(clienteId, id)
         .orElseThrow(() -> new NotFoundException("Contrato não encontrado para o cliente."));
   }
@@ -46,6 +49,7 @@ public class ClienteProdutoService {
   @Transactional
   public ClienteProduto contratar(UUID clienteId, ContratarProdutoRequest request) {
     Cliente cliente = clienteService.buscar(clienteId);
+    escopoResolver.assertPodeEscreverEmCliente(clienteId);
     if (repository.existsByCliente_IdAndProduto_Id(clienteId, request.produtoId())) {
       throw new BusinessException("Cliente já contrata esse produto.");
     }
@@ -58,6 +62,7 @@ public class ClienteProdutoService {
   public ClienteProduto atualizar(UUID clienteId, UUID id,
       AtualizarClienteProdutoRequest request) {
     ClienteProduto cp = buscar(clienteId, id);
+    escopoResolver.assertPodeEscreverEmCliente(clienteId);
     boolean ativo = request.ativo() == null ? cp.isAtivo() : request.ativo();
     cp.atualizar(request.ambiente(), ativo);
     return cp;
@@ -66,6 +71,7 @@ public class ClienteProdutoService {
   @Transactional
   public void rescindir(UUID clienteId, UUID id) {
     ClienteProduto cp = buscar(clienteId, id);
+    escopoResolver.assertPodeEscreverEmCliente(clienteId);
     repository.delete(cp);
   }
 }

@@ -10,6 +10,7 @@ import br.com.softon.portal.releaseorchestrator.repository.OrchestratorClientePr
 import br.com.softon.portal.releaseorchestrator.repository.OrchestratorProximaEntregaRepository;
 import br.com.softon.portal.releaseorchestrator.repository.ProdutoRhRepository;
 import br.com.softon.portal.releaseorchestrator.repository.ReleaseRepository;
+import br.com.softon.rbac.service.EscopoResolver;
 import br.com.softon.portal.shared.exception.BusinessException;
 import br.com.softon.portal.shared.exception.NotFoundException;
 import jakarta.persistence.criteria.Predicate;
@@ -17,9 +18,12 @@ import jakarta.transaction.Transactional;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -44,14 +48,23 @@ public class ProximaEntregaService {
   private final ProdutoRhRepository produtoRepository;
   private final ReleaseRepository releaseRepository;
   private final OrchestratorClienteProdutoRepository clienteProdutoRepository;
+  private final EscopoResolver escopoResolver;
 
   public ProximaEntrega buscar(UUID id) {
-    return repository.findById(id)
+    ProximaEntrega pe = repository.findById(id)
         .orElseThrow(() -> new NotFoundException("Próxima entrega não encontrada."));
+    if (!escopoResolver.podeAcessarCliente(pe.getCliente().getId())) {
+      throw new NotFoundException("Próxima entrega não encontrada.");
+    }
+    return pe;
   }
 
   public Page<ProximaEntrega> listar(UUID clienteId, UUID produtoId, StatusProximaEntrega status,
       LocalDate dataDe, LocalDate dataAte, Pageable pageable) {
+    Optional<Set<UUID>> permitidos = escopoResolver.clientesPermitidosDoUsuarioAtual();
+    if (clienteId != null && permitidos.isPresent() && !permitidos.get().contains(clienteId)) {
+      return new PageImpl<>(List.of(), pageable, 0);
+    }
     Specification<ProximaEntrega> spec = (root, query, cb) -> {
       List<Predicate> preds = new ArrayList<>();
       if (clienteId != null) preds.add(cb.equal(root.get("cliente").get("id"), clienteId));
@@ -59,7 +72,13 @@ public class ProximaEntregaService {
       if (status != null) preds.add(cb.equal(root.get("status"), status));
       if (dataDe != null) preds.add(cb.greaterThanOrEqualTo(root.get("dataPrevista"), dataDe));
       if (dataAte != null) preds.add(cb.lessThanOrEqualTo(root.get("dataPrevista"), dataAte));
-      return cb.and(preds.toArray(new Predicate[0]));
+      if (clienteId == null) {
+        permitidos.ifPresent(ids -> {
+          if (ids.isEmpty()) preds.add(cb.disjunction());
+          else preds.add(root.get("cliente").get("id").in(ids));
+        });
+      }
+      return preds.isEmpty() ? cb.conjunction() : cb.and(preds.toArray(new Predicate[0]));
     };
     return repository.findAll(spec, pageable);
   }
@@ -67,6 +86,7 @@ public class ProximaEntregaService {
   @Transactional
   public ProximaEntrega criar(ProximaEntregaRequest request) {
     Cliente cliente = clienteService.buscar(request.clienteId());
+    escopoResolver.assertPodeEscreverEmCliente(request.clienteId());
     ProdutoRh produto = produtoRepository.findById(request.produtoId())
         .orElseThrow(() -> new NotFoundException("Produto não encontrado."));
     validarContratoCliente(request.clienteId(), request.produtoId());
@@ -83,6 +103,7 @@ public class ProximaEntregaService {
   @Transactional
   public ProximaEntrega atualizar(UUID id, ProximaEntregaRequest request) {
     ProximaEntrega entity = buscar(id);
+    escopoResolver.assertPodeEscreverEmCliente(entity.getCliente().getId());
     if (entity.getStatus().terminal()) {
       throw new BusinessException(
           "Próxima entrega " + entity.getStatus() + " é terminal — não pode ser editada.");
@@ -100,6 +121,7 @@ public class ProximaEntregaService {
   @Transactional
   public ProximaEntrega alterarStatus(UUID id, StatusProximaEntrega novo) {
     ProximaEntrega entity = buscar(id);
+    escopoResolver.assertPodeEscreverEmCliente(entity.getCliente().getId());
     if (novo == StatusProximaEntrega.CONVERTIDA) {
       throw new BusinessException(
           "Status CONVERTIDA só pode ser definido ao gerar a Entrega (F1.8).");
@@ -115,6 +137,7 @@ public class ProximaEntregaService {
   @Transactional
   public void excluir(UUID id) {
     ProximaEntrega entity = buscar(id);
+    escopoResolver.assertPodeEscreverEmCliente(entity.getCliente().getId());
     if (entity.getStatus() == StatusProximaEntrega.CONVERTIDA) {
       throw new BusinessException(
           "Não é possível excluir uma próxima entrega já convertida em Entrega.");

@@ -52,6 +52,7 @@ class EntregaServiceTest {
   @Mock ProdutoRhRepository produtoRepository;
   @Mock ReleaseRepository releaseRepository;
   @Mock OrchestratorClienteProdutoRepository clienteProdutoRepository;
+  @Mock br.com.softon.rbac.service.EscopoResolver escopoResolver;
   @InjectMocks EntregaService service;
 
   Cliente cliente;
@@ -63,6 +64,9 @@ class EntregaServiceTest {
 
   @BeforeEach
   void setUp() throws Exception {
+    org.mockito.Mockito.when(escopoResolver.clientesPermitidosDoUsuarioAtual()).thenReturn(java.util.Optional.empty());
+    org.mockito.Mockito.when(escopoResolver.podeAcessarCliente(org.mockito.ArgumentMatchers.any())).thenReturn(true);
+    org.mockito.Mockito.doNothing().when(escopoResolver).assertPodeEscreverEmCliente(org.mockito.ArgumentMatchers.any());
     cliente = new Cliente("ACME", "ACME", AmbientePadrao.PROD);
     setId(cliente, clienteId);
     produto = new ProdutoRh("DTEC-LD", "DTECLD", null, "#fff", null, true);

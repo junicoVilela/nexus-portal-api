@@ -6,6 +6,7 @@ import br.com.softon.portal.releaseorchestrator.entity.ClienteProdutoModulo;
 import br.com.softon.portal.releaseorchestrator.entity.ModuloProduto;
 import br.com.softon.portal.releaseorchestrator.repository.ModuloProdutoRepository;
 import br.com.softon.portal.releaseorchestrator.repository.OrchestratorClienteProdutoModuloRepository;
+import br.com.softon.rbac.service.EscopoResolver;
 import br.com.softon.portal.shared.exception.BusinessException;
 import br.com.softon.portal.shared.exception.NotFoundException;
 import jakarta.transaction.Transactional;
@@ -31,6 +32,7 @@ public class ClienteProdutoModuloService {
   private final OrchestratorClienteProdutoModuloRepository repository;
   private final ClienteProdutoService clienteProdutoService;
   private final ModuloProdutoRepository moduloRepository;
+  private final EscopoResolver escopoResolver;
 
   public List<ClienteProdutoModulo> listar(UUID clienteId, UUID clienteProdutoId) {
     clienteProdutoService.buscar(clienteId, clienteProdutoId);
@@ -43,6 +45,7 @@ public class ClienteProdutoModuloService {
   public ClienteProdutoModulo salvar(UUID clienteId, UUID clienteProdutoId,
       UUID moduloProdutoId, SalvarClienteProdutoModuloRequest request) {
     ClienteProduto cp = clienteProdutoService.buscar(clienteId, clienteProdutoId);
+    escopoResolver.assertPodeEscreverEmCliente(clienteId);
     ModuloProduto modulo = moduloRepository.findById(moduloProdutoId)
         .orElseThrow(() -> new NotFoundException("Módulo do produto não encontrado."));
     if (!modulo.getProduto().getId().equals(cp.getProduto().getId())) {
@@ -69,6 +72,7 @@ public class ClienteProdutoModuloService {
   @Transactional
   public void remover(UUID clienteId, UUID clienteProdutoId, UUID moduloProdutoId) {
     clienteProdutoService.buscar(clienteId, clienteProdutoId);
+    escopoResolver.assertPodeEscreverEmCliente(clienteId);
     ClienteProdutoModulo cpm = repository
         .findByClienteProduto_IdAndModuloProduto_Id(clienteProdutoId, moduloProdutoId)
         .orElseThrow(() -> new NotFoundException("Módulo contratado não encontrado."));
