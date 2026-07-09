@@ -1,10 +1,10 @@
-package br.com.softon.portal.docflow.controller;
+package br.com.softon.rbac.controller;
 
-import br.com.softon.portal.docflow.dto.request.AlterarSenhaRequest;
-import br.com.softon.portal.docflow.dto.request.AtualizarUsuarioRequest;
-import br.com.softon.portal.docflow.dto.request.CriarUsuarioRequest;
-import br.com.softon.portal.docflow.dto.response.UsuarioResponse;
-import br.com.softon.portal.docflow.service.UsuarioService;
+import br.com.softon.rbac.dto.request.AlterarSenhaRequest;
+import br.com.softon.rbac.dto.request.AtualizarUsuarioRequest;
+import br.com.softon.rbac.dto.request.CriarUsuarioRequest;
+import br.com.softon.rbac.dto.response.UsuarioResponse;
+import br.com.softon.rbac.service.UsuarioService;
 import br.com.softon.portal.shared.api.PageResponse;
 import br.com.softon.portal.shared.api.PageableUtils;
 import br.com.softon.portal.shared.api.SortDirection;
@@ -28,7 +28,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/docflow/usuarios")
+@RequestMapping("/api/v1/rbac/usuarios")
 @RequiredArgsConstructor
 public class UsuarioController {
 

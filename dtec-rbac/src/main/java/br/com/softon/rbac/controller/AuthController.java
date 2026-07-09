@@ -1,9 +1,9 @@
-package br.com.softon.portal.docflow.controller;
+package br.com.softon.rbac.controller;
 
-import br.com.softon.portal.docflow.dto.request.LoginRequest;
-import br.com.softon.portal.docflow.dto.response.LoginResponse;
-import br.com.softon.portal.docflow.dto.response.MeResponse;
-import br.com.softon.portal.docflow.service.UsuarioService;
+import br.com.softon.rbac.dto.request.LoginRequest;
+import br.com.softon.rbac.dto.response.LoginResponse;
+import br.com.softon.rbac.dto.response.MeResponse;
+import br.com.softon.rbac.service.UsuarioService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;

@@ -1,4 +1,4 @@
-package br.com.softon.portal.docflow.dto.request;
+package br.com.softon.rbac.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 

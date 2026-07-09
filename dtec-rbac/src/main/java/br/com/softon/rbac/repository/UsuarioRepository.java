@@ -1,6 +1,6 @@
-package br.com.softon.portal.docflow.repository;
+package br.com.softon.rbac.repository;
 
-import br.com.softon.portal.docflow.entity.Usuario;
+import br.com.softon.rbac.entity.Usuario;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;

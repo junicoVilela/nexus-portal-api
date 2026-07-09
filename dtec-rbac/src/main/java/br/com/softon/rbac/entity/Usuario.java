@@ -1,4 +1,4 @@
-package br.com.softon.portal.docflow.entity;
+package br.com.softon.rbac.entity;
 
 import br.com.softon.portal.shared.domain.AuditableEntity;
 import jakarta.persistence.Column;

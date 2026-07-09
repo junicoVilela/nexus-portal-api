@@ -8,7 +8,7 @@ import br.com.softon.portal.docflow.entity.PaginaRevisao;
 import br.com.softon.portal.docflow.entity.StatusPagina;
 import br.com.softon.portal.docflow.repository.PaginaRepository;
 import br.com.softon.portal.docflow.repository.PaginaRevisaoRepository;
-import br.com.softon.portal.docflow.service.AuditoriaService;
+import br.com.softon.rbac.service.AuditoriaService;
 import br.com.softon.portal.shared.exception.BusinessException;
 import br.com.softon.portal.shared.exception.NotFoundException;
 import br.com.softon.portal.shared.util.SlugUtils;

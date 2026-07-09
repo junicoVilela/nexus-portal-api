@@ -1,4 +1,4 @@
-package br.com.softon.portal.docflow.dto.response;
+package br.com.softon.rbac.dto.response;
 
 import br.com.softon.rbac.dto.response.GrupoMeResponse;
 import java.util.List;

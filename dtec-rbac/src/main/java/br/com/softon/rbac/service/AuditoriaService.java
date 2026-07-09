@@ -1,7 +1,7 @@
-package br.com.softon.portal.docflow.service;
+package br.com.softon.rbac.service;
 
-import br.com.softon.portal.docflow.entity.AuditoriaEvento;
-import br.com.softon.portal.docflow.repository.AuditoriaRepository;
+import br.com.softon.rbac.entity.AuditoriaEvento;
+import br.com.softon.rbac.repository.AuditoriaRepository;
 import java.security.Principal;
 import java.util.List;
 import java.util.UUID;

@@ -1,7 +1,7 @@
-package br.com.softon.portal.docflow.controller;
+package br.com.softon.rbac.controller;
 
-import br.com.softon.portal.docflow.service.AuditoriaService;
-import br.com.softon.portal.docflow.entity.AuditoriaEvento;
+import br.com.softon.rbac.service.AuditoriaService;
+import br.com.softon.rbac.entity.AuditoriaEvento;
 import br.com.softon.portal.shared.api.PageResponse;
 import br.com.softon.portal.shared.api.PageableUtils;
 import br.com.softon.portal.shared.api.SortDirection;
@@ -14,12 +14,12 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import br.com.softon.portal.docflow.dto.response.AuditoriaResponse;
+import br.com.softon.rbac.dto.response.AuditoriaResponse;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/api/v1/docflow/auditoria")
+@RequestMapping("/api/v1/rbac/auditoria")
 public class AuditoriaController {
 
   private final AuditoriaService auditoriaService;
