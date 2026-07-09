@@ -8,6 +8,7 @@ import br.com.softon.rbac.repository.GrupoRepository;
 import br.com.softon.portal.shared.exception.BusinessException;
 import br.com.softon.portal.shared.exception.NotFoundException;
 import jakarta.transaction.Transactional;
+import java.security.Principal;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -25,19 +26,23 @@ public class GrupoService {
 
   private final GrupoRepository grupoRepository;
   private final RbacService rbacService;
+  private final AuditoriaService auditoriaService;
 
   @Transactional
-  public Grupo criar(GrupoRequest request) {
+  public Grupo criar(GrupoRequest request, Principal principal) {
     String nome = request.nome().trim();
     if (grupoRepository.existsByNomeIgnoreCase(nome)) {
       throw new BusinessException("Já existe um grupo com o nome informado.");
     }
     boolean ativo = request.ativo() == null || request.ativo();
-    return grupoRepository.save(new Grupo(gerarCodigoUnico(nome), nome, request.descricao(), ativo));
+    Grupo grupo = grupoRepository.save(new Grupo(gerarCodigoUnico(nome), nome, request.descricao(), ativo));
+    auditoriaService.registrar("Grupo", grupo.getId(), "CRIAR",
+        "Grupo criado: " + grupo.getNome(), principal);
+    return grupo;
   }
 
   @Transactional
-  public Grupo atualizar(UUID id, GrupoRequest request) {
+  public Grupo atualizar(UUID id, GrupoRequest request, Principal principal) {
     Grupo grupo = buscar(id);
     String nome = request.nome().trim();
     if (grupoRepository.existsByNomeIgnoreCaseAndIdNot(nome, id)) {
@@ -45,20 +50,26 @@ public class GrupoService {
     }
     boolean ativo = request.ativo() == null || request.ativo();
     grupo.atualizar(nome, request.descricao(), ativo);
+    auditoriaService.registrar("Grupo", grupo.getId(), "EDITAR",
+        "Grupo atualizado: " + grupo.getNome(), principal);
     return grupo;
   }
 
   @Transactional
-  public Grupo alterarStatus(UUID id, boolean ativo) {
+  public Grupo alterarStatus(UUID id, boolean ativo, Principal principal) {
     Grupo grupo = buscar(id);
     grupo.alterarStatus(ativo);
+    auditoriaService.registrar("Grupo", id, ativo ? "ATIVAR" : "DESATIVAR",
+        "Grupo " + grupo.getNome() + (ativo ? " ativado." : " desativado."), principal);
     return grupo;
   }
 
   @Transactional
-  public void excluir(UUID id) {
+  public void excluir(UUID id, Principal principal) {
     Grupo grupo = buscar(id);
+    String nome = grupo.getNome();
     grupoRepository.delete(grupo);
+    auditoriaService.registrar("Grupo", id, "EXCLUIR", "Grupo excluído: " + nome, principal);
   }
 
   public Page<Grupo> listar(String nome, Pageable pageable) {
@@ -83,9 +94,12 @@ public class GrupoService {
   }
 
   @Transactional
-  public void salvarMembros(UUID id, GrupoUsuariosRequest request) {
+  public void salvarMembros(UUID id, GrupoUsuariosRequest request, Principal principal) {
     Grupo grupo = buscar(id);
     grupo.atualizarUsuarios(request.usuarioIds());
+    auditoriaService.registrar("Grupo", id, "VINCULAR_USUARIOS",
+        "Membros do grupo " + grupo.getNome() + " atualizados (" + request.usuarioIds().size() + ").",
+        principal);
   }
 
   @Transactional
@@ -94,9 +108,12 @@ public class GrupoService {
   }
 
   @Transactional
-  public void salvarPermissoes(UUID id, GrupoPermissoesRequest request) {
+  public void salvarPermissoes(UUID id, GrupoPermissoesRequest request, Principal principal) {
     Grupo grupo = buscar(id);
     grupo.atualizarPermissaoIds(rbacService.idsPorCodigos(request.permissoes()));
+    auditoriaService.registrar("Grupo", id, "VINCULAR_PERMISSAO",
+        "Permissões do grupo " + grupo.getNome() + " atualizadas (" + request.permissoes().size() + ").",
+        principal);
   }
 
   private String gerarCodigoUnico(String nome) {

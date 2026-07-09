@@ -11,6 +11,7 @@ import br.com.softon.portal.shared.api.SortDirection;
 import br.com.softon.portal.shared.api.SortUtils;
 import br.com.softon.portal.shared.security.Permissoes;
 import jakarta.validation.Valid;
+import java.security.Principal;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -58,22 +59,22 @@ public class UsuarioController {
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
   @PreAuthorize(Permissoes.USUARIO_CRIAR)
-  public UsuarioResponse criar(@Valid @RequestBody CriarUsuarioRequest request) {
+  public UsuarioResponse criar(@Valid @RequestBody CriarUsuarioRequest request, Principal principal) {
     return UsuarioResponse.from(usuarioService.criar(request.username(), request.password(),
-        request.nome(), request.email()));
+        request.nome(), request.email(), principal));
   }
 
   @PutMapping("/{id}")
   @PreAuthorize(Permissoes.USUARIO_EDITAR)
   public UsuarioResponse atualizar(@PathVariable UUID id,
-      @Valid @RequestBody AtualizarUsuarioRequest request) {
+      @Valid @RequestBody AtualizarUsuarioRequest request, Principal principal) {
     return UsuarioResponse.from(usuarioService.atualizar(id, request.nome(), request.email(),
-        request.ativo()));
+        request.ativo(), principal));
   }
 
   @PostMapping("/{id}/alterar-senha")
   @PreAuthorize(Permissoes.USUARIO_RESETAR)
-  public void alterarSenha(@PathVariable UUID id, @Valid @RequestBody AlterarSenhaRequest request) {
-    usuarioService.alterarSenha(id, request.novaSenha());
+  public void alterarSenha(@PathVariable UUID id, @Valid @RequestBody AlterarSenhaRequest request, Principal principal) {
+    usuarioService.alterarSenha(id, request.novaSenha(), principal);
   }
 }

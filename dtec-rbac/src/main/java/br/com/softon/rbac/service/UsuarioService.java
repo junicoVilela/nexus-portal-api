@@ -8,6 +8,7 @@ import br.com.softon.portal.shared.config.JwtService;
 import br.com.softon.portal.shared.exception.BusinessException;
 import br.com.softon.portal.shared.exception.NotFoundException;
 import jakarta.transaction.Transactional;
+import java.security.Principal;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,7 @@ public class UsuarioService {
   private final PasswordEncoder passwordEncoder;
   private final JwtService jwtService;
   private final RbacService rbacService;
+  private final AuditoriaService auditoriaService;
 
   public String autenticar(String username, String rawPassword) {
     Usuario usuario = usuarioRepository.findByUsernameAndAtivoTrue(username)
@@ -61,24 +63,31 @@ public class UsuarioService {
   }
 
   @Transactional
-  public Usuario criar(String username, String rawPassword, String nome, String email) {
+  public Usuario criar(String username, String rawPassword, String nome, String email, Principal principal) {
     if (usuarioRepository.existsByUsername(username)) {
       throw new BusinessException("Já existe usuário com esse nome.");
     }
-    return usuarioRepository.save(new Usuario(username, passwordEncoder.encode(rawPassword),
+    Usuario usuario = usuarioRepository.save(new Usuario(username, passwordEncoder.encode(rawPassword),
         nome, email));
-  }
-
-  @Transactional
-  public Usuario atualizar(UUID id, String nome, String email, boolean ativo) {
-    Usuario usuario = buscar(id);
-    usuario.atualizar(nome, email, ativo);
+    auditoriaService.registrar("Usuario", usuario.getId(), "CRIAR",
+        "Usuário criado: " + usuario.getUsername(), principal);
     return usuario;
   }
 
   @Transactional
-  public void alterarSenha(UUID id, String novaSenha) {
+  public Usuario atualizar(UUID id, String nome, String email, boolean ativo, Principal principal) {
+    Usuario usuario = buscar(id);
+    usuario.atualizar(nome, email, ativo);
+    auditoriaService.registrar("Usuario", id, ativo ? "EDITAR" : "DESATIVAR",
+        "Usuário " + usuario.getUsername() + (ativo ? " atualizado." : " desativado."), principal);
+    return usuario;
+  }
+
+  @Transactional
+  public void alterarSenha(UUID id, String novaSenha, Principal principal) {
     Usuario usuario = buscar(id);
     usuario.alterarSenha(passwordEncoder.encode(novaSenha));
+    auditoriaService.registrar("Usuario", id, "RESETAR_SENHA",
+        "Senha do usuário " + usuario.getUsername() + " alterada.", principal);
   }
 }

@@ -33,14 +33,16 @@ class GrupoServiceTest {
 
   @Mock GrupoRepository grupoRepository;
   @Mock RbacService rbacService;
+  @Mock AuditoriaService auditoriaService;
   @Mock SecurityContext securityContext;
   @Mock Authentication authentication;
 
   GrupoService grupoService;
+  java.security.Principal principal = () -> "admin";
 
   @BeforeEach
   void setUp() {
-    grupoService = new GrupoService(grupoRepository, rbacService);
+    grupoService = new GrupoService(grupoRepository, rbacService, auditoriaService);
     when(securityContext.getAuthentication()).thenReturn(authentication);
     when(authentication.getName()).thenReturn("admin");
     SecurityContextHolder.setContext(securityContext);
@@ -53,7 +55,7 @@ class GrupoServiceTest {
     when(grupoRepository.existsByNomeIgnoreCase("Editores")).thenReturn(false);
     when(grupoRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-    Grupo resultado = grupoService.criar(request);
+    Grupo resultado = grupoService.criar(request, principal);
 
     assertThat(resultado.getNome()).isEqualTo("Editores");
     assertThat(resultado.getCodigo()).isEqualTo("EDITORES");
@@ -67,7 +69,7 @@ class GrupoServiceTest {
     GrupoRequest request = new GrupoRequest("Editores", null, true);
     when(grupoRepository.existsByNomeIgnoreCase("Editores")).thenReturn(true);
 
-    assertThatThrownBy(() -> grupoService.criar(request))
+    assertThatThrownBy(() -> grupoService.criar(request, principal))
         .isInstanceOf(BusinessException.class)
         .hasMessageContaining("nome informado");
   }
@@ -78,7 +80,7 @@ class GrupoServiceTest {
     when(grupoRepository.existsByNomeIgnoreCase("Admins")).thenReturn(false);
     when(grupoRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-    Grupo resultado = grupoService.criar(request);
+    Grupo resultado = grupoService.criar(request, principal);
 
     assertThat(resultado.isAtivo()).isTrue();
   }
@@ -92,7 +94,7 @@ class GrupoServiceTest {
     when(grupoRepository.findById(id)).thenReturn(Optional.of(grupo));
     when(grupoRepository.existsByNomeIgnoreCaseAndIdNot("Novo Nome", id)).thenReturn(false);
 
-    Grupo resultado = grupoService.atualizar(id, request);
+    Grupo resultado = grupoService.atualizar(id, request, principal);
 
     assertThat(resultado.getNome()).isEqualTo("Novo Nome");
     assertThat(resultado.getDescricao()).isEqualTo("nova desc");
@@ -108,7 +110,7 @@ class GrupoServiceTest {
     when(grupoRepository.findById(id)).thenReturn(Optional.of(grupo));
     when(grupoRepository.existsByNomeIgnoreCaseAndIdNot("Duplicado", id)).thenReturn(true);
 
-    assertThatThrownBy(() -> grupoService.atualizar(id, request))
+    assertThatThrownBy(() -> grupoService.atualizar(id, request, principal))
         .isInstanceOf(BusinessException.class);
   }
 
@@ -118,7 +120,7 @@ class GrupoServiceTest {
     Grupo grupo = new Grupo("G1", "G1", null, true);
     when(grupoRepository.findById(id)).thenReturn(Optional.of(grupo));
 
-    Grupo resultado = grupoService.alterarStatus(id, false);
+    Grupo resultado = grupoService.alterarStatus(id, false, principal);
 
     assertThat(resultado.isAtivo()).isFalse();
   }
@@ -129,7 +131,7 @@ class GrupoServiceTest {
     Grupo grupo = new Grupo("G1", "G1", null, true);
     when(grupoRepository.findById(id)).thenReturn(Optional.of(grupo));
 
-    grupoService.excluir(id);
+    grupoService.excluir(id, principal);
 
     verify(grupoRepository).delete(grupo);
   }
@@ -154,7 +156,7 @@ class GrupoServiceTest {
         .thenReturn(List.of(permId));
 
     grupoService.salvarPermissoes(id, new GrupoPermissoesRequest(
-        List.of("CLIENTE:LER", "CLIENTE:EDITAR")));
+        List.of("CLIENTE:LER", "CLIENTE:EDITAR")), principal);
 
     assertThat(grupo.getPermissaoIds()).containsExactly(permId);
   }
@@ -178,7 +180,7 @@ class GrupoServiceTest {
     Grupo grupo = new Grupo("G1", "G1", null, true);
     when(grupoRepository.findById(id)).thenReturn(Optional.of(grupo));
 
-    grupoService.salvarMembros(id, new GrupoUsuariosRequest(List.of(usuarioId)));
+    grupoService.salvarMembros(id, new GrupoUsuariosRequest(List.of(usuarioId)), principal);
 
     assertThat(grupo.getUsuarios()).containsExactly(usuarioId);
   }

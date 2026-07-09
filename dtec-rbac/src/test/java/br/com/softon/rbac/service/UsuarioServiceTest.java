@@ -35,15 +35,17 @@ class UsuarioServiceTest {
   @Mock PasswordEncoder passwordEncoder;
   @Mock JwtService jwtService;
   @Mock RbacService rbacService;
+  @Mock AuditoriaService auditoriaService;
 
   UsuarioService service;
 
   UUID userId;
   Usuario usuario;
+  java.security.Principal principal = () -> "admin";
 
   @BeforeEach
   void setUp() throws Exception {
-    service = new UsuarioService(usuarioRepository, passwordEncoder, jwtService, rbacService);
+    service = new UsuarioService(usuarioRepository, passwordEncoder, jwtService, rbacService, auditoriaService);
     userId = UUID.randomUUID();
     usuario = new Usuario("admin", "hash", "Administrador", "a@x.com");
     setId(usuario, userId);
@@ -107,7 +109,7 @@ class UsuarioServiceTest {
   void criar_bloqueiaSeUsernameJaExiste() {
     when(usuarioRepository.existsByUsername("admin")).thenReturn(true);
 
-    assertThatThrownBy(() -> service.criar("admin", "x", "y", "z@x.com"))
+    assertThatThrownBy(() -> service.criar("admin", "x", "y", "z@x.com", principal))
         .isInstanceOf(BusinessException.class)
         .hasMessageContaining("Já existe");
   }
@@ -117,7 +119,7 @@ class UsuarioServiceTest {
     when(usuarioRepository.existsByUsername("novo")).thenReturn(false);
     when(passwordEncoder.encode("plain")).thenReturn("hashed");
 
-    Usuario u = service.criar("novo", "plain", "Novo", "n@x.com");
+    Usuario u = service.criar("novo", "plain", "Novo", "n@x.com", principal);
 
     assertThat(u.getPassword()).isEqualTo("hashed");
     assertThat(u.getUsername()).isEqualTo("novo");
@@ -127,7 +129,7 @@ class UsuarioServiceTest {
   void atualizar_delegaAoAgregado() {
     when(usuarioRepository.findById(userId)).thenReturn(Optional.of(usuario));
 
-    Usuario u = service.atualizar(userId, "Novo Nome", "novo@x.com", false);
+    Usuario u = service.atualizar(userId, "Novo Nome", "novo@x.com", false, principal);
 
     assertThat(u.getNome()).isEqualTo("Novo Nome");
     assertThat(u.getEmail()).isEqualTo("novo@x.com");
@@ -138,7 +140,7 @@ class UsuarioServiceTest {
   void atualizar_falhaSeInexistente() {
     when(usuarioRepository.findById(userId)).thenReturn(Optional.empty());
 
-    assertThatThrownBy(() -> service.atualizar(userId, "x", "y", true))
+    assertThatThrownBy(() -> service.atualizar(userId, "x", "y", true, principal))
         .isInstanceOf(NotFoundException.class);
   }
 
@@ -147,7 +149,7 @@ class UsuarioServiceTest {
     when(usuarioRepository.findById(userId)).thenReturn(Optional.of(usuario));
     when(passwordEncoder.encode("nova")).thenReturn("hash-nova");
 
-    service.alterarSenha(userId, "nova");
+    service.alterarSenha(userId, "nova", principal);
 
     assertThat(usuario.getPassword()).isEqualTo("hash-nova");
   }

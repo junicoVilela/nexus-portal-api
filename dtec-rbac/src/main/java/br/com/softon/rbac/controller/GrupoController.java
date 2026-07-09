@@ -13,6 +13,7 @@ import br.com.softon.portal.shared.api.SortDirection;
 import br.com.softon.portal.shared.api.SortUtils;
 import br.com.softon.portal.shared.security.Permissoes;
 import jakarta.validation.Valid;
+import java.security.Principal;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.Sort;
@@ -41,27 +42,27 @@ public class GrupoController {
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
   @PreAuthorize(Permissoes.GRUPO_ACESSO_CRIAR)
-  public GrupoResponse criar(@Valid @RequestBody GrupoRequest request) {
-    return GrupoResponse.from(grupoService.criar(request), List.of());
+  public GrupoResponse criar(@Valid @RequestBody GrupoRequest request, Principal principal) {
+    return GrupoResponse.from(grupoService.criar(request, principal), List.of());
   }
 
   @PutMapping("/{id}")
   @PreAuthorize(Permissoes.GRUPO_ACESSO_EDITAR)
-  public GrupoResponse atualizar(@PathVariable UUID id, @Valid @RequestBody GrupoRequest request) {
-    return GrupoResponse.from(grupoService.atualizar(id, request), List.of());
+  public GrupoResponse atualizar(@PathVariable UUID id, @Valid @RequestBody GrupoRequest request, Principal principal) {
+    return GrupoResponse.from(grupoService.atualizar(id, request, principal), List.of());
   }
 
   @PatchMapping("/{id}/status")
   @PreAuthorize(Permissoes.GRUPO_ACESSO_EDITAR)
-  public GrupoResponse alterarStatus(@PathVariable UUID id, @Valid @RequestBody AlterarStatusGrupoRequest request) {
-    return GrupoResponse.from(grupoService.alterarStatus(id, request.ativo()), List.of());
+  public GrupoResponse alterarStatus(@PathVariable UUID id, @Valid @RequestBody AlterarStatusGrupoRequest request, Principal principal) {
+    return GrupoResponse.from(grupoService.alterarStatus(id, request.ativo(), principal), List.of());
   }
 
   @DeleteMapping("/{id}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   @PreAuthorize(Permissoes.GRUPO_ACESSO_EXCLUIR)
-  public void excluir(@PathVariable UUID id) {
-    grupoService.excluir(id);
+  public void excluir(@PathVariable UUID id, Principal principal) {
+    grupoService.excluir(id, principal);
   }
 
   @GetMapping
@@ -96,8 +97,8 @@ public class GrupoController {
   @PutMapping("/{id}/usuarios")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   @PreAuthorize(Permissoes.GRUPO_ACESSO_EDITAR)
-  public void salvarMembros(@PathVariable UUID id, @Valid @RequestBody GrupoUsuariosRequest request) {
-    grupoService.salvarMembros(id, request);
+  public void salvarMembros(@PathVariable UUID id, @Valid @RequestBody GrupoUsuariosRequest request, Principal principal) {
+    grupoService.salvarMembros(id, request, principal);
   }
 
   @GetMapping("/{id}/permissoes")
@@ -109,7 +110,7 @@ public class GrupoController {
   @PutMapping("/{id}/permissoes")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   @PreAuthorize(Permissoes.GRUPO_ACESSO_VINCULAR_PERMISSAO)
-  public void salvarPermissoes(@PathVariable UUID id, @Valid @RequestBody GrupoPermissoesRequest request) {
-    grupoService.salvarPermissoes(id, request);
+  public void salvarPermissoes(@PathVariable UUID id, @Valid @RequestBody GrupoPermissoesRequest request, Principal principal) {
+    grupoService.salvarPermissoes(id, request, principal);
   }
 }
