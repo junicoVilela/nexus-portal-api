@@ -37,6 +37,9 @@ class UsuarioServiceTest {
   @Mock JwtService jwtService;
   @Mock RbacService rbacService;
   @Mock AuditoriaService auditoriaService;
+  @Mock HistoricoLoginService historicoLoginService;
+  @Mock PoliticaSenhaService politicaSenhaService;
+  @Mock SessaoService sessaoService;
 
   UsuarioService service;
 
@@ -46,7 +49,8 @@ class UsuarioServiceTest {
 
   @BeforeEach
   void setUp() throws Exception {
-    service = new UsuarioService(usuarioRepository, grupoRepository, passwordEncoder, jwtService, rbacService, auditoriaService);
+    service = new UsuarioService(usuarioRepository, grupoRepository, passwordEncoder, jwtService,
+        rbacService, auditoriaService, historicoLoginService, politicaSenhaService, sessaoService);
     userId = UUID.randomUUID();
     usuario = new Usuario("admin", "hash", "Administrador", "a@x.com");
     setId(usuario, userId);
@@ -58,7 +62,9 @@ class UsuarioServiceTest {
     when(usuarioRepository.findByUsernameAndAtivoTrue("admin")).thenReturn(Optional.of(usuario));
     when(passwordEncoder.matches("plain", "hash")).thenReturn(true);
     when(rbacService.permissoesDoUsuario(userId)).thenReturn(List.of("CLIENTE:LER", "RELEASE:CRIAR"));
-    when(jwtService.gerarToken("admin", List.of("CLIENTE:LER", "RELEASE:CRIAR"))).thenReturn("tok");
+    when(jwtService.gerarToken(eq("admin"), eq(List.of("CLIENTE:LER", "RELEASE:CRIAR")), any(String.class)))
+        .thenReturn("tok");
+    when(jwtService.expirationMs()).thenReturn(86400000L);
 
     String jwt = service.autenticar("admin", "plain");
 
@@ -79,6 +85,10 @@ class UsuarioServiceTest {
   void autenticar_falhaSeSenhaNaoBate() {
     when(usuarioRepository.findByUsernameAndAtivoTrue("admin")).thenReturn(Optional.of(usuario));
     when(passwordEncoder.matches("wrong", "hash")).thenReturn(false);
+    br.com.softon.rbac.entity.PoliticaSenha politica = org.mockito.Mockito.mock(
+        br.com.softon.rbac.entity.PoliticaSenha.class);
+    when(politica.getMaxTentativasInvalidas()).thenReturn(5);
+    when(politicaSenhaService.atual()).thenReturn(politica);
 
     assertThatThrownBy(() -> service.autenticar("admin", "wrong"))
         .isInstanceOf(BusinessException.class);

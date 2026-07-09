@@ -11,6 +11,7 @@ import br.com.softon.portal.shared.exception.BusinessException;
 import br.com.softon.portal.shared.exception.NotFoundException;
 import jakarta.transaction.Transactional;
 import java.security.Principal;
+import java.time.OffsetDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -31,18 +32,52 @@ public class UsuarioService {
   private final JwtService jwtService;
   private final RbacService rbacService;
   private final AuditoriaService auditoriaService;
+  private final HistoricoLoginService historicoLoginService;
+  private final PoliticaSenhaService politicaSenhaService;
+  private final SessaoService sessaoService;
 
-  public String autenticar(String username, String rawPassword) {
-    Usuario usuario = usuarioRepository.findByUsernameAndAtivoTrue(username)
-        .orElseThrow(() -> new BusinessException("Usuário ou senha inválidos."));
+  public String autenticar(String username, String rawPassword, String ipOrigem, String userAgent) {
+    Usuario usuario = usuarioRepository.findByUsernameAndAtivoTrue(username).orElse(null);
+    if (usuario == null) {
+      historicoLoginService.registrar(null, username, ipOrigem, userAgent,
+          false, "Usuário inexistente ou inativo.");
+      throw new BusinessException("Usuário ou senha inválidos.");
+    }
     if (usuario.isBloqueado()) {
+      historicoLoginService.registrar(usuario.getId(), username, ipOrigem, userAgent,
+          false, "Usuário bloqueado.");
       throw new BusinessException("Usuário bloqueado. Contate um administrador.");
     }
     if (!passwordEncoder.matches(rawPassword, usuario.getPassword())) {
+      registrarFalhaESeNecessarioBloquear(usuario, username, ipOrigem, userAgent);
       throw new BusinessException("Usuário ou senha inválidos.");
     }
+    usuario.setTentativasInvalidas(0);
     List<String> permissoes = rbacService.permissoesDoUsuario(usuario.getId());
-    return jwtService.gerarToken(usuario.getUsername(), permissoes);
+    String jti = UUID.randomUUID().toString();
+    String token = jwtService.gerarToken(usuario.getUsername(), permissoes, jti);
+    OffsetDateTime expira = OffsetDateTime.now().plusNanos(jwtService.expirationMs() * 1_000_000L);
+    sessaoService.abrir(jti, usuario.getId(), ipOrigem, userAgent, expira);
+    historicoLoginService.registrar(usuario.getId(), username, ipOrigem, userAgent, true, null);
+    return token;
+  }
+
+  private void registrarFalhaESeNecessarioBloquear(Usuario usuario, String username,
+      String ipOrigem, String userAgent) {
+    int novas = usuario.getTentativasInvalidas() + 1;
+    usuario.setTentativasInvalidas(novas);
+    int limite = politicaSenhaService.atual().getMaxTentativasInvalidas();
+    String motivo = "Senha incorreta (" + novas + "/" + limite + ").";
+    if (novas >= limite && !usuario.isBloqueado()) {
+      usuario.bloquear();
+      motivo += " Usuário bloqueado automaticamente.";
+    }
+    historicoLoginService.registrar(usuario.getId(), username, ipOrigem, userAgent, false, motivo);
+  }
+
+  /** Overload sem contexto de request (usado por testes e chamadas internas). */
+  public String autenticar(String username, String rawPassword) {
+    return autenticar(username, rawPassword, null, null);
   }
 
   public MeResponse me(String username) {
@@ -75,8 +110,10 @@ public class UsuarioService {
     if (usuarioRepository.existsByUsername(username)) {
       throw new BusinessException("Já existe usuário com esse nome.");
     }
-    Usuario usuario = usuarioRepository.save(new Usuario(username, passwordEncoder.encode(rawPassword),
-        nome, email));
+    politicaSenhaService.validarOuFalhar(rawPassword);
+    String hash = passwordEncoder.encode(rawPassword);
+    Usuario usuario = usuarioRepository.save(new Usuario(username, hash, nome, email));
+    politicaSenhaService.registrarNoHistorico(usuario.getId(), hash);
     auditoriaService.registrar("Usuario", usuario.getId(), "CRIAR",
         "Usuário criado: " + usuario.getUsername(), principal);
     return usuario;
@@ -94,8 +131,14 @@ public class UsuarioService {
   @Transactional
   public void alterarSenha(UUID id, String novaSenha, Principal principal) {
     Usuario usuario = buscar(id);
-    usuario.alterarSenha(passwordEncoder.encode(novaSenha));
+    politicaSenhaService.validarOuFalhar(novaSenha);
+    if (politicaSenhaService.reutilizada(id, novaSenha)) {
+      throw new BusinessException("Senha já usada recentemente. Escolha outra.");
+    }
+    String hash = passwordEncoder.encode(novaSenha);
+    usuario.alterarSenha(hash);
     usuario.marcarTrocaSenhaProximoLogin(true);
+    politicaSenhaService.registrarNoHistorico(id, hash);
     auditoriaService.registrar("Usuario", id, "RESETAR_SENHA",
         "Senha do usuário " + usuario.getUsername() + " alterada.", principal);
   }

@@ -31,13 +31,22 @@ public class JwtService {
   }
 
   public String gerarToken(String username, List<String> permissoes) {
+    return gerarToken(username, permissoes, UUID.randomUUID().toString());
+  }
+
+  public String gerarToken(String username, List<String> permissoes, String jti) {
     return Jwts.builder()
         .subject(username)
+        .id(jti)
         .claim("permissoes", permissoes == null ? List.of() : permissoes)
         .issuedAt(new Date())
         .expiration(new Date(System.currentTimeMillis() + expirationMs))
         .signWith(secretKey)
         .compact();
+  }
+
+  public long expirationMs() {
+    return expirationMs;
   }
 
   public String gerarTokenDownloadPacote(UUID publicacaoId) {
