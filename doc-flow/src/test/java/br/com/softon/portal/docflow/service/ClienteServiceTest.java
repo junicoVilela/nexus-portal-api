@@ -62,6 +62,7 @@ class ClienteServiceTest {
     SecurityContextHolder.setContext(securityContext);
     when(escopoResolver.clientesPermitidosDoUsuarioAtual()).thenReturn(java.util.Optional.empty());
     when(escopoResolver.podeAcessarCliente(any())).thenReturn(true);
+    when(escopoResolver.podeEscreverEmCliente(any())).thenReturn(true);
 
     when(clienteRepository.save(any())).thenAnswer((Answer<Cliente>) inv -> inv.getArgument(0));
   }

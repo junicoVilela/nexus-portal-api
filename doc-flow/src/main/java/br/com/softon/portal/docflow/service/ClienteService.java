@@ -61,6 +61,7 @@ public class ClienteService {
   @Transactional
   public Cliente atualizar(UUID id, ClienteRequest request) {
     Cliente cliente = buscar(id);
+    escopoResolver.assertPodeEscreverEmCliente(id);
     String slug = slugFrom(request.slug(), request.nome());
     if (clienteRepository.existsBySlugAndIdNot(slug, id)) {
       throw new BusinessException("Já existe cliente com o slug informado.");
@@ -115,6 +116,7 @@ public class ClienteService {
   @Transactional
   public void vincularProjetos(UUID clienteId, List<UUID> projetoIds) {
     Cliente cliente = buscar(clienteId);
+    escopoResolver.assertPodeEscreverEmCliente(clienteId);
     clienteProjetoRepository.deleteByCliente_Id(clienteId);
     if (projetoIds == null || projetoIds.isEmpty()) {
       return;
@@ -128,6 +130,7 @@ public class ClienteService {
   @Transactional
   public void vincularModulos(UUID clienteId, List<UUID> moduloIds) {
     Cliente cliente = buscar(clienteId);
+    escopoResolver.assertPodeEscreverEmCliente(clienteId);
     clienteModuloRepository.deleteByCliente_Id(clienteId);
     if (moduloIds == null || moduloIds.isEmpty()) {
       return;
@@ -141,6 +144,7 @@ public class ClienteService {
   @Transactional
   public void vincularPaginas(UUID clienteId, List<UUID> paginaIds) {
     Cliente cliente = buscar(clienteId);
+    escopoResolver.assertPodeEscreverEmCliente(clienteId);
     clientePaginaRepository.deleteByCliente_Id(clienteId);
     if (paginaIds == null || paginaIds.isEmpty()) {
       return;

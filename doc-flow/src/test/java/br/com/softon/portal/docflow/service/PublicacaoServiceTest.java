@@ -59,6 +59,7 @@ class PublicacaoServiceTest {
         geradorPacoteService, publicacaoWorkerService, changelogRepository, escopoResolver);
     when(escopoResolver.clientesPermitidosDoUsuarioAtual()).thenReturn(java.util.Optional.empty());
     when(escopoResolver.podeAcessarCliente(any())).thenReturn(true);
+    org.mockito.Mockito.doNothing().when(escopoResolver).assertPodeEscreverEmCliente(any());
     clienteId = UUID.randomUUID();
     publicacaoId = UUID.randomUUID();
     cliente = new Cliente("ACME", "acme", true);

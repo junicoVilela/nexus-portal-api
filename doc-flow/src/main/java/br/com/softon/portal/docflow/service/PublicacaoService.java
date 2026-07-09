@@ -44,6 +44,7 @@ public class PublicacaoService {
   @Transactional
   public Publicacao gerar(UUID clienteId, String versao, String observacao, Principal principal) {
     Cliente cliente = clienteService.buscar(clienteId);
+    escopoResolver.assertPodeEscreverEmCliente(clienteId);
     if (!cliente.isAtivo()) {
       throw new BusinessException("Não é possível gerar publicação para cliente inativo.");
     }
@@ -56,6 +57,7 @@ public class PublicacaoService {
   @Transactional
   public Publicacao reprocessar(UUID id, Principal principal) {
     Publicacao publicacao = buscar(id);
+    escopoResolver.assertPodeEscreverEmCliente(publicacao.getCliente().getId());
     if (publicacao.getStatus() == StatusPublicacao.GERANDO) {
       throw new BusinessException("A publicação já está em geração.");
     }

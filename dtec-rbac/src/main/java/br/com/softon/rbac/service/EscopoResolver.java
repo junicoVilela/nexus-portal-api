@@ -77,6 +77,44 @@ public class EscopoResolver {
         .orElse(true);
   }
 
+  /**
+   * Verifica se o usuário atual pode escrever no cliente. Regras:
+   * <ul>
+   *   <li>Sem restrições (nenhum escopo com clienteId) → true.</li>
+   *   <li>Cliente não está na whitelist → false (não vê, logo não escreve).</li>
+   *   <li>Cliente está na whitelist E existe pelo menos um escopo com
+   *       {@code somenteLeitura=false} cobrindo o clienteId → true.</li>
+   *   <li>Todos os escopos que cobrem o clienteId são
+   *       {@code somenteLeitura=true} → false.</li>
+   * </ul>
+   */
+  public boolean podeEscreverEmCliente(UUID clienteId) {
+    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    if (auth == null || auth.getName() == null) return true;
+    Optional<UUID> userId = usuarioRepository.findByUsernameAndAtivoTrue(auth.getName())
+        .map(Usuario::getId);
+    if (userId.isEmpty()) return true;
+    Set<EscopoAcesso> escopos = coletar(userId.get());
+    if (escopos.isEmpty()) return true;
+    boolean algumTemCliente = escopos.stream().anyMatch(e -> e.getClienteId() != null);
+    if (!algumTemCliente) return true;
+    // A partir daqui há whitelist. Se o cliente não bate, negado.
+    Set<EscopoAcesso> cobrem = new HashSet<>();
+    for (EscopoAcesso e : escopos) {
+      if (clienteId.equals(e.getClienteId())) cobrem.add(e);
+    }
+    if (cobrem.isEmpty()) return false;
+    return cobrem.stream().anyMatch(e -> !e.isSomenteLeitura());
+  }
+
+  /** Lança BusinessException se o usuário atual não pode escrever no cliente. */
+  public void assertPodeEscreverEmCliente(UUID clienteId) {
+    if (!podeEscreverEmCliente(clienteId)) {
+      throw new br.com.softon.portal.shared.exception.BusinessException(
+          "Acesso somente leitura para este cliente.");
+    }
+  }
+
   private Set<EscopoAcesso> coletar(UUID usuarioId) {
     Set<EscopoAcesso> out = new HashSet<>(escopoRepository.findByUsuarioIdAndAtivoTrue(usuarioId));
     // Grupos que o usuário pertence (ativos ou não, mas escopos ativos)

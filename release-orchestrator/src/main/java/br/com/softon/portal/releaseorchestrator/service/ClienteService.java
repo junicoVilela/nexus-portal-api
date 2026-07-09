@@ -3,12 +3,15 @@ package br.com.softon.portal.releaseorchestrator.service;
 import br.com.softon.portal.releaseorchestrator.dto.request.ClienteRequest;
 import br.com.softon.portal.releaseorchestrator.entity.Cliente;
 import br.com.softon.portal.releaseorchestrator.repository.OrchestratorClienteRepository;
+import br.com.softon.rbac.service.EscopoResolver;
 import br.com.softon.portal.shared.exception.BusinessException;
 import br.com.softon.portal.shared.exception.NotFoundException;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -25,6 +28,7 @@ import org.springframework.stereotype.Service;
 public class ClienteService {
 
   private final OrchestratorClienteRepository repository;
+  private final EscopoResolver escopoResolver;
 
   @Transactional
   public Cliente criar(ClienteRequest request) {
@@ -47,6 +51,7 @@ public class ClienteService {
   @Transactional
   public Cliente atualizar(UUID id, ClienteRequest request) {
     Cliente cliente = buscar(id);
+    escopoResolver.assertPodeEscreverEmCliente(id);
     String sigla = request.sigla().trim().toUpperCase();
     if (repository.existsBySiglaIgnoreCaseAndIdNot(sigla, id)) {
       throw new BusinessException("Já existe um cliente com essa sigla.");
@@ -74,6 +79,7 @@ public class ClienteService {
   @Transactional
   public Cliente alterarStatus(UUID id, boolean ativo) {
     Cliente cliente = buscar(id);
+    escopoResolver.assertPodeEscreverEmCliente(id);
     cliente.alterarStatus(ativo);
     return cliente;
   }
@@ -81,15 +87,21 @@ public class ClienteService {
   @Transactional
   public void excluir(UUID id) {
     Cliente cliente = buscar(id);
+    escopoResolver.assertPodeEscreverEmCliente(id);
     repository.delete(cliente);
   }
 
   public Cliente buscar(UUID id) {
-    return repository.findById(id)
+    Cliente cliente = repository.findById(id)
         .orElseThrow(() -> new NotFoundException("Cliente não encontrado."));
+    if (!escopoResolver.podeAcessarCliente(id)) {
+      throw new NotFoundException("Cliente não encontrado.");
+    }
+    return cliente;
   }
 
   public Page<Cliente> listar(String filtroTexto, Boolean ativo, Pageable pageable) {
+    Optional<Set<UUID>> permitidos = escopoResolver.clientesPermitidosDoUsuarioAtual();
     Specification<Cliente> spec = (root, query, cb) -> {
       List<Predicate> preds = new ArrayList<>();
       if (filtroTexto != null && !filtroTexto.isBlank()) {
@@ -101,7 +113,11 @@ public class ClienteService {
       if (ativo != null) {
         preds.add(cb.equal(root.get("ativo"), ativo));
       }
-      return cb.and(preds.toArray(new Predicate[0]));
+      permitidos.ifPresent(ids -> {
+        if (ids.isEmpty()) preds.add(cb.disjunction());
+        else preds.add(root.get("id").in(ids));
+      });
+      return preds.isEmpty() ? cb.conjunction() : cb.and(preds.toArray(new Predicate[0]));
     };
     return repository.findAll(spec, pageable);
   }

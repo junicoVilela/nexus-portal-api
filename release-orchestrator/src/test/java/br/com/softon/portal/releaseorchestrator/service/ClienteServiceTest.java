@@ -28,7 +28,15 @@ import org.mockito.quality.Strictness;
 class ClienteServiceTest {
 
   @Mock OrchestratorClienteRepository repository;
+  @Mock br.com.softon.rbac.service.EscopoResolver escopoResolver;
   @InjectMocks ClienteService service;
+
+  @org.junit.jupiter.api.BeforeEach
+  void escopoAberto() {
+    when(escopoResolver.clientesPermitidosDoUsuarioAtual()).thenReturn(java.util.Optional.empty());
+    when(escopoResolver.podeAcessarCliente(any())).thenReturn(true);
+    org.mockito.Mockito.doNothing().when(escopoResolver).assertPodeEscreverEmCliente(any());
+  }
 
   @Test
   void criar_normalizaSiglaUppercase() {
