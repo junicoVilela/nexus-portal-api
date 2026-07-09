@@ -20,9 +20,12 @@ public class RbacService {
 
   private final GrupoRepository grupoRepository;
   private final PermissaoRepository permissaoRepository;
+  private final AcessoTemporarioService acessoTemporarioService;
 
   public List<GrupoMeResponse> gruposDoUsuario(UUID usuarioId) {
-    return grupoRepository.findAtivosComUsuario(usuarioId).stream()
+    LinkedHashSet<Grupo> todos = new LinkedHashSet<>(grupoRepository.findAtivosComUsuario(usuarioId));
+    todos.addAll(gruposViaAcessoTemporario(usuarioId));
+    return todos.stream()
         .sorted(Comparator.comparing(Grupo::getCodigo))
         .map(g -> new GrupoMeResponse(g.getId(), g.getCodigo(), g.getNome()))
         .toList();
@@ -33,6 +36,9 @@ public class RbacService {
     for (Grupo grupo : grupoRepository.findAtivosComUsuario(usuarioId)) {
       permissaoIds.addAll(grupo.getPermissaoIds());
     }
+    for (Grupo grupo : gruposViaAcessoTemporario(usuarioId)) {
+      permissaoIds.addAll(grupo.getPermissaoIds());
+    }
     if (permissaoIds.isEmpty()) {
       return List.of();
     }
@@ -40,6 +46,14 @@ public class RbacService {
         .filter(Permissao::isAtivo)
         .map(Permissao::getCodigo)
         .sorted()
+        .toList();
+  }
+
+  private List<Grupo> gruposViaAcessoTemporario(UUID usuarioId) {
+    List<UUID> ids = acessoTemporarioService.gruposAtivosDoUsuario(usuarioId);
+    if (ids.isEmpty()) return List.of();
+    return grupoRepository.findAllById(ids).stream()
+        .filter(Grupo::isAtivo)
         .toList();
   }
 

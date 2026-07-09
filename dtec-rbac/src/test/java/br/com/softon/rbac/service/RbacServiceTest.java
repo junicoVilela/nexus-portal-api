@@ -22,12 +22,15 @@ class RbacServiceTest {
 
   @Mock GrupoRepository grupoRepository;
   @Mock PermissaoRepository permissaoRepository;
+  @Mock AcessoTemporarioService acessoTemporarioService;
 
   RbacService rbacService;
 
   @BeforeEach
   void setUp() {
-    rbacService = new RbacService(grupoRepository, permissaoRepository);
+    rbacService = new RbacService(grupoRepository, permissaoRepository, acessoTemporarioService);
+    when(acessoTemporarioService.gruposAtivosDoUsuario(org.mockito.ArgumentMatchers.any(UUID.class)))
+        .thenReturn(List.of());
   }
 
   @Test
