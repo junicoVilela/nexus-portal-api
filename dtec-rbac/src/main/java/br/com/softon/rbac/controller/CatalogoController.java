@@ -10,6 +10,7 @@ import br.com.softon.portal.shared.security.Permissoes;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -24,6 +25,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/v1/rbac/catalogo")
+@Transactional(readOnly = true) // mantém a sessão do Hibernate viva pros
+                                 // mappers navegarem entidades LAZY (dominio,
+                                 // funcionalidade) sem LazyInitializationException.
 public class CatalogoController {
 
   private final DominioRepository dominioRepository;

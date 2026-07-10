@@ -96,6 +96,44 @@ class UsuarioServiceTest {
   }
 
   @Test
+  void autenticar_bloqueiaAutomaticamenteAposLimiteDeTentativas() {
+    when(usuarioRepository.findByUsernameAndAtivoTrue("admin")).thenReturn(Optional.of(usuario));
+    when(passwordEncoder.matches("wrong", "hash")).thenReturn(false);
+    br.com.softon.rbac.entity.PoliticaSenha politica = org.mockito.Mockito.mock(
+        br.com.softon.rbac.entity.PoliticaSenha.class);
+    when(politica.getMaxTentativasInvalidas()).thenReturn(3);
+    when(politicaSenhaService.atual()).thenReturn(politica);
+
+    // 1ª e 2ª falha: incrementa, não bloqueia
+    assertThatThrownBy(() -> service.autenticar("admin", "wrong")).isInstanceOf(BusinessException.class);
+    assertThat(usuario.getTentativasInvalidas()).isEqualTo(1);
+    assertThat(usuario.isBloqueado()).isFalse();
+
+    assertThatThrownBy(() -> service.autenticar("admin", "wrong")).isInstanceOf(BusinessException.class);
+    assertThat(usuario.getTentativasInvalidas()).isEqualTo(2);
+    assertThat(usuario.isBloqueado()).isFalse();
+
+    // 3ª falha: atinge o limite e bloqueia
+    assertThatThrownBy(() -> service.autenticar("admin", "wrong")).isInstanceOf(BusinessException.class);
+    assertThat(usuario.getTentativasInvalidas()).isEqualTo(3);
+    assertThat(usuario.isBloqueado()).isTrue();
+  }
+
+  @Test
+  void autenticar_zeraTentativasInvalidasEmLoginComSucesso() {
+    usuario.setTentativasInvalidas(2);
+    when(usuarioRepository.findByUsernameAndAtivoTrue("admin")).thenReturn(Optional.of(usuario));
+    when(passwordEncoder.matches("plain", "hash")).thenReturn(true);
+    when(rbacService.permissoesDoUsuario(userId)).thenReturn(List.of());
+    when(jwtService.gerarToken(eq("admin"), eq(List.of()), any(String.class))).thenReturn("tok");
+    when(jwtService.expirationMs()).thenReturn(86400000L);
+
+    service.autenticar("admin", "plain");
+
+    assertThat(usuario.getTentativasInvalidas()).isZero();
+  }
+
+  @Test
   void me_agregaGruposEPermissoesDoRbac() {
     when(usuarioRepository.findByUsernameAndAtivoTrue("admin")).thenReturn(Optional.of(usuario));
     when(rbacService.gruposDoUsuario(userId)).thenReturn(List.of());

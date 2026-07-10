@@ -127,6 +127,42 @@ class AuthSeedsIntegrationTest {
         "USUARIO:LER", "CLIENTE:LER", "RELEASE:LER", "CONFIGURACAO:LER");
   }
 
+  /**
+   * Regressão: {@code /rbac/catalogo/funcionalidades} e {@code /permissoes}
+   * navegam entidades LAZY (Dominio/Funcionalidade) no mapping; sem
+   * {@code @Transactional} no controller o Hibernate lançava
+   * {@code LazyInitializationException} e o filtro devolvia 401.
+   */
+  @Test
+  void catalogo_retorna_dominios_funcionalidades_e_permissoes_sem_lazy_init() throws Exception {
+    String token = login("admin", "admin");
+
+    for (String path : List.of(
+        "/api/v1/rbac/catalogo/dominios",
+        "/api/v1/rbac/catalogo/funcionalidades",
+        "/api/v1/rbac/catalogo/permissoes")) {
+      HttpResponse<String> resp = http.send(
+          HttpRequest.newBuilder(URI.create(url(path)))
+              .header("Authorization", "Bearer " + token).GET().build(),
+          HttpResponse.BodyHandlers.ofString());
+      assertThat(resp.statusCode())
+          .withFailMessage("Falha em %s → %d: %s", path, resp.statusCode(), resp.body())
+          .isEqualTo(200);
+    }
+  }
+
+  private String login(String username, String password) throws Exception {
+    String body = json.writeValueAsString(Map.of("username", username, "password", password));
+    HttpResponse<String> resp = http.send(
+        HttpRequest.newBuilder(URI.create(url("/api/v1/auth/login")))
+            .header("Content-Type", "application/json")
+            .POST(HttpRequest.BodyPublishers.ofString(body))
+            .build(),
+        HttpResponse.BodyHandlers.ofString());
+    assertThat(resp.statusCode()).isEqualTo(200);
+    return (String) json.readValue(resp.body(), Map.class).get("token");
+  }
+
   @SuppressWarnings("unchecked")
   private Map<String, Object> loginEBuscarMe(String username, String password) throws Exception {
     String loginBody = json.writeValueAsString(Map.of("username", username, "password", password));
