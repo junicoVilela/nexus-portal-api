@@ -5,6 +5,7 @@ import br.com.softon.portal.docflow.repository.ClienteRepository;
 import br.com.softon.portal.shared.config.StorageProperties;
 import br.com.softon.portal.shared.exception.BusinessException;
 import br.com.softon.portal.shared.exception.NotFoundException;
+import br.com.softon.rbac.service.EscopoResolver;
 import jakarta.transaction.Transactional;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -25,10 +26,12 @@ public class ClienteLogoService {
 
   private final ClienteRepository clienteRepository;
   private final StorageProperties storageProperties;
+  private final EscopoResolver escopoResolver;
 
   @Transactional
   public void salvarLogo(UUID clienteId, MultipartFile file) {
     Cliente cliente = buscar(clienteId);
+    escopoResolver.assertPodeEscreverEmCliente(clienteId);
     validar(file);
 
     String ext = extensao(file.getOriginalFilename(), file.getContentType());
@@ -51,7 +54,7 @@ public class ClienteLogoService {
 
   public ResponseEntity<Resource> servir(UUID clienteId) {
     Cliente cliente = buscar(clienteId);
-    if (cliente.getLogoPath() == null) {
+    if (!escopoResolver.podeAcessarCliente(clienteId) || cliente.getLogoPath() == null) {
       return ResponseEntity.notFound().build();
     }
     Path path = Path.of(cliente.getLogoPath());
@@ -69,6 +72,7 @@ public class ClienteLogoService {
   @Transactional
   public void removerLogo(UUID clienteId) {
     Cliente cliente = buscar(clienteId);
+    escopoResolver.assertPodeEscreverEmCliente(clienteId);
     if (cliente.getLogoPath() != null) {
       try {
         Files.deleteIfExists(Path.of(cliente.getLogoPath()));

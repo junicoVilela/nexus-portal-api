@@ -13,6 +13,7 @@ import br.com.softon.portal.docflow.repository.ClienteRepository;
 import br.com.softon.portal.docflow.repository.PreviewTokenRepository;
 import br.com.softon.portal.shared.exception.BusinessException;
 import br.com.softon.portal.shared.exception.NotFoundException;
+import br.com.softon.rbac.service.EscopoResolver;
 import java.security.Principal;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -33,6 +34,7 @@ class PreviewTokenServiceTest {
   @Mock PreviewTokenRepository previewTokenRepository;
   @Mock ClienteRepository clienteRepository;
   @Mock GeradorPacoteService geradorPacoteService;
+  @Mock EscopoResolver escopoResolver;
 
   PreviewTokenService service;
 
@@ -42,13 +44,14 @@ class PreviewTokenServiceTest {
 
   @BeforeEach
   void setUp() {
-    service = new PreviewTokenService(previewTokenRepository, clienteRepository, geradorPacoteService);
+    service = new PreviewTokenService(previewTokenRepository, clienteRepository, geradorPacoteService, escopoResolver);
     clienteId = UUID.randomUUID();
     cliente = new Cliente("ACME", "acme", true);
     principal = () -> "admin";
 
     when(previewTokenRepository.save(any(PreviewToken.class)))
         .thenAnswer(inv -> inv.getArgument(0));
+    when(escopoResolver.podeAcessarCliente(any(UUID.class))).thenReturn(true);
   }
 
   @Test

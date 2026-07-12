@@ -9,6 +9,7 @@ import br.com.softon.portal.docflow.repository.ClienteRepository;
 import br.com.softon.portal.shared.config.StorageProperties;
 import br.com.softon.portal.shared.exception.BusinessException;
 import br.com.softon.portal.shared.exception.NotFoundException;
+import br.com.softon.rbac.service.EscopoResolver;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -33,6 +34,7 @@ import org.springframework.web.multipart.MultipartFile;
 class ClienteLogoServiceTest {
 
   @Mock ClienteRepository clienteRepository;
+  @Mock EscopoResolver escopoResolver;
 
   ClienteLogoService service;
 
@@ -44,11 +46,12 @@ class ClienteLogoServiceTest {
   @BeforeEach
   void setUp() throws Exception {
     service = new ClienteLogoService(clienteRepository,
-        new StorageProperties(storage.resolve("publicacoes").toString()));
+        new StorageProperties(storage.resolve("publicacoes").toString()), escopoResolver);
     clienteId = UUID.randomUUID();
     cliente = new Cliente("ACME", "acme", true);
     setId(cliente, clienteId);
     when(clienteRepository.findById(clienteId)).thenReturn(Optional.of(cliente));
+    when(escopoResolver.podeAcessarCliente(clienteId)).thenReturn(true);
   }
 
   @Test
