@@ -3,6 +3,7 @@ package br.com.softon.portal.docflow.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -158,6 +159,51 @@ class PreviewTokenServiceTest {
     assertThatThrownBy(() -> service.renderizarPreview("old"))
         .isInstanceOf(BusinessException.class)
         .hasMessageContaining("expirado");
+  }
+
+  @Test
+  void gerar_bloqueiaQuandoEscopoNegaEscrita() {
+    when(clienteRepository.findById(clienteId)).thenReturn(Optional.of(cliente));
+    doThrow(new BusinessException("Acesso somente leitura para este cliente."))
+        .when(escopoResolver).assertPodeEscreverEmCliente(clienteId);
+
+    assertThatThrownBy(() -> service.gerar(clienteId, 24, principal))
+        .isInstanceOf(BusinessException.class)
+        .hasMessageContaining("somente leitura");
+  }
+
+  @Test
+  void listar_retornaVazioSeEscopoBloqueiaAcesso() {
+    when(escopoResolver.podeAcessarCliente(clienteId)).thenReturn(false);
+
+    List<PreviewToken> lista = service.listar(clienteId);
+
+    assertThat(lista).isEmpty();
+  }
+
+  @Test
+  void revogar_bloqueiaQuandoEscopoNegaEscritaNoClienteDoToken() {
+    UUID tokenId = UUID.randomUUID();
+    PreviewToken pt = new PreviewToken(clienteId, "abc", OffsetDateTime.now().plusHours(1), "admin");
+    when(previewTokenRepository.findById(tokenId)).thenReturn(Optional.of(pt));
+    doThrow(new BusinessException("Acesso somente leitura para este cliente."))
+        .when(escopoResolver).assertPodeEscreverEmCliente(clienteId);
+
+    assertThatThrownBy(() -> service.revogar(tokenId, principal))
+        .isInstanceOf(BusinessException.class)
+        .hasMessageContaining("somente leitura");
+    assertThat(pt.isAtivo()).isTrue();
+  }
+
+  @Test
+  void renderizarPreview_bloqueiaSeEscopoRestringeAcessoAoCliente() {
+    PreviewToken pt = new PreviewToken(clienteId, "tok", OffsetDateTime.now().plusHours(1), "admin");
+    when(previewTokenRepository.findByTokenAndAtivoTrue("tok")).thenReturn(Optional.of(pt));
+    when(escopoResolver.podeAcessarCliente(clienteId)).thenReturn(false);
+
+    assertThatThrownBy(() -> service.renderizarPreview("tok"))
+        .isInstanceOf(NotFoundException.class)
+        .hasMessageContaining("Token inválido");
   }
 
   @Test

@@ -2,6 +2,7 @@ package br.com.softon.portal.docflow.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
 import br.com.softon.portal.docflow.entity.Cliente;
@@ -118,6 +119,43 @@ class ClienteLogoServiceTest {
     ResponseEntity<Resource> resp = service.servir(clienteId);
 
     assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+  }
+
+  @Test
+  void salvarLogo_bloqueiaQuandoEscopoNegaEscrita() {
+    doThrow(new BusinessException("Acesso somente leitura para este cliente."))
+        .when(escopoResolver).assertPodeEscreverEmCliente(clienteId);
+    MultipartFile file = new MockMultipartFile("file", "logo.png", "image/png", new byte[]{1});
+
+    assertThatThrownBy(() -> service.salvarLogo(clienteId, file))
+        .isInstanceOf(BusinessException.class)
+        .hasMessageContaining("somente leitura");
+  }
+
+  @Test
+  void servir_retorna404SeEscopoBloqueiaAcesso() throws Exception {
+    setField(cliente, "logoPath", storage.resolve("logo.png").toString());
+    setField(cliente, "logoContentType", "image/png");
+    when(escopoResolver.podeAcessarCliente(clienteId)).thenReturn(false);
+
+    ResponseEntity<Resource> resp = service.servir(clienteId);
+
+    assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+  }
+
+  @Test
+  void removerLogo_bloqueiaQuandoEscopoNegaEscrita() throws Exception {
+    Path logo = storage.resolve("logo.png");
+    Files.writeString(logo, "png");
+    setField(cliente, "logoPath", logo.toString());
+    doThrow(new BusinessException("Acesso somente leitura para este cliente."))
+        .when(escopoResolver).assertPodeEscreverEmCliente(clienteId);
+
+    assertThatThrownBy(() -> service.removerLogo(clienteId))
+        .isInstanceOf(BusinessException.class)
+        .hasMessageContaining("somente leitura");
+    assertThat(Files.exists(logo)).isTrue();
+    assertThat(cliente.getLogoPath()).isEqualTo(logo.toString());
   }
 
   @Test
