@@ -8,6 +8,7 @@ import br.com.softon.portal.docflow.dto.response.PublicacaoResponse;
 import br.com.softon.portal.docflow.entity.Publicacao;
 import br.com.softon.portal.docflow.service.GeradorPdfService;
 import br.com.softon.portal.docflow.service.PublicacaoService;
+import br.com.softon.portal.docflow.service.PublicacaoEventService;
 import br.com.softon.portal.docflow.service.PublicacaoService.DiagnosticoPublicacao;
 import br.com.softon.portal.shared.api.PageResponse;
 import br.com.softon.portal.shared.api.PageableUtils;
@@ -36,6 +37,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
@@ -44,6 +46,7 @@ import lombok.RequiredArgsConstructor;
 public class PublicacaoController {
 
   private final PublicacaoService publicacaoService;
+  private final PublicacaoEventService publicacaoEventService;
   private final GeradorPdfService geradorPdfService;
   private final JwtService jwtService;
 
@@ -69,6 +72,12 @@ public class PublicacaoController {
     return PageResponse.from(
         publicacaoService.listar(clienteId, PageableUtils.of(page, size, sortOrder)),
         PublicacaoResponse::from);
+  }
+
+  @PreAuthorize(Permissoes.PUBLICACAO_LER)
+  @GetMapping(value = "/eventos", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+  public SseEmitter eventos() {
+    return publicacaoEventService.inscrever();
   }
 
   @PreAuthorize(Permissoes.PUBLICACAO_LER)

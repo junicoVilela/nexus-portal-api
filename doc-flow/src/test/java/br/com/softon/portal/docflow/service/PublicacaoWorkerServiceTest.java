@@ -29,6 +29,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -38,6 +39,7 @@ class PublicacaoWorkerServiceTest {
   @Mock PublicacaoChangelogRepository changelogRepository;
   @Mock GeradorPacoteService geradorPacoteService;
   @Mock NotificacaoEmailService notificacaoEmailService;
+  @Mock PublicacaoEventService publicacaoEventService;
 
   PublicacaoWorkerService service;
 
@@ -49,7 +51,8 @@ class PublicacaoWorkerServiceTest {
   @BeforeEach
   void setUp() throws Exception {
     service = new PublicacaoWorkerService(publicacaoRepository, changelogRepository,
-        geradorPacoteService, notificacaoEmailService);
+        geradorPacoteService, notificacaoEmailService, publicacaoEventService,
+        new SimpleMeterRegistry());
 
     clienteId = UUID.randomUUID();
     cliente = new Cliente("ACME", "acme", true);
@@ -77,6 +80,7 @@ class PublicacaoWorkerServiceTest {
     assertThat(publicacao.getArquivoZipCaminho()).isEqualTo("/tmp/manual.zip");
     assertThat(publicacao.getHashPacote()).isEqualTo("sha");
     verify(notificacaoEmailService).notificarPublicacaoGerada(publicacao);
+    verify(publicacaoEventService).publicar(publicacao);
   }
 
   @Test

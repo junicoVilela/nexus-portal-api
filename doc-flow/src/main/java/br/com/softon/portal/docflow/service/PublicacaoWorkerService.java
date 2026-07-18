@@ -13,10 +13,14 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class PublicacaoWorkerService {
@@ -25,27 +29,45 @@ public class PublicacaoWorkerService {
   private final PublicacaoChangelogRepository changelogRepository;
   private final GeradorPacoteService geradorPacoteService;
   private final NotificacaoEmailService notificacaoEmailService;
+  private final PublicacaoEventService publicacaoEventService;
+  private final MeterRegistry meterRegistry;
 
   @Async
   @Transactional
   public void processar(UUID publicacaoId, String username) {
-    publicacaoRepository.findById(publicacaoId).ifPresent(publicacao -> {
-      List<PaginaResponse> paginasAtuais = geradorPacoteService
-          .selecionarPaginas(publicacao.getCliente().getId())
-          .stream().map(PaginaResponse::from).toList();
-      try {
-        ResultadoGeracao resultado = geradorPacoteService.gerar(publicacao.getCliente(),
-            publicacao.getVersao());
-        publicacao.registrarSucesso(resultado.quantidadePaginas(), resultado.quantidadeModulos(),
-            resultado.arquivoZipNome(), resultado.arquivoZipCaminho(), resultado.hashPacote(),
-            resultado.relatorioValidacaoJson());
-        gerarChangelog(publicacao, paginasAtuais);
-        notificacaoEmailService.notificarPublicacaoGerada(publicacao);
-      } catch (RuntimeException | java.io.IOException ex) {
-        publicacao.registrarErro(ex.getMessage());
-        notificacaoEmailService.notificarPublicacaoGerada(publicacao);
-      }
-    });
+    Timer.Sample tempoGeracao = Timer.start(meterRegistry);
+    Publicacao publicacao = publicacaoRepository.findById(publicacaoId).orElse(null);
+    if (publicacao == null) {
+      meterRegistry.counter("docflow.publicacao.resultado", "status", "cancelada").increment();
+      tempoGeracao.stop(meterRegistry.timer("docflow.publicacao.duracao"));
+      log.warn("Publicação {} não encontrada antes do processamento assíncrono", publicacaoId);
+      return;
+    }
+    List<PaginaResponse> paginasAtuais = geradorPacoteService
+        .selecionarPaginas(publicacao.getCliente().getId())
+        .stream().map(PaginaResponse::from).toList();
+    try {
+      ResultadoGeracao resultado = geradorPacoteService.gerar(publicacao.getCliente(),
+          publicacao.getVersao());
+      publicacao.registrarSucesso(resultado.quantidadePaginas(), resultado.quantidadeModulos(),
+          resultado.arquivoZipNome(), resultado.arquivoZipCaminho(), resultado.hashPacote(),
+          resultado.relatorioValidacaoJson());
+      gerarChangelog(publicacao, paginasAtuais);
+      notificacaoEmailService.notificarPublicacaoGerada(publicacao);
+      meterRegistry.counter("docflow.publicacao.resultado", "status", "sucesso").increment();
+      log.info("Publicação {} concluída: cliente={}, versao={}, paginas={}, modulos={}",
+          publicacaoId, publicacao.getCliente().getId(), publicacao.getVersao(),
+          resultado.quantidadePaginas(), resultado.quantidadeModulos());
+    } catch (RuntimeException | java.io.IOException ex) {
+      publicacao.registrarErro(ex.getMessage());
+      notificacaoEmailService.notificarPublicacaoGerada(publicacao);
+      meterRegistry.counter("docflow.publicacao.resultado", "status", "erro").increment();
+      log.error("Falha ao gerar publicação {}: cliente={}, versao={}", publicacaoId,
+          publicacao.getCliente().getId(), publicacao.getVersao(), ex);
+    } finally {
+      tempoGeracao.stop(meterRegistry.timer("docflow.publicacao.duracao"));
+      publicacaoEventService.publicar(publicacao);
+    }
   }
 
   private void gerarChangelog(Publicacao publicacao, List<PaginaResponse> paginasAtuais) {

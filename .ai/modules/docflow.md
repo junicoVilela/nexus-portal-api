@@ -158,6 +158,7 @@ DELETE /api/v1/paginas/{id}
 POST   /api/v1/publicacoes
 GET    /api/v1/publicacoes/{id}
 DELETE /api/v1/publicacoes/{id}
+GET    /api/v1/docflow/publicacoes/eventos (SSE autenticado)
 
 POST   /api/v1/auth/login
 GET    /api/v1/usuarios
@@ -189,6 +190,10 @@ GET    /api/v1/auditoria
   incluindo objetivo, captura, marcações numeradas, grids, fluxo e badges responsivos.
 - Exclusões estruturais são feitas de baixo para cima: cliente exige publicações removidas; projeto exige módulos removidos; módulo exige páginas removidas; página exige subpáginas removidas.
 - Exclusões removem vínculos e registros técnicos em cascata, limpam arquivos após o commit e registram evento de auditoria.
+- A geração publica eventos SSE ao concluir e registra `docflow.publicacao.duracao` e
+  `docflow.publicacao.resultado{status=sucesso|erro|cancelada}` no Micrometer/Prometheus.
+- O PDF normaliza HTML5 para XHTML com Jsoup antes do OpenHTMLtoPDF. O teste integrado
+  `PublicacaoDownloadIntegrationTest` sobe PostgreSQL real, gera a publicação e valida ZIP e PDF.
 
 ## Contrato OpenAPI
 
