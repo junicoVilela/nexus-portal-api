@@ -12,6 +12,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 import lombok.AccessLevel;
@@ -29,6 +30,10 @@ public class Pagina extends AuditableEntity {
   @Id
   @GeneratedValue(strategy = GenerationType.UUID)
   private UUID id;
+
+  @Version
+  @Column(nullable = false)
+  private long version;
 
   @Column(nullable = false, length = 200)
   private String titulo;
@@ -65,6 +70,12 @@ public class Pagina extends AuditableEntity {
   @Column(name = "published_at")
   private OffsetDateTime publishedAt;
 
+  @Column(name = "template_origem_id")
+  private UUID templateOrigemId;
+
+  @Column(name = "template_origem_versao")
+  private Integer templateOrigemVersao;
+
   public Pagina(String titulo, String slug, String codigoTela, String resumo, String conteudoHtml,
       int ordem, boolean ativo, Modulo modulo, Pagina parent) {
     this.titulo = titulo;
@@ -89,6 +100,13 @@ public class Pagina extends AuditableEntity {
     this.ativo = ativo;
     this.modulo = modulo;
     this.parent = parent;
+  }
+
+  public void definirOrigemTemplate(UUID templateId, Integer versao) {
+    if (templateId != null && versao != null) {
+      this.templateOrigemId = templateId;
+      this.templateOrigemVersao = versao;
+    }
   }
 
   public void publicar() {

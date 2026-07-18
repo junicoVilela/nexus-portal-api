@@ -12,4 +12,6 @@ public interface ClienteProjetoRepository extends JpaRepository<ClienteProjeto, 
 
   @Query("select cp.projeto.id from ClienteProjeto cp where cp.cliente.id = :clienteId")
   List<UUID> findProjetoIdsByClienteId(@Param("clienteId") UUID clienteId);
+
+  boolean existsByCliente_IdAndProjeto_Id(UUID clienteId, UUID projetoId);
 }

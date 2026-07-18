@@ -2,6 +2,8 @@ package br.com.softon.portal.docflow.controller;
 
 import br.com.softon.portal.docflow.service.PaginaAnexoService;
 import br.com.softon.portal.docflow.service.PaginaService;
+import br.com.softon.portal.docflow.service.PaginaTemplateService;
+import br.com.softon.portal.docflow.service.GeradorPacoteService;
 import br.com.softon.portal.docflow.entity.StatusPagina;
 import br.com.softon.portal.shared.api.PageResponse;
 import br.com.softon.portal.shared.api.SortDirection;
@@ -34,10 +36,17 @@ import org.springframework.web.bind.annotation.RestController;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.multipart.MultipartFile;
 import br.com.softon.portal.docflow.dto.request.PaginaRequest;
+import br.com.softon.portal.docflow.dto.request.PaginaTemplateRequest;
+import br.com.softon.portal.docflow.dto.request.PaginaTemplateAplicacaoRequest;
+import br.com.softon.portal.docflow.dto.request.PaginaTemplateDuplicarRequest;
 import br.com.softon.portal.docflow.dto.request.ReordenarRequest;
 import br.com.softon.portal.docflow.dto.response.PaginaAnexoResponse;
 import br.com.softon.portal.docflow.dto.response.PaginaResponse;
 import br.com.softon.portal.docflow.dto.response.PaginaRevisaoResponse;
+import br.com.softon.portal.docflow.dto.response.PaginaTemplateResponse;
+import br.com.softon.portal.docflow.dto.response.PaginaTemplateAplicacaoResponse;
+import br.com.softon.portal.docflow.dto.response.PaginaTemplateVersaoResponse;
+import br.com.softon.portal.docflow.dto.response.PaginaQualidadeResponse;
 
 @RestController
 @RequestMapping("/api/v1/docflow/paginas")
@@ -46,6 +55,86 @@ public class PaginaController {
 
   private final PaginaService paginaService;
   private final PaginaAnexoService paginaAnexoService;
+  private final PaginaTemplateService paginaTemplateService;
+  private final GeradorPacoteService geradorPacoteService;
+
+  @PreAuthorize(Permissoes.PAGINA_LER)
+  @GetMapping("/templates")
+  public List<PaginaTemplateResponse> templates(
+      @RequestParam(required = false) UUID projetoId,
+      @RequestParam(required = false) UUID clienteId,
+      @RequestParam(defaultValue = "false") boolean somenteContexto,
+      @RequestParam(defaultValue = "false") boolean incluirArquivados) {
+    return paginaTemplateService.listar(projetoId, clienteId, somenteContexto, incluirArquivados).stream()
+        .map(template -> PaginaTemplateResponse.from(template,
+            paginaTemplateService.paginasOriginadas(template.getId())))
+        .toList();
+  }
+
+  @PostMapping("/templates")
+  @ResponseStatus(HttpStatus.CREATED)
+  @PreAuthorize(Permissoes.PAGINA_CRIAR)
+  public PaginaTemplateResponse criarTemplate(@Valid @RequestBody PaginaTemplateRequest request,
+      Principal principal) {
+    return PaginaTemplateResponse.from(paginaTemplateService.criar(request, principal));
+  }
+
+  @PutMapping("/templates/{templateId}")
+  @PreAuthorize(Permissoes.PAGINA_EDITAR)
+  public PaginaTemplateResponse atualizarTemplate(@PathVariable UUID templateId,
+      @Valid @RequestBody PaginaTemplateRequest request, Principal principal) {
+    return PaginaTemplateResponse.from(paginaTemplateService.atualizar(templateId, request, principal));
+  }
+
+  @PostMapping("/templates/{templateId}/duplicar")
+  @ResponseStatus(HttpStatus.CREATED)
+  @PreAuthorize(Permissoes.PAGINA_CRIAR)
+  public PaginaTemplateResponse duplicarTemplate(@PathVariable UUID templateId,
+      @Valid @RequestBody PaginaTemplateDuplicarRequest request, Principal principal) {
+    return PaginaTemplateResponse.from(paginaTemplateService.duplicar(templateId, request, principal));
+  }
+
+  @PostMapping("/templates/{templateId}/aplicar")
+  @PreAuthorize(Permissoes.PAGINA_LER)
+  public PaginaTemplateAplicacaoResponse aplicarTemplate(@PathVariable UUID templateId,
+      @Valid @RequestBody PaginaTemplateAplicacaoRequest request) {
+    return paginaTemplateService.aplicar(templateId, request);
+  }
+
+  @PostMapping("/templates/{templateId}/arquivar")
+  @PreAuthorize(Permissoes.PAGINA_EDITAR)
+  public PaginaTemplateResponse arquivarTemplate(@PathVariable UUID templateId, Principal principal) {
+    return PaginaTemplateResponse.from(paginaTemplateService.definirArquivado(templateId, true, principal));
+  }
+
+  @PostMapping("/templates/{templateId}/reativar")
+  @PreAuthorize(Permissoes.PAGINA_EDITAR)
+  public PaginaTemplateResponse reativarTemplate(@PathVariable UUID templateId, Principal principal) {
+    return PaginaTemplateResponse.from(paginaTemplateService.definirArquivado(templateId, false, principal));
+  }
+
+  @GetMapping("/templates/{templateId}/versoes")
+  @PreAuthorize(Permissoes.PAGINA_LER)
+  public List<PaginaTemplateVersaoResponse> versoesTemplate(@PathVariable UUID templateId) {
+    return paginaTemplateService.listarVersoes(templateId).stream()
+        .map(versao -> PaginaTemplateVersaoResponse.from(versao,
+            paginaTemplateService.paginasOriginadas(templateId, versao.getNumero())))
+        .toList();
+  }
+
+  @PostMapping("/templates/{templateId}/versoes/{numero}/restaurar")
+  @PreAuthorize(Permissoes.PAGINA_EDITAR)
+  public PaginaTemplateResponse restaurarVersaoTemplate(@PathVariable UUID templateId,
+      @PathVariable int numero, Principal principal) {
+    return PaginaTemplateResponse.from(paginaTemplateService.restaurarVersao(templateId, numero, principal));
+  }
+
+  @DeleteMapping("/templates/{templateId}")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  @PreAuthorize(Permissoes.PAGINA_EXCLUIR)
+  public void excluirTemplate(@PathVariable UUID templateId, Principal principal) {
+    paginaTemplateService.excluir(templateId, principal);
+  }
 
   @PreAuthorize(Permissoes.PAGINA_LER)
   @GetMapping("/resumo-por-status")
@@ -67,6 +156,12 @@ public class PaginaController {
   public PaginaResponse atualizar(@PathVariable UUID id, @Valid @RequestBody PaginaRequest request,
       Principal principal) {
     return PaginaResponse.from(paginaService.atualizar(id, request, principal));
+  }
+
+  @PutMapping("/{id}/autosave")
+  @PreAuthorize(Permissoes.PAGINA_EDITAR)
+  public PaginaResponse autosave(@PathVariable UUID id, @Valid @RequestBody PaginaRequest request) {
+    return PaginaResponse.from(paginaService.autosave(id, request));
   }
 
   @PreAuthorize(Permissoes.PAGINA_LER)
@@ -107,6 +202,19 @@ public class PaginaController {
     return PaginaResponse.from(paginaService.buscar(id));
   }
 
+  @DeleteMapping("/{id}")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  @PreAuthorize(Permissoes.PAGINA_EXCLUIR)
+  public void excluir(@PathVariable UUID id, Principal principal) {
+    paginaService.excluir(id, principal);
+  }
+
+  @PreAuthorize(Permissoes.PAGINA_LER)
+  @GetMapping("/{id}/qualidade")
+  public PaginaQualidadeResponse qualidade(@PathVariable UUID id) {
+    return PaginaQualidadeResponse.from(paginaService.qualidade(id));
+  }
+
   @PostMapping("/{id}/salvar-rascunho")
   @PreAuthorize(Permissoes.PAGINA_EDITAR)
   public PaginaResponse salvarRascunho(@PathVariable UUID id, Principal principal) {
@@ -140,7 +248,7 @@ public class PaginaController {
   @PreAuthorize(Permissoes.PAGINA_LER)
   @GetMapping(value = "/{id}/preview", produces = MediaType.TEXT_HTML_VALUE)
   public String preview(@PathVariable UUID id) {
-    return paginaService.preview(id);
+    return geradorPacoteService.previewPagina(paginaService.buscar(id));
   }
 
   @PreAuthorize(Permissoes.PAGINA_LER)
@@ -152,7 +260,7 @@ public class PaginaController {
       @RequestParam(defaultValue = "1") Integer page,
       @RequestParam(defaultValue = "10") Integer size) {
     Sort sortOrder = SortUtils.of(sort, dir,
-        List.of("numero", "createdAt", "status"),
+        List.of("numero", "createdAt", "createdBy", "status", "tipo"),
         Sort.by(Sort.Order.desc("numero")));
     return PageResponse.from(
         paginaService.revisoes(id, PageableUtils.of(page, size, sortOrder)),

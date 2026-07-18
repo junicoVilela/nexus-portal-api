@@ -7,6 +7,16 @@ spring:
 server:
   port: ${SERVER_PORT:8080}
 
+springdoc:
+  api-docs:
+    enabled: ${SPRINGDOC_ENABLED:true}
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: ${SPRINGDOC_ENABLED:true}
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+
 management:
   endpoints:
     web:

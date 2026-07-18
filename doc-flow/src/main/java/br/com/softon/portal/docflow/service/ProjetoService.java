@@ -2,11 +2,14 @@ package br.com.softon.portal.docflow.service;
 
 import br.com.softon.portal.docflow.dto.request.ProjetoRequest;
 import br.com.softon.portal.docflow.entity.Projeto;
+import br.com.softon.portal.docflow.repository.ModuloRepository;
 import br.com.softon.portal.docflow.repository.ProjetoRepository;
+import br.com.softon.rbac.service.AuditoriaService;
 import br.com.softon.portal.shared.exception.BusinessException;
 import br.com.softon.portal.shared.exception.NotFoundException;
 import br.com.softon.portal.shared.util.SlugUtils;
 import jakarta.transaction.Transactional;
+import java.security.Principal;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +23,8 @@ import org.springframework.stereotype.Service;
 public class ProjetoService {
 
   private final ProjetoRepository projetoRepository;
+  private final ModuloRepository moduloRepository;
+  private final AuditoriaService auditoriaService;
 
   @Transactional
   public Projeto criar(ProjetoRequest request) {
@@ -63,6 +68,16 @@ public class ProjetoService {
   public Projeto buscar(UUID id) {
     return projetoRepository.findById(id)
         .orElseThrow(() -> new NotFoundException("Projeto não encontrado."));
+  }
+
+  @Transactional
+  public void excluir(UUID id, Principal principal) {
+    Projeto projeto = buscar(id);
+    if (moduloRepository.existsByProjeto_Id(id)) {
+      throw new BusinessException("Exclua primeiro os módulos deste projeto.");
+    }
+    projetoRepository.delete(projeto);
+    auditoriaService.registrar("PROJETO", id, "EXCLUIR", "Projeto excluído: " + projeto.getNome(), principal);
   }
 
   public List<Projeto> buscarTodos(List<UUID> ids) {

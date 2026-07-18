@@ -9,4 +9,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface PreviewTokenRepository extends JpaRepository<PreviewToken, UUID> {
   Optional<PreviewToken> findByTokenAndAtivoTrue(String token);
   List<PreviewToken> findByClienteIdAndAtivoTrue(UUID clienteId);
+  void deleteByClienteId(UUID clienteId);
 }

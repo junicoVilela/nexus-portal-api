@@ -87,6 +87,7 @@ doc-flow/src/main/java/br/com/softon/portal/
     │   ├── ClienteProjeto.java
     │   ├── Modulo.java
     │   ├── Pagina.java
+    │   ├── PaginaTemplate.java
     │   ├── PaginaAnexo.java
     │   ├── PaginaRevisao.java
     │   ├── StatusPagina.java
@@ -117,6 +118,7 @@ doc-flow/src/main/java/br/com/softon/portal/
             ├── ClienteResponse.java
             ├── ModuloResponse.java
             ├── PaginaResponse.java
+            ├── PaginaTemplateResponse.java
             ├── PaginaAnexoResponse.java
             ├── PaginaRevisaoResponse.java
             ├── ProjetoResponse.java
@@ -148,12 +150,14 @@ PUT    /api/v1/modulos/{id}
 DELETE /api/v1/modulos/{id}
 
 GET    /api/v1/paginas
+GET    /api/v1/paginas/templates
 POST   /api/v1/paginas
 PUT    /api/v1/paginas/{id}
 DELETE /api/v1/paginas/{id}
 
 POST   /api/v1/publicacoes
 GET    /api/v1/publicacoes/{id}
+DELETE /api/v1/publicacoes/{id}
 
 POST   /api/v1/auth/login
 GET    /api/v1/usuarios
@@ -166,8 +170,35 @@ GET    /api/v1/auditoria
 
 - Comunicação entre contextos internos (clientes, projetos, módulos, páginas) sempre via Service, nunca via Repository direto.
 - Publicação gera snapshot do conteúdo.
+- Publicações concluídas ou com erro podem ser excluídas; o histórico e o pacote ZIP são removidos. Publicações em geração são protegidas contra exclusão.
 - Preview usa token temporário para acesso público.
 - Auditoria registra eventos de criação e alteração.
+- `Pagina.version` protege atualizações concorrentes; divergências retornam HTTP 409.
+- Autosave atualiza somente rascunhos e não cria revisões intermediárias.
+- Revisões registram o tipo e a descrição do evento editorial.
+- O checklist de qualidade é obrigatório antes do envio para revisão.
+- O catálogo possui 12 templates visuais. Além de funcionalidade, passo a passo, cadastro,
+  consulta, dicionário, processo, FAQ e solução, inclui central de ajuda, relatório,
+  índice de categoria e primeiros passos.
+- A migração V21 atualiza somente o catálogo de templates; páginas existentes não têm
+  seu `conteudo_html` sobrescrito.
+- Modelos personalizados possuem escopo de projeto ou cliente, aplicação contextual com
+  variáveis, edição, duplicação, arquivamento e histórico imutável. A página registra a origem
+  e a versão aplicada sem manter dependência de conteúdo com o modelo.
+- Prévia individual, prévia do manual e pacote ZIP compartilham o layout `layout-v12`,
+  incluindo objetivo, captura, marcações numeradas, grids, fluxo e badges responsivos.
+- Exclusões estruturais são feitas de baixo para cima: cliente exige publicações removidas; projeto exige módulos removidos; módulo exige páginas removidas; página exige subpáginas removidas.
+- Exclusões removem vínculos e registros técnicos em cascata, limpam arquivos após o commit e registram evento de auditoria.
+
+## Contrato OpenAPI
+
+- Documento JSON: `GET /v3/api-docs`.
+- Interface Swagger: `/swagger-ui.html`.
+- Ambos ficam habilitados por padrão em desenvolvimento e desabilitados por padrão no
+  profile `prod`; use `SPRINGDOC_ENABLED=true` para habilitação controlada.
+- A autenticação Bearer JWT é declarada globalmente no contrato.
+- O snapshot consumido pelo frontend fica em
+  `softon-portal-web/frontend/openapi/softon-portal-api.json`.
 
 ## Observações para IA
 

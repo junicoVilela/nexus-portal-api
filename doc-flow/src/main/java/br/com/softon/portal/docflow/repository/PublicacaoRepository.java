@@ -11,6 +11,8 @@ import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface PublicacaoRepository extends JpaRepository<Publicacao, UUID> {
+  boolean existsByCliente_Id(UUID clienteId);
+
   @Override
   @EntityGraph(attributePaths = "cliente")
   Optional<Publicacao> findById(UUID id);

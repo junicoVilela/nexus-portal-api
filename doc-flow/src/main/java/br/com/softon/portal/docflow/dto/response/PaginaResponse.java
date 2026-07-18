@@ -7,6 +7,7 @@ import java.util.UUID;
 
 public record PaginaResponse(
     UUID id,
+    long version,
     String titulo,
     String slug,
     String codigoTela,
@@ -21,6 +22,8 @@ public record PaginaResponse(
     String projetoNome,
     UUID parentId,
     String parentTitulo,
+    UUID templateOrigemId,
+    Integer templateOrigemVersao,
     OffsetDateTime publishedAt,
     OffsetDateTime createdAt,
     OffsetDateTime updatedAt,
@@ -29,6 +32,7 @@ public record PaginaResponse(
   public static PaginaResponse from(Pagina pagina) {
     return new PaginaResponse(
         pagina.getId(),
+        pagina.getVersion(),
         pagina.getTitulo(),
         pagina.getSlug(),
         pagina.getCodigoTela(),
@@ -43,6 +47,8 @@ public record PaginaResponse(
         pagina.getModulo().getProjeto().getNome(),
         pagina.getParent() == null ? null : pagina.getParent().getId(),
         pagina.getParent() == null ? null : pagina.getParent().getTitulo(),
+        pagina.getTemplateOrigemId(),
+        pagina.getTemplateOrigemVersao(),
         pagina.getPublishedAt(),
         pagina.getCreatedAt(),
         pagina.getUpdatedAt(),

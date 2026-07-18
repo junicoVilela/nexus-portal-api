@@ -48,6 +48,7 @@ public class SecurityConfig {
             .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
             .requestMatchers("/actuator/health", "/actuator/health/**",
                 "/actuator/info", "/actuator/prometheus", "/actuator/metrics/**").permitAll()
+            .requestMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**").permitAll()
             .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
             .requestMatchers(HttpMethod.POST, "/api/v1/release-orchestrator/webhooks/**").permitAll()
             .requestMatchers("/api/v1/preview/**").permitAll()

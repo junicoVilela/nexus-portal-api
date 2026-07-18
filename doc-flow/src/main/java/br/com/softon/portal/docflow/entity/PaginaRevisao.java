@@ -55,8 +55,8 @@ public class PaginaRevisao {
   @Column(nullable = false, length = 30)
   private StatusPagina status;
 
-  @ManyToOne(fetch = FetchType.LAZY, optional = false)
-  @JoinColumn(name = "modulo_id", nullable = false)
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "modulo_id")
   private Modulo modulo;
 
   @ManyToOne(fetch = FetchType.LAZY)
@@ -69,7 +69,15 @@ public class PaginaRevisao {
   @Column(name = "created_by", length = 120)
   private String createdBy;
 
-  public PaginaRevisao(Pagina pagina, int numero, String createdBy) {
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false, length = 40)
+  private TipoRevisaoPagina tipo;
+
+  @Column(length = 300)
+  private String descricao;
+
+  public PaginaRevisao(Pagina pagina, int numero, String createdBy, TipoRevisaoPagina tipo,
+      String descricao) {
     this.pagina = pagina;
     this.numero = numero;
     this.titulo = pagina.getTitulo();
@@ -81,6 +89,8 @@ public class PaginaRevisao {
     this.modulo = pagina.getModulo();
     this.parent = pagina.getParent();
     this.createdBy = createdBy;
+    this.tipo = tipo;
+    this.descricao = descricao;
   }
 
   @PrePersist

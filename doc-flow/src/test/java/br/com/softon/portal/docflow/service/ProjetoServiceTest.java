@@ -3,10 +3,13 @@ package br.com.softon.portal.docflow.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import br.com.softon.portal.docflow.dto.request.ProjetoRequest;
 import br.com.softon.portal.docflow.entity.Projeto;
+import br.com.softon.portal.docflow.repository.ModuloRepository;
 import br.com.softon.portal.docflow.repository.ProjetoRepository;
 import br.com.softon.portal.shared.exception.BusinessException;
 import br.com.softon.portal.shared.exception.NotFoundException;
@@ -27,12 +30,14 @@ import org.mockito.quality.Strictness;
 class ProjetoServiceTest {
 
   @Mock ProjetoRepository projetoRepository;
+  @Mock ModuloRepository moduloRepository;
+  @Mock br.com.softon.rbac.service.AuditoriaService auditoriaService;
 
   ProjetoService service;
 
   @BeforeEach
   void setUp() {
-    service = new ProjetoService(projetoRepository);
+    service = new ProjetoService(projetoRepository, moduloRepository, auditoriaService);
     when(projetoRepository.save(any(Projeto.class))).thenAnswer(inv -> inv.getArgument(0));
   }
 
@@ -88,6 +93,31 @@ class ProjetoServiceTest {
     when(projetoRepository.findById(id)).thenReturn(Optional.empty());
 
     assertThatThrownBy(() -> service.buscar(id)).isInstanceOf(NotFoundException.class);
+  }
+
+  @Test
+  void excluir_semModulos_removeProjetoEAudita() {
+    UUID id = UUID.randomUUID();
+    Projeto projeto = new Projeto("Portal", "portal", null, true);
+    when(projetoRepository.findById(id)).thenReturn(Optional.of(projeto));
+
+    service.excluir(id, null);
+
+    verify(projetoRepository).delete(projeto);
+    verify(auditoriaService).registrar("PROJETO", id, "EXCLUIR", "Projeto excluído: Portal", null);
+  }
+
+  @Test
+  void excluir_comModulosOrientaRemocaoPrevia() {
+    UUID id = UUID.randomUUID();
+    when(projetoRepository.findById(id)).thenReturn(Optional.of(new Projeto("Portal", "portal", null, true)));
+    when(moduloRepository.existsByProjeto_Id(id)).thenReturn(true);
+
+    assertThatThrownBy(() -> service.excluir(id, null))
+        .isInstanceOf(BusinessException.class)
+        .hasMessageContaining("módulos");
+
+    verify(projetoRepository, never()).delete(any(Projeto.class));
   }
 
   @Test

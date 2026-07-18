@@ -6,12 +6,14 @@ import br.com.softon.portal.shared.api.SortDirection;
 import br.com.softon.portal.shared.api.PageableUtils;
 import br.com.softon.portal.shared.api.SortUtils;
 import jakarta.validation.Valid;
+import java.security.Principal;
 import java.util.UUID;
 import java.util.List;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import br.com.softon.portal.shared.security.Permissoes;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -68,5 +70,12 @@ public class ModuloController {
   @GetMapping("/{id}")
   public ModuloResponse buscar(@PathVariable UUID id) {
     return ModuloResponse.from(moduloService.buscar(id));
+  }
+
+  @DeleteMapping("/{id}")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  @PreAuthorize(Permissoes.MODULO_EXCLUIR)
+  public void excluir(@PathVariable UUID id, Principal principal) {
+    moduloService.excluir(id, principal);
   }
 }

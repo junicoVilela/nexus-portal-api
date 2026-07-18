@@ -12,12 +12,17 @@ import br.com.softon.portal.docflow.repository.ClienteModuloRepository;
 import br.com.softon.portal.docflow.repository.ClientePaginaRepository;
 import br.com.softon.portal.docflow.repository.ClienteProjetoRepository;
 import br.com.softon.portal.docflow.repository.ClienteRepository;
+import br.com.softon.portal.docflow.repository.PreviewTokenRepository;
+import br.com.softon.portal.docflow.repository.PublicacaoRepository;
+import br.com.softon.rbac.service.AuditoriaService;
 import br.com.softon.rbac.service.EscopoResolver;
 import br.com.softon.portal.shared.exception.BusinessException;
 import br.com.softon.portal.shared.exception.NotFoundException;
 import br.com.softon.portal.shared.util.SlugUtils;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.transaction.Transactional;
+import java.nio.file.Path;
+import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -46,6 +51,10 @@ public class ClienteService {
   private final ClienteProjetoRepository clienteProjetoRepository;
   private final ProjetoService projetoService;
   private final EscopoResolver escopoResolver;
+  private final PublicacaoRepository publicacaoRepository;
+  private final PreviewTokenRepository previewTokenRepository;
+  private final AuditoriaService auditoriaService;
+  private final ArquivoRemocaoService arquivoRemocaoService;
 
   @Transactional
   public Cliente criar(ClienteRequest request) {
@@ -111,6 +120,23 @@ public class ClienteService {
       throw new NotFoundException("Cliente não encontrado.");
     }
     return cliente;
+  }
+
+  @Transactional
+  public void excluir(UUID id, Principal principal) {
+    Cliente cliente = buscar(id);
+    escopoResolver.assertPodeEscreverEmCliente(id);
+    if (publicacaoRepository.existsByCliente_Id(id)) {
+      throw new BusinessException("Exclua primeiro as publicações deste cliente.");
+    }
+
+    Path logo = cliente.getLogoPath() == null || cliente.getLogoPath().isBlank()
+        ? null
+        : Path.of(cliente.getLogoPath());
+    previewTokenRepository.deleteByClienteId(id);
+    clienteRepository.delete(cliente);
+    auditoriaService.registrar("CLIENTE", id, "EXCLUIR", "Cliente excluído: " + cliente.getNome(), principal);
+    arquivoRemocaoService.removerAposCommit(logo);
   }
 
   @Transactional

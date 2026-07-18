@@ -1,17 +1,16 @@
 package br.com.softon.portal.docflow.service;
 
-import br.com.softon.portal.docflow.service.ClienteService;
-import br.com.softon.portal.docflow.entity.Cliente;
-import br.com.softon.portal.docflow.service.GeradorPacoteService;
 import br.com.softon.portal.docflow.dto.response.PaginaResponse;
+import br.com.softon.portal.docflow.entity.Cliente;
 import br.com.softon.portal.docflow.entity.Publicacao;
 import br.com.softon.portal.docflow.entity.PublicacaoChangelog;
 import br.com.softon.portal.docflow.entity.StatusPublicacao;
 import br.com.softon.portal.docflow.repository.PublicacaoChangelogRepository;
 import br.com.softon.portal.docflow.repository.PublicacaoRepository;
-import br.com.softon.rbac.service.EscopoResolver;
 import br.com.softon.portal.shared.exception.BusinessException;
 import br.com.softon.portal.shared.exception.NotFoundException;
+import br.com.softon.rbac.service.AuditoriaService;
+import br.com.softon.rbac.service.EscopoResolver;
 import jakarta.transaction.Transactional;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -20,15 +19,15 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.PathResource;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
-import org.springframework.core.io.PathResource;
-import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
-import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 @Service
@@ -40,6 +39,8 @@ public class PublicacaoService {
   private final PublicacaoWorkerService publicacaoWorkerService;
   private final PublicacaoChangelogRepository changelogRepository;
   private final EscopoResolver escopoResolver;
+  private final AuditoriaService auditoriaService;
+  private final ArquivoRemocaoService arquivoRemocaoService;
 
   @Transactional
   public Publicacao gerar(UUID clienteId, String versao, String observacao, Principal principal) {
@@ -112,6 +113,21 @@ public class PublicacaoService {
     return publicacao;
   }
 
+  @Transactional
+  public void excluir(UUID id, Principal principal) {
+    Publicacao publicacao = buscar(id);
+    escopoResolver.assertPodeEscreverEmCliente(publicacao.getCliente().getId());
+    if (publicacao.getStatus() == StatusPublicacao.GERANDO) {
+      throw new BusinessException("Aguarde a geração terminar antes de excluir a publicação.");
+    }
+
+    Path arquivo = caminhoArquivo(publicacao);
+    publicacaoRepository.delete(publicacao);
+    auditoriaService.registrar("PUBLICACAO", id, "EXCLUIR",
+        "Publicação " + publicacao.getVersao() + " de " + publicacao.getCliente().getNome(), principal);
+    arquivoRemocaoService.removerAposCommit(arquivo);
+  }
+
   public List<PaginaResponse> preverPaginas(UUID clienteId) {
     clienteService.buscar(clienteId);
     return geradorPacoteService.selecionarPaginas(clienteId).stream()
@@ -177,6 +193,11 @@ public class PublicacaoService {
 
   private String username(Principal principal) {
     return principal == null ? "system" : principal.getName();
+  }
+
+  private Path caminhoArquivo(Publicacao publicacao) {
+    String caminho = publicacao.getArquivoZipCaminho();
+    return caminho == null || caminho.isBlank() ? null : Path.of(caminho);
   }
 
   private void agendarProcessamento(UUID publicacaoId, String usuario) {

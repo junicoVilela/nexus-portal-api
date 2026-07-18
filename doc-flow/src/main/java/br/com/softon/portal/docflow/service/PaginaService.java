@@ -6,16 +6,20 @@ import br.com.softon.portal.docflow.dto.request.PaginaRequest;
 import br.com.softon.portal.docflow.entity.Pagina;
 import br.com.softon.portal.docflow.entity.PaginaRevisao;
 import br.com.softon.portal.docflow.entity.StatusPagina;
+import br.com.softon.portal.docflow.entity.TipoRevisaoPagina;
 import br.com.softon.portal.docflow.repository.PaginaRepository;
+import br.com.softon.portal.docflow.repository.PaginaAnexoRepository;
 import br.com.softon.portal.docflow.repository.PaginaRevisaoRepository;
 import br.com.softon.rbac.service.AuditoriaService;
 import br.com.softon.portal.shared.exception.BusinessException;
+import br.com.softon.portal.shared.exception.ConflictException;
 import br.com.softon.portal.shared.exception.NotFoundException;
 import br.com.softon.portal.shared.util.SlugUtils;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.transaction.Transactional;
 import java.security.Principal;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
@@ -39,6 +43,9 @@ public class PaginaService {
   private final PaginaRevisaoRepository paginaRevisaoRepository;
   private final ModuloService moduloService;
   private final AuditoriaService auditoriaService;
+  private final PaginaQualidadeService paginaQualidadeService;
+  private final PaginaAnexoRepository paginaAnexoRepository;
+  private final ArquivoRemocaoService arquivoRemocaoService;
 
   @Transactional
   public Pagina criar(PaginaRequest request, Principal principal) {
@@ -47,10 +54,12 @@ public class PaginaService {
     Modulo modulo = modulo(request.moduloId());
     Pagina parent = parent(request.parentId(), null, modulo);
     String usuario = username(principal);
-    Pagina pagina = paginaRepository.save(new Pagina(request.titulo().trim(), slug, request.codigoTela().trim(),
+    Pagina pagina = new Pagina(request.titulo().trim(), slug, request.codigoTela().trim(),
         request.resumo(), sanitizar(request.conteudoHtml()), request.ordem() == null ? 0 : request.ordem(),
-        request.ativo() == null || request.ativo(), modulo, parent));
-    registrarRevisao(pagina, usuario);
+        request.ativo() == null || request.ativo(), modulo, parent);
+    pagina.definirOrigemTemplate(request.templateOrigemId(), request.templateOrigemVersao());
+    pagina = paginaRepository.save(pagina);
+    registrarRevisao(pagina, usuario, TipoRevisaoPagina.CRIACAO, "Página criada como rascunho.");
     auditoriaService.registrar("PAGINA", pagina.getId(), "CRIAR", pagina.getTitulo(), principal);
     return pagina;
   }
@@ -58,6 +67,7 @@ public class PaginaService {
   @Transactional
   public Pagina atualizar(UUID id, PaginaRequest request, Principal principal) {
     Pagina pagina = buscar(id);
+    validarVersao(pagina, request.version());
     String slug = slugFrom(request.slug(), request.titulo());
     validarUnicos(id, slug, request.codigoTela());
     Modulo modulo = modulo(request.moduloId());
@@ -65,8 +75,30 @@ public class PaginaService {
     pagina.atualizar(request.titulo().trim(), slug, request.codigoTela().trim(), request.resumo(),
         sanitizar(request.conteudoHtml()), request.ordem() == null ? 0 : request.ordem(),
         request.ativo() == null || request.ativo(), modulo, parent);
-    registrarRevisao(pagina, username(principal));
+    pagina.definirOrigemTemplate(request.templateOrigemId(), request.templateOrigemVersao());
+    paginaRepository.flush();
+    registrarRevisao(pagina, username(principal), TipoRevisaoPagina.SALVAMENTO_MANUAL,
+        "Conteúdo salvo manualmente.");
     auditoriaService.registrar("PAGINA", pagina.getId(), "ATUALIZAR", pagina.getTitulo(), principal);
+    return pagina;
+  }
+
+  @Transactional
+  public Pagina autosave(UUID id, PaginaRequest request) {
+    Pagina pagina = buscar(id);
+    validarVersao(pagina, request.version());
+    if (pagina.getStatus() != StatusPagina.RASCUNHO) {
+      throw new BusinessException("O salvamento automático está disponível somente para páginas em rascunho.");
+    }
+    String slug = slugFrom(request.slug(), request.titulo());
+    validarUnicos(id, slug, request.codigoTela());
+    Modulo modulo = modulo(request.moduloId());
+    Pagina parent = parent(request.parentId(), id, modulo);
+    pagina.atualizar(request.titulo().trim(), slug, request.codigoTela().trim(), request.resumo(),
+        sanitizar(request.conteudoHtml()), request.ordem() == null ? 0 : request.ordem(),
+        request.ativo() == null || request.ativo(), modulo, parent);
+    pagina.definirOrigemTemplate(request.templateOrigemId(), request.templateOrigemVersao());
+    paginaRepository.flush();
     return pagina;
   }
 
@@ -89,6 +121,20 @@ public class PaginaService {
         .orElseThrow(() -> new NotFoundException("Página não encontrada."));
   }
 
+  @Transactional
+  public void excluir(UUID id, Principal principal) {
+    Pagina pagina = buscar(id);
+    if (paginaRepository.existsByParent_Id(id)) {
+      throw new BusinessException("Exclua primeiro as subpáginas desta página.");
+    }
+    List<Path> anexos = paginaAnexoRepository.findByPagina_Id(id).stream()
+        .map(anexo -> Path.of(anexo.getCaminho()))
+        .toList();
+    paginaRepository.delete(pagina);
+    auditoriaService.registrar("PAGINA", id, "EXCLUIR", "Página excluída: " + pagina.getTitulo(), principal);
+    arquivoRemocaoService.removerAposCommit(anexos);
+  }
+
   public List<Pagina> buscarTodos(List<UUID> ids) {
     List<Pagina> paginas = paginaRepository.findAllById(ids);
     if (paginas.size() != ids.stream().distinct().count()) {
@@ -101,7 +147,8 @@ public class PaginaService {
   public Pagina salvarRascunho(UUID id, Principal principal) {
     Pagina pagina = buscar(id);
     pagina.salvarRascunho();
-    registrarRevisao(pagina, username(principal));
+    registrarRevisao(pagina, username(principal), TipoRevisaoPagina.RETORNO_RASCUNHO,
+        "Página retornada ao estado de rascunho.");
     auditoriaService.registrar("PAGINA", pagina.getId(), "SALVAR_RASCUNHO", pagina.getTitulo(), principal);
     return pagina;
   }
@@ -110,8 +157,17 @@ public class PaginaService {
   public Pagina enviarRevisao(UUID id, Principal principal) {
     Pagina pagina = buscar(id);
     validarPublicacao(pagina);
+    var qualidade = paginaQualidadeService.avaliar(pagina);
+    if (!qualidade.aptoParaRevisao()) {
+      String pendencias = qualidade.itens().stream()
+          .filter(item -> item.severidade() == PaginaQualidadeService.Severidade.ERRO && !item.ok())
+          .map(PaginaQualidadeService.ItemQualidade::titulo)
+          .collect(java.util.stream.Collectors.joining(", "));
+      throw new BusinessException("A página ainda não está pronta para revisão: " + pendencias + ".");
+    }
     pagina.enviarRevisao();
-    registrarRevisao(pagina, username(principal));
+    registrarRevisao(pagina, username(principal), TipoRevisaoPagina.ENVIO_REVISAO,
+        "Página enviada para revisão editorial.");
     auditoriaService.registrar("PAGINA", pagina.getId(), "ENVIAR_REVISAO", pagina.getTitulo(), principal);
     return pagina;
   }
@@ -123,7 +179,8 @@ public class PaginaService {
       throw new BusinessException("Somente páginas em revisão podem ser aprovadas.");
     }
     pagina.aprovar();
-    registrarRevisao(pagina, username(principal));
+    registrarRevisao(pagina, username(principal), TipoRevisaoPagina.APROVACAO,
+        "Página aprovada para publicação.");
     auditoriaService.registrar("PAGINA", pagina.getId(), "APROVAR", pagina.getTitulo(), principal);
     return pagina;
   }
@@ -136,7 +193,8 @@ public class PaginaService {
       throw new BusinessException("A página precisa estar aprovada antes de publicar.");
     }
     pagina.publicar();
-    registrarRevisao(pagina, username(principal));
+    registrarRevisao(pagina, username(principal), TipoRevisaoPagina.PUBLICACAO,
+        "Página publicada no manual.");
     auditoriaService.registrar("PAGINA", pagina.getId(), "PUBLICAR", pagina.getTitulo(), principal);
     return pagina;
   }
@@ -145,7 +203,8 @@ public class PaginaService {
   public Pagina arquivar(UUID id, Principal principal) {
     Pagina pagina = buscar(id);
     pagina.arquivar();
-    registrarRevisao(pagina, username(principal));
+    registrarRevisao(pagina, username(principal), TipoRevisaoPagina.ARQUIVAMENTO,
+        "Página arquivada.");
     auditoriaService.registrar("PAGINA", pagina.getId(), "ARQUIVAR", pagina.getTitulo(), principal);
     return pagina;
   }
@@ -153,6 +212,10 @@ public class PaginaService {
   public Page<PaginaRevisao> revisoes(UUID id, Pageable pageable) {
     buscar(id);
     return paginaRevisaoRepository.findByPagina_Id(id, pageable);
+  }
+
+  public PaginaQualidadeService.ResultadoQualidade qualidade(UUID id) {
+    return paginaQualidadeService.avaliar(buscar(id));
   }
 
   @Transactional
@@ -164,7 +227,8 @@ public class PaginaService {
     String codigoTela = codigoTelaUnico(origem.getCodigoTela() + "-COPIA");
     Pagina copia = paginaRepository.save(new Pagina(titulo, slug, codigoTela, origem.getResumo(),
         origem.getConteudoHtml(), origem.getOrdem() + 1, origem.isAtivo(), origem.getModulo(), origem.getParent()));
-    registrarRevisao(copia, usuario);
+    registrarRevisao(copia, usuario, TipoRevisaoPagina.DUPLICACAO,
+        "Página criada a partir de uma duplicação.");
     auditoriaService.registrar("PAGINA", copia.getId(), "DUPLICAR", origem.getTitulo() + " -> " + copia.getTitulo(),
         principal);
     return copia;
@@ -289,9 +353,20 @@ public class PaginaService {
     return principal == null ? "system" : principal.getName();
   }
 
-  private void registrarRevisao(Pagina pagina, String username) {
+  private void registrarRevisao(Pagina pagina, String username, TipoRevisaoPagina tipo,
+      String descricao) {
     int numero = paginaRevisaoRepository.countByPagina_Id(pagina.getId()) + 1;
-    paginaRevisaoRepository.save(new PaginaRevisao(pagina, numero, username));
+    paginaRevisaoRepository.save(new PaginaRevisao(pagina, numero, username, tipo, descricao));
+  }
+
+  private void validarVersao(Pagina pagina, Long versaoEsperada) {
+    if (versaoEsperada == null) {
+      throw new ConflictException("A versão da página é obrigatória. Recarregue o editor e tente novamente.");
+    }
+    if (pagina.getVersion() != versaoEsperada) {
+      throw new ConflictException(
+          "Esta página foi alterada por outro usuário. Compare as versões antes de continuar.");
+    }
   }
 
   private String lowerBlankToNull(String value) {

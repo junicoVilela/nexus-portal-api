@@ -4,11 +4,14 @@ import br.com.softon.portal.docflow.dto.request.ModuloRequest;
 import br.com.softon.portal.docflow.entity.Modulo;
 import br.com.softon.portal.docflow.entity.Projeto;
 import br.com.softon.portal.docflow.repository.ModuloRepository;
+import br.com.softon.portal.docflow.repository.PaginaRepository;
+import br.com.softon.rbac.service.AuditoriaService;
 import br.com.softon.portal.shared.exception.BusinessException;
 import br.com.softon.portal.shared.exception.NotFoundException;
 import br.com.softon.portal.shared.util.SlugUtils;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.transaction.Transactional;
+import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -24,6 +27,8 @@ public class ModuloService {
 
   private final ModuloRepository moduloRepository;
   private final ProjetoService projetoService;
+  private final PaginaRepository paginaRepository;
+  private final AuditoriaService auditoriaService;
 
   @Transactional
   public Modulo criar(ModuloRequest request) {
@@ -84,6 +89,16 @@ public class ModuloService {
   public Modulo buscar(UUID id) {
     return moduloRepository.findById(id)
         .orElseThrow(() -> new NotFoundException("Módulo não encontrado."));
+  }
+
+  @Transactional
+  public void excluir(UUID id, Principal principal) {
+    Modulo modulo = buscar(id);
+    if (paginaRepository.existsByModulo_Id(id)) {
+      throw new BusinessException("Exclua primeiro as páginas deste módulo.");
+    }
+    moduloRepository.delete(modulo);
+    auditoriaService.registrar("MODULO", id, "EXCLUIR", "Módulo excluído: " + modulo.getNome(), principal);
   }
 
   public List<Modulo> buscarTodos(List<UUID> ids) {

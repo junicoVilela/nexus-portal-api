@@ -1,29 +1,33 @@
 package br.com.softon.portal.docflow.controller;
 
-import br.com.softon.portal.docflow.service.GeradorPdfService;
+import br.com.softon.portal.docflow.dto.request.PublicacaoRequest;
+import br.com.softon.portal.docflow.dto.response.ChangelogItemResponse;
+import br.com.softon.portal.docflow.dto.response.DownloadTokenResponse;
 import br.com.softon.portal.docflow.dto.response.PaginaResponse;
+import br.com.softon.portal.docflow.dto.response.PublicacaoResponse;
+import br.com.softon.portal.docflow.entity.Publicacao;
+import br.com.softon.portal.docflow.service.GeradorPdfService;
 import br.com.softon.portal.docflow.service.PublicacaoService;
 import br.com.softon.portal.docflow.service.PublicacaoService.DiagnosticoPublicacao;
-import br.com.softon.portal.docflow.entity.Publicacao;
-import br.com.softon.portal.docflow.entity.PublicacaoChangelog;
 import br.com.softon.portal.shared.api.PageResponse;
-import br.com.softon.portal.shared.api.SortDirection;
 import br.com.softon.portal.shared.api.PageableUtils;
+import br.com.softon.portal.shared.api.SortDirection;
 import br.com.softon.portal.shared.api.SortUtils;
 import br.com.softon.portal.shared.config.JwtService;
+import br.com.softon.portal.shared.security.Permissoes;
 import jakarta.validation.Valid;
 import java.security.Principal;
 import java.util.List;
 import java.util.UUID;
-import org.springframework.data.domain.Sort;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import br.com.softon.portal.shared.security.Permissoes;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -32,10 +36,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-import br.com.softon.portal.docflow.dto.request.PublicacaoRequest;
-import br.com.softon.portal.docflow.dto.response.ChangelogItemResponse;
-import br.com.softon.portal.docflow.dto.response.DownloadTokenResponse;
-import br.com.softon.portal.docflow.dto.response.PublicacaoResponse;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
@@ -75,6 +75,13 @@ public class PublicacaoController {
   @GetMapping("/{id}")
   public PublicacaoResponse buscar(@PathVariable UUID id) {
     return PublicacaoResponse.from(publicacaoService.buscar(id));
+  }
+
+  @DeleteMapping("/{id}")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  @PreAuthorize(Permissoes.PUBLICACAO_EXCLUIR)
+  public void excluir(@PathVariable UUID id, Principal principal) {
+    publicacaoService.excluir(id, principal);
   }
 
   @PostMapping("/{id}/reprocessar")

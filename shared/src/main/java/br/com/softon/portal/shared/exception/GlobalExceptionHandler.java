@@ -5,6 +5,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -21,6 +22,12 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(BusinessException.class)
   ResponseEntity<ApiError> business(BusinessException ex) {
     return error(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage());
+  }
+
+  @ExceptionHandler({ConflictException.class, ObjectOptimisticLockingFailureException.class})
+  ResponseEntity<ApiError> conflict(RuntimeException ex) {
+    return error(HttpStatus.CONFLICT,
+        ex instanceof ConflictException ? ex.getMessage() : "O registro foi alterado por outro usuário.");
   }
 
   @ExceptionHandler(MethodArgumentNotValidException.class)

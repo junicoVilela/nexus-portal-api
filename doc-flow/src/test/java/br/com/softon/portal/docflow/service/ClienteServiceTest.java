@@ -3,6 +3,7 @@ package br.com.softon.portal.docflow.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -12,6 +13,8 @@ import br.com.softon.portal.docflow.repository.ClienteModuloRepository;
 import br.com.softon.portal.docflow.repository.ClientePaginaRepository;
 import br.com.softon.portal.docflow.repository.ClienteProjetoRepository;
 import br.com.softon.portal.docflow.repository.ClienteRepository;
+import br.com.softon.portal.docflow.repository.PreviewTokenRepository;
+import br.com.softon.portal.docflow.repository.PublicacaoRepository;
 import br.com.softon.portal.docflow.service.ModuloService;
 import br.com.softon.portal.docflow.entity.Modulo;
 import br.com.softon.portal.docflow.service.PaginaService;
@@ -46,6 +49,9 @@ class ClienteServiceTest {
   @Mock ClienteProjetoRepository clienteProjetoRepository;
   @Mock ProjetoService projetoService;
   @Mock br.com.softon.rbac.service.EscopoResolver escopoResolver;
+  @Mock PublicacaoRepository publicacaoRepository;
+  @Mock PreviewTokenRepository previewTokenRepository;
+  @Mock br.com.softon.rbac.service.AuditoriaService auditoriaService;
   @Mock SecurityContext securityContext;
   @Mock Authentication authentication;
 
@@ -55,7 +61,8 @@ class ClienteServiceTest {
   void setUp() {
     service = new ClienteService(clienteRepository, moduloService, paginaService,
         clienteModuloRepository, clientePaginaRepository, clienteProjetoRepository, projetoService,
-        escopoResolver);
+        escopoResolver, publicacaoRepository, previewTokenRepository, auditoriaService,
+        new ArquivoRemocaoService());
 
     when(securityContext.getAuthentication()).thenReturn(authentication);
     when(authentication.getName()).thenReturn("admin");
@@ -121,6 +128,34 @@ class ClienteServiceTest {
     assertThatThrownBy(() -> service.buscar(id))
         .isInstanceOf(NotFoundException.class)
         .hasMessageContaining("Cliente não encontrado");
+  }
+
+  @Test
+  void excluir_semPublicacoes_removeClienteTokensEAudita() {
+    UUID id = UUID.randomUUID();
+    Cliente cliente = new Cliente("Acme", "acme", true);
+    java.security.Principal principal = () -> "admin";
+    when(clienteRepository.findById(id)).thenReturn(Optional.of(cliente));
+    when(publicacaoRepository.existsByCliente_Id(id)).thenReturn(false);
+
+    service.excluir(id, principal);
+
+    verify(previewTokenRepository).deleteByClienteId(id);
+    verify(clienteRepository).delete(cliente);
+    verify(auditoriaService).registrar("CLIENTE", id, "EXCLUIR", "Cliente excluído: Acme", principal);
+  }
+
+  @Test
+  void excluir_comPublicacoesOrientaRemocaoPrevia() {
+    UUID id = UUID.randomUUID();
+    when(clienteRepository.findById(id)).thenReturn(Optional.of(new Cliente("Acme", "acme", true)));
+    when(publicacaoRepository.existsByCliente_Id(id)).thenReturn(true);
+
+    assertThatThrownBy(() -> service.excluir(id, null))
+        .isInstanceOf(BusinessException.class)
+        .hasMessageContaining("publicações");
+
+    verify(clienteRepository, never()).delete(any(Cliente.class));
   }
 
   @Test

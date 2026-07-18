@@ -12,6 +12,10 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface PaginaRepository extends JpaRepository<Pagina, UUID>, JpaSpecificationExecutor<Pagina> {
+  boolean existsByModulo_Id(UUID moduloId);
+
+  boolean existsByParent_Id(UUID parentId);
+
   @Override
   @EntityGraph(attributePaths = {"modulo", "modulo.projeto", "parent", "parent.modulo", "parent.modulo.projeto"})
   Optional<Pagina> findById(UUID id);
@@ -23,6 +27,10 @@ public interface PaginaRepository extends JpaRepository<Pagina, UUID>, JpaSpecif
   boolean existsByCodigoTela(String codigoTela);
 
   boolean existsByCodigoTelaAndIdNot(String codigoTela, UUID id);
+
+  long countByTemplateOrigemId(UUID templateId);
+
+  long countByTemplateOrigemIdAndTemplateOrigemVersao(UUID templateId, Integer versao);
 
   @Query(value = """
       SELECT p.* FROM tb_pagina p

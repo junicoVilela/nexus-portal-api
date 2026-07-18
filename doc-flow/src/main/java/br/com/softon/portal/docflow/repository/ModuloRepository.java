@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 public interface ModuloRepository extends JpaRepository<Modulo, UUID>, JpaSpecificationExecutor<Modulo> {
+  boolean existsByProjeto_Id(UUID projetoId);
+
   @Override
   @EntityGraph(attributePaths = "projeto")
   java.util.Optional<Modulo> findById(UUID id);

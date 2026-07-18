@@ -180,6 +180,18 @@ class GeradorPacoteServiceTest {
   }
 
   @Test
+  void previewPagina_usaRenderizadorEditorialDoManual() throws Exception {
+    Pagina pagina = paginaPublicada("Cadastro", "cadastro", 1);
+
+    String html = service.previewPagina(pagina);
+
+    assertThat(html)
+        .contains("docflow-manual-layout", GeradorPacoteService.MANUAL_ASSETS_REVISION)
+        .contains("class=\"article-body\"", "conteúdo Cadastro")
+        .contains(".article-body .objective-card", ".article-body .flow-strip");
+  }
+
+  @Test
   void gerar_produzZipComArquivosObrigatoriosEHashEstavel() throws Exception {
     Pagina p = paginaPublicada("Login", "login", 1);
     when(clienteModuloRepository.findModuloIdsByClienteId(clienteId))
@@ -208,6 +220,13 @@ class GeradorPacoteServiceTest {
           "manifest.json", "manifest.webmanifest", "sw.js",
           "assets/app.css", "assets/app.js",
           "paginas/login.html");
+      String css = new String(zf.getInputStream(zf.getEntry("assets/app.css")).readAllBytes(),
+          java.nio.charset.StandardCharsets.UTF_8);
+      assertThat(css)
+          .contains("docflow-manual layout-v12", ".article-body .doc-intro", ".article-body .steps>ol")
+          .contains(".article-body .objective-card", ".article-body .screen-grid", ".article-body .flow-strip")
+          .contains(".article-body .journey-grid", ".article-body .resource-list", ".article-body .status-list")
+          .contains("content:'✓'");
     }
   }
 

@@ -13,5 +13,13 @@ public record PaginaRequest(
     Integer ordem,
     Boolean ativo,
     @NotNull UUID moduloId,
-    UUID parentId) {
+    UUID parentId,
+    Long version,
+    UUID templateOrigemId,
+    Integer templateOrigemVersao) {
+
+  public PaginaRequest(String titulo, String slug, String codigoTela, String resumo, String conteudoHtml,
+      Integer ordem, Boolean ativo, UUID moduloId, UUID parentId, Long version) {
+    this(titulo, slug, codigoTela, resumo, conteudoHtml, ordem, ativo, moduloId, parentId, version, null, null);
+  }
 }

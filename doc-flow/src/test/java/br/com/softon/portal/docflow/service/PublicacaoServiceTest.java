@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -45,6 +46,7 @@ class PublicacaoServiceTest {
   @Mock PublicacaoWorkerService publicacaoWorkerService;
   @Mock PublicacaoChangelogRepository changelogRepository;
   @Mock br.com.softon.rbac.service.EscopoResolver escopoResolver;
+  @Mock br.com.softon.rbac.service.AuditoriaService auditoriaService;
 
   PublicacaoService service;
 
@@ -56,7 +58,8 @@ class PublicacaoServiceTest {
   @BeforeEach
   void setUp() throws Exception {
     service = new PublicacaoService(publicacaoRepository, clienteService,
-        geradorPacoteService, publicacaoWorkerService, changelogRepository, escopoResolver);
+        geradorPacoteService, publicacaoWorkerService, changelogRepository, escopoResolver,
+        auditoriaService, new ArquivoRemocaoService());
     when(escopoResolver.clientesPermitidosDoUsuarioAtual()).thenReturn(java.util.Optional.empty());
     when(escopoResolver.podeAcessarCliente(any())).thenReturn(true);
     org.mockito.Mockito.doNothing().when(escopoResolver).assertPodeEscreverEmCliente(any());
@@ -142,6 +145,36 @@ class PublicacaoServiceTest {
     assertThatThrownBy(() -> service.buscar(publicacaoId))
         .isInstanceOf(NotFoundException.class)
         .hasMessageContaining("Publicação");
+  }
+
+  @Test
+  void excluir_removeRegistroEArquivo(@TempDir Path tmp) throws Exception {
+    Path zip = tmp.resolve("manual.zip");
+    Files.writeString(zip, "pacote");
+    Publicacao p = new Publicacao(cliente, "1.0.0", null);
+    p.registrarSucesso(1, 1, "manual.zip", zip.toString(), "sha", "{}");
+    when(publicacaoRepository.findById(publicacaoId)).thenReturn(Optional.of(p));
+
+    service.excluir(publicacaoId, principal);
+
+    verify(escopoResolver).assertPodeEscreverEmCliente(clienteId);
+    verify(publicacaoRepository).delete(p);
+    verify(auditoriaService).registrar("PUBLICACAO", publicacaoId, "EXCLUIR",
+        "Publicação 1.0.0 de ACME", principal);
+    assertThat(zip).doesNotExist();
+  }
+
+  @Test
+  void excluir_bloqueiaEnquantoPublicacaoEstaGerando() {
+    Publicacao p = new Publicacao(cliente, "1.0.0", null);
+    when(publicacaoRepository.findById(publicacaoId)).thenReturn(Optional.of(p));
+
+    assertThatThrownBy(() -> service.excluir(publicacaoId, principal))
+        .isInstanceOf(BusinessException.class)
+        .hasMessageContaining("geração terminar");
+
+    verify(publicacaoRepository, never()).delete(any());
+    verifyNoInteractions(auditoriaService);
   }
 
   @Test

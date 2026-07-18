@@ -7,6 +7,7 @@ import br.com.softon.portal.shared.api.SortDirection;
 import br.com.softon.portal.shared.api.PageableUtils;
 import br.com.softon.portal.shared.api.SortUtils;
 import jakarta.validation.Valid;
+import java.security.Principal;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -74,6 +75,13 @@ public class ClienteController {
   @GetMapping("/{id}")
   public ClienteResponse buscar(@PathVariable UUID id) {
     return ClienteResponse.from(clienteService.buscar(id));
+  }
+
+  @DeleteMapping("/{id}")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  @PreAuthorize(Permissoes.CLIENTE_EXCLUIR)
+  public void excluir(@PathVariable UUID id, Principal principal) {
+    clienteService.excluir(id, principal);
   }
 
   @PutMapping("/{id}/modulos")
