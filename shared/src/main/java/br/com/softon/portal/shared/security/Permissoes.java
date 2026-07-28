@@ -70,6 +70,11 @@ public final class Permissoes {
   public static final String EMPRESA_LER          = "hasAuthority('EMPRESA:LER')";
   public static final String EMPRESA_EDITAR       = "hasAuthority('EMPRESA:EDITAR')";
 
+  public static final String AJUDA_LER            = "hasAuthority('AJUDA:LER')";
+  public static final String AJUDA_CRIAR          = "hasAuthority('AJUDA:CRIAR')";
+  public static final String AJUDA_EDITAR         = "hasAuthority('AJUDA:EDITAR')";
+  public static final String AJUDA_EXCLUIR        = "hasAuthority('AJUDA:EXCLUIR')";
+
   // ---------------------------------------------------------------------------
   // RELEASE_ORCHESTRATOR (V8 + V9)
   // ---------------------------------------------------------------------------

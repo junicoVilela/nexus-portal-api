@@ -1,11 +1,14 @@
 package br.com.softon.portal.docflow.controller;
 
 import br.com.softon.portal.docflow.dto.request.PublicacaoRequest;
+import br.com.softon.portal.docflow.dto.request.ReprocessarPublicacoesRequest;
 import br.com.softon.portal.docflow.dto.response.ChangelogItemResponse;
 import br.com.softon.portal.docflow.dto.response.DownloadTokenResponse;
 import br.com.softon.portal.docflow.dto.response.PaginaResponse;
 import br.com.softon.portal.docflow.dto.response.PublicacaoResponse;
+import br.com.softon.portal.docflow.dto.response.ReprocessamentoPublicacoesResponse;
 import br.com.softon.portal.docflow.entity.Publicacao;
+import br.com.softon.portal.docflow.entity.StatusPublicacao;
 import br.com.softon.portal.docflow.service.GeradorPdfService;
 import br.com.softon.portal.docflow.service.PublicacaoService;
 import br.com.softon.portal.docflow.service.PublicacaoEventService;
@@ -62,6 +65,7 @@ public class PublicacaoController {
   @GetMapping
   public PageResponse<PublicacaoResponse> listar(
       @RequestParam(required = false) UUID clienteId,
+      @RequestParam(required = false) StatusPublicacao status,
       @RequestParam(required = false) String sort,
       @RequestParam(required = false) SortDirection dir,
       @RequestParam(defaultValue = "1") Integer page,
@@ -70,7 +74,7 @@ public class PublicacaoController {
         List.of("createdAt", "cliente.nome", "versao", "status", "updatedAt"),
         Sort.by(Sort.Order.desc("createdAt")));
     return PageResponse.from(
-        publicacaoService.listar(clienteId, PageableUtils.of(page, size, sortOrder)),
+        publicacaoService.listar(clienteId, status, PageableUtils.of(page, size, sortOrder)),
         PublicacaoResponse::from);
   }
 
@@ -97,6 +101,15 @@ public class PublicacaoController {
   @PreAuthorize(Permissoes.PUBLICACAO_EDITAR)
   public PublicacaoResponse reprocessar(@PathVariable UUID id, Principal principal) {
     return PublicacaoResponse.from(publicacaoService.reprocessar(id, principal));
+  }
+
+  @PostMapping("/reprocessar-lote")
+  @PreAuthorize(Permissoes.PUBLICACAO_EDITAR)
+  public ReprocessamentoPublicacoesResponse reprocessarLote(
+      @Valid @RequestBody ReprocessarPublicacoesRequest request,
+      Principal principal) {
+    var publicacoes = publicacaoService.reprocessarLote(request.ids(), principal);
+    return ReprocessamentoPublicacoesResponse.from(request.ids().stream().distinct().toList().size(), publicacoes);
   }
 
   @PreAuthorize(Permissoes.PUBLICACAO_LER)

@@ -69,10 +69,10 @@ class EmpresaLogoServiceTest {
   }
 
   @Test
-  void servir_404SeNaoExiste() {
+  void servir_204SeNaoExiste() {
     ResponseEntity<Resource> resp = service.servir();
 
-    assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
   }
 
   @Test

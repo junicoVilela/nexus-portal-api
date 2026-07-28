@@ -45,7 +45,9 @@ docflow:
     jwt-download-expiration-ms: ${JWT_DOWNLOAD_EXPIRATION_MS:900000}
     gateway-api-key: ${GATEWAY_API_KEY:doc-flow-dev-gateway-key}
   cors:
-    allowed-origins: http://localhost:4200,http://localhost:4201,http://localhost:4300
+    # Sobrescreva quando o frontend for aberto por IP, hostname ou outra porta.
+    # Não usar `*`: o portal envia o JWT no header Authorization.
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200,http://127.0.0.1:4200,http://localhost:4201,http://127.0.0.1:4201,http://localhost:4300,http://127.0.0.1:4300}
 
 release-orchestrator:
   storage:

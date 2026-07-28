@@ -7,6 +7,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 public interface ProjetoRepository extends JpaRepository<Projeto, UUID>, JpaSpecificationExecutor<Projeto> {
+  long countByAtivoTrue();
+
   boolean existsBySlug(String slug);
 
   boolean existsBySlugAndIdNot(String slug, UUID id);

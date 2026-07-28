@@ -1,0 +1,12 @@
+package br.com.softon.portal.docflow.entity;
+
+public enum TipoAjudaEvento {
+  BUSCA,
+  BUSCA_SEM_RESULTADO,
+  CONTEUDO_ABERTO,
+  ETAPA_CONCLUIDA,
+  TOUR_INICIADO,
+  TOUR_CONCLUIDO,
+  TOUR_ABANDONADO,
+  ONBOARDING_CONCLUIDO
+}

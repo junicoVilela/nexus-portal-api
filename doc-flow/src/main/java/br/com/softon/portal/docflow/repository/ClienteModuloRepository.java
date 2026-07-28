@@ -14,4 +14,5 @@ public interface ClienteModuloRepository extends JpaRepository<ClienteModulo, UU
 
   @Query("select cm.modulo.id from ClienteModulo cm where cm.cliente.id = :clienteId")
   List<UUID> findModuloIdsByClienteId(@Param("clienteId") UUID clienteId);
+
 }

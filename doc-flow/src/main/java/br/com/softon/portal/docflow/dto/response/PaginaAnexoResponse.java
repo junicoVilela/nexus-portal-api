@@ -7,6 +7,7 @@ import java.util.UUID;
 public record PaginaAnexoResponse(
     UUID id,
     UUID paginaId,
+    String paginaTitulo,
     String nomeOriginal,
     String contentType,
     long tamanhoBytes,
@@ -17,11 +18,12 @@ public record PaginaAnexoResponse(
     return new PaginaAnexoResponse(
         anexo.getId(),
         anexo.getPagina().getId(),
+        anexo.getPagina().getTitulo(),
         anexo.getNomeOriginal(),
         anexo.getContentType(),
         anexo.getTamanhoBytes(),
         anexo.getCreatedAt(),
         anexo.getCreatedBy(),
-        "/api/paginas/" + anexo.getPagina().getId() + "/anexos/" + anexo.getId() + "/download");
+        "/paginas/" + anexo.getPagina().getId() + "/anexos/" + anexo.getId() + "/download");
   }
 }

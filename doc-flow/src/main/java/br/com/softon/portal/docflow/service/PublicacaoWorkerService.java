@@ -48,7 +48,7 @@ public class PublicacaoWorkerService {
         .stream().map(PaginaResponse::from).toList();
     try {
       ResultadoGeracao resultado = geradorPacoteService.gerar(publicacao.getCliente(),
-          publicacao.getVersao());
+          publicacao.getVersao(), publicacao.getId());
       publicacao.registrarSucesso(resultado.quantidadePaginas(), resultado.quantidadeModulos(),
           resultado.arquivoZipNome(), resultado.arquivoZipCaminho(), resultado.hashPacote(),
           resultado.relatorioValidacaoJson());

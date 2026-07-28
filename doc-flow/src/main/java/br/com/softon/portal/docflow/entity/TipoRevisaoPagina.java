@@ -8,5 +8,6 @@ public enum TipoRevisaoPagina {
   APROVACAO,
   PUBLICACAO,
   ARQUIVAMENTO,
-  DUPLICACAO
+  DUPLICACAO,
+  COMENTARIO
 }

@@ -34,6 +34,14 @@ public class PaginaQualidadeService {
         !PLACEHOLDER.matcher(texto.toLowerCase(Locale.ROOT)).find(), Severidade.ERRO));
     itens.add(item("IMAGENS_ALT", "Imagens acessíveis", "Toda imagem deve possuir texto alternativo.",
         document.select("img").stream().allMatch(img -> !img.attr("alt").isBlank()), Severidade.ERRO));
+    itens.add(item("IMAGENS_ORIGEM", "Imagens disponíveis",
+        "Toda imagem deve possuir uma origem válida.",
+        document.select("img").stream().allMatch(img -> !img.attr("src").isBlank()), Severidade.ERRO));
+    itens.add(item("LINKS", "Links válidos",
+        "Links não podem estar vazios nem usar endereços JavaScript.",
+        document.select("a").stream().allMatch(link -> linkValido(link.attr("href"))), Severidade.ERRO));
+    itens.add(item("TITULOS", "Hierarquia de títulos consistente",
+        "Organize as seções sem saltar níveis de título.", titulosConsistentes(document), Severidade.AVISO));
     itens.add(item("RESUMO", "Resumo preenchido", "Inclua uma descrição curta para buscas e navegação.",
         pagina.getResumo() != null && pagina.getResumo().trim().length() >= 30, Severidade.AVISO));
     itens.add(item("SECOES", "Conteúdo organizado em seções",
@@ -47,6 +55,26 @@ public class PaginaQualidadeService {
   private ItemQualidade item(String codigo, String titulo, String descricao, boolean ok,
       Severidade severidade) {
     return new ItemQualidade(codigo, titulo, descricao, ok, severidade);
+  }
+
+  private boolean linkValido(String href) {
+    if (href == null || href.isBlank()) {
+      return false;
+    }
+    String normalizado = href.trim().toLowerCase(Locale.ROOT);
+    return !normalizado.startsWith("javascript:") && !"#".equals(normalizado);
+  }
+
+  private boolean titulosConsistentes(Document document) {
+    int nivelAnterior = 0;
+    for (var titulo : document.select("h1, h2, h3, h4, h5, h6")) {
+      int nivelAtual = Integer.parseInt(titulo.tagName().substring(1));
+      if (nivelAnterior > 0 && nivelAtual > nivelAnterior + 1) {
+        return false;
+      }
+      nivelAnterior = nivelAtual;
+    }
+    return true;
   }
 
   public enum Severidade {

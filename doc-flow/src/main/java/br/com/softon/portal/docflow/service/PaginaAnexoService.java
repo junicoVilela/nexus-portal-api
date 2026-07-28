@@ -16,6 +16,8 @@ import java.util.UUID;
 import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
 import lombok.RequiredArgsConstructor;
 
@@ -29,6 +31,12 @@ public class PaginaAnexoService {
   public List<PaginaAnexo> listar(UUID paginaId) {
     paginaService.buscar(paginaId);
     return paginaAnexoRepository.findByPagina_IdOrderByCreatedAtDesc(paginaId);
+  }
+
+  public Page<PaginaAnexo> listarBiblioteca(String busca, Pageable pageable) {
+    return busca == null || busca.isBlank()
+        ? paginaAnexoRepository.findAll(pageable)
+        : paginaAnexoRepository.findByNomeOriginalContainingIgnoreCase(busca.trim(), pageable);
   }
 
   @Transactional

@@ -39,6 +39,20 @@ class PaginaQualidadeServiceTest {
         .contains("CONTEUDO", "PLACEHOLDERS", "IMAGENS_ALT", "RESUMO");
   }
 
+  @Test
+  void avaliar_comLinkInvalidoEHierarquiaQuebrada_deveApontarPendencias() {
+    Pagina pagina = pagina(
+        "<h2>Orientações</h2><h4>Detalhes</h4><p>Consulte as instruções completas para executar "
+            + "o processo com segurança e validar todos os dados necessários.</p><a href=\"javascript:void(0)\">Abrir</a>",
+        "Orientações completas para realizar o cadastro de clientes no sistema.");
+
+    var resultado = service.avaliar(pagina);
+
+    assertThat(resultado.itens()).filteredOn(item -> !item.ok())
+        .extracting(PaginaQualidadeService.ItemQualidade::codigo)
+        .contains("LINKS", "TITULOS");
+  }
+
   private Pagina pagina(String conteudo, String resumo) {
     Projeto projeto = new Projeto("Projeto", "projeto", null, true);
     Modulo modulo = new Modulo("Módulo", "modulo", null, 0, true, projeto);

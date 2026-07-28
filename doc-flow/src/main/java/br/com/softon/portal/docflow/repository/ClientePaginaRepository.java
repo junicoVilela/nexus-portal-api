@@ -14,4 +14,5 @@ public interface ClientePaginaRepository extends JpaRepository<ClientePagina, UU
 
   @Query("select cp.pagina.id from ClientePagina cp where cp.cliente.id = :clienteId")
   List<UUID> findPaginaIdsByClienteId(@Param("clienteId") UUID clienteId);
+
 }

@@ -183,7 +183,7 @@ class PublicacaoServiceTest {
     Page<Publicacao> page = new PageImpl<>(List.of());
     when(publicacaoRepository.findAll(pageable)).thenReturn(page);
 
-    Page<Publicacao> out = service.listar(null, pageable);
+    Page<Publicacao> out = service.listar(null, null, pageable);
 
     assertThat(out).isSameAs(page);
   }
@@ -194,9 +194,39 @@ class PublicacaoServiceTest {
     Page<Publicacao> page = new PageImpl<>(List.of());
     when(publicacaoRepository.findByCliente_Id(clienteId, pageable)).thenReturn(page);
 
-    Page<Publicacao> out = service.listar(clienteId, pageable);
+    Page<Publicacao> out = service.listar(clienteId, null, pageable);
 
     assertThat(out).isSameAs(page);
+  }
+
+  @Test
+  void listarPageable_comStatusFiltraNoRepositorio() {
+    Pageable pageable = Pageable.unpaged();
+    Page<Publicacao> page = new PageImpl<>(List.of());
+    when(publicacaoRepository.findByStatus(StatusPublicacao.ERRO, pageable)).thenReturn(page);
+
+    Page<Publicacao> out = service.listar(null, StatusPublicacao.ERRO, pageable);
+
+    assertThat(out).isSameAs(page);
+  }
+
+  @Test
+  void reprocessarLote_ignoraGerandoERemoveDuplicados() throws Exception {
+    UUID outroId = UUID.randomUUID();
+    Publicacao comErro = new Publicacao(cliente, "1.0.0", null);
+    comErro.registrarErro("falha");
+    setId(comErro, publicacaoId);
+    Publicacao gerando = new Publicacao(cliente, "2.0.0", null);
+    setId(gerando, outroId);
+    when(publicacaoRepository.findById(publicacaoId)).thenReturn(Optional.of(comErro));
+    when(publicacaoRepository.findById(outroId)).thenReturn(Optional.of(gerando));
+
+    List<Publicacao> resultado = service.reprocessarLote(
+        List.of(publicacaoId, publicacaoId, outroId), principal);
+
+    assertThat(resultado).containsExactly(comErro);
+    assertThat(comErro.getStatus()).isEqualTo(StatusPublicacao.GERANDO);
+    verify(publicacaoWorkerService).processar(publicacaoId, "editor");
   }
 
   @Test

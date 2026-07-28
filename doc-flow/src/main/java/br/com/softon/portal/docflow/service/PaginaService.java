@@ -214,6 +214,21 @@ public class PaginaService {
     return paginaRevisaoRepository.findByPagina_Id(id, pageable);
   }
 
+  @Transactional
+  public PaginaRevisao comentarRevisao(UUID id, String comentario, Principal principal) {
+    Pagina pagina = buscar(id);
+    if (pagina.getStatus() != StatusPagina.EM_REVISAO) {
+      throw new BusinessException("Comentários editoriais estão disponíveis somente durante a revisão.");
+    }
+    PaginaRevisao revisao = registrarRevisao(
+        pagina,
+        username(principal),
+        TipoRevisaoPagina.COMENTARIO,
+        comentario.trim());
+    auditoriaService.registrar("PAGINA", pagina.getId(), "COMENTAR_REVISAO", pagina.getTitulo(), principal);
+    return revisao;
+  }
+
   public PaginaQualidadeService.ResultadoQualidade qualidade(UUID id) {
     return paginaQualidadeService.avaliar(buscar(id));
   }
@@ -236,14 +251,24 @@ public class PaginaService {
 
   @Transactional
   public void reordenar(List<UUID> paginaIds, Principal principal) {
-    for (int i = 0; i < paginaIds.size(); i++) {
-      paginaRepository.findById(paginaIds.get(i)).ifPresent(pagina -> {
-        int novaOrdem = paginaIds.indexOf(pagina.getId());
+    if (paginaIds.isEmpty() || paginaIds.size() != paginaIds.stream().distinct().count()) {
+      throw new BusinessException("A ordenação deve conter páginas distintas.");
+    }
+    List<Pagina> paginas = buscarTodos(paginaIds);
+    UUID moduloId = paginas.getFirst().getModulo().getId();
+    UUID parentId = paginas.getFirst().getParent() == null ? null : paginas.getFirst().getParent().getId();
+    if (paginas.stream().anyMatch(p -> !p.getModulo().getId().equals(moduloId)
+        || !java.util.Objects.equals(parentId, p.getParent() == null ? null : p.getParent().getId()))) {
+      throw new BusinessException("Só é possível reordenar páginas do mesmo módulo e nível.");
+    }
+    for (int i = 0; i < paginas.size(); i++) {
+      Pagina pagina = paginas.get(i);
+      int novaOrdem = i;
         pagina.atualizar(pagina.getTitulo(), pagina.getSlug(), pagina.getCodigoTela(),
             pagina.getResumo(), pagina.getConteudoHtml(), novaOrdem, pagina.isAtivo(),
             pagina.getModulo(), pagina.getParent());
-      });
     }
+    auditoriaService.registrar("PAGINA", null, "REORDENAR", "Páginas reordenadas.", principal);
   }
 
   public String preview(UUID id) {
@@ -353,10 +378,10 @@ public class PaginaService {
     return principal == null ? "system" : principal.getName();
   }
 
-  private void registrarRevisao(Pagina pagina, String username, TipoRevisaoPagina tipo,
+  private PaginaRevisao registrarRevisao(Pagina pagina, String username, TipoRevisaoPagina tipo,
       String descricao) {
     int numero = paginaRevisaoRepository.countByPagina_Id(pagina.getId()) + 1;
-    paginaRevisaoRepository.save(new PaginaRevisao(pagina, numero, username, tipo, descricao));
+    return paginaRevisaoRepository.save(new PaginaRevisao(pagina, numero, username, tipo, descricao));
   }
 
   private void validarVersao(Pagina pagina, Long versaoEsperada) {

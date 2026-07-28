@@ -43,7 +43,7 @@ public class EmpresaLogoService {
   public ResponseEntity<Resource> servir() {
     Optional<Path> logo = encontrar();
     if (logo.isEmpty()) {
-      return ResponseEntity.notFound().build();
+      return ResponseEntity.noContent().build();
     }
     Path path = logo.get();
     String contentType = detectarContentType(path.getFileName().toString());

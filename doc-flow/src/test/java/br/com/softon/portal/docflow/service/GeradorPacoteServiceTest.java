@@ -223,10 +223,14 @@ class GeradorPacoteServiceTest {
       String css = new String(zf.getInputStream(zf.getEntry("assets/app.css")).readAllBytes(),
           java.nio.charset.StandardCharsets.UTF_8);
       assertThat(css)
-          .contains("docflow-manual layout-v12", ".article-body .doc-intro", ".article-body .steps>ol")
+          .contains("docflow-manual layout-v15", ".article-body .doc-intro", ".article-body .steps>ol")
           .contains(".article-body .objective-card", ".article-body .screen-grid", ".article-body .flow-strip")
           .contains(".article-body .journey-grid", ".article-body .resource-list", ".article-body .status-list")
           .contains("content:'✓'");
+      String index = new String(zf.getInputStream(zf.getEntry("index.html")).readAllBytes(),
+          java.nio.charset.StandardCharsets.UTF_8);
+      assertThat(index).contains("CENTRAL DE AJUDA", "Olá! Como podemos ajudar?", "id=\"welcome-search\"")
+          .contains("data-welcome-page", "Encontre a resposta certa");
     }
   }
 

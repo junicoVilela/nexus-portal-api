@@ -36,6 +36,7 @@ import org.springframework.web.bind.annotation.RestController;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.multipart.MultipartFile;
 import br.com.softon.portal.docflow.dto.request.PaginaRequest;
+import br.com.softon.portal.docflow.dto.request.ComentarioRevisaoRequest;
 import br.com.softon.portal.docflow.dto.request.PaginaTemplateRequest;
 import br.com.softon.portal.docflow.dto.request.PaginaTemplateAplicacaoRequest;
 import br.com.softon.portal.docflow.dto.request.PaginaTemplateDuplicarRequest;
@@ -267,6 +268,15 @@ public class PaginaController {
         PaginaRevisaoResponse::from);
   }
 
+  @PostMapping("/{id}/revisoes/comentarios")
+  @PreAuthorize(Permissoes.PAGINA_EDITAR)
+  public PaginaRevisaoResponse comentarRevisao(
+      @PathVariable UUID id,
+      @Valid @RequestBody ComentarioRevisaoRequest request,
+      Principal principal) {
+    return PaginaRevisaoResponse.from(paginaService.comentarRevisao(id, request.comentario(), principal));
+  }
+
   @PostMapping("/{id}/duplicar")
   @ResponseStatus(HttpStatus.CREATED)
   @PreAuthorize(Permissoes.PAGINA_CRIAR)
@@ -278,6 +288,19 @@ public class PaginaController {
   @PreAuthorize(Permissoes.PAGINA_EDITAR)
   public void reordenar(@RequestBody ReordenarRequest request, Principal principal) {
     paginaService.reordenar(request.paginaIds(), principal);
+  }
+
+  @PreAuthorize(Permissoes.PAGINA_LER)
+  @GetMapping("/anexos")
+  public PageResponse<PaginaAnexoResponse> bibliotecaAnexos(
+      @RequestParam(required = false) String busca,
+      @RequestParam(defaultValue = "1") Integer page,
+      @RequestParam(defaultValue = "24") Integer size) {
+    return PageResponse.from(
+        paginaAnexoService.listarBiblioteca(
+            busca,
+            PageableUtils.of(page, size, Sort.by(Sort.Order.desc("createdAt")))),
+        PaginaAnexoResponse::from);
   }
 
   @PreAuthorize(Permissoes.PAGINA_LER)

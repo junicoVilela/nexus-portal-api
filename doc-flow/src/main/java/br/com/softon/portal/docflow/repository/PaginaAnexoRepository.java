@@ -2,10 +2,12 @@ package br.com.softon.portal.docflow.repository;
 
 import br.com.softon.portal.docflow.entity.PaginaAnexo;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
-import java.util.Optional;
 
 public interface PaginaAnexoRepository extends JpaRepository<PaginaAnexo, UUID> {
   @Override
@@ -16,4 +18,11 @@ public interface PaginaAnexoRepository extends JpaRepository<PaginaAnexo, UUID> 
   List<PaginaAnexo> findByPagina_IdOrderByCreatedAtDesc(UUID paginaId);
 
   List<PaginaAnexo> findByPagina_Id(UUID paginaId);
+
+  @Override
+  @EntityGraph(attributePaths = {"pagina", "pagina.modulo", "pagina.modulo.projeto"})
+  Page<PaginaAnexo> findAll(Pageable pageable);
+
+  @EntityGraph(attributePaths = {"pagina", "pagina.modulo", "pagina.modulo.projeto"})
+  Page<PaginaAnexo> findByNomeOriginalContainingIgnoreCase(String nome, Pageable pageable);
 }

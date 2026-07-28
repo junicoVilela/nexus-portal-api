@@ -20,6 +20,9 @@ import lombok.Setter;
 @Table(name = "tb_cliente")
 public class Cliente extends AuditableEntity {
 
+  public static final String TEMA_COR_PRIMARIA_PADRAO = "#1a73e8";
+  public static final String TEMA_COR_FUNDO_PADRAO = "#f8f9fa";
+
   @Id
   @GeneratedValue(strategy = GenerationType.UUID)
   private UUID id;
@@ -52,16 +55,15 @@ public class Cliente extends AuditableEntity {
   }
 
   public void definirTemas(String temaCorPrimaria, String temaCorFundo) {
-    this.temaCorPrimaria = temaCorPrimaria;
-    this.temaCorFundo = temaCorFundo;
+    this.temaCorPrimaria = TEMA_COR_PRIMARIA_PADRAO;
+    this.temaCorFundo = TEMA_COR_FUNDO_PADRAO;
   }
 
   public void atualizar(String nome, String slug, boolean ativo, String temaCorPrimaria, String temaCorFundo) {
     this.nome = nome;
     this.slug = slug;
     this.ativo = ativo;
-    this.temaCorPrimaria = temaCorPrimaria;
-    this.temaCorFundo = temaCorFundo;
+    definirTemas(temaCorPrimaria, temaCorFundo);
   }
 
   public void definirLogo(String path, String contentType) {
@@ -75,10 +77,10 @@ public class Cliente extends AuditableEntity {
   }
 
   public String getTemaCorPrimariaOuPadrao() {
-    return (temaCorPrimaria != null && !temaCorPrimaria.isBlank()) ? temaCorPrimaria : "#1a73e8";
+    return TEMA_COR_PRIMARIA_PADRAO;
   }
 
   public String getTemaCorFundoOuPadrao() {
-    return (temaCorFundo != null && !temaCorFundo.isBlank()) ? temaCorFundo : "#f8f9fa";
+    return TEMA_COR_FUNDO_PADRAO;
   }
 }

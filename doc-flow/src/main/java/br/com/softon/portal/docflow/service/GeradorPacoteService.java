@@ -43,7 +43,7 @@ import org.springframework.web.util.HtmlUtils;
 public class GeradorPacoteService {
 
   /** Revisão dos assets estáticos do manual ZIP; aparece no comentário do app.css, na meta do HTML e na query string (cache bust). */
-  public static final String MANUAL_ASSETS_REVISION = "layout-v12";
+  public static final String MANUAL_ASSETS_REVISION = "layout-v15";
 
   private final ClienteModuloRepository clienteModuloRepository;
   private final ClientePaginaRepository clientePaginaRepository;
@@ -72,6 +72,10 @@ public class GeradorPacoteService {
   }
 
   public ResultadoGeracao gerar(Cliente cliente, String versao) throws IOException {
+    return gerar(cliente, versao, UUID.randomUUID());
+  }
+
+  public ResultadoGeracao gerar(Cliente cliente, String versao, UUID geracaoId) throws IOException {
     List<Pagina> paginas = selecionarPaginas(cliente.getId());
     if (paginas.isEmpty()) {
       throw new BusinessException("Não há páginas publicadas elegíveis para este cliente.");
@@ -79,7 +83,7 @@ public class GeradorPacoteService {
 
     String pacoteNome = "manual-%s-v%s".formatted(cliente.getSlug(), versao);
     Path storageDir = Path.of(storageProperties.publicacoesDir()).toAbsolutePath().normalize();
-    Path workDir = storageDir.resolve("tmp").resolve(pacoteNome);
+    Path workDir = storageDir.resolve("tmp").resolve(geracaoId.toString());
     Path zipPath = storageDir.resolve(pacoteNome + ".zip");
 
     FileSystemUtils.deleteRecursively(workDir);
@@ -383,24 +387,70 @@ public class GeradorPacoteService {
   private void escreverIndex(Cliente cliente, String versao, List<Pagina> paginas, Path workDir) throws IOException {
     String cards = paginas.stream()
         .map(p -> """
-            <a class="page-card" href="paginas/%s.html">
-              <span>%s</span>
+            <a class="welcome-page-card" href="paginas/%s.html" data-welcome-page data-search="%s %s %s %s">
+              <span class="welcome-page-card__module">%s</span>
               <strong>%s</strong>
               <small>%s</small>
+              <span class="welcome-page-card__action">Abrir guia <b>→</b></span>
             </a>
             """.formatted(p.getSlug(), HtmlUtils.htmlEscape(p.getModulo().getNome()),
-            HtmlUtils.htmlEscape(p.getTitulo()), HtmlUtils.htmlEscape(p.getCodigoTela())))
+            HtmlUtils.htmlEscape(p.getTitulo()), HtmlUtils.htmlEscape(p.getCodigoTela()),
+            HtmlUtils.htmlEscape(p.getResumo() == null ? "" : p.getResumo()),
+            HtmlUtils.htmlEscape(p.getModulo().getNome()), HtmlUtils.htmlEscape(p.getTitulo()),
+            HtmlUtils.htmlEscape(p.getResumo() == null || p.getResumo().isBlank()
+                ? p.getCodigoTela() : p.getResumo())))
         .reduce("", String::concat);
-    cards = """
-        <a class="page-card" href="versao.html">
-          <span>Publicação</span>
-          <strong>Sobre esta versão</strong>
-          <small>Escopo, data e páginas incluídas</small>
-        </a>
-        """ + cards;
+    String primeiroGuia = paginas.isEmpty() ? "versao.html" : "paginas/" + paginas.getFirst().getSlug() + ".html";
+    String tituloPrimeiroGuia = paginas.isEmpty() ? "Conheça esta publicação" : paginas.getFirst().getTitulo();
+    long quantidadeModulos = paginas.stream().map(pagina -> pagina.getModulo().getId()).distinct().count();
+    String content = """
+        <section class="welcome-hero">
+          <div class="welcome-hero__glow"></div>
+          <span class="welcome-eyebrow">CENTRAL DE AJUDA</span>
+          <h1>Olá! Como podemos ajudar?</h1>
+          <p>Bem-vindo ao help de <strong>%s</strong>. Encontre orientações claras para realizar cada tarefa com segurança e confiança.</p>
+          <label class="welcome-search" for="welcome-search">
+            <span aria-hidden="true">⌕</span>
+            <input id="welcome-search" type="search" autocomplete="off" placeholder="Digite uma tela, assunto ou código para começar">
+          </label>
+          <p id="welcome-search-status" class="welcome-search-status" aria-live="polite">Explore os guias disponíveis abaixo.</p>
+          <div class="welcome-hero__actions">
+            <a class="welcome-button welcome-button--primary" href="%s">Começar por aqui <span>→</span></a>
+            <a class="welcome-button" href="#guias">Ver todos os guias</a>
+          </div>
+        </section>
+        <section class="welcome-overview" aria-label="Resumo do manual">
+          <div><strong>%d</strong><span>guias práticos</span></div>
+          <div><strong>%d</strong><span>módulos cobertos</span></div>
+          <a href="versao.html"><span>Esta publicação</span><strong>v%s</strong></a>
+        </section>
+        <section class="welcome-paths" aria-label="Caminhos rápidos">
+          <a href="%s" class="welcome-path">
+            <span class="welcome-path__icon">1</span><span><strong>Comece um procedimento</strong><small>Acesse %s</small></span><b>→</b>
+          </a>
+          <a href="#guias" class="welcome-path">
+            <span class="welcome-path__icon">⌘</span><span><strong>Encontre uma tela</strong><small>Pesquise ou navegue pelos guias</small></span><b>→</b>
+          </a>
+          <a href="versao.html" class="welcome-path">
+            <span class="welcome-path__icon">i</span><span><strong>Consulte a versão</strong><small>Veja o escopo deste manual</small></span><b>→</b>
+          </a>
+        </section>
+        <section id="guias" class="welcome-guides">
+          <div class="welcome-section-heading">
+            <div><span>GUIAS DISPONÍVEIS</span><h2>Encontre a resposta certa</h2></div>
+            <p>Selecione um guia para ver o passo a passo.</p>
+          </div>
+          <div id="welcome-pages" class="welcome-pages">%s</div>
+          <div id="welcome-empty" class="welcome-empty" hidden>
+            <strong>Nenhum guia encontrado.</strong><span>Tente outro termo ou navegue pelo menu lateral.</span>
+          </div>
+        </section>
+        """.formatted(HtmlUtils.htmlEscape(cliente.getNome()), primeiroGuia,
+        paginas.size(), quantidadeModulos, HtmlUtils.htmlEscape(versao), primeiroGuia,
+        HtmlUtils.htmlEscape(tituloPrimeiroGuia), cards);
     Files.writeString(workDir.resolve("index.html"), template(cliente, versao,
         "Manual " + cliente.getNome(), "Início", menuHtml(paginas, "paginas/"),
-        "<div class=\"cards\">" + cards + "</div>", "assets"));
+        content, "assets"));
   }
 
   private void escreverSobreVersao(Cliente cliente, String versao, List<Pagina> paginas, Path workDir) throws IOException {
@@ -555,6 +605,7 @@ public class GeradorPacoteService {
         "rev=" + MANUAL_ASSETS_REVISION + "&ver=" + URLEncoder.encode(versao, StandardCharsets.UTF_8);
     String temaTag = temaStyleOverridePacoteHtml(cliente);
     String temaMetaCor = HtmlUtils.htmlEscape(cliente.getTemaCorPrimariaOuPadrao());
+    String articleClass = content.contains("welcome-hero") ? "article--welcome" : "";
     return """
         <!doctype html>
         <html lang="pt-BR">
@@ -582,7 +633,7 @@ public class GeradorPacoteService {
             <div class="breadcrumb-bar">
               <div class="breadcrumb">%s</div>
             </div>
-            <article>
+            <article class="%s">
               <header class="article-head">%s</header>
               <div class="article-body">%s</div>
             </article>
@@ -591,7 +642,7 @@ public class GeradorPacoteService {
         </html>
         """.formatted(HtmlUtils.htmlEscape(MANUAL_ASSETS_REVISION), temaMetaCor, HtmlUtils.htmlEscape(title),
         assetBase, assetBase, assetQuery, temaTag, assetBase, assetQuery, brandHtml, menu,
-        HtmlUtils.htmlEscape(breadcrumb), clienteLogoHtml, content);
+        HtmlUtils.htmlEscape(breadcrumb), articleClass, clienteLogoHtml, content);
   }
 
   /** Logo da empresa ocupa toda a largura da sidebar (painel destacado). */
@@ -636,7 +687,12 @@ public class GeradorPacoteService {
     }
     StringBuilder html = new StringBuilder();
     grupos.forEach((modulo, items) -> {
-      html.append("<section><h2>").append(HtmlUtils.htmlEscape(modulo)).append("</h2>");
+      boolean tituloRedundante = items.size() == 1
+          && modulo.trim().equalsIgnoreCase(items.getFirst().getTitulo().trim());
+      html.append("<section>");
+      if (!tituloRedundante) {
+        html.append("<h2>").append(HtmlUtils.htmlEscape(modulo)).append("</h2>");
+      }
       appendMenuItems(html, roots(items), filhosPorParent(items), pagePrefix);
       html.append("</section>");
     });
@@ -824,6 +880,8 @@ public class GeradorPacoteService {
         .page-card{display:block;border:1px solid var(--border);border-radius:8px;padding:16px 18px;color:inherit;text-decoration:none;background:var(--surface);transition:box-shadow .2s;border-color:var(--border)}
         .page-card:hover{box-shadow:0 1px 2px 0 rgba(60,64,67,.3),0 2px 6px 2px rgba(60,64,67,.15)}
         .page-card span,.page-card small{display:block;color:var(--muted);font-size:12px;font-family:var(--font-ui)}.page-card strong{display:block;margin:8px 0 4px;font-size:15px;color:var(--text);font-family:var(--font-ui);font-weight:600}
+        .welcome-hero{position:relative;overflow:hidden;margin:-28px -40px 24px;padding:52px clamp(24px,5vw,72px) 42px;border-bottom:1px solid #c6dafc;background:linear-gradient(118deg,#e8f0fe 0%%,#f7faff 52%%,#fff 100%%)}.welcome-hero:before{position:absolute;right:-95px;top:-150px;width:370px;height:370px;border:50px solid rgba(26,115,232,.09);border-radius:50%%;content:''}.welcome-hero__glow{position:absolute;right:13%%;bottom:-125px;width:260px;height:260px;border-radius:50%%;background:rgba(26,115,232,.1);filter:blur(2px)}.welcome-hero>*:not(.welcome-hero__glow){position:relative;z-index:1}.welcome-eyebrow{display:inline-flex;margin-bottom:13px;padding:5px 10px;border:1px solid #aecbfa;border-radius:999px;background:#fff;color:var(--accent);font-size:10px;font-weight:700;letter-spacing:.09em}.welcome-hero h1{max-width:650px;margin:0 0 10px;padding:0;border:0;font-size:clamp(28px,3.2vw,42px);letter-spacing:-.035em}.welcome-hero p{max-width:650px;margin:0;color:var(--muted);font-size:16px;line-height:1.6}.welcome-search{display:flex;max-width:650px;margin:26px 0 0;padding:0 16px;align-items:center;gap:11px;border:1px solid #aecbfa;border-radius:12px;background:#fff;box-shadow:0 8px 22px rgba(26,115,232,.11);color:var(--accent)}.welcome-search span{font-size:26px;line-height:1;transform:rotate(-20deg)}.welcome-search input{width:100%;height:54px;border:0;outline:0;background:transparent;color:var(--text);font:inherit;font-size:15px}.welcome-search input::placeholder{color:#80868b}.welcome-search:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(26,115,232,.18),0 8px 22px rgba(26,115,232,.11)}.welcome-search-status{min-height:21px;margin-top:8px!important;font-size:12px!important}.welcome-hero__actions{display:flex;flex-wrap:wrap;gap:11px;margin-top:21px}.welcome-button{display:inline-flex;padding:10px 15px;align-items:center;gap:10px;border:1px solid #aecbfa;border-radius:8px;background:#fff;color:var(--accent);font-family:var(--font-ui);font-size:13px;font-weight:700;text-decoration:none}.welcome-button:hover{border-color:var(--accent);background:var(--accent-soft);text-decoration:none}.welcome-button--primary{border-color:var(--accent);background:var(--accent);color:#fff}.welcome-button--primary:hover{background:var(--accent-hover);color:#fff}.welcome-button span{font-size:17px}.welcome-overview{display:grid;grid-template-columns:repeat(3,1fr);margin:0 0 30px;overflow:hidden;border:1px solid var(--border);border-radius:12px;background:#fff;box-shadow:0 2px 5px rgba(60,64,67,.08)}.welcome-overview>div,.welcome-overview>a{display:flex;min-height:82px;padding:17px 20px;flex-direction:column;justify-content:center;border-right:1px solid var(--border);color:inherit;text-decoration:none}.welcome-overview>a{border-right:0;background:var(--surface-2)}.welcome-overview strong{color:var(--accent);font-family:var(--font-ui);font-size:23px;line-height:1.1}.welcome-overview span{margin-top:5px;color:var(--muted);font-family:var(--font-ui);font-size:12px}.welcome-overview>a strong{font-size:16px}.welcome-paths{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:38px}.welcome-path{display:flex;min-height:100px;padding:17px;align-items:center;gap:13px;border:1px solid var(--border);border-radius:12px;background:#fff;color:var(--text);text-decoration:none;transition:transform .15s,box-shadow .15s,border-color .15s}.welcome-path:hover{border-color:#aecbfa;box-shadow:0 5px 16px rgba(60,64,67,.13);transform:translateY(-2px);text-decoration:none}.welcome-path__icon{display:grid;width:33px;height:33px;flex:0 0 33px;place-items:center;border-radius:10px;background:var(--accent-soft);color:var(--accent);font-family:var(--font-ui);font-size:15px;font-weight:700}.welcome-path>span:nth-child(2){display:grid;min-width:0;flex:1}.welcome-path strong{font-family:var(--font-ui);font-size:13px}.welcome-path small{overflow:hidden;color:var(--muted);font-size:11px;text-overflow:ellipsis;white-space:nowrap}.welcome-path>b{color:var(--accent);font-size:18px}.welcome-guides{padding-top:2px}.welcome-section-heading{display:flex;margin-bottom:17px;align-items:end;justify-content:space-between;gap:20px}.welcome-section-heading span{display:block;margin-bottom:5px;color:var(--accent);font-family:var(--font-ui);font-size:10px;font-weight:700;letter-spacing:.09em}.welcome-section-heading h2{margin:0;padding:0;border:0;font-size:22px}.welcome-section-heading p{margin:0;color:var(--muted);font-size:12px}.welcome-pages{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:13px}.welcome-page-card{display:flex;min-height:166px;padding:18px;flex-direction:column;border:1px solid var(--border);border-radius:12px;background:#fff;color:var(--text);text-decoration:none;transition:transform .15s,box-shadow .15s,border-color .15s}.welcome-page-card:hover{border-color:#aecbfa;box-shadow:0 6px 17px rgba(60,64,67,.13);transform:translateY(-2px);text-decoration:none}.welcome-page-card__module{overflow:hidden;color:var(--accent);font-family:var(--font-ui);font-size:11px;font-weight:700;text-overflow:ellipsis;white-space:nowrap}.welcome-page-card strong{margin:7px 0;color:var(--text);font-family:var(--font-ui);font-size:15px;line-height:1.35}.welcome-page-card small{display:-webkit-box;overflow:hidden;color:var(--muted);font-size:12px;line-height:1.45;-webkit-box-orient:vertical;-webkit-line-clamp:2}.welcome-page-card__action{display:block;margin-top:auto;padding-top:13px;color:var(--accent);font-family:var(--font-ui);font-size:12px;font-weight:700}.welcome-page-card__action b{margin-left:5px;font-size:15px}.welcome-empty{display:grid;padding:40px 20px;place-items:center;border:1px dashed #aecbfa;border-radius:12px;background:var(--accent-soft);color:var(--muted);text-align:center}.welcome-empty strong{color:var(--accent)}.welcome-empty span{font-size:12px}
+        .article--welcome .article-head{display:none}.article-body .welcome-button--primary,.article-body .welcome-button--primary:hover{color:#fff}
         #manual-search{width:100%;height:40px;border:1px solid var(--border);border-radius:8px;padding:0 14px;margin-bottom:12px;font-size:14px;font-family:var(--font-ui);background:var(--surface);color:var(--text)}
         #manual-search:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px rgba(26,115,232,.25)}
         .search-results{display:grid;gap:8px;margin:0 0 16px}
@@ -836,8 +894,8 @@ public class GeradorPacoteService {
         nav ul ul{margin:4px 0 0;padding-left:10px;border-left:2px solid #e8eaed}
         nav a{display:block;color:#3c4043;text-decoration:none;padding:10px 16px;border-radius:999px;font-size:14px;font-weight:400;line-height:20px;transition:background .12s ease,color .12s ease}
         nav a:hover{background:var(--nav-hover);color:var(--text)}
-        @media(max-width:820px){body{display:block;grid-template-columns:1fr}.sidebar{height:auto;position:relative;max-height:none;box-shadow:none}.content{padding:18px}.article-body{padding:22px}article{border-radius:8px}.article-body .content-grid--2,.article-body .content-grid--3,.article-body .annotation-grid,.article-body .screen-grid,.article-body .flow-strip,.article-body .journey-grid{grid-template-columns:1fr}.article-body .flow-strip li:not(:last-child):after,.article-body .journey-card:not(:last-child):after{top:auto;right:50%;bottom:-25px;transform:translateX(50%) rotate(90deg)}.article-body .resource-item{align-items:flex-start;flex-wrap:wrap}.article-body .resource-item__meta{flex-basis:100%!important;text-align:left}}
-        """);
+        @media(max-width:820px){body{display:block;grid-template-columns:1fr}.sidebar{height:auto;position:relative;max-height:none;box-shadow:none}.content{padding:18px}.article-body{padding:22px}.welcome-hero{margin:-22px -22px 22px;padding:36px 24px}.welcome-overview,.welcome-paths{grid-template-columns:1fr}.welcome-overview>div,.welcome-overview>a{min-height:68px;border-right:0;border-bottom:1px solid var(--border)}.welcome-overview>a{border-bottom:0}.welcome-section-heading{align-items:flex-start;flex-direction:column;gap:5px}.article-body .content-grid--2,.article-body .content-grid--3,.article-body .annotation-grid,.article-body .screen-grid,.article-body .flow-strip,.article-body .journey-grid{grid-template-columns:1fr}.article-body .flow-strip li:not(:last-child):after,.article-body .journey-card:not(:last-child):after{top:auto;right:50%;bottom:-25px;transform:translateX(50%) rotate(90deg)}.article-body .resource-item{align-items:flex-start;flex-wrap:wrap}.article-body .resource-item__meta{flex-basis:100%!important;text-align:left}}
+        """.replace("%%", "%"));
     Files.writeString(assetsDir.resolve("app.js"), """
         const manualRootBase = window.location.pathname.includes('/paginas/') ? '..' : '.';
         async function manualOpenByCodigoTela(codigoTela, basePath = manualRootBase) {
@@ -864,40 +922,60 @@ public class GeradorPacoteService {
         }
         document.addEventListener('DOMContentLoaded', () => {
           const input = document.getElementById('manual-search');
-          if (!input) return;
-          const results = document.createElement('div');
-          results.id = 'manual-search-results';
-          results.className = 'search-results';
-          input.insertAdjacentElement('afterend', results);
-          let searchIndex = [];
-          manualLoadSearchIndex().then(index => searchIndex = index).catch(() => searchIndex = []);
-          input.addEventListener('input', () => {
-            const term = input.value.trim();
-            const normalizedTerm = manualNormalize(term);
-            document.querySelectorAll('nav a').forEach(link => {
-              const text = `${link.textContent} ${link.dataset.codigoTela || ''}`;
-              link.style.display = manualNormalize(text).includes(normalizedTerm) ? 'block' : 'none';
-            });
-            if (normalizedTerm.length < 2) {
-              results.replaceChildren();
-              return;
-            }
-            const matches = searchIndex
-              .filter(item => manualNormalize(`${item.titulo} ${item.codigoTela} ${item.texto}`).includes(normalizedTerm))
-              .slice(0, 12)
-              .map(item => {
-                const link = document.createElement('a');
-                link.className = 'search-result';
-                link.href = `${manualRootBase}/${item.url}`;
-                const title = document.createElement('strong');
-                title.textContent = item.titulo;
-                const meta = document.createElement('span');
-                meta.textContent = `${item.codigoTela} · ${manualSnippet(item.texto, term)}`;
-                link.append(title, meta);
-                return link;
+          if (input) {
+            const results = document.createElement('div');
+            results.id = 'manual-search-results';
+            results.className = 'search-results';
+            input.insertAdjacentElement('afterend', results);
+            let searchIndex = [];
+            manualLoadSearchIndex().then(index => searchIndex = index).catch(() => searchIndex = []);
+            input.addEventListener('input', () => {
+              const term = input.value.trim();
+              const normalizedTerm = manualNormalize(term);
+              document.querySelectorAll('nav a').forEach(link => {
+                const text = `${link.textContent} ${link.dataset.codigoTela || ''}`;
+                link.style.display = manualNormalize(text).includes(normalizedTerm) ? 'block' : 'none';
               });
-            results.replaceChildren(...matches);
-          });
+              if (normalizedTerm.length < 2) {
+                results.replaceChildren();
+                return;
+              }
+              const matches = searchIndex
+                .filter(item => manualNormalize(`${item.titulo} ${item.codigoTela} ${item.texto}`).includes(normalizedTerm))
+                .slice(0, 12)
+                .map(item => {
+                  const link = document.createElement('a');
+                  link.className = 'search-result';
+                  link.href = `${manualRootBase}/${item.url}`;
+                  const title = document.createElement('strong');
+                  title.textContent = item.titulo;
+                  const meta = document.createElement('span');
+                  meta.textContent = `${item.codigoTela} · ${manualSnippet(item.texto, term)}`;
+                  link.append(title, meta);
+                  return link;
+                });
+              results.replaceChildren(...matches);
+            });
+          }
+          const welcomeInput = document.getElementById('welcome-search');
+          if (welcomeInput) {
+            const cards = [...document.querySelectorAll('[data-welcome-page]')];
+            const empty = document.getElementById('welcome-empty');
+            const status = document.getElementById('welcome-search-status');
+            welcomeInput.addEventListener('input', () => {
+              const term = manualNormalize(welcomeInput.value.trim());
+              let visible = 0;
+              cards.forEach(card => {
+                const match = !term || manualNormalize(card.dataset.search).includes(term);
+                card.hidden = !match;
+                if (match) visible += 1;
+              });
+              empty.hidden = visible > 0;
+              status.textContent = term
+                ? `${visible} ${visible === 1 ? 'guia encontrado' : 'guias encontrados'} para “${welcomeInput.value.trim()}”.`
+                : 'Explore os guias disponíveis abaixo.';
+            });
+          }
           if ('serviceWorker' in navigator && location.protocol !== 'file:') {
             navigator.serviceWorker.register(`${manualRootBase}/sw.js`).catch(() => undefined);
           }

@@ -49,6 +49,9 @@ public class PublicacaoService {
     if (!cliente.isAtivo()) {
       throw new BusinessException("Não é possível gerar publicação para cliente inativo.");
     }
+    if (publicacaoRepository.existsByCliente_IdAndVersao(clienteId, versao.trim())) {
+      throw new BusinessException("Já existe uma publicação para esta versão e cliente.");
+    }
     String usuario = username(principal);
     Publicacao publicacao = publicacaoRepository.save(new Publicacao(cliente, versao.trim(), observacao));
     agendarProcessamento(publicacao.getId(), usuario);
@@ -68,22 +71,46 @@ public class PublicacaoService {
     return publicacao;
   }
 
-  public Page<Publicacao> listar(UUID clienteId, Pageable pageable) {
+  public Page<Publicacao> listar(UUID clienteId, StatusPublicacao status, Pageable pageable) {
     Optional<Set<UUID>> permitidos = escopoResolver.clientesPermitidosDoUsuarioAtual();
     if (clienteId != null) {
       if (permitidos.isPresent() && !permitidos.get().contains(clienteId)) {
         return new PageImpl<>(List.of(), pageable, 0);
       }
-      return publicacaoRepository.findByCliente_Id(clienteId, pageable);
+      return status == null
+          ? publicacaoRepository.findByCliente_Id(clienteId, pageable)
+          : publicacaoRepository.findByCliente_IdAndStatus(clienteId, status, pageable);
     }
     if (permitidos.isEmpty()) {
-      return publicacaoRepository.findAll(pageable);
+      return status == null
+          ? publicacaoRepository.findAll(pageable)
+          : publicacaoRepository.findByStatus(status, pageable);
     }
     Set<UUID> ids = permitidos.get();
     if (ids.isEmpty()) {
       return new PageImpl<>(List.of(), pageable, 0);
     }
-    return publicacaoRepository.findByCliente_IdIn(ids, pageable);
+    return status == null
+        ? publicacaoRepository.findByCliente_IdIn(ids, pageable)
+        : publicacaoRepository.findByCliente_IdInAndStatus(ids, status, pageable);
+  }
+
+  @Transactional
+  public List<Publicacao> reprocessarLote(List<UUID> ids, Principal principal) {
+    List<UUID> idsUnicos = ids.stream().distinct().toList();
+    String usuario = username(principal);
+    List<Publicacao> reprocessadas = new java.util.ArrayList<>();
+    for (UUID id : idsUnicos) {
+      Publicacao publicacao = buscar(id);
+      escopoResolver.assertPodeEscreverEmCliente(publicacao.getCliente().getId());
+      if (publicacao.getStatus() == StatusPublicacao.GERANDO) {
+        continue;
+      }
+      publicacao.prepararGeracao();
+      agendarProcessamento(publicacao.getId(), usuario);
+      reprocessadas.add(publicacao);
+    }
+    return List.copyOf(reprocessadas);
   }
 
   public List<Publicacao> listar(UUID clienteId) {

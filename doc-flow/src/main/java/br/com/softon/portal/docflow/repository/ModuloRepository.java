@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 public interface ModuloRepository extends JpaRepository<Modulo, UUID>, JpaSpecificationExecutor<Modulo> {
+  long countByAtivoTrue();
+
   boolean existsByProjeto_Id(UUID projetoId);
 
   @Override

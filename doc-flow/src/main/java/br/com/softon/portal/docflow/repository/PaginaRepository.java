@@ -2,6 +2,7 @@ package br.com.softon.portal.docflow.repository;
 
 import br.com.softon.portal.docflow.entity.Pagina;
 import br.com.softon.portal.docflow.entity.StatusPagina;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -32,6 +33,13 @@ public interface PaginaRepository extends JpaRepository<Pagina, UUID>, JpaSpecif
 
   long countByTemplateOrigemIdAndTemplateOrigemVersao(UUID templateId, Integer versao);
 
+  long countByAtivoTrue();
+
+  long countByStatusAndAtivoTrueAndPublishedAtBefore(StatusPagina status, OffsetDateTime limite);
+
+  @Query("select count(p) from Pagina p where p.ativo = true and (p.resumo is null or length(trim(p.resumo)) < 30)")
+  long countSemResumoEditorial();
+
   @Query(value = """
       SELECT p.* FROM tb_pagina p
       WHERE p.search_vector @@ plainto_tsquery('portuguese', :termo)
@@ -54,6 +62,6 @@ public interface PaginaRepository extends JpaRepository<Pagina, UUID>, JpaSpecif
       """)
   List<Pagina> findAtivasByStatusWithModulo(@Param("status") StatusPagina status);
 
-  @Query("select p.status, count(p) from Pagina p group by p.status")
+  @Query("select p.status, count(p) from Pagina p where p.ativo = true group by p.status")
   List<Object[]> contarPorStatusAgrupado();
 }

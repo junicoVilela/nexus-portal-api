@@ -70,19 +70,21 @@ Transições: `POST /paginas/{id}/enviar-revisao`, `/aprovar`, `/publicar`, `/ar
 
 ## Controllers principais
 
-| Controller             | Base path               | Papel                                                     |
-| ---------------------- | ----------------------- | --------------------------------------------------------- |
-| `ClienteController`    | `/docflow/clientes`     | CRUD, vínculos, logo, copiar vínculos                     |
-| `ProjetoController`    | `/docflow/projetos`     | CRUD                                                      |
-| `ModuloController`     | `/docflow/modulos`      | CRUD                                                      |
-| `PaginaController`     | `/docflow/paginas`      | CRUD, workflow, anexos, revisões, reordenar               |
-| `PublicacaoController` | `/docflow/publicacoes`  | Criar, listar, excluir, preview, download, PDF, changelog |
-| `PreviewController`    | `/api/v1/preview-*`     | Tokens de preview                                         |
-| `EmpresaController`    | `/docflow/empresa/logo` | Logo global nos manuais                                   |
-| `AuthController`       | `/api/v1/auth`          | Login JWT                                                 |
-| `UsuarioController`    | `/docflow/usuarios`     | CRUD (ADMIN)                                              |
-| `GrupoController`      | `/rbac/grupos`          | CRUD + membros + permissões (ADMIN) — módulo `dtec-rbac`  |
-| `AuditoriaController`  | `/docflow/auditoria`    | Listagem (ADMIN)                                          |
+| Controller                   | Base path               | Papel                                                     |
+| ---------------------------- | ----------------------- | --------------------------------------------------------- |
+| `ClienteController`          | `/docflow/clientes`     | CRUD, vínculos, logo, copiar vínculos                     |
+| `ProjetoController`          | `/docflow/projetos`     | CRUD                                                      |
+| `ModuloController`           | `/docflow/modulos`      | CRUD                                                      |
+| `PaginaController`           | `/docflow/paginas`      | CRUD, workflow, anexos, revisões, reordenar               |
+| `PublicacaoController`       | `/docflow/publicacoes`  | Criar, listar, excluir, preview, download, PDF, changelog |
+| `DocFlowDashboardController` | `/docflow/dashboard`    | Métricas estruturais, operacionais e editoriais           |
+| `AjudaController`            | `/docflow/ajuda`        | Conteúdo, eventos e métricas da ajuda interativa           |
+| `PreviewController`          | `/api/v1/preview-*`     | Tokens de preview                                         |
+| `EmpresaController`          | `/docflow/empresa/logo` | Logo global nos manuais                                   |
+| `AuthController`             | `/api/v1/auth`          | Login JWT                                                 |
+| `UsuarioController`          | `/docflow/usuarios`     | CRUD (ADMIN)                                              |
+| `GrupoController`            | `/rbac/grupos`          | CRUD + membros + permissões (ADMIN) — módulo `dtec-rbac`  |
+| `AuditoriaController`        | `/docflow/auditoria`    | Listagem (ADMIN)                                          |
 
 As exclusões de conteúdo seguem a ordem segura `publicações → cliente` e
 `subpáginas → páginas → módulos → projetos`. O backend retorna uma mensagem de
@@ -146,6 +148,38 @@ Endpoints adicionais:
 O envio para revisão é bloqueado enquanto houver erro de qualidade. Avisos, como resumo curto
 ou ausência de títulos de seção, permanecem informativos.
 
+O checklist também rejeita imagens sem origem, links vazios/JavaScript e sinaliza saltos na
+hierarquia de títulos. Comentários da central de revisão são registrados como eventos
+`COMENTARIO` no histórico imutável da página.
+
+### Operação editorial
+
+- `GET /dashboard/resumo` agrega KPIs sem transferir catálogos inteiros ao frontend;
+- `GET /paginas/anexos` fornece a biblioteca de mídia paginada e pesquisável;
+- `POST /paginas/{id}/revisoes/comentarios` registra discussões da revisão;
+- `GET /publicacoes?status=ERRO` filtra no servidor;
+- `POST /publicacoes/reprocessar-lote` reenvia até 100 publicações, ignorando jobs em execução.
+
+### Ajuda interativa
+
+As migrations `V25` e `V26` adicionam o catálogo administrável, eventos de uso e permissões
+`AJUDA:*`. A leitura é concedida aos grupos base; criação, edição, exclusão e métricas ficam com
+ADMIN e EDITOR.
+
+A migration `V27` protege o vínculo entre etapas e jornadas com chave estrangeira e restrição de
+tipo. O serviço também impede excluir ou alterar uma jornada que ainda possua etapas.
+
+- `GET /ajuda/conteudos` — jornadas, etapas, FAQs, artigos, onboarding e passos do tour;
+- `POST|PUT|DELETE /ajuda/conteudos` — gestão dos textos, rotas, seletores e mídias;
+- `POST /ajuda/eventos` — telemetria de busca, acesso, progresso e conclusão;
+- `GET /ajuda/metricas` — totais, taxa de conclusão e rankings dos últimos 30 dias.
+
+Mídias aceitam caminhos internos ou URLs HTTP/HTTPS e podem ser imagem, GIF, vídeo ou galeria.
+Eventos idênticos da mesma sessão são deduplicados em uma janela de 10 segundos. Um job diário
+remove eventos antigos; a retenção padrão é de 180 dias e pode ser ajustada por
+`docflow.ajuda.retencao-eventos-dias`. O cron usa `docflow.ajuda.retencao-cron` e, por padrão,
+executa às 03:30 do horário do servidor.
+
 ---
 
 ## Autorização (backend)
@@ -169,13 +203,14 @@ Grupos (`tb_grupo`, `tb_grupo_permissao`) existem na API; permissões vêm do **
 | Preview tokens        | Service existe                                   | API existe                             | ⚠️ Sem UI                             |
 | Grupos/usuários admin | Módulo `seguranca` mock                          | API docflow                            | ⚠️ Conectar ou separar                |
 
-Proxy dev (`softon-portal-web/frontend/proxy.conf.json`): reescreve `/api/doc-flow` → `/api/v1` (falta segmento `docflow` nos paths atuais).
+Proxy dev (`softon-portal-web/frontend/proxy.conf.json`): reescreve `/api/doc-flow` → `/api/v1/docflow`.
 
 ---
 
 ## Testes
 
-Cobertura parcial em `doc-flow/src/test/...`: `ClienteServiceTest`, `PaginaServiceTest`, `GrupoServiceTest`.
+Cobertura em `doc-flow/src/test/...`, incluindo serviços de página, publicação, dashboard e
+qualidade editorial, além das integrações de geração e download.
 
 ---
 
