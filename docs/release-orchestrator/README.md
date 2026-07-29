@@ -104,6 +104,7 @@ Release Orchestrator (módulo Maven `release-orchestrator`)
 ### CI/CD nos repositórios (adicionados 2026-06-16)
 - [39 — Entregáveis CI/CD nos repositórios](39-entregaveis-cicd-repositorios.md)
 - [40 — Guia versão / tag](40-guia-versao-tag.md)
+- [41 — Runbook DTEC Suite V5 com Jenkins local](41-runbook-dtec-suite-v5-jenkins-local.md)
 
 ### Backlog
 - [99 — Melhorias Sugeridas](99-melhorias-sugeridas.md)

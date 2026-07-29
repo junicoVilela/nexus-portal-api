@@ -5,6 +5,7 @@ import br.com.softon.portal.releaseorchestrator.dto.response.EntregaModuloRespon
 import br.com.softon.portal.releaseorchestrator.service.EntregaModuloService;
 import br.com.softon.portal.shared.security.Permissoes;
 import jakarta.validation.Valid;
+import jakarta.transaction.Transactional;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RestController("orchestratorEntregaModuloController")
 @RequestMapping("/api/v1/release-orchestrator/entregas/{entregaId}/modulos")
+@Transactional
 public class EntregaModuloController {
 
   private final EntregaModuloService service;

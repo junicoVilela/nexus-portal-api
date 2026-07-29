@@ -3,6 +3,7 @@ package br.com.softon.portal.releaseorchestrator.controller;
 import br.com.softon.portal.releaseorchestrator.service.DocumentoEntregaService;
 import br.com.softon.portal.releaseorchestrator.service.EntregaService;
 import br.com.softon.portal.shared.security.Permissoes;
+import jakarta.transaction.Transactional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.ByteArrayResource;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RestController("orchestratorDocumentoEntregaController")
 @RequestMapping("/api/v1/release-orchestrator/entregas/{entregaId}/documento")
+@Transactional
 public class DocumentoEntregaController {
 
   private final DocumentoEntregaService service;

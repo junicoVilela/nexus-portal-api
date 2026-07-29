@@ -12,6 +12,7 @@ import br.com.softon.portal.shared.api.SortDirection;
 import br.com.softon.portal.shared.api.SortUtils;
 import br.com.softon.portal.shared.security.Permissoes;
 import jakarta.validation.Valid;
+import jakarta.transaction.Transactional;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -38,6 +39,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RestController("orchestratorEntregaController")
 @RequestMapping("/api/v1/release-orchestrator/entregas")
+@Transactional
 public class EntregaController {
 
   private final EntregaService service;

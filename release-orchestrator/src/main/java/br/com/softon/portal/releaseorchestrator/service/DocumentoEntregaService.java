@@ -9,6 +9,7 @@ import br.com.softon.portal.releaseorchestrator.repository.OrchestratorEntregaMo
 import br.com.softon.portal.releaseorchestrator.repository.OrchestratorEntregaRepository;
 import br.com.softon.portal.releaseorchestrator.repository.ReleaseItemRepository;
 import br.com.softon.portal.shared.exception.NotFoundException;
+import jakarta.transaction.Transactional;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -44,6 +45,7 @@ public class DocumentoEntregaService {
   private static final DateTimeFormatter DATA_HORA =
       DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
+  @Transactional
   public byte[] gerar(UUID entregaId) {
     Entrega entrega = entregaRepository.findById(entregaId)
         .orElseThrow(() -> new NotFoundException("Entrega não encontrada."));

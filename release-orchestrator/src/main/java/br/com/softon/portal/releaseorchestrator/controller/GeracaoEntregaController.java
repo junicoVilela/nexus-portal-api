@@ -3,6 +3,7 @@ package br.com.softon.portal.releaseorchestrator.controller;
 import br.com.softon.portal.releaseorchestrator.dto.response.EntregaResponse;
 import br.com.softon.portal.releaseorchestrator.service.GeracaoEntregaService;
 import br.com.softon.portal.shared.security.Permissoes;
+import jakarta.transaction.Transactional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RestController("orchestratorGeracaoEntregaController")
 @RequestMapping("/api/v1/release-orchestrator/entregas/{entregaId}/geracao")
+@Transactional
 public class GeracaoEntregaController {
 
   private final GeracaoEntregaService service;
