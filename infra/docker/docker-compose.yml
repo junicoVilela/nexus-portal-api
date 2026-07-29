@@ -18,7 +18,7 @@ services:
   # Sempre sobe (sem profile). Defaults batem com application-dev.yml.
   # =====================================================================
   postgres:
-    image: postgres:15
+    image: postgres:18
     container_name: softon-postgres
     restart: unless-stopped
     environment:

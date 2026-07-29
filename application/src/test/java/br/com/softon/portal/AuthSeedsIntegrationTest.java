@@ -43,7 +43,7 @@ class AuthSeedsIntegrationTest {
 
   @Container
   @ServiceConnection
-  static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:17-alpine");
+  static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:18-alpine");
 
   @Value("${local.server.port}")
   int port;

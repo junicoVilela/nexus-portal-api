@@ -98,7 +98,7 @@ public class ClienteFactory {
 class EntregaIntegrationTest {
 
     @Container
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:17")
+    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:18")
             .withDatabaseName("test_orchestrator");
 
     @DynamicPropertySource
