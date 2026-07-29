@@ -28,7 +28,9 @@ services:
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
-      - softon-pgdata:/var/lib/postgresql/data
+      # PostgreSQL 18 usa PGDATA versionado; o volume é montado no
+      # diretório-pai, em vez do caminho legado /var/lib/postgresql/data.
+      - softon-pgdata-18:/var/lib/postgresql
       - ./postgres/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-softon_intranet} -d ${POSTGRES_DB:-softon_intranet}"]
@@ -114,6 +116,8 @@ services:
 volumes:
   softon-pgdata:
     name: softon-pgdata
+  softon-pgdata-18:
+    name: softon-pgdata-18
   softon-jenkins-home:
     name: softon-jenkins-home
   softon-minio-data:
