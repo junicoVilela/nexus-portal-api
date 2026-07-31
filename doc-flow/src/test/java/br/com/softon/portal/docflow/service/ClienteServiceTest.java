@@ -113,11 +113,11 @@ class ClienteServiceTest {
   void criar_comCorTemaHexValida_deveCriarComTema() {
     when(clienteRepository.existsBySlug(any())).thenReturn(false);
 
-    ClienteRequest request = new ClienteRequest("Acme Corp", null, true, "#1a73e8", "#f8f9fa");
+    ClienteRequest request = new ClienteRequest("Acme Corp", null, true, "#4f46e5", "#f7f8fa");
     Cliente cliente = service.criar(request);
 
-    assertThat(cliente.getTemaCorPrimaria()).isEqualTo("#1a73e8");
-    assertThat(cliente.getTemaCorFundo()).isEqualTo("#f8f9fa");
+    assertThat(cliente.getTemaCorPrimaria()).isEqualTo("#4f46e5");
+    assertThat(cliente.getTemaCorFundo()).isEqualTo("#f7f8fa");
   }
 
   @Test

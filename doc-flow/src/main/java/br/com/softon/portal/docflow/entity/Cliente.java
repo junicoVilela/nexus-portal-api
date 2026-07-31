@@ -20,8 +20,11 @@ import lombok.Setter;
 @Table(name = "tb_cliente")
 public class Cliente extends AuditableEntity {
 
-  public static final String TEMA_COR_PRIMARIA_PADRAO = "#1a73e8";
-  public static final String TEMA_COR_FUNDO_PADRAO = "#f8f9fa";
+  /** Indigo do portal / templates de edição (#4f46e5). */
+  public static final String TEMA_COR_PRIMARIA_PADRAO = "#4f46e5";
+  public static final String TEMA_COR_FUNDO_PADRAO = "#f7f8fa";
+  public static final String TEMA_COR_PRIMARIA_HOVER_PADRAO = "#4338ca";
+  public static final String TEMA_COR_SOFT_PADRAO = "#eef0ff";
 
   @Id
   @GeneratedValue(strategy = GenerationType.UUID)

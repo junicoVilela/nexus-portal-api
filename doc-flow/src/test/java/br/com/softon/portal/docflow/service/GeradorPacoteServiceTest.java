@@ -223,7 +223,7 @@ class GeradorPacoteServiceTest {
       String css = new String(zf.getInputStream(zf.getEntry("assets/app.css")).readAllBytes(),
           java.nio.charset.StandardCharsets.UTF_8);
       assertThat(css)
-          .contains("docflow-manual layout-v15", ".article-body .doc-intro", ".article-body .steps>ol")
+          .contains("docflow-manual layout-v16", ".article-body .doc-intro", ".article-body .steps>ol", "--accent:#4f46e5")
           .contains(".article-body .objective-card", ".article-body .screen-grid", ".article-body .flow-strip")
           .contains(".article-body .journey-grid", ".article-body .resource-list", ".article-body .status-list")
           .contains("content:'✓'");
