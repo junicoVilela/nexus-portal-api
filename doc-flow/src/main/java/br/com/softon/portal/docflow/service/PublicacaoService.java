@@ -1,6 +1,7 @@
 package br.com.softon.portal.docflow.service;
 
 import br.com.softon.portal.docflow.dto.response.PaginaResponse;
+import br.com.softon.portal.docflow.dto.response.PublicacaoPaginaSnapshotItem;
 import br.com.softon.portal.docflow.entity.Cliente;
 import br.com.softon.portal.docflow.entity.Publicacao;
 import br.com.softon.portal.docflow.entity.PublicacaoChangelog;
@@ -11,6 +12,8 @@ import br.com.softon.portal.shared.exception.BusinessException;
 import br.com.softon.portal.shared.exception.NotFoundException;
 import br.com.softon.rbac.service.AuditoriaService;
 import br.com.softon.rbac.service.EscopoResolver;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -41,6 +44,7 @@ public class PublicacaoService {
   private final EscopoResolver escopoResolver;
   private final AuditoriaService auditoriaService;
   private final ArquivoRemocaoService arquivoRemocaoService;
+  private final ObjectMapper objectMapper;
 
   @Transactional
   public Publicacao gerar(UUID clienteId, String versao, String observacao, Principal principal) {
@@ -196,6 +200,19 @@ public class PublicacaoService {
   public List<PublicacaoChangelog> listarChangelog(UUID publicacaoId) {
     buscar(publicacaoId);
     return changelogRepository.findByPublicacaoIdOrderByCreatedAtAsc(publicacaoId);
+  }
+
+  public List<PublicacaoPaginaSnapshotItem> arvorePaginas(UUID id) {
+    Publicacao publicacao = buscar(id);
+    String json = publicacao.getArvorePaginas();
+    if (json == null || json.isBlank()) {
+      return List.of();
+    }
+    try {
+      return objectMapper.readValue(json, new TypeReference<List<PublicacaoPaginaSnapshotItem>>() {});
+    } catch (Exception ex) {
+      return List.of();
+    }
   }
 
   public Resource arquivo(UUID id) {

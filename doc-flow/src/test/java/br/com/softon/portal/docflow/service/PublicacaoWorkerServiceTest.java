@@ -16,6 +16,7 @@ import br.com.softon.portal.docflow.entity.StatusPublicacao;
 import br.com.softon.portal.docflow.repository.PublicacaoChangelogRepository;
 import br.com.softon.portal.docflow.repository.PublicacaoRepository;
 import br.com.softon.portal.docflow.service.GeradorPacoteService.ResultadoGeracao;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.List;
@@ -52,7 +53,7 @@ class PublicacaoWorkerServiceTest {
   void setUp() throws Exception {
     service = new PublicacaoWorkerService(publicacaoRepository, changelogRepository,
         geradorPacoteService, notificacaoEmailService, publicacaoEventService,
-        new SimpleMeterRegistry());
+        new SimpleMeterRegistry(), new ObjectMapper());
 
     clienteId = UUID.randomUUID();
     cliente = new Cliente("ACME", "acme", true);
@@ -68,7 +69,7 @@ class PublicacaoWorkerServiceTest {
   @Test
   void processar_sucesso_registraDadosDoResultadoENotifica() throws IOException {
     when(publicacaoRepository.findById(publicacaoId)).thenReturn(Optional.of(publicacao));
-    when(geradorPacoteService.gerar(cliente, "1.0.0"))
+    when(geradorPacoteService.gerar(cliente, "1.0.0", publicacaoId))
         .thenReturn(new ResultadoGeracao("manual.zip", "/tmp/manual.zip", "sha", 5, 2, "{}"));
     when(publicacaoRepository.findByCliente_IdOrderByCreatedAtDesc(clienteId))
         .thenReturn(List.of(publicacao));
@@ -79,6 +80,7 @@ class PublicacaoWorkerServiceTest {
     assertThat(publicacao.getArquivoZipNome()).isEqualTo("manual.zip");
     assertThat(publicacao.getArquivoZipCaminho()).isEqualTo("/tmp/manual.zip");
     assertThat(publicacao.getHashPacote()).isEqualTo("sha");
+    assertThat(publicacao.getArvorePaginas()).isEqualTo("[]");
     verify(notificacaoEmailService).notificarPublicacaoGerada(publicacao);
     verify(publicacaoEventService).publicar(publicacao);
   }
@@ -86,7 +88,7 @@ class PublicacaoWorkerServiceTest {
   @Test
   void processar_gerarLancaIOException_registraErroENotifica() throws IOException {
     when(publicacaoRepository.findById(publicacaoId)).thenReturn(Optional.of(publicacao));
-    when(geradorPacoteService.gerar(cliente, "1.0.0"))
+    when(geradorPacoteService.gerar(cliente, "1.0.0", publicacaoId))
         .thenThrow(new IOException("falha de disco"));
 
     service.processar(publicacaoId, "admin");
@@ -99,7 +101,7 @@ class PublicacaoWorkerServiceTest {
   @Test
   void processar_gerarLancaRuntimeException_registraErroENotifica() throws IOException {
     when(publicacaoRepository.findById(publicacaoId)).thenReturn(Optional.of(publicacao));
-    when(geradorPacoteService.gerar(cliente, "1.0.0"))
+    when(geradorPacoteService.gerar(cliente, "1.0.0", publicacaoId))
         .thenThrow(new RuntimeException("boom"));
 
     service.processar(publicacaoId, "admin");
@@ -129,7 +131,7 @@ class PublicacaoWorkerServiceTest {
         new PublicacaoChangelog(anteriorId, pagRemovidaId, "Página X", "ADICIONADO");
 
     when(publicacaoRepository.findById(publicacaoId)).thenReturn(Optional.of(publicacao));
-    when(geradorPacoteService.gerar(cliente, "1.0.0"))
+    when(geradorPacoteService.gerar(cliente, "1.0.0", publicacaoId))
         .thenReturn(new ResultadoGeracao("v1.zip", "/tmp/v1.zip", "sha", 0, 0, "{}"));
     when(publicacaoRepository.findByCliente_IdOrderByCreatedAtDesc(clienteId))
         .thenReturn(List.of(publicacao, anterior));

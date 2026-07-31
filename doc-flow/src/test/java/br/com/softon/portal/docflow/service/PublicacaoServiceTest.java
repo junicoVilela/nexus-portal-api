@@ -20,6 +20,7 @@ import br.com.softon.portal.docflow.repository.PublicacaoChangelogRepository;
 import br.com.softon.portal.docflow.repository.PublicacaoRepository;
 import br.com.softon.portal.shared.exception.BusinessException;
 import br.com.softon.portal.shared.exception.NotFoundException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -62,7 +63,7 @@ class PublicacaoServiceTest {
   void setUp() throws Exception {
     service = new PublicacaoService(publicacaoRepository, clienteService,
         geradorPacoteService, publicacaoWorkerService, changelogRepository, escopoResolver,
-        auditoriaService, new ArquivoRemocaoService());
+        auditoriaService, new ArquivoRemocaoService(), new ObjectMapper());
     when(escopoResolver.clientesPermitidosDoUsuarioAtual()).thenReturn(java.util.Optional.empty());
     when(escopoResolver.podeAcessarCliente(any())).thenReturn(true);
     org.mockito.Mockito.doNothing().when(escopoResolver).assertPodeEscreverEmCliente(any());
@@ -299,6 +300,31 @@ class PublicacaoServiceTest {
     var out = service.listarChangelog(publicacaoId);
 
     assertThat(out).isSameAs(itens);
+  }
+
+  @Test
+  void arvorePaginas_semSnapshotRetornaListaVazia() {
+    Publicacao p = new Publicacao(cliente, "1.0.0", null);
+    when(publicacaoRepository.findById(publicacaoId)).thenReturn(Optional.of(p));
+
+    assertThat(service.arvorePaginas(publicacaoId)).isEmpty();
+  }
+
+  @Test
+  void arvorePaginas_comJsonValidoRetornaItens() throws Exception {
+    UUID paginaId = UUID.randomUUID();
+    String json = new ObjectMapper().writeValueAsString(List.of(
+        new br.com.softon.portal.docflow.dto.response.PublicacaoPaginaSnapshotItem(
+            paginaId, null, "Página", "TELA", "pagina", 0, 0)));
+    Publicacao p = new Publicacao(cliente, "1.0.0", null);
+    p.definirArvorePaginas(json);
+    when(publicacaoRepository.findById(publicacaoId)).thenReturn(Optional.of(p));
+
+    var itens = service.arvorePaginas(publicacaoId);
+
+    assertThat(itens).hasSize(1);
+    assertThat(itens.get(0).id()).isEqualTo(paginaId);
+    assertThat(itens.get(0).nivel()).isZero();
   }
 
   @Test

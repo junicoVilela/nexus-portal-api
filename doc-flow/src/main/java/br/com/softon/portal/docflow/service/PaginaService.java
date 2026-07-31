@@ -21,20 +21,26 @@ import jakarta.transaction.Transactional;
 import java.security.Principal;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 import org.jsoup.safety.Safelist;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.web.util.HtmlUtils;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class PaginaService {
@@ -61,6 +67,7 @@ public class PaginaService {
     pagina = paginaRepository.save(pagina);
     registrarRevisao(pagina, usuario, TipoRevisaoPagina.CRIACAO, "Página criada como rascunho.");
     auditoriaService.registrar("PAGINA", pagina.getId(), "CRIAR", pagina.getTitulo(), principal);
+    sincronizarIndicePaiSeAplicavel(pagina, principal);
     return pagina;
   }
 
@@ -80,6 +87,7 @@ public class PaginaService {
     registrarRevisao(pagina, username(principal), TipoRevisaoPagina.SALVAMENTO_MANUAL,
         "Conteúdo salvo manualmente.");
     auditoriaService.registrar("PAGINA", pagina.getId(), "ATUALIZAR", pagina.getTitulo(), principal);
+    sincronizarIndicePaiSeAplicavel(pagina, principal);
     return pagina;
   }
 
@@ -123,15 +131,19 @@ public class PaginaService {
 
   @Transactional
   public void excluir(UUID id, Principal principal) {
-    Pagina pagina = buscar(id);
-    if (paginaRepository.existsByParent_Id(id)) {
-      throw new BusinessException("Exclua primeiro as subpáginas desta página.");
+    excluirRecursivo(buscar(id), principal);
+  }
+
+  private void excluirRecursivo(Pagina pagina, Principal principal) {
+    for (Pagina filho : paginaRepository.findByParent_Id(pagina.getId())) {
+      excluirRecursivo(filho, principal);
     }
-    List<Path> anexos = paginaAnexoRepository.findByPagina_Id(id).stream()
+    List<Path> anexos = paginaAnexoRepository.findByPagina_Id(pagina.getId()).stream()
         .map(anexo -> Path.of(anexo.getCaminho()))
         .toList();
     paginaRepository.delete(pagina);
-    auditoriaService.registrar("PAGINA", id, "EXCLUIR", "Página excluída: " + pagina.getTitulo(), principal);
+    auditoriaService.registrar("PAGINA", pagina.getId(), "EXCLUIR",
+        "Página excluída: " + pagina.getTitulo(), principal);
     arquivoRemocaoService.removerAposCommit(anexos);
   }
 
@@ -196,6 +208,7 @@ public class PaginaService {
     registrarRevisao(pagina, username(principal), TipoRevisaoPagina.PUBLICACAO,
         "Página publicada no manual.");
     auditoriaService.registrar("PAGINA", pagina.getId(), "PUBLICAR", pagina.getTitulo(), principal);
+    sincronizarIndicePaiSeAplicavel(pagina, principal);
     return pagina;
   }
 
@@ -290,6 +303,91 @@ public class PaginaService {
         <body><main>%s</main></body>
         </html>
         """.formatted(pagina.getTitulo(), pagina.getConteudoHtml() == null ? "" : pagina.getConteudoHtml());
+  }
+
+  private void sincronizarIndicePaiSeAplicavel(Pagina pagina, Principal principal) {
+    if (pagina.getParent() == null) {
+      return;
+    }
+    try {
+      sincronizarIndicePai(pagina.getParent(), principal);
+    } catch (Exception ex) {
+      log.warn("Falha ao sincronizar índice de guias do pai {}: {}",
+          pagina.getParent().getId(), ex.getMessage());
+    }
+  }
+
+  private void sincronizarIndicePai(Pagina parent, Principal principal) {
+    if (!temSecaoGuiasDisponiveis(parent.getConteudoHtml())) {
+      return;
+    }
+    List<Pagina> filhos = paginaRepository.findByParent_Id(parent.getId()).stream()
+        .sorted(Comparator.comparingInt(Pagina::getOrdem).thenComparing(Pagina::getTitulo))
+        .toList();
+    String secaoHtml = montarSecaoGuiasDisponiveis(filhos);
+    String novoHtml = substituirOuAdicionarSecaoGuias(parent.getConteudoHtml(), secaoHtml);
+    if (novoHtml.equals(parent.getConteudoHtml())) {
+      return;
+    }
+    parent.atualizar(parent.getTitulo(), parent.getSlug(), parent.getCodigoTela(), parent.getResumo(),
+        novoHtml, parent.getOrdem(), parent.isAtivo(), parent.getModulo(), parent.getParent());
+    paginaRepository.save(parent);
+    registrarRevisao(parent, username(principal), TipoRevisaoPagina.SALVAMENTO_MANUAL,
+        "Índice de guias sincronizado.");
+  }
+
+  private boolean temSecaoGuiasDisponiveis(String html) {
+    if (html == null || html.isBlank()) {
+      return false;
+    }
+    Document doc = Jsoup.parseBodyFragment(html);
+    return doc.select("section").stream()
+        .anyMatch(secao -> {
+          Element h2 = secao.selectFirst("h2");
+          return h2 != null && "guias disponíveis".equals(h2.text().trim().toLowerCase(Locale.ROOT));
+        });
+  }
+
+  private String montarSecaoGuiasDisponiveis(List<Pagina> filhos) {
+    StringBuilder items = new StringBuilder();
+    for (int i = 0; i < filhos.size(); i++) {
+      Pagina filho = filhos.get(i);
+      String resumo = filho.getResumo() == null || filho.getResumo().isBlank()
+          ? "Sem resumo"
+          : filho.getResumo().trim();
+      if (resumo.length() > 80) {
+        resumo = resumo.substring(0, 80);
+      }
+      items.append("<article class=\"resource-item\"><span class=\"number-badge\">").append(i + 1)
+          .append("</span><span><strong>").append(HtmlUtils.htmlEscape(filho.getTitulo()))
+          .append("</strong><small>").append(HtmlUtils.htmlEscape(resumo))
+          .append("</small></span><span class=\"resource-item__meta\">")
+          .append(HtmlUtils.htmlEscape(filho.getCodigoTela()))
+          .append("</span></article>");
+    }
+    return "<section class=\"doc-section\"><h2>Guias disponíveis</h2>"
+        + "<div class=\"resource-list resource-list--large\">" + items + "</div></section>";
+  }
+
+  private String substituirOuAdicionarSecaoGuias(String html, String secaoHtml) {
+    if (html == null || html.isBlank()) {
+      return secaoHtml;
+    }
+    Document doc = Jsoup.parseBodyFragment(html);
+    Element existente = doc.select("section").stream()
+        .filter(secao -> {
+          Element h2 = secao.selectFirst("h2");
+          return h2 != null && "guias disponíveis".equals(h2.text().trim().toLowerCase(Locale.ROOT));
+        })
+        .findFirst()
+        .orElse(null);
+    Element novaSecao = Jsoup.parseBodyFragment(secaoHtml).body().child(0);
+    if (existente != null) {
+      existente.replaceWith(novaSecao);
+    } else {
+      doc.body().appendChild(novaSecao);
+    }
+    return doc.body().html();
   }
 
   private void validarPublicacao(Pagina pagina) {

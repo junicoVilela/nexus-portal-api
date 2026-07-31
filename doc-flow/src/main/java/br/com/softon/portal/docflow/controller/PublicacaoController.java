@@ -5,6 +5,7 @@ import br.com.softon.portal.docflow.dto.request.ReprocessarPublicacoesRequest;
 import br.com.softon.portal.docflow.dto.response.ChangelogItemResponse;
 import br.com.softon.portal.docflow.dto.response.DownloadTokenResponse;
 import br.com.softon.portal.docflow.dto.response.PaginaResponse;
+import br.com.softon.portal.docflow.dto.response.PublicacaoPaginaSnapshotItem;
 import br.com.softon.portal.docflow.dto.response.PublicacaoResponse;
 import br.com.softon.portal.docflow.dto.response.ReprocessamentoPublicacoesResponse;
 import br.com.softon.portal.docflow.entity.Publicacao;
@@ -164,6 +165,12 @@ public class PublicacaoController {
         .contentType(MediaType.APPLICATION_PDF)
         .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
         .body(new ByteArrayResource(pdf));
+  }
+
+  @PreAuthorize(Permissoes.PUBLICACAO_LER)
+  @GetMapping("/{id}/paginas")
+  public List<PublicacaoPaginaSnapshotItem> arvorePaginas(@PathVariable UUID id) {
+    return publicacaoService.arvorePaginas(id);
   }
 
   @PreAuthorize(Permissoes.PUBLICACAO_LER)

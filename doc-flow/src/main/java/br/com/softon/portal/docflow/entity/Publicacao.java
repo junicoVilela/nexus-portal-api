@@ -60,6 +60,9 @@ public class Publicacao extends AuditableEntity {
   @Column(name = "relatorio_validacao", length = 4000)
   private String relatorioValidacao;
 
+  @Column(name = "arvore_paginas")
+  private String arvorePaginas;
+
   public Publicacao(Cliente cliente, String versao, String observacao) {
     this.cliente = cliente;
     this.versao = versao;
@@ -85,6 +88,11 @@ public class Publicacao extends AuditableEntity {
     this.arquivoZipCaminho = null;
     this.hashPacote = null;
     this.relatorioValidacao = null;
+    this.arvorePaginas = null;
+  }
+
+  public void definirArvorePaginas(String json) {
+    this.arvorePaginas = json;
   }
 
   public void registrarErro(String mensagem) {

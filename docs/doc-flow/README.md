@@ -200,7 +200,7 @@ Grupos (`tb_grupo`, `tb_grupo_permissao`) existem na API; permissões vêm do **
 | Auth                  | `AuthApiService` → `POST/GET /api/v1/auth/*`     | JWT real                               | ✅ S0                                 |
 | Permissões menu       | `GET /auth/me` → `permissoes[]` do catálogo RBAC | `tb_dominio` → `tb_permissao` + grupos | ✅ S0.5                               |
 | Logo empresa          | `ConfiguracaoService` → HttpClient               | `EmpresaController`                    | ✅ S0                                 |
-| Preview tokens        | Service existe                                   | API existe                             | ⚠️ Sem UI                             |
+| Preview tokens        | UI no painel de vínculos de clientes             | API existe                             | ✅ Gerar, listar, copiar URL, revogar |
 | Grupos/usuários admin | Módulo `seguranca` mock                          | API docflow                            | ⚠️ Conectar ou separar                |
 
 Proxy dev (`softon-portal-web/frontend/proxy.conf.json`): reescreve `/api/doc-flow` → `/api/v1/docflow`.

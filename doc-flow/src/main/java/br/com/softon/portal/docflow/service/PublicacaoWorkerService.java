@@ -8,6 +8,8 @@ import br.com.softon.portal.docflow.entity.Publicacao;
 import br.com.softon.portal.docflow.entity.PublicacaoChangelog;
 import br.com.softon.portal.docflow.repository.PublicacaoChangelogRepository;
 import br.com.softon.portal.docflow.repository.PublicacaoRepository;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
 import java.util.List;
 import java.util.Set;
@@ -31,6 +33,7 @@ public class PublicacaoWorkerService {
   private final NotificacaoEmailService notificacaoEmailService;
   private final PublicacaoEventService publicacaoEventService;
   private final MeterRegistry meterRegistry;
+  private final ObjectMapper objectMapper;
 
   @Async
   @Transactional
@@ -52,6 +55,7 @@ public class PublicacaoWorkerService {
       publicacao.registrarSucesso(resultado.quantidadePaginas(), resultado.quantidadeModulos(),
           resultado.arquivoZipNome(), resultado.arquivoZipCaminho(), resultado.hashPacote(),
           resultado.relatorioValidacaoJson());
+      publicacao.definirArvorePaginas(serializarArvorePaginas(paginasAtuais));
       gerarChangelog(publicacao, paginasAtuais);
       notificacaoEmailService.notificarPublicacaoGerada(publicacao);
       meterRegistry.counter("docflow.publicacao.resultado", "status", "sucesso").increment();
@@ -67,6 +71,15 @@ public class PublicacaoWorkerService {
     } finally {
       tempoGeracao.stop(meterRegistry.timer("docflow.publicacao.duracao"));
       publicacaoEventService.publicar(publicacao);
+    }
+  }
+
+  private String serializarArvorePaginas(List<PaginaResponse> paginasAtuais) {
+    try {
+      return objectMapper.writeValueAsString(PublicacaoPaginaSnapshotBuilder.build(paginasAtuais));
+    } catch (JsonProcessingException ex) {
+      log.warn("Falha ao serializar árvore de páginas da publicação: {}", ex.getMessage());
+      return null;
     }
   }
 

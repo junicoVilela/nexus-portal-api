@@ -327,6 +327,7 @@ class PaginaServiceTest {
     Files.writeString(arquivo, "imagem");
     Pagina pagina = pagina(id, StatusPagina.RASCUNHO);
     when(paginaRepository.findById(id)).thenReturn(Optional.of(pagina));
+    when(paginaRepository.findByParent_Id(id)).thenReturn(List.of());
     when(paginaAnexoRepository.findByPagina_Id(id))
         .thenReturn(java.util.List.of(new PaginaAnexo(pagina, "anexo.png", "image/png", 6, arquivo.toString())));
 
@@ -338,16 +339,73 @@ class PaginaServiceTest {
   }
 
   @Test
-  void excluir_comSubpaginasOrientaRemocaoPrevia() {
-    UUID id = UUID.randomUUID();
-    when(paginaRepository.findById(id)).thenReturn(Optional.of(pagina(id, StatusPagina.RASCUNHO)));
-    when(paginaRepository.existsByParent_Id(id)).thenReturn(true);
+  void excluir_cascateiaParaFilhos() throws Exception {
+    UUID paiId = UUID.randomUUID();
+    UUID filhoId = UUID.randomUUID();
+    Pagina pai = pagina(paiId, StatusPagina.RASCUNHO);
+    Pagina filho = pagina(filhoId, StatusPagina.RASCUNHO);
+    setField(filho, "parent", pai);
 
-    assertThatThrownBy(() -> service.excluir(id, principal))
-        .isInstanceOf(BusinessException.class)
-        .hasMessageContaining("subpáginas");
+    when(paginaRepository.findById(paiId)).thenReturn(Optional.of(pai));
+    when(paginaRepository.findByParent_Id(paiId)).thenReturn(List.of(filho));
+    when(paginaRepository.findByParent_Id(filhoId)).thenReturn(List.of());
+    when(paginaAnexoRepository.findByPagina_Id(any())).thenReturn(List.of());
 
-    verify(paginaRepository, never()).delete(any(Pagina.class));
+    service.excluir(paiId, principal);
+
+    verify(paginaRepository).delete(filho);
+    verify(paginaRepository).delete(pai);
+    verify(auditoriaService).registrar(eq("PAGINA"), eq(filhoId), eq("EXCLUIR"), any(), eq(principal));
+    verify(auditoriaService).registrar(eq("PAGINA"), eq(paiId), eq("EXCLUIR"), any(), eq(principal));
+  }
+
+  @Test
+  void excluir_comSubpaginasCascateiaRemocao() throws Exception {
+    UUID paiId = UUID.randomUUID();
+    UUID filhoId = UUID.randomUUID();
+    Pagina pai = pagina(paiId, StatusPagina.RASCUNHO);
+    Pagina filho = pagina(filhoId, StatusPagina.RASCUNHO);
+    setField(filho, "parent", pai);
+
+    when(paginaRepository.findById(paiId)).thenReturn(Optional.of(pai));
+    when(paginaRepository.findByParent_Id(paiId)).thenReturn(List.of(filho));
+    when(paginaRepository.findByParent_Id(filhoId)).thenReturn(List.of());
+    when(paginaAnexoRepository.findByPagina_Id(any())).thenReturn(List.of());
+
+    service.excluir(paiId, principal);
+
+    verify(paginaRepository).delete(filho);
+    verify(paginaRepository).delete(pai);
+    verify(paginaRepository, never()).existsByParent_Id(any());
+  }
+
+  @Test
+  void publicar_comPaiComSecaoGuias_sincronizaIndice() throws Exception {
+    UUID paiId = UUID.randomUUID();
+    UUID filhoId = UUID.randomUUID();
+    String htmlPai = """
+        <section class="doc-intro"><h2>Operações</h2></section>
+        <section class="doc-section"><h2>Guias disponíveis</h2><div class="resource-list resource-list--large"></div></section>
+        """;
+    Pagina pai = pagina(paiId, StatusPagina.APROVADO);
+    setField(pai, "conteudoHtml", htmlPai);
+    Pagina filho = pagina(filhoId, StatusPagina.APROVADO);
+    setField(filho, "parent", pai);
+    setField(filho, "titulo", "Lista de registros");
+    setField(filho, "codigoTela", "EXEMPLO-LISTA");
+    setField(filho, "resumo", "Como consultar registros na listagem.");
+    setField(filho, "ordem", 1);
+
+    when(paginaRepository.findById(filhoId)).thenReturn(Optional.of(filho));
+    when(paginaRepository.findByParent_Id(paiId)).thenReturn(List.of(filho));
+    when(paginaRevisaoRepository.countByPagina_Id(any())).thenReturn(0);
+
+    service.publicar(filhoId, principal);
+
+    assertThat(pai.getConteudoHtml())
+        .contains("Lista de registros", "EXEMPLO-LISTA", "resource-item");
+    verify(paginaRepository).save(pai);
+    verify(paginaRevisaoRepository, times(2)).save(any());
   }
 
   @Test

@@ -86,6 +86,56 @@ class PublicacaoDownloadIntegrationTest {
     assertThat(new String(pdf.body(), 0, 4)).isEqualTo("%PDF");
   }
 
+  @Test
+  void geraPublicacaoComHierarquiaERetornaArvorePaginas() throws Exception {
+    String sufixo = UUID.randomUUID().toString().substring(0, 8);
+    Cliente cliente = clienteRepository.save(new Cliente("Cliente Hierarquia " + sufixo, "cliente-hier-" + sufixo, true));
+    Projeto projeto = projetoRepository.save(
+        new Projeto("Projeto Hierarquia " + sufixo, "projeto-hier-" + sufixo, "Fluxo hierárquico", true));
+    Modulo modulo = moduloRepository.save(
+        new Modulo("Operações", "operacoes-hier-" + sufixo, "Módulo hierárquico", 1, true, projeto));
+    clienteModuloRepository.save(new ClienteModulo(cliente, modulo));
+
+    Pagina pai = new Pagina("Operações", "operacoes-" + sufixo, "OPS_" + sufixo,
+        "Visão geral das operações no teste de integração",
+        "<section class=\"doc-section\"><h2>Guias disponíveis</h2><div class=\"resource-list resource-list--large\"></div></section>",
+        0, true, modulo, null);
+    pai.publicar();
+    pai = paginaRepository.save(pai);
+
+    Pagina filho = new Pagina("Lista de registros", "lista-" + sufixo, "LISTA_" + sufixo,
+        "Como consultar registros na listagem do teste integrado",
+        "<section class=\"doc-intro\"><h2>Consultar</h2><p>Use os filtros para localizar registros.</p></section>",
+        1, true, modulo, pai);
+    filho.publicar();
+    paginaRepository.save(filho);
+
+    String token = login();
+    HttpResponse<String> criacao = enviarJson("/api/v1/docflow/publicacoes", token,
+        Map.of("clienteId", cliente.getId(), "versao", "1.0.0-hier", "observacao", "Teste árvore de páginas"));
+    assertThat(criacao.statusCode()).isEqualTo(201);
+    UUID publicacaoId = UUID.fromString(json.readTree(criacao.body()).path("id").asText());
+
+    JsonNode publicacao = aguardarConclusao(publicacaoId, token);
+    assertThat(publicacao.path("status").asText()).isEqualTo("SUCESSO");
+    assertThat(publicacao.path("quantidadePaginas").asInt()).isEqualTo(2);
+
+    HttpResponse<String> arvore = http.send(
+        HttpRequest.newBuilder(URI.create(url("/api/v1/docflow/publicacoes/" + publicacaoId + "/paginas")))
+            .header("Authorization", "Bearer " + token).GET().build(),
+        HttpResponse.BodyHandlers.ofString());
+    assertThat(arvore.statusCode()).isEqualTo(200);
+    JsonNode paginas = json.readTree(arvore.body());
+    assertThat(paginas).hasSize(2);
+
+    JsonNode paiNode = paginas.get(0);
+    JsonNode filhoNode = paginas.get(1);
+    assertThat(paiNode.path("parentId").isNull()).isTrue();
+    assertThat(paiNode.path("nivel").asInt()).isZero();
+    assertThat(filhoNode.path("parentId").asText()).isEqualTo(pai.getId().toString());
+    assertThat(filhoNode.path("nivel").asInt()).isEqualTo(1);
+  }
+
   private JsonNode aguardarConclusao(UUID id, String token) throws Exception {
     for (int tentativa = 0; tentativa < 40; tentativa++) {
       HttpResponse<String> resposta = http.send(
