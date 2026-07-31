@@ -149,12 +149,21 @@ public class PaginaTemplateService {
     }
     Contexto contexto = contexto(template, request);
     Map<String, String> valores = new LinkedHashMap<>();
-    adicionar(valores, "cliente.nome", contexto.cliente() == null ? null : contexto.cliente().getNome());
-    adicionar(valores, "projeto.nome", contexto.projeto() == null ? null : contexto.projeto().getNome());
-    adicionar(valores, "modulo.nome", contexto.modulo() == null ? null : contexto.modulo().getNome());
+    String clienteNome = contexto.cliente() == null ? null : contexto.cliente().getNome();
+    String projetoNome = contexto.projeto() == null ? null : contexto.projeto().getNome();
+    String moduloNome = contexto.modulo() == null ? null : contexto.modulo().getNome();
+    adicionar(valores, "cliente.nome", clienteNome);
+    adicionar(valores, "projeto.nome", projetoNome);
+    adicionar(valores, "modulo.nome", moduloNome);
     adicionar(valores, "pagina.titulo", request.titulo());
     adicionar(valores, "pagina.codigo", request.codigoTela());
     adicionar(valores, "data.atual", LocalDate.now().format(DATA_BR));
+    // Aliases genéricos usados em kits e blocos do editor
+    adicionar(valores, "CLIENTE", clienteNome);
+    adicionar(valores, "PROJETO", projetoNome);
+    adicionar(valores, "MODULO", moduloNome);
+    adicionar(valores, "TITULO", request.titulo());
+    adicionar(valores, "CODIGO_TELA", request.codigoTela());
 
     Matcher matcher = VARIAVEL.matcher(template.getConteudoHtml());
     StringBuilder resolvido = new StringBuilder();

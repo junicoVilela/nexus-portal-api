@@ -154,6 +154,23 @@ class PaginaTemplateServiceTest {
   }
 
   @Test
+  void aplicar_deveResolverAliasesGenericosDeKits() {
+    UUID id = UUID.randomUUID();
+    PaginaTemplate sistema = new PaginaTemplate(
+        "KIT", "Kit", null,
+        "<h2>{{ TITULO }}</h2><p>{{ CODIGO_TELA }} · {{ MODULO }}</p>", 10, true);
+    when(paginaTemplateRepository.findById(id)).thenReturn(Optional.of(sistema));
+
+    PaginaTemplateAplicacaoResponse resultado = paginaTemplateService.aplicar(id,
+        new PaginaTemplateAplicacaoRequest(null, null, null, "Lista de registros", "LISTA-001"));
+
+    assertThat(resultado.conteudoHtml()).contains("Lista de registros", "LISTA-001", "{{ MODULO }}");
+    assertThat(resultado.variaveisResolvidas())
+        .containsEntry("TITULO", "Lista de registros")
+        .containsEntry("CODIGO_TELA", "LISTA-001");
+  }
+
+  @Test
   void atualizar_deveCriarNovaVersaoSemAlterarPaginasExistentes() {
     UUID id = UUID.randomUUID();
     UUID projetoId = UUID.randomUUID();

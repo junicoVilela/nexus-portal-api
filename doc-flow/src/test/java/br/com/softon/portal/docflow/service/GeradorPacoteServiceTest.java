@@ -223,13 +223,13 @@ class GeradorPacoteServiceTest {
       String css = new String(zf.getInputStream(zf.getEntry("assets/app.css")).readAllBytes(),
           java.nio.charset.StandardCharsets.UTF_8);
       assertThat(css)
-          .contains("docflow-manual layout-v17", ".article-body .doc-intro", ".article-body .steps>ol", "--accent:#4f46e5")
+          .contains("docflow-manual layout-v19", ".article-body .doc-intro", ".article-body .steps>ol", "--accent:#4f46e5")
           .contains(".article-body .objective-card", ".article-body .screen-grid", ".article-body .flow-strip")
           .contains(".article-body .journey-grid", ".article-body .resource-list", ".article-body .status-list")
-          .contains("nav a.active", "nav-toggle", ".status-badge--sim", "content:'✓'");
+          .contains("nav a.active", "nav-toggle", ".status-badge--sim", ".condition-stack", "callout--danger", "content:'✓'");
       String appJs = new String(zf.getInputStream(zf.getEntry("assets/app.js")).readAllBytes(),
           java.nio.charset.StandardCharsets.UTF_8);
-      assertThat(appJs).contains("manualFilterNav", "nav-toggle");
+      assertThat(appJs).contains("manualFilterNav", "nav-toggle", "data-codigo-tela", "manualOpenByCodigoTela");
       String index = new String(zf.getInputStream(zf.getEntry("index.html")).readAllBytes(),
           java.nio.charset.StandardCharsets.UTF_8);
       assertThat(index).contains("CENTRAL DE AJUDA", "Olá! Como podemos ajudar?", "id=\"welcome-search\"")
