@@ -84,6 +84,19 @@
           <mainClass>br.com.softon.portal.SoftonPortalApplication</mainClass>
         </configuration>
       </plugin>
+      <!-- OpenAPI export: manual goal only (requires running server on 8080). Not bound to mvn test. -->
+      <plugin>
+        <groupId>org.springdoc</groupId>
+        <artifactId>springdoc-openapi-maven-plugin</artifactId>
+        <version>1.4</version>
+        <configuration>
+          <apiDocsUrl>http://localhost:8080/v3/api-docs</apiDocsUrl>
+          <outputFileName>openapi.yaml</outputFileName>
+          <outputDir>${project.basedir}/docs/api</outputDir>
+          <skip>false</skip>
+          <failOnError>true</failOnError>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
 </project>
