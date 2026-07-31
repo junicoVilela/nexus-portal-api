@@ -184,11 +184,11 @@ executa às 03:30 do horário do servidor.
 
 ## Autorização (backend)
 
-- Controllers de conteúdo: `@PreAuthorize("hasAnyRole('ADMIN','EDITOR')")`
-- Usuários, grupos, auditoria, logo empresa: `@PreAuthorize("hasRole('ADMIN')")`
+- Controllers de conteúdo: `@PreAuthorize(Permissoes.*)` com `hasAuthority('DOMINIO:ACAO')` (ex.: `PAGINA:LER`, `PUBLICACAO:CRIAR`).
+- Usuários, grupos, auditoria, logo empresa: permissões granulares do catálogo RBAC (`USUARIO:*`, `GRUPO_ACESSO:*`, `AUDITORIA:*`, …).
 - Endpoints públicos: preview HTML, download anexo/logo, download pacote com token
 
-Grupos (`tb_grupo`, `tb_grupo_permissao`) existem na API; permissões vêm do **catálogo RBAC** (`tb_dominio`, `tb_funcionalidade`, `tb_permissao`) e são expostas em `GET /auth/me`. `@PreAuthorize` nos controllers ainda usa roles `ADMIN`/`EDITOR`.
+Grupos (`tb_grupo`, `tb_grupo_permissao`) existem na API; permissões vêm do **catálogo RBAC** (`tb_dominio`, `tb_funcionalidade`, `tb_permissao`) e são expostas em `GET /auth/me`. Os seeds base concedem permissões editoriais aos grupos `ADMIN` e `EDITOR`, mas os controllers validam **autoridade** (`DOMINIO:ACAO`), não role diretamente.
 
 ---
 
