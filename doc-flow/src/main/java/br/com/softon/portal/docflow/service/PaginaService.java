@@ -52,6 +52,7 @@ public class PaginaService {
   private final PaginaQualidadeService paginaQualidadeService;
   private final PaginaAnexoRepository paginaAnexoRepository;
   private final ArquivoRemocaoService arquivoRemocaoService;
+  private final PaginaEventService paginaEventService;
 
   @Transactional
   public Pagina criar(PaginaRequest request, Principal principal) {
@@ -181,6 +182,7 @@ public class PaginaService {
     registrarRevisao(pagina, username(principal), TipoRevisaoPagina.ENVIO_REVISAO,
         "Página enviada para revisão editorial.");
     auditoriaService.registrar("PAGINA", pagina.getId(), "ENVIAR_REVISAO", pagina.getTitulo(), principal);
+    paginaEventService.publicar(pagina, "ENVIAR_REVISAO", username(principal));
     return pagina;
   }
 
@@ -194,6 +196,7 @@ public class PaginaService {
     registrarRevisao(pagina, username(principal), TipoRevisaoPagina.APROVACAO,
         "Página aprovada para publicação.");
     auditoriaService.registrar("PAGINA", pagina.getId(), "APROVAR", pagina.getTitulo(), principal);
+    paginaEventService.publicar(pagina, "APROVAR", username(principal));
     return pagina;
   }
 
@@ -208,6 +211,7 @@ public class PaginaService {
     registrarRevisao(pagina, username(principal), TipoRevisaoPagina.PUBLICACAO,
         "Página publicada no manual.");
     auditoriaService.registrar("PAGINA", pagina.getId(), "PUBLICAR", pagina.getTitulo(), principal);
+    paginaEventService.publicar(pagina, "PUBLICAR", username(principal));
     sincronizarIndicePaiSeAplicavel(pagina, principal);
     return pagina;
   }

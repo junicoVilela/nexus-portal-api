@@ -75,7 +75,7 @@ Transições: `POST /paginas/{id}/enviar-revisao`, `/aprovar`, `/publicar`, `/ar
 | `ClienteController`          | `/docflow/clientes`     | CRUD, vínculos, logo, copiar vínculos                     |
 | `ProjetoController`          | `/docflow/projetos`     | CRUD                                                      |
 | `ModuloController`           | `/docflow/modulos`      | CRUD                                                      |
-| `PaginaController`           | `/docflow/paginas`      | CRUD, workflow, anexos, revisões, reordenar               |
+| `PaginaController`           | `/docflow/paginas`      | CRUD, workflow, anexos, revisões, reordenar, SSE eventos   |
 | `PublicacaoController`       | `/docflow/publicacoes`  | Criar, listar, excluir, preview, download, PDF, changelog |
 | `DocFlowDashboardController` | `/docflow/dashboard`    | Métricas estruturais, operacionais e editoriais           |
 | `AjudaController`            | `/docflow/ajuda`        | Conteúdo, eventos e métricas da ajuda interativa           |
@@ -156,6 +156,8 @@ hierarquia de títulos. Comentários da central de revisão são registrados com
 
 - `GET /dashboard/resumo` agrega KPIs sem transferir catálogos inteiros ao frontend;
 - `GET /paginas/anexos` fornece a biblioteca de mídia paginada e pesquisável;
+- `GET /paginas/eventos` — SSE autenticado (`PAGINA:LER`); emite `{ id, titulo, status, acao, usuario? }` em aprovar, publicar e enviar-revisão;
+- `GET /publicacoes/eventos` — SSE autenticado para status de geração de pacotes;
 - `POST /paginas/{id}/revisoes/comentarios` registra discussões da revisão;
 - `GET /publicacoes?status=ERRO` filtra no servidor;
 - `POST /publicacoes/reprocessar-lote` reenvia até 100 publicações, ignorando jobs em execução.

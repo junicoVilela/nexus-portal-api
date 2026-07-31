@@ -1,6 +1,7 @@
 package br.com.softon.portal.docflow.controller;
 
 import br.com.softon.portal.docflow.service.PaginaAnexoService;
+import br.com.softon.portal.docflow.service.PaginaEventService;
 import br.com.softon.portal.docflow.service.PaginaService;
 import br.com.softon.portal.docflow.service.PaginaTemplateService;
 import br.com.softon.portal.docflow.service.GeradorPacoteService;
@@ -33,6 +34,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.multipart.MultipartFile;
 import br.com.softon.portal.docflow.dto.request.PaginaRequest;
@@ -58,6 +60,7 @@ public class PaginaController {
   private final PaginaAnexoService paginaAnexoService;
   private final PaginaTemplateService paginaTemplateService;
   private final GeradorPacoteService geradorPacoteService;
+  private final PaginaEventService paginaEventService;
 
   @PreAuthorize(Permissoes.PAGINA_LER)
   @GetMapping("/templates")
@@ -135,6 +138,12 @@ public class PaginaController {
   @PreAuthorize(Permissoes.PAGINA_EXCLUIR)
   public void excluirTemplate(@PathVariable UUID templateId, Principal principal) {
     paginaTemplateService.excluir(templateId, principal);
+  }
+
+  @PreAuthorize(Permissoes.PAGINA_LER)
+  @GetMapping(value = "/eventos", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+  public SseEmitter eventos() {
+    return paginaEventService.inscrever();
   }
 
   @PreAuthorize(Permissoes.PAGINA_LER)

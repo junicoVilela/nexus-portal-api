@@ -48,6 +48,7 @@ class PaginaServiceTest {
   @Mock ModuloService moduloService;
   @Mock AuditoriaService auditoriaService;
   @Mock PaginaAnexoRepository paginaAnexoRepository;
+  @Mock PaginaEventService paginaEventService;
 
   PaginaService service;
 
@@ -59,7 +60,7 @@ class PaginaServiceTest {
   void setUp() {
     service = new PaginaService(paginaRepository, paginaRevisaoRepository,
         moduloService, auditoriaService, new PaginaQualidadeService(), paginaAnexoRepository,
-        new ArquivoRemocaoService());
+        new ArquivoRemocaoService(), paginaEventService);
 
     projetoPadrao = new Projeto("Projeto Teste", "projeto-teste", null, true);
     moduloPadrao = new Modulo("Módulo Teste", "modulo-teste", null, 1, true, projetoPadrao);
