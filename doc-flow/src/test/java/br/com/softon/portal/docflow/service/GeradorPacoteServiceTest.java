@@ -223,14 +223,43 @@ class GeradorPacoteServiceTest {
       String css = new String(zf.getInputStream(zf.getEntry("assets/app.css")).readAllBytes(),
           java.nio.charset.StandardCharsets.UTF_8);
       assertThat(css)
-          .contains("docflow-manual layout-v16", ".article-body .doc-intro", ".article-body .steps>ol", "--accent:#4f46e5")
+          .contains("docflow-manual layout-v17", ".article-body .doc-intro", ".article-body .steps>ol", "--accent:#4f46e5")
           .contains(".article-body .objective-card", ".article-body .screen-grid", ".article-body .flow-strip")
           .contains(".article-body .journey-grid", ".article-body .resource-list", ".article-body .status-list")
-          .contains("content:'✓'");
+          .contains("nav a.active", "nav-toggle", ".status-badge--sim", "content:'✓'");
+      String appJs = new String(zf.getInputStream(zf.getEntry("assets/app.js")).readAllBytes(),
+          java.nio.charset.StandardCharsets.UTF_8);
+      assertThat(appJs).contains("manualFilterNav", "nav-toggle");
       String index = new String(zf.getInputStream(zf.getEntry("index.html")).readAllBytes(),
           java.nio.charset.StandardCharsets.UTF_8);
       assertThat(index).contains("CENTRAL DE AJUDA", "Olá! Como podemos ajudar?", "id=\"welcome-search\"")
           .contains("data-welcome-page", "Encontre a resposta certa");
+    }
+  }
+
+  @Test
+  void gerar_marcaPaginaAtivaEMenuColapsavelNaHierarquia() throws Exception {
+    Pagina pai = paginaPublicada("Operações", "operacoes", 0);
+    Pagina filho = paginaPublicadaComPai("Lista", "lista", 0, pai);
+    when(clienteModuloRepository.findModuloIdsByClienteId(clienteId))
+        .thenReturn(List.of(modulo.getId()));
+    when(paginaRepository.findAtivasByStatusWithModulo(StatusPagina.PUBLICADO))
+        .thenReturn(List.of(pai, filho));
+
+    ResultadoGeracao resultado = service.gerar(cliente, "1.0.0");
+    Path zip = Path.of(resultado.arquivoZipCaminho());
+    try (ZipFile zf = new ZipFile(zip.toFile())) {
+      String lista = new String(zf.getInputStream(zf.getEntry("paginas/lista.html")).readAllBytes(),
+          java.nio.charset.StandardCharsets.UTF_8);
+      assertThat(lista)
+          .contains("data-slug=\"lista\"")
+          .contains("class=\"active\"")
+          .contains("aria-current=\"page\"")
+          .contains("has-children is-open")
+          .contains("nav-toggle");
+      String operacoes = new String(zf.getInputStream(zf.getEntry("paginas/operacoes.html")).readAllBytes(),
+          java.nio.charset.StandardCharsets.UTF_8);
+      assertThat(operacoes).contains("data-slug=\"operacoes\"").contains("class=\"active\"");
     }
   }
 
