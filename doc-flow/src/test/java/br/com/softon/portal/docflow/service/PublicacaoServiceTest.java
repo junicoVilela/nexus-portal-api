@@ -10,6 +10,9 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import br.com.softon.portal.docflow.entity.Cliente;
+import br.com.softon.portal.docflow.entity.Modulo;
+import br.com.softon.portal.docflow.entity.Pagina;
+import br.com.softon.portal.docflow.entity.Projeto;
 import br.com.softon.portal.docflow.entity.Publicacao;
 import br.com.softon.portal.docflow.entity.PublicacaoChangelog;
 import br.com.softon.portal.docflow.entity.StatusPublicacao;
@@ -259,6 +262,31 @@ class PublicacaoServiceTest {
     assertThat(diag).hasSize(1);
     assertThat(diag.get(0).severidade()).isEqualTo("ERRO");
     assertThat(diag.get(0).mensagem()).contains("Não há páginas");
+  }
+
+  @Test
+  void diagnosticar_subpaginaSemPaiNoPacote_emiteAviso() throws Exception {
+    Projeto projeto = new Projeto("Projeto", "projeto", null, true);
+    Modulo modulo = new Modulo("Módulo", "modulo", null, 0, true, projeto);
+    Pagina pai = new Pagina("Pai", "pai", "PAI", "Resumo editorial com texto suficiente para diagnóstico.",
+        "<p>Conteúdo útil com texto suficiente para passar na validação de diagnóstico editorial.</p>",
+        0, true, modulo, null);
+    UUID paiId = UUID.randomUUID();
+    UUID filhoId = UUID.randomUUID();
+    setId(pai, paiId);
+    Pagina filho = new Pagina("Filho", "filho", "FILHO", "Resumo editorial com texto suficiente para diagnóstico.",
+        "<p>Conteúdo útil com texto suficiente para passar na validação de diagnóstico editorial.</p>",
+        1, true, modulo, pai);
+    setId(filho, filhoId);
+
+    when(clienteService.buscar(clienteId)).thenReturn(cliente);
+    when(geradorPacoteService.selecionarPaginas(clienteId)).thenReturn(List.of(filho));
+
+    var diag = service.diagnosticar(clienteId);
+
+    assertThat(diag).anyMatch(item -> "AVISO".equals(item.severidade())
+        && item.mensagem().contains("pai no pacote")
+        && filhoId.equals(item.paginaId()));
   }
 
   @Test

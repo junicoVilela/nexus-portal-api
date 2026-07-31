@@ -3,6 +3,8 @@ package br.com.softon.portal.docflow.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
@@ -20,9 +22,11 @@ import br.com.softon.portal.docflow.entity.Projeto;
 import br.com.softon.rbac.service.AuditoriaService;
 import br.com.softon.portal.shared.exception.BusinessException;
 import br.com.softon.portal.shared.exception.ConflictException;
+import java.lang.reflect.Field;
 import java.security.Principal;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -59,6 +63,11 @@ class PaginaServiceTest {
 
     projetoPadrao = new Projeto("Projeto Teste", "projeto-teste", null, true);
     moduloPadrao = new Modulo("Módulo Teste", "modulo-teste", null, 1, true, projetoPadrao);
+    try {
+      setField(moduloPadrao, "id", UUID.randomUUID());
+    } catch (Exception ex) {
+      throw new RuntimeException(ex);
+    }
 
     principal = () -> "editor";
 
@@ -219,11 +228,96 @@ class PaginaServiceTest {
     UUID id = UUID.randomUUID();
     Pagina pagina = pagina(id, StatusPagina.PUBLICADO);
     when(paginaRepository.findById(id)).thenReturn(Optional.of(pagina));
+    when(paginaRepository.findByParent_Id(id)).thenReturn(List.of());
     when(paginaRevisaoRepository.countByPagina_Id(id)).thenReturn(1);
 
     Pagina resultado = service.arquivar(id, principal);
 
     assertThat(resultado.getStatus()).isEqualTo(StatusPagina.ARQUIVADO);
+  }
+
+  @Test
+  void arquivar_cascateiaParaFilhosAntesDoPai() throws Exception {
+    UUID paiId = UUID.randomUUID();
+    UUID filhoId = UUID.randomUUID();
+    Pagina pai = pagina(paiId, StatusPagina.PUBLICADO);
+    Pagina filho = pagina(filhoId, StatusPagina.PUBLICADO);
+    setField(filho, "parent", pai);
+
+    when(paginaRepository.findById(paiId)).thenReturn(Optional.of(pai));
+    when(paginaRepository.findByParent_Id(paiId)).thenReturn(List.of(filho));
+    when(paginaRepository.findByParent_Id(filhoId)).thenReturn(List.of());
+    when(paginaRevisaoRepository.countByPagina_Id(any())).thenReturn(0);
+
+    service.arquivar(paiId, principal);
+
+    assertThat(filho.getStatus()).isEqualTo(StatusPagina.ARQUIVADO);
+    assertThat(pai.getStatus()).isEqualTo(StatusPagina.ARQUIVADO);
+    verify(auditoriaService).registrar(eq("PAGINA"), eq(filhoId), eq("ARQUIVAR"), any(), eq(principal));
+    verify(auditoriaService).registrar(eq("PAGINA"), eq(paiId), eq("ARQUIVAR"), any(), eq(principal));
+    verify(paginaRevisaoRepository, times(2)).save(any());
+  }
+
+  @Test
+  void arquivar_ignoraFilhosJaArquivados() throws Exception {
+    UUID paiId = UUID.randomUUID();
+    UUID filhoId = UUID.randomUUID();
+    Pagina pai = pagina(paiId, StatusPagina.PUBLICADO);
+    Pagina filho = pagina(filhoId, StatusPagina.ARQUIVADO);
+    setField(filho, "parent", pai);
+
+    when(paginaRepository.findById(paiId)).thenReturn(Optional.of(pai));
+    when(paginaRepository.findByParent_Id(paiId)).thenReturn(List.of(filho));
+    when(paginaRevisaoRepository.countByPagina_Id(paiId)).thenReturn(0);
+
+    service.arquivar(paiId, principal);
+
+    assertThat(pai.getStatus()).isEqualTo(StatusPagina.ARQUIVADO);
+    verify(paginaRevisaoRepository, times(1)).save(any());
+  }
+
+  @Test
+  void atualizar_comCicloNaHierarquia_deveLancarBusinessException() throws Exception {
+    UUID paginaId = UUID.randomUUID();
+    UUID parentId = UUID.randomUUID();
+    Pagina pagina = pagina(paginaId, StatusPagina.RASCUNHO);
+    Pagina parent = pagina(parentId, StatusPagina.RASCUNHO);
+    setField(parent, "parent", pagina);
+
+    when(paginaRepository.findById(paginaId)).thenReturn(Optional.of(pagina));
+    when(paginaRepository.findById(parentId)).thenReturn(Optional.of(parent));
+    UUID moduloId = UUID.randomUUID();
+    when(moduloService.buscar(moduloId)).thenReturn(moduloPadrao);
+    when(paginaRepository.existsBySlugAndIdNot(any(), any())).thenReturn(false);
+    when(paginaRepository.existsByCodigoTelaAndIdNot(any(), any())).thenReturn(false);
+
+    PaginaRequest request = new PaginaRequest("Título", "slug", "TELA", null,
+        "<p>conteúdo</p>", 0, true, moduloId, parentId, 0L);
+
+    assertThatThrownBy(() -> service.atualizar(paginaId, request, principal))
+        .isInstanceOf(BusinessException.class)
+        .hasMessageContaining("ciclo");
+  }
+
+  @Test
+  void reordenar_paginasDoMesmoPai_deveAtualizarOrdem() throws Exception {
+    UUID parentId = UUID.randomUUID();
+    Pagina parent = pagina(parentId, StatusPagina.RASCUNHO);
+    UUID idA = UUID.randomUUID();
+    UUID idB = UUID.randomUUID();
+    Pagina paginaA = pagina(idA, StatusPagina.RASCUNHO);
+    Pagina paginaB = pagina(idB, StatusPagina.RASCUNHO);
+    setField(paginaA, "parent", parent);
+    setField(paginaB, "parent", parent);
+    setField(paginaA, "ordem", 0);
+    setField(paginaB, "ordem", 1);
+
+    when(paginaRepository.findAllById(List.of(idB, idA))).thenReturn(List.of(paginaB, paginaA));
+
+    service.reordenar(List.of(idB, idA), principal);
+
+    assertThat(paginaB.getOrdem()).isZero();
+    assertThat(paginaA.getOrdem()).isEqualTo(1);
   }
 
   @Test
@@ -272,6 +366,11 @@ class PaginaServiceTest {
   private Pagina pagina(UUID id, StatusPagina status) {
     Pagina p = new Pagina("Título", "slug", "TELA", null, "<p>conteúdo</p>",
         0, true, moduloPadrao, null);
+    try {
+      setField(p, "id", id);
+    } catch (Exception ex) {
+      throw new RuntimeException(ex);
+    }
     switch (status) {
       case EM_REVISAO -> p.enviarRevisao();
       case APROVADO -> { p.enviarRevisao(); p.aprovar(); }
@@ -280,5 +379,11 @@ class PaginaServiceTest {
       default -> { }
     }
     return p;
+  }
+
+  private static void setField(Object entity, String field, Object value) throws Exception {
+    Field f = entity.getClass().getDeclaredField(field);
+    f.setAccessible(true);
+    f.set(entity, value);
   }
 }

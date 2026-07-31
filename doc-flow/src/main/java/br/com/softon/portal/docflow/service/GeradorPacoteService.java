@@ -30,8 +30,10 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import org.jsoup.Jsoup;
@@ -183,6 +185,13 @@ public class GeradorPacoteService {
           .formatted(htmlNoPacote, paginas.size()));
     }
 
+    Set<UUID> idsNoPacote = paginas.stream().map(Pagina::getId).collect(Collectors.toSet());
+    for (Pagina pagina : paginas) {
+      if (pagina.getParent() != null && !idsNoPacote.contains(pagina.getParent().getId())) {
+        avisos.add("Subpágina sem página pai no pacote: " + pagina.getTitulo());
+      }
+    }
+
     doc.put("entradasNoZip", present.size());
     doc.put("arquivosObrigatoriosFaltantes", faltantes);
     doc.put("avisos", avisos);
@@ -215,12 +224,34 @@ public class GeradorPacoteService {
     Set<UUID> paginasDiretas = new LinkedHashSet<>(clientePaginaRepository.findPaginaIdsByClienteId(clienteId));
     Set<UUID> projetosDoCliente = new LinkedHashSet<>(clienteProjetoRepository.findProjetoIdsByClienteId(clienteId));
 
-    return paginaRepository.findAtivasByStatusWithModulo(StatusPagina.PUBLICADO).stream()
+    List<Pagina> publicadas = paginaRepository.findAtivasByStatusWithModulo(StatusPagina.PUBLICADO);
+    Map<UUID, Pagina> publicadasPorId = publicadas.stream()
+        .collect(Collectors.toMap(Pagina::getId, pagina -> pagina, (a, b) -> a, LinkedHashMap::new));
+
+    LinkedHashSet<UUID> selecionadas = publicadas.stream()
         .filter(pagina -> projetosDoCliente.contains(pagina.getModulo().getProjeto().getId())
             || modulosDoCliente.contains(pagina.getModulo().getId())
             || paginasDiretas.contains(pagina.getId()))
-        .collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(),
-            this::ordenarHierarquia));
+        .map(Pagina::getId)
+        .collect(Collectors.toCollection(LinkedHashSet::new));
+
+    for (UUID paginaId : new ArrayList<>(selecionadas)) {
+      Pagina atual = publicadasPorId.get(paginaId);
+      while (atual != null && atual.getParent() != null) {
+        UUID parentId = atual.getParent().getId();
+        if (publicadasPorId.containsKey(parentId)) {
+          selecionadas.add(parentId);
+        }
+        atual = publicadasPorId.get(parentId);
+      }
+    }
+
+    List<Pagina> paginas = selecionadas.stream()
+        .map(publicadasPorId::get)
+        .filter(Objects::nonNull)
+        .toList();
+
+    return ordenarHierarquia(paginas);
   }
 
   public String previewHtml(Cliente cliente, String versao) {

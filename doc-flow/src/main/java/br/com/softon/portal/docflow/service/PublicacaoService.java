@@ -186,7 +186,8 @@ public class PublicacaoService {
       }
       if (pagina.parentId() != null && paginas.stream().noneMatch(item -> item.id().equals(pagina.parentId()))) {
         diagnosticos.add(new DiagnosticoPublicacao("AVISO",
-            "Subpágina elegível sem a página pai no pacote.", pagina.id(), pagina.titulo()));
+            "Subpágina sem página pai no pacote (verifique publicação e vínculos do pai).",
+            pagina.id(), pagina.titulo()));
       }
     }
     return diagnosticos;

@@ -64,4 +64,6 @@ public interface PaginaRepository extends JpaRepository<Pagina, UUID>, JpaSpecif
 
   @Query("select p.status, count(p) from Pagina p where p.ativo = true group by p.status")
   List<Object[]> contarPorStatusAgrupado();
+
+  List<Pagina> findByParent_Id(UUID parentId);
 }

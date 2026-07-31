@@ -53,6 +53,40 @@ class PaginaQualidadeServiceTest {
         .contains("LINKS", "TITULOS");
   }
 
+  @Test
+  void avaliar_comPlaceholderMustache_deveApontarPendencia() {
+    Pagina pagina = pagina(
+        "<h2>Campo</h2><p>O valor padrão é {{campo.nome}} e deve ser validado antes de salvar o registro no sistema.</p>",
+        "Orientações completas para realizar o cadastro de clientes no sistema.");
+
+    var resultado = service.avaliar(pagina);
+
+    assertThat(resultado.aptoParaRevisao()).isFalse();
+    assertThat(resultado.itens()).filteredOn(item -> "PLACEHOLDERS".equals(item.codigo()))
+        .singleElement()
+        .satisfies(item -> {
+          assertThat(item.ok()).isFalse();
+          assertThat(item.descricao()).contains("{{campo.nome}}");
+        });
+  }
+
+  @Test
+  void avaliar_comScreenPlaceholderSemImagem_deveApontarAvisoCaptura() {
+    Pagina pagina = pagina(
+        "<h2>Tela</h2><p>Visualize a área principal da tela antes de executar qualquer alteração nos dados do registro.</p>"
+            + "<div class=\"screen-placeholder\">Área reservada para captura.</div>",
+        "Orientações completas para realizar o cadastro de clientes no sistema.");
+
+    var resultado = service.avaliar(pagina);
+
+    assertThat(resultado.itens()).filteredOn(item -> "CAPTURA".equals(item.codigo()))
+        .singleElement()
+        .satisfies(item -> {
+          assertThat(item.ok()).isFalse();
+          assertThat(item.severidade()).isEqualTo(PaginaQualidadeService.Severidade.AVISO);
+        });
+  }
+
   private Pagina pagina(String conteudo, String resumo) {
     Projeto projeto = new Projeto("Projeto", "projeto", null, true);
     Modulo modulo = new Modulo("Módulo", "modulo", null, 0, true, projeto);

@@ -202,11 +202,21 @@ public class PaginaService {
   @Transactional
   public Pagina arquivar(UUID id, Principal principal) {
     Pagina pagina = buscar(id);
+    arquivarRecursivo(pagina, principal);
+    return pagina;
+  }
+
+  private void arquivarRecursivo(Pagina pagina, Principal principal) {
+    for (Pagina filho : paginaRepository.findByParent_Id(pagina.getId())) {
+      arquivarRecursivo(filho, principal);
+    }
+    if (pagina.getStatus() == StatusPagina.ARQUIVADO) {
+      return;
+    }
     pagina.arquivar();
     registrarRevisao(pagina, username(principal), TipoRevisaoPagina.ARQUIVAMENTO,
         "Página arquivada.");
     auditoriaService.registrar("PAGINA", pagina.getId(), "ARQUIVAR", pagina.getTitulo(), principal);
-    return pagina;
   }
 
   public Page<PaginaRevisao> revisoes(UUID id, Pageable pageable) {

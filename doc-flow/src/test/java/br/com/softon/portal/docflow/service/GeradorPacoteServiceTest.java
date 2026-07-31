@@ -146,6 +146,20 @@ class GeradorPacoteServiceTest {
   }
 
   @Test
+  void selecionarPaginas_comVinculoDiretoNoFilho_incluiPaiPublicado() throws Exception {
+    Pagina pai = paginaPublicada("Operações", "operacoes", 0);
+    Pagina filho = paginaPublicadaComPai("Lista", "lista", 1, pai);
+    when(clientePaginaRepository.findPaginaIdsByClienteId(clienteId))
+        .thenReturn(List.of(filho.getId()));
+    when(paginaRepository.findAtivasByStatusWithModulo(StatusPagina.PUBLICADO))
+        .thenReturn(List.of(pai, filho));
+
+    List<Pagina> resultado = service.selecionarPaginas(clienteId);
+
+    assertThat(resultado).containsExactly(pai, filho);
+  }
+
+  @Test
   void previewHtml_falhaSemPaginas() {
     when(paginaRepository.findAtivasByStatusWithModulo(StatusPagina.PUBLICADO))
         .thenReturn(List.of());
