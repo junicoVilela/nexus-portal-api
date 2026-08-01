@@ -222,6 +222,19 @@ class PaginaServiceTest {
     Pagina resultado = service.salvarRascunho(id, principal);
 
     assertThat(resultado.getStatus()).isEqualTo(StatusPagina.RASCUNHO);
+    verify(paginaEventService).publicar(pagina, "DEVOLVER", "editor");
+  }
+
+  @Test
+  void salvarRascunho_jaEmRascunho_naoPublicaEventoDevolver() {
+    UUID id = UUID.randomUUID();
+    Pagina pagina = pagina(id, StatusPagina.RASCUNHO);
+    when(paginaRepository.findById(id)).thenReturn(Optional.of(pagina));
+    when(paginaRevisaoRepository.countByPagina_Id(id)).thenReturn(0);
+
+    service.salvarRascunho(id, principal);
+
+    verify(paginaEventService, never()).publicar(any(), any(), any());
   }
 
   @Test
@@ -235,6 +248,7 @@ class PaginaServiceTest {
     Pagina resultado = service.arquivar(id, principal);
 
     assertThat(resultado.getStatus()).isEqualTo(StatusPagina.ARQUIVADO);
+    verify(paginaEventService).publicar(pagina, "ARQUIVAR", "editor");
   }
 
   @Test
@@ -257,6 +271,8 @@ class PaginaServiceTest {
     verify(auditoriaService).registrar(eq("PAGINA"), eq(filhoId), eq("ARQUIVAR"), any(), eq(principal));
     verify(auditoriaService).registrar(eq("PAGINA"), eq(paiId), eq("ARQUIVAR"), any(), eq(principal));
     verify(paginaRevisaoRepository, times(2)).save(any());
+    verify(paginaEventService).publicar(filho, "ARQUIVAR", "editor");
+    verify(paginaEventService).publicar(pai, "ARQUIVAR", "editor");
   }
 
   @Test
@@ -275,6 +291,8 @@ class PaginaServiceTest {
 
     assertThat(pai.getStatus()).isEqualTo(StatusPagina.ARQUIVADO);
     verify(paginaRevisaoRepository, times(1)).save(any());
+    verify(paginaEventService).publicar(pai, "ARQUIVAR", "editor");
+    verify(paginaEventService, never()).publicar(eq(filho), any(), any());
   }
 
   @Test

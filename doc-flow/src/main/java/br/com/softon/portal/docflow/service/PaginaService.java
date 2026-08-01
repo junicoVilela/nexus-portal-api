@@ -159,10 +159,14 @@ public class PaginaService {
   @Transactional
   public Pagina salvarRascunho(UUID id, Principal principal) {
     Pagina pagina = buscar(id);
+    StatusPagina statusAnterior = pagina.getStatus();
     pagina.salvarRascunho();
     registrarRevisao(pagina, username(principal), TipoRevisaoPagina.RETORNO_RASCUNHO,
         "Página retornada ao estado de rascunho.");
     auditoriaService.registrar("PAGINA", pagina.getId(), "SALVAR_RASCUNHO", pagina.getTitulo(), principal);
+    if (statusAnterior == StatusPagina.EM_REVISAO) {
+      paginaEventService.publicar(pagina, "DEVOLVER", username(principal));
+    }
     return pagina;
   }
 
@@ -234,6 +238,7 @@ public class PaginaService {
     registrarRevisao(pagina, username(principal), TipoRevisaoPagina.ARQUIVAMENTO,
         "Página arquivada.");
     auditoriaService.registrar("PAGINA", pagina.getId(), "ARQUIVAR", pagina.getTitulo(), principal);
+    paginaEventService.publicar(pagina, "ARQUIVAR", username(principal));
   }
 
   public Page<PaginaRevisao> revisoes(UUID id, Pageable pageable) {

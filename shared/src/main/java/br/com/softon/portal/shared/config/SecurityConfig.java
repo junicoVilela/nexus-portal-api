@@ -1,5 +1,6 @@
 package br.com.softon.portal.shared.config;
 
+import jakarta.servlet.DispatcherType;
 import java.util.Arrays;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
@@ -38,6 +39,10 @@ public class SecurityConfig {
         .csrf(csrf -> csrf.disable())
         .cors(cors -> cors.configure(http))
         .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        // Propaga SecurityContext nos redispatches ASYNC do SSE (SseEmitter). Sem isso, o
+        // AuthorizationFilter vê anônimo no 2º evento e loga Access Denied falso-positivo
+        // (response already committed), mesmo para admin autenticado.
+        .securityContext(sc -> sc.requireExplicitSave(false))
         .exceptionHandling(ex -> ex
             .authenticationEntryPoint((request, response, authException) -> {
               response.setStatus(401);
@@ -45,6 +50,8 @@ public class SecurityConfig {
               response.getWriter().write("{\"error\":\"Não autenticado\",\"status\":401}");
             }))
         .authorizeHttpRequests(auth -> auth
+            // Redispatch ASYNC/ERROR do Tomcat após SSE já autenticado no REQUEST inicial.
+            .dispatcherTypeMatchers(DispatcherType.ASYNC, DispatcherType.ERROR).permitAll()
             .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
             .requestMatchers("/actuator/health", "/actuator/health/**",
                 "/actuator/info", "/actuator/prometheus", "/actuator/metrics/**").permitAll()
