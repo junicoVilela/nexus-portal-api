@@ -26,5 +26,6 @@ Thumbs.db
 !.env.example
 
 # Runtime storage (uploads, ZIPs gerados, tmp)
+storage/
 application/storage/
 doc-flow/storage/
