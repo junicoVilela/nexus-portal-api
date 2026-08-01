@@ -485,10 +485,13 @@ public class PaginaService {
     Safelist safelist = Safelist.relaxed()
         .addTags("section", "article", "aside", "figure", "figcaption")
         .addAttributes(":all", "class")
-        .addAttributes("img", "src", "alt", "title")
+        .addAttributes("img", "src", "alt", "title", "loading")
         .addProtocols("a", "href", "http", "https", "mailto")
-        .addProtocols("img", "src", "http", "https", "data");
-    return Jsoup.clean(html, safelist);
+        .addProtocols("img", "src", "http", "https", "data")
+        // Mantém src relativo (/api/.../anexos/{id}/download) usado pelo editor e pacote.
+        // Jsoup exige baseUri para validar o protocolo de links relativos.
+        .preserveRelativeLinks(true);
+    return Jsoup.clean(html, "https://localhost/", safelist);
   }
 
   private String username(Principal principal) {

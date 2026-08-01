@@ -117,6 +117,29 @@ class PaginaServiceTest {
   }
 
   @Test
+  void criar_comImgDeAnexoRelativo_devePreservarSrc() {
+    UUID moduloId = UUID.randomUUID();
+    UUID paginaId = UUID.randomUUID();
+    UUID anexoId = UUID.randomUUID();
+    when(moduloService.buscar(moduloId)).thenReturn(moduloPadrao);
+    when(paginaRepository.existsBySlug(any())).thenReturn(false);
+    when(paginaRepository.existsByCodigoTela(any())).thenReturn(false);
+
+    String src = "/api/v1/docflow/paginas/" + paginaId + "/anexos/" + anexoId + "/download";
+    PaginaRequest request = new PaginaRequest("Com captura", null, "TELA-IMG", null,
+        "<figure class=\"screen-frame\"><img src=\"" + src + "\" alt=\"Captura\" loading=\"lazy\">"
+            + "<figcaption>Captura</figcaption></figure>",
+        0, true, moduloId, null, null);
+
+    Pagina pagina = service.criar(request, principal);
+
+    assertThat(pagina.getConteudoHtml())
+        .contains("src=\"" + src + "\"")
+        .contains("alt=\"Captura\"")
+        .contains("loading=\"lazy\"");
+  }
+
+  @Test
   void criar_comSlugDuplicado_deveLancarBusinessException() {
     UUID moduloId = UUID.randomUUID();
     when(moduloService.buscar(moduloId)).thenReturn(moduloPadrao);
