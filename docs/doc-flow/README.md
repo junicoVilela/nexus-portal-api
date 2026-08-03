@@ -222,9 +222,12 @@ qualidade editorial, além das integrações de geração e download.
 | ------------------------------------------------------------------------------ | -------------------------------- |
 | [`../jornadas/00-cenario-feliz-acme.md`](../jornadas/00-cenario-feliz-acme.md) | Jornada manual + release         |
 | `nexus-portal-web/docs/docflow/`                                              | Specs frontend                   |
+| [`10-assistente-ia-paginas.md`](10-assistente-ia-paginas.md)                   | Proposta: assistente IA + PR→página |
+| [`11-assistente-ia-checklist-sprints.md`](11-assistente-ia-checklist-sprints.md) | Backlog executável S1–S7 (tickets AI-xxx) |
+| [`../ai/README.md`](../ai/README.md)                                           | Módulo Maven `nexus-ai` (scaffold) |
 | [`../release-orchestrator/README.md`](../release-orchestrator/README.md)       | Módulo irmão (entregas técnicas) |
 | [`../ROADMAP.md`](../ROADMAP.md)                                               | Prioridades gerais do portal     |
 
 ### Specs detalhadas por tela (futuro)
 
-Espelhar o padrão `release-orchestrator/` conforme necessidade (ex.: `01-paginas-workflow.md`). Por ora, contratos estão nos controllers + `nexus-portal-web/docs/docflow/04-services-e-models.md`.
+Espelhar o padrão `release-orchestrator/` conforme necessidade (ex.: `01-paginas-workflow.md`). Por ora, contratos estão nos controllers + `nexus-portal-web/docs/docflow/04-services-e-models.md`. A proposta de assistente de IA está em [`10-assistente-ia-paginas.md`](10-assistente-ia-paginas.md).

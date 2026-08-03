@@ -54,6 +54,21 @@ release-orchestrator:
     artefatos-dir: ${ARTEFATOS_DIR:./storage/artefatos}
     entregas-dir: ${ENTREGAS_DIR:./storage/entregas}
 
+nexus:
+  ai:
+    # Dev: ligado por padrão. Sem key → FakeLlmProvider; com OPENROUTER/NEXUS key → OpenRouter.
+    enabled: ${NEXUS_AI_ENABLED:true}
+    base-url: ${NEXUS_AI_BASE_URL:https://openrouter.ai/api/v1}
+    api-key: ${NEXUS_AI_API_KEY:${OPENROUTER_API_KEY:}}
+    model: ${NEXUS_AI_MODEL:openai/gpt-4o-mini}
+    http-referer: ${NEXUS_AI_HTTP_REFERER:http://localhost:4200}
+    app-title: ${NEXUS_AI_APP_TITLE:Nexus AI}
+    timeout-seconds: ${NEXUS_AI_TIMEOUT_SECONDS:90}
+    max-perguntas: ${NEXUS_AI_MAX_PERGUNTAS:5}
+    max-tokens-saida: ${NEXUS_AI_MAX_TOKENS_SAIDA:8000}
+    max-geracoes-por-hora: ${NEXUS_AI_MAX_GERACOES_POR_HORA:20}
+
 logging:
   level:
     com.nexus.portal.docflow: DEBUG
+    com.nexus.portal.ai: DEBUG

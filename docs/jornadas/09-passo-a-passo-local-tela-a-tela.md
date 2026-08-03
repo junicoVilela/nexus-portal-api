@@ -565,6 +565,23 @@ rm -rf ../../storage/{artefatos,entregas,publicacoes}/*
 
 ---
 
+## §14b — Nexus AI (assistente de páginas) — ~15 min
+
+Runbook completo: [`../ai/RUNBOOK-LOCAL.md`](../ai/RUNBOOK-LOCAL.md).
+
+```bash
+export NEXUS_AI_ENABLED=true
+# opcional: export OPENROUTER_API_KEY=sk-or-...
+```
+
+1. Confirme `GET /api/v1/ai/status` com `enabled: true`.
+2. No front: DocFlow → Páginas → **Criar com IA**.
+3. Cole briefing → gerar → **Aplicar no editor** → salvar rascunho.
+
+Sem `OPENROUTER_API_KEY` o backend usa `FakeLlmProvider` (HTML determinístico).
+
+---
+
 ## §15 — Próximos passos depois desse fluxo funcionar
 
 1. **Conectar GitHub real** (PAT em produto) → testar sincronização de assets.

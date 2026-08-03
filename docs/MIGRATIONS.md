@@ -25,6 +25,8 @@ Por **módulo** e **camada** (sem sequences SERIAL — IDs são UUID):
 | V13 | release-orchestrator | tables |
 | V14 | release-orchestrator | constraints & comments |
 | V15 | release-orchestrator | indexes |
+| V16 | ai | tables sessão + mensagem (`nexus-ai`) |
+| V17 | ai | jobs + propostas (`nexus-ai`) |
 
 ## Recriar banco local
 

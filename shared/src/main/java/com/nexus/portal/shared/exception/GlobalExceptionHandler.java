@@ -10,6 +10,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -41,6 +42,16 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(ConstraintViolationException.class)
   ResponseEntity<ApiError> validation(ConstraintViolationException ex) {
     return error(HttpStatus.BAD_REQUEST, ex.getMessage());
+  }
+
+  @ExceptionHandler(ResponseStatusException.class)
+  ResponseEntity<ApiError> responseStatus(ResponseStatusException ex) {
+    HttpStatus status = HttpStatus.resolve(ex.getStatusCode().value());
+    if (status == null) {
+      status = HttpStatus.INTERNAL_SERVER_ERROR;
+    }
+    String message = ex.getReason() != null ? ex.getReason() : status.getReasonPhrase();
+    return error(status, message);
   }
 
   private ResponseEntity<ApiError> error(HttpStatus status, String message) {

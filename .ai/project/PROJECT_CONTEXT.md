@@ -13,20 +13,18 @@ desenvolvimento, operação e documentação.
 Módulos atuais:
 
 - Gateway (`gateway/`)
-- DocFlow (`doc-flow/`) — Clientes, Projetos, Módulos, Páginas,
+- DocFlow (`docflow/`) — Clientes, Projetos, Módulos, Páginas,
   Publicações, Preview, Auditoria, Usuários, Empresa, Grupos
+- AI (`ai/`) — Assistente de IA (rascunhos de página). API `/api/v1/ai/**`.
+  Spec em `docs/ai/` e `docs/doc-flow/10-assistente-ia-paginas.md`.
 - Release Orchestrator (`release-orchestrator/`) — Produtos RH, Releases, Itens, Histórico,
   Templates. Spec em `docs/release-orchestrator/`.
+- Identity Access (`identity-access/`) — Auth/RBAC
 
-Módulos previstos:
+Módulos previstos / evolução:
 
-- Release Orchestrator (Clientes, Entregas, Pacotes) — spec em
-  `docs/release-orchestrator/`
-- Sistemas
-- Controle de Acesso
-- Monitoramento
-- Notificações
-- Configurações
+- AI: sessões, jobs, propostas PR (checklist `docs/doc-flow/11-…`)
+- Release Orchestrator (evoluções F3/F4 conforme roadmap)
 
 ## Tipo de arquitetura
 

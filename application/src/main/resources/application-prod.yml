@@ -75,3 +75,17 @@ docflow:
     jwt-expiration-ms: ${JWT_EXPIRATION_MS:86400000}
     jwt-download-expiration-ms: ${JWT_DOWNLOAD_EXPIRATION_MS:900000}
     gateway-api-key: ${GATEWAY_API_KEY}
+
+# AI off por padrão em prod até configurar NEXUS_AI_* / OPENROUTER_API_KEY.
+nexus:
+  ai:
+    enabled: ${NEXUS_AI_ENABLED:false}
+    base-url: ${NEXUS_AI_BASE_URL:https://openrouter.ai/api/v1}
+    api-key: ${NEXUS_AI_API_KEY:${OPENROUTER_API_KEY:}}
+    model: ${NEXUS_AI_MODEL:openai/gpt-4o-mini}
+    http-referer: ${NEXUS_AI_HTTP_REFERER:}
+    app-title: ${NEXUS_AI_APP_TITLE:Nexus AI}
+    timeout-seconds: ${NEXUS_AI_TIMEOUT_SECONDS:90}
+    max-perguntas: ${NEXUS_AI_MAX_PERGUNTAS:5}
+    max-tokens-saida: ${NEXUS_AI_MAX_TOKENS_SAIDA:8000}
+    max-geracoes-por-hora: ${NEXUS_AI_MAX_GERACOES_POR_HORA:20}

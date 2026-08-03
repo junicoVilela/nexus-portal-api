@@ -16,12 +16,13 @@
   <version>0.1.0-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>nexus-portal-api</name>
-  <description>Parent POM — Doc Flow, Release Orchestrator, gateway embarcado (biblioteca) e application (runnable).</description>
+  <description>Parent POM — Doc Flow, AI, Release Orchestrator, gateway embarcado (biblioteca) e application (runnable).</description>
 
   <modules>
     <module>shared</module>
     <module>identity-access</module>
     <module>docflow</module>
+    <module>ai</module>
     <module>release-orchestrator</module>
     <module>gateway</module>
     <module>application</module>

@@ -13,12 +13,17 @@
 
   <artifactId>nexus-application</artifactId>
   <name>nexus-application</name>
-  <description>Nexus Portal — `NexusPortalApplication` (Doc Flow + Release Orchestrator + gateway na mesma porta).</description>
+  <description>Nexus Portal — `NexusPortalApplication` (Doc Flow + AI + Release Orchestrator + gateway na mesma porta).</description>
 
   <dependencies>
     <dependency>
       <groupId>com.nexus.portal</groupId>
       <artifactId>nexus-docflow</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.nexus.portal</groupId>
+      <artifactId>nexus-ai</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
