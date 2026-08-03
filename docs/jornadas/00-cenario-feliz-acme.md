@@ -1,4 +1,4 @@
-# 00 — Cenário feliz: ACME recebe DTEC-LD v1.5.0
+# 00 — Cenário feliz: ACME recebe NEXUS-LD v1.5.0
 
 Jornada **integrada** cobrindo Release Orchestrator (pacote técnico) e DocFlow (manual). Personas, sequência de telas e entregáveis.
 
@@ -31,11 +31,11 @@ Release PUBLICADA → (opcional) assets no GitHub → entrega técnica ACME → 
 | # | Quem | Onde | Ação | Estado |
 |---|---|---|---|---|
 | 0.1 | Admin | `/seguranca` | Usuários, grupos, permissões | ✅ UI mock; 📋 backend real |
-| 0.2 | Admin | `/release-orchestrator/produtos` | Cadastra produto **DTEC-LD** (`DTECLD`) | ✅ |
+| 0.2 | Admin | `/release-orchestrator/produtos` | Cadastra produto **NEXUS-LD** (`NEXUSLD`) | ✅ |
 | 0.3 | Admin | `/orchestrator/produtos/:id/modulos` | Catálogo WEB, BATCH, BANCO, KETTLE, FUNC, REGRAS | 📋 spec `10` |
 | 0.4 | Admin | `/orchestrator/clientes/novo` | Cadastra **ACME** (CNPJ, ambiente, banco) | 📋 spec `03` |
 | 0.5 | Admin | Cliente ACME → abas | Produtos contratados (v1.4.0 instalada), funcionalidades, config entrega | 📋 `05`–`07` |
-| 0.6 | Lucia | `/doc-flow` | Projeto DTEC-LD, módulos, **cliente DocFlow** ACME + vínculos | ✅ |
+| 0.6 | Lucia | `/doc-flow` | Projeto NEXUS-LD, módulos, **cliente DocFlow** ACME + vínculos | ✅ |
 | 0.7 | Admin | `/doc-flow/configuracoes` | Logo da empresa nos manuais | ✅ UI; 📋 integração API empresa |
 
 > **Nota:** cliente **Orchestrator** (operacional) e cliente **DocFlow** (manual) são conceitos distintos hoje; unificação futura.
@@ -60,7 +60,7 @@ Release PUBLICADA → (opcional) assets no GitHub → entrega técnica ACME → 
 
 | # | Quem | Tela | Passos | Estado |
 |---|---|---|---|---|
-| 2.1 | Carlos | `/orchestrator/entregas/agenda` | Planeja entrega ACME · DTEC-LD · v1.5.0 · data janela | 📋 spec `16` |
+| 2.1 | Carlos | `/orchestrator/entregas/agenda` | Planeja entrega ACME · NEXUS-LD · v1.5.0 · data janela | 📋 spec `16` |
 | 2.2 | Carlos | `/orchestrator/clientes/:id` | Confere última entrega v1.4.0, aprova próxima entrega | 📋 spec `04` |
 
 ---
@@ -69,7 +69,7 @@ Release PUBLICADA → (opcional) assets no GitHub → entrega técnica ACME → 
 
 | # | Quem | Tela | Passos | Estado |
 |---|---|---|---|---|
-| 3.1 | Pedro | `/orchestrator/entregas/nova` | Wizard: ACME → DTEC-LD PROD → release 1.5.0 | 📋 spec `18` |
+| 3.1 | Pedro | `/orchestrator/entregas/nova` | Wizard: ACME → NEXUS-LD PROD → release 1.5.0 | 📋 spec `18` |
 | 3.2 | Pedro | Passo 4 — módulos | Sistema compara v1.4.0 (cliente) vs v1.5.0 (alvo); marca módulos com mudança | 📋 spec `19` |
 | 3.3 | Pedro | `/orchestrator/entregas/:id/delta` | (Opcional) Ajusta `FROM_TAG`/`TO_TAG`, pré-visualiza SQL/Kettle | 📋 spec `20` |
 | 3.4 | Pedro | Passo 5 — revisão | Confirma resumo → **Gerar pacote** | 📋 spec `18` |

@@ -59,11 +59,11 @@ Docker
 ## Estrutura recomendada para projeto de Gateway
 
 ```text
-softon-gateway-api/
+nexus-gateway-api/
 ├── src/
 │   └── main/
 │       ├── java/
-│       │   └── br/com/softon/gateway/
+│       │   └── br/com/nexus/gateway/
 │       │       ├── GatewayApplication.java
 │       │       │
 │       │       ├── config/
@@ -147,7 +147,7 @@ predicates:
   - Path=/api/docflow/**
   - Method=GET,POST
   - Header=Authorization
-  - Host=api.softon.com.br
+  - Host=api.nexus.com.br
 ```
 
 ### Filter
@@ -159,7 +159,7 @@ Exemplos:
 ```yaml
 filters:
   - StripPrefix=1
-  - AddRequestHeader=X-Gateway, softon-gateway
+  - AddRequestHeader=X-Gateway, nexus-gateway
   - RemoveResponseHeader=X-Powered-By
 ```
 
@@ -173,13 +173,13 @@ server:
 
 spring:
   application:
-    name: softon-gateway-api
+    name: nexus-gateway-api
 
   cloud:
     gateway:
       default-filters:
         - RemoveResponseHeader=X-Powered-By
-        - AddResponseHeader=X-Gateway, softon-gateway
+        - AddResponseHeader=X-Gateway, nexus-gateway
 
       routes:
         - id: docflow-api
@@ -233,7 +233,7 @@ services:
 gateway:
   cors:
     allowed-origins:
-      - https://portal.softon.com.br
+      - https://portal.nexus.local
 
 services:
   docflow:
@@ -261,7 +261,7 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: ${JWT_ISSUER_URI:http://localhost:8089/realms/softon}
+          issuer-uri: ${JWT_ISSUER_URI:http://localhost:8089/realms/nexus}
 ```
 
 ---
@@ -342,7 +342,7 @@ public class CorsConfig {
 
         config.setAllowedOriginPatterns(List.of(
             "http://localhost:*",
-            "https://*.softon.com.br"
+            "https://*.nexus.com.br"
         ));
 
         config.setAllowedMethods(List.of(
@@ -618,7 +618,7 @@ public class GatewayRoutesConfig {
                 .path("/api/docflow/**")
                 .filters(filter -> filter
                     .stripPrefix(1)
-                    .addRequestHeader("X-Gateway", "softon-gateway")
+                    .addRequestHeader("X-Gateway", "nexus-gateway")
                 )
                 .uri("http://localhost:8081")
             )
@@ -757,21 +757,21 @@ ENTRYPOINT ["java", "-jar", "app.jar"]
 
 ```yaml
 services:
-  softon-gateway-api:
+  nexus-gateway-api:
     build: .
-    container_name: softon-gateway-api
+    container_name: nexus-gateway-api
     ports:
       - "8080:8080"
     environment:
       SERVER_PORT: 8080
       DOCFLOW_API_URL: http://docflow-api:8081
       PORTAL_API_URL: http://portal-api:8082
-      JWT_ISSUER_URI: http://keycloak:8080/realms/softon
+      JWT_ISSUER_URI: http://keycloak:8080/realms/nexus
     networks:
-      - softon-network
+      - nexus-network
 
 networks:
-  softon-network:
+  nexus-network:
     driver: bridge
 ```
 

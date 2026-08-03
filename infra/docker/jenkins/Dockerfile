@@ -1,4 +1,4 @@
-# Jenkins LTS com JDK 21 + plugins essenciais do Softon Portal pré-instalados.
+# Jenkins LTS com JDK 21 + plugins essenciais do Nexus Portal pré-instalados.
 # Construído pelo docker-compose.yml em ../docker-compose.yml.
 # Spec: docs/jornadas/10-fluxo-local-completo-com-jenkins.md
 

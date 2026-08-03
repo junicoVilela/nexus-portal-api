@@ -2,7 +2,7 @@
 
 One-pager para alinhar o time e **prompts prontos** para colar no chat do Cursor e iniciar cada fase.
 
-> Piloto: produto **DTEC-LD**, cliente **ACME**, MVP **manual** (upload + pacote local) até M6.
+> Piloto: produto **NEXUS-LD**, cliente **ACME**, MVP **manual** (upload + pacote local) até M6.
 
 ---
 
@@ -10,7 +10,7 @@ One-pager para alinhar o time e **prompts prontos** para colar no chat do Cursor
 
 | Item | Decisão |
 |---|---|
-| Produto piloto | DTEC-LD (`DTECLD`) |
+| Produto piloto | NEXUS-LD (`NEXUSLD`) |
 | Cliente piloto | ACME |
 | MVP entregas | Upload manual de artefatos; sem GitHub/Jenkins até M6 |
 | DocFlow | Integrar antes do Orchestrator (S0 / M1) |
@@ -47,12 +47,12 @@ Sempre inclua:
 ```text
 Execute o [S0 / M1 / tarefa RO-405] conforme a documentação:
 
-- Plano: softon-portal-api/docs/jornadas/03-plano-90-dias-e-tarefas.md
-- Checklist DoD: softon-portal-api/docs/jornadas/02-checklist-por-sprint.md (seção S__)
+- Plano: nexus-portal-api/docs/jornadas/03-plano-90-dias-e-tarefas.md
+- Checklist DoD: nexus-portal-api/docs/jornadas/02-checklist-por-sprint.md (seção S__)
 - Spec técnica: [caminho da spec, se houver]
 
 Escopo: [backend | frontend | ambos]
-Repositório(s): [softon-portal-api | softon-portal-web | ambos]
+Repositório(s): [nexus-portal-api | nexus-portal-web | ambos]
 
 Faça:
 1. Ler o código existente antes de alterar
@@ -73,11 +73,11 @@ Critério de pronto: [colar DoD ou critérios de aceite da tarefa]
 ```text
 Inicie o projeto Release Orchestrator + integração DocFlow seguindo:
 
-- softon-portal-api/docs/jornadas/04-kickoff-e-prompts-execucao.md
-- softon-portal-api/docs/jornadas/03-plano-90-dias-e-tarefas.md
+- nexus-portal-api/docs/jornadas/04-kickoff-e-prompts-execucao.md
+- nexus-portal-api/docs/jornadas/03-plano-90-dias-e-tarefas.md
 
 Comece pelo Sprint S0 (Marco M1): integração DocFlow.
-Leia softon-portal-api/docs/doc-flow/README.md e o código em doc-flow/ e frontend docflow/.
+Leia nexus-portal-api/docs/doc-flow/README.md e o código em doc-flow/ e frontend docflow/.
 Implemente as tarefas DF-001 a DF-007. Valide login JWT, proxy /api/v1/docflow e publicação ZIP.
 Não commite até eu pedir.
 ```
@@ -88,11 +88,11 @@ Não commite até eu pedir.
 Execute Sprint S0 — DocFlow integrado (Marco M1).
 
 Referências:
-- softon-portal-api/docs/jornadas/03-plano-90-dias-e-tarefas.md (tarefas DF-001 a DF-007)
-- softon-portal-api/docs/jornadas/02-checklist-por-sprint.md (seção Sprint 0)
-- softon-portal-api/docs/doc-flow/README.md
+- nexus-portal-api/docs/jornadas/03-plano-90-dias-e-tarefas.md (tarefas DF-001 a DF-007)
+- nexus-portal-api/docs/jornadas/02-checklist-por-sprint.md (seção Sprint 0)
+- nexus-portal-api/docs/doc-flow/README.md
 
-Escopo: softon-portal-web (auth, proxy, services) + ajustes mínimos no API se necessário.
+Escopo: nexus-portal-web (auth, proxy, services) + ajustes mínimos no API se necessário.
 Critério de pronto: login → dashboard → CRUD cliente → página PUBLICADO → publicação GERANDO → SUCESSO → download ZIP.
 ```
 
@@ -102,13 +102,13 @@ Critério de pronto: login → dashboard → CRUD cliente → página PUBLICADO 
 Execute Sprint S1 — F0 backend módulos e artefatos.
 
 Referências:
-- softon-portal-api/docs/jornadas/03-plano-90-dias-e-tarefas.md (RO-101 a RO-107)
-- softon-portal-api/docs/jornadas/02-checklist-por-sprint.md (Sprint 1)
-- softon-portal-api/docs/release-orchestrator/10-produtos-modulos-artefatos.md
-- softon-portal-api/docs/ROADMAP.md (F0.3–F0.6)
+- nexus-portal-api/docs/jornadas/03-plano-90-dias-e-tarefas.md (RO-101 a RO-107)
+- nexus-portal-api/docs/jornadas/02-checklist-por-sprint.md (Sprint 1)
+- nexus-portal-api/docs/release-orchestrator/10-produtos-modulos-artefatos.md
+- nexus-portal-api/docs/ROADMAP.md (F0.3–F0.6)
 
-Escopo: softon-portal-api (release-orchestrator).
-Critério de pronto: via API, criar módulo WEB em DTEC-LD e fazer upload .war em release rascunho; testes passando.
+Escopo: nexus-portal-api (release-orchestrator).
+Critério de pronto: via API, criar módulo WEB em NEXUS-LD e fazer upload .war em release rascunho; testes passando.
 ```
 
 ### Sprint 2 — PDF + front artefatos (M2)
@@ -117,10 +117,10 @@ Critério de pronto: via API, criar módulo WEB em DTEC-LD e fazer upload .war e
 Execute Sprint S2 — F0 front artefatos + PDF release.
 
 Referências:
-- softon-portal-api/docs/jornadas/03-plano-90-dias-e-tarefas.md (RO-201 a RO-207)
-- softon-portal-api/docs/jornadas/02-checklist-por-sprint.md (Sprint 2)
-- softon-portal-api/docs/release-orchestrator/25-documento-release-md-pdf.md
-- softon-portal-web/docs/release-orchestrator/14-release-orchestrator-detalhe.md
+- nexus-portal-api/docs/jornadas/03-plano-90-dias-e-tarefas.md (RO-201 a RO-207)
+- nexus-portal-api/docs/jornadas/02-checklist-por-sprint.md (Sprint 2)
+- nexus-portal-api/docs/release-orchestrator/25-documento-release-md-pdf.md
+- nexus-portal-web/docs/release-orchestrator/14-release-orchestrator-detalhe.md
 
 Escopo: backend PDF + frontend aba Artefatos e botão PDF.
 Critério de pronto: release 1.5.0 rascunho com war + sql uploadados e PDF baixado pela UI.
@@ -132,12 +132,12 @@ Critério de pronto: release 1.5.0 rascunho com war + sql uploadados e PDF baixa
 Execute Sprint S3 — F1 backend cadastros de cliente.
 
 Referências:
-- softon-portal-api/docs/jornadas/03-plano-90-dias-e-tarefas.md (RO-301 a RO-309)
-- softon-portal-api/docs/jornadas/02-checklist-por-sprint.md (Sprint 3)
-- softon-portal-api/docs/release-orchestrator/02 a 07 (specs cliente)
+- nexus-portal-api/docs/jornadas/03-plano-90-dias-e-tarefas.md (RO-301 a RO-309)
+- nexus-portal-api/docs/jornadas/02-checklist-por-sprint.md (Sprint 3)
+- nexus-portal-api/docs/release-orchestrator/02 a 07 (specs cliente)
 
-Escopo: softon-portal-api.
-Critério de pronto: cliente ACME via API com DTEC-LD, módulos WEB+BANCO v1.4.0, funcionalidades marcadas; seed + testes.
+Escopo: nexus-portal-api.
+Critério de pronto: cliente ACME via API com NEXUS-LD, módulos WEB+BANCO v1.4.0, funcionalidades marcadas; seed + testes.
 ```
 
 ### Sprint 4 — Geração pacote (M4) — crítico
@@ -146,11 +146,11 @@ Critério de pronto: cliente ACME via API com DTEC-LD, módulos WEB+BANCO v1.4.0
 Execute Sprint S4 — F1 backend entrega e geração de pacote MVP.
 
 Referências:
-- softon-portal-api/docs/jornadas/03-plano-90-dias-e-tarefas.md (RO-401 a RO-410)
-- softon-portal-api/docs/jornadas/02-checklist-por-sprint.md (Sprint 4)
-- softon-portal-api/docs/release-orchestrator/18, 19, 21 (assistente, módulos, geração)
+- nexus-portal-api/docs/jornadas/03-plano-90-dias-e-tarefas.md (RO-401 a RO-410)
+- nexus-portal-api/docs/jornadas/02-checklist-por-sprint.md (Sprint 4)
+- nexus-portal-api/docs/release-orchestrator/18, 19, 21 (assistente, módulos, geração)
 
-Escopo: softon-portal-api. Priorize RO-405 (job @Async 11 etapas).
+Escopo: nexus-portal-api. Priorize RO-405 (job @Async 11 etapas).
 MVP: delta lógico sem Git; artefatos de upload manual.
 Critério de pronto: POST gerar entrega ACME → ZIP em pasta local → CONCLUIDA → versaoAtual 1.5.0.
 ```
@@ -161,11 +161,11 @@ Critério de pronto: POST gerar entrega ACME → ZIP em pasta local → CONCLUID
 Execute Sprint S5 — F1 front clientes e agenda.
 
 Referências:
-- softon-portal-api/docs/jornadas/03-plano-90-dias-e-tarefas.md (RO-501 a RO-508)
-- softon-portal-api/docs/jornadas/02-checklist-por-sprint.md (Sprint 5)
-- softon-portal-web/docs/release-orchestrator/ (specs 02–07, 16–17)
+- nexus-portal-api/docs/jornadas/03-plano-90-dias-e-tarefas.md (RO-501 a RO-508)
+- nexus-portal-api/docs/jornadas/02-checklist-por-sprint.md (Sprint 5)
+- nexus-portal-web/docs/release-orchestrator/ (specs 02–07, 16–17)
 
-Escopo: softon-portal-web.
+Escopo: nexus-portal-web.
 Critério de pronto: gestor cadastra ACME e planeja entrega v1.5.0 só pela UI.
 ```
 
@@ -175,11 +175,11 @@ Critério de pronto: gestor cadastra ACME e planeja entrega v1.5.0 só pela UI.
 Execute Sprint S6 — F1 front assistente e geração.
 
 Referências:
-- softon-portal-api/docs/jornadas/03-plano-90-dias-e-tarefas.md (RO-601 a RO-608)
-- softon-portal-api/docs/jornadas/02-checklist-por-sprint.md (Sprint 6)
-- softon-portal-web/docs/release-orchestrator/ (specs 18–23)
+- nexus-portal-api/docs/jornadas/03-plano-90-dias-e-tarefas.md (RO-601 a RO-608)
+- nexus-portal-api/docs/jornadas/02-checklist-por-sprint.md (Sprint 6)
+- nexus-portal-web/docs/release-orchestrator/ (specs 18–23)
 
-Escopo: softon-portal-web.
+Escopo: nexus-portal-web.
 Critério de pronto: operador gera pacote ACME pelo wizard, baixa ZIP, vê histórico; polling GERANDO.
 ```
 
@@ -189,8 +189,8 @@ Critério de pronto: operador gera pacote ACME pelo wizard, baixa ZIP, vê hist�
 Execute Sprint S7 — integração e validação jornada ACME.
 
 Referências:
-- softon-portal-api/docs/jornadas/00-cenario-feliz-acme.md
-- softon-portal-api/docs/jornadas/02-checklist-por-sprint.md (Sprint 7)
+- nexus-portal-api/docs/jornadas/00-cenario-feliz-acme.md
+- nexus-portal-api/docs/jornadas/02-checklist-por-sprint.md (Sprint 7)
 
 Não implementar features novas. Corrigir blockers da jornada end-to-end.
 Entregar roteiro demo 30 min e lista do que passou/falhou no bug bash.
@@ -201,7 +201,7 @@ Critério de pronto: demo M6 reproduzível sem Postman.
 
 ```text
 Implemente apenas a tarefa [RO-405] do plano:
-softon-portal-api/docs/jornadas/03-plano-90-dias-e-tarefas.md
+nexus-portal-api/docs/jornadas/03-plano-90-dias-e-tarefas.md
 
 Leia a spec linkada na tabela da tarefa e o código existente.
 Escopo mínimo; testes para o comportamento novo.
@@ -213,7 +213,7 @@ Critério de pronto: [colar critérios de aceite da linha RO-405].
 ```text
 Continue a execução do Sprint [S4] onde paramos.
 
-Leia o checklist softon-portal-api/docs/jornadas/02-checklist-por-sprint.md
+Leia o checklist nexus-portal-api/docs/jornadas/02-checklist-por-sprint.md
 e git status/diff para ver o que já foi feito.
 Implemente só os itens ainda [ ] pendentes deste sprint.
 ```
@@ -247,7 +247,7 @@ Não incluir arquivos sensíveis. Mensagem focada no porquê.
 | Sessão longa | Sprint inteiro (ex.: S0) |
 | Sessão curta | Uma tarefa (`RO-105`) |
 | Só entender | "Explique o Sprint S4 sem implementar" |
-| Só backend | Dizer explicitamente `Escopo: softon-portal-api` |
+| Só backend | Dizer explicitamente `Escopo: nexus-portal-api` |
 | Evitar escopo creep | "Implemente só RO-405; ignore RO-406 por agora" |
 | Testes | "Rode testes do módulo alterado e corrija falhas" |
 

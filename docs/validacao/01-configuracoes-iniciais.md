@@ -32,7 +32,7 @@ infra/env (1)
 Não é tela — é configuração do `application-dev.yml` ou variáveis de ambiente do backend. Precisa estar correto antes de subir o backend.
 
 ### Caminho
-- Arquivo: `softon-portal-api/application/src/main/resources/application-dev.yml`
+- Arquivo: `nexus-portal-api/application/src/main/resources/application-dev.yml`
 - Ou exportar como env var antes de `./mvnw spring-boot:run`.
 
 ### Variáveis relevantes
@@ -49,7 +49,7 @@ Não é tela — é configuração do `application-dev.yml` ou variáveis de amb
 ### Como validar
 ```bash
 # Pastas existem e são graváveis
-ls -ld softon-portal-api/storage/{artefatos,entregas,publicacoes}
+ls -ld nexus-portal-api/storage/{artefatos,entregas,publicacoes}
 
 # Backend está vivo
 curl -fs http://localhost:8080/actuator/health | jq
@@ -70,7 +70,7 @@ curl -s http://localhost:8080/actuator/health/jenkins | jq '.status'   # UP só 
 
 ## 2. Cadastro de Produto
 
-Produto é a unidade comercializável vendida aos clientes (ex.: Suite DTEC). Cada produto agrupa módulos, integrações de CI e o catálogo funcional.
+Produto é a unidade comercializável vendida aos clientes (ex.: Suite Nexus). Cada produto agrupa módulos, integrações de CI e o catálogo funcional.
 
 ### Caminho
 Sidebar → **Release Orchestrator → Produtos** → botão **Novo produto** (canto sup. direito).
@@ -85,8 +85,8 @@ Toda vez que um novo produto for incorporado ao Release Orchestrator.
 
 | Campo | Obrigatório | Exemplo | Observação |
 |---|---|---|---|
-| Sigla | Sim | `DTEC` | CAIXA-ALTA, sem espaços, ≤ 20 caracteres. Vira parte do nome do pacote |
-| Nome | Sim | `Suite DTEC` | Nome comercial |
+| Sigla | Sim | `Nexus` | CAIXA-ALTA, sem espaços, ≤ 20 caracteres. Vira parte do nome do pacote |
+| Nome | Sim | `Suite Nexus` | Nome comercial |
 | Cor | Não | `#2563eb` | Badge na UI |
 | Ativo | Sim | ✅ | Produtos inativos não podem ter novas releases |
 
@@ -99,7 +99,7 @@ Toda vez que um novo produto for incorporado ao Release Orchestrator.
 1. Lista de produtos exibe o novo card.
 2. Banco:
    ```sql
-   SELECT id, sigla, nome, ativo FROM tb_produto_rh WHERE sigla = 'DTEC';
+   SELECT id, sigla, nome, ativo FROM tb_produto_rh WHERE sigla = 'Nexus';
    ```
 3. Sigla é mostrada como prefixo nos nomes de pacotes esperados (verificar na seção 11.5 do fluxo).
 
@@ -113,7 +113,7 @@ Toda vez que um novo produto for incorporado ao Release Orchestrator.
 
 ### Critérios de aceite
 - [ ] Produto aparece na lista após salvar.
-- [ ] `tb_produto_rh.sigla = 'DTEC'` e `ativo = TRUE`.
+- [ ] `tb_produto_rh.sigla = 'Nexus'` e `ativo = TRUE`.
 - [ ] Botão **Salvar** fica desabilitado enquanto faltam campos obrigatórios.
 
 ---
@@ -132,7 +132,7 @@ Sempre que o produto for buildado por CI e publicar assets em GitHub Releases. S
 
 | Campo | Obrigatório | Exemplo | Observação |
 |---|---|---|---|
-| Repositório | Sim (se ativar GitHub) | `softon/dtec-suite` | `owner/repo`; aceita URL completa (será normalizada) |
+| Repositório | Sim (se ativar GitHub) | `nexus/nexus-suite` | `owner/repo`; aceita URL completa (será normalizada) |
 | Branch padrão | Sim | `main` | Base do compare API |
 | Regex de tag | Sim | `^v\d+\.\d+\.\d+$` | Tags que entram no delta |
 | Token | Sim | `ghp_…` | PAT com escopo `repo`. Armazenado em texto plano no MVP |
@@ -147,7 +147,7 @@ Sempre que o produto for buildado por CI e publicar assets em GitHub Releases. S
 - Banco:
   ```sql
   SELECT repositorio_github, branch_padrao, padrao_tag
-  FROM tb_produto_rh WHERE sigla = 'DTEC';
+  FROM tb_produto_rh WHERE sigla = 'Nexus';
   ```
 
 ### Possíveis erros
@@ -177,7 +177,7 @@ Detalhe do produto → aba **Jenkins**.
 | Campo | Obrigatório (se ativar Jenkins) | Exemplo | Observação |
 |---|---|---|---|
 | URL base | Sim | `http://localhost:8090` | Sem `/` final |
-| Job | Sim | `dtec-suite-build` | Nome exato do job |
+| Job | Sim | `nexus-suite-build` | Nome exato do job |
 | Usuário | Sim | `admin` | Usuário Jenkins |
 | API token | Sim | (gerar em Jenkins → user → Configure → API Token) | Texto plano no MVP |
 | Modo de trigger | Sim | `BUILD_ON_TAG` | Ou `MANUAL` |
@@ -191,7 +191,7 @@ Detalhe do produto → aba **Jenkins**.
 - Banco:
   ```sql
   SELECT jenkins_url, jenkins_job, jenkins_trigger_mode
-  FROM tb_produto_rh WHERE sigla = 'DTEC';
+  FROM tb_produto_rh WHERE sigla = 'Nexus';
   ```
 
 ### Possíveis erros
@@ -219,8 +219,8 @@ Detalhe do produto → aba **Módulos** → **Novo módulo**.
 
 | Campo | Obrigatório | Exemplo | Observação |
 |---|---|---|---|
-| Código | Sim | `dtec-ld` | UNIQUE por produto. Vira nome de pasta dentro do ZIP |
-| Nome | Sim | `DTEC Linha Digital` | Exibição na UI |
+| Código | Sim | `nexus-ld` | UNIQUE por produto. Vira nome de pasta dentro do ZIP |
+| Nome | Sim | `Nexus Linha Digital` | Exibição na UI |
 | Tipo | Sim | `WEB` | `WEB`, `BATCH`, `BANCO`, `KETTLE`, `FUNCIONALIDADES`, `REGRAS` |
 | Gera delta | Sim | `true` para BANCO/KETTLE, `false` para WEB/BATCH | Decide se entra no cálculo de delta Git |
 | Obrigatório | Sim | `true` se o módulo sempre entra na entrega | Apenas hint na UI |
@@ -233,12 +233,12 @@ Detalhe do produto → aba **Módulos** → **Novo módulo**.
 Para módulos `BANCO`:
 ```json
 {
-  "caminhoRepo": "db/dtec",
+  "caminhoRepo": "db/nexus",
   "prefixoDDL": "DDL_",
   "prefixoDML": "DML_",
   "dialetos": [
-    { "nome": "oracle",    "caminhoRepo": "db/dtec/oracle"    },
-    { "nome": "sqlserver", "caminhoRepo": "db/dtec/sqlserver" }
+    { "nome": "oracle",    "caminhoRepo": "db/nexus/oracle"    },
+    { "nome": "sqlserver", "caminhoRepo": "db/nexus/sqlserver" }
   ]
 }
 ```
@@ -246,7 +246,7 @@ Para módulos `BANCO`:
 Para módulos `KETTLE`:
 ```json
 {
-  "caminhoRepo": "kettle/dtec",
+  "caminhoRepo": "kettle/nexus",
   "incluirDependencias": true
 }
 ```
@@ -259,7 +259,7 @@ Para módulos `KETTLE`:
 ```sql
 SELECT codigo, nome, tipo, gera_delta, ativo
 FROM tb_modulo_produto
-WHERE produto_id = (SELECT id FROM tb_produto_rh WHERE sigla = 'DTEC')
+WHERE produto_id = (SELECT id FROM tb_produto_rh WHERE sigla = 'Nexus')
 ORDER BY ordem;
 ```
 
@@ -314,7 +314,7 @@ Agrupa funcionalidades por área (ex.: "Crédito", "Cobrança", "Relatórios").
 SELECT d.codigo AS dominio, f.codigo, f.nome, f.critica
 FROM tb_dominio_produto d
 JOIN tb_funcionalidade_produto f ON f.dominio_produto_id = d.id
-WHERE d.produto_id = (SELECT id FROM tb_produto_rh WHERE sigla = 'DTEC')
+WHERE d.produto_id = (SELECT id FROM tb_produto_rh WHERE sigla = 'Nexus')
 ORDER BY d.ordem, f.ordem;
 ```
 
@@ -408,13 +408,13 @@ Detalhe do cliente → aba **Contatos** → **Novo contato**.
 Define quais produtos o cliente comprou, em qual ambiente, e qual versão de cada módulo ele tem instalada hoje.
 
 ### Caminho
-Detalhe do cliente → aba **Produtos** → **Contratar produto** → seleciona `DTEC`.
+Detalhe do cliente → aba **Produtos** → **Contratar produto** → seleciona `Nexus`.
 
 ### Campos do contrato
 
 | Campo | Obrigatório | Exemplo |
 |---|---|---|
-| Produto | Sim | `DTEC` |
+| Produto | Sim | `Nexus` |
 | Ambiente | Sim | `HOM` (vem do contrato, pode diferir do ambiente padrão do cliente) |
 | Ativo | Sim | ✅ |
 
@@ -496,11 +496,11 @@ Detalhe do cliente → aba **Config. entrega** → **Editar**.
 | Campo | Obrigatório | Exemplo |
 |---|---|---|
 | Tipo | Sim | `PASTA` |
-| Caminho base | Sim | `/tmp/softon-entregas/xpto` |
+| Caminho base | Sim | `/tmp/nexus-entregas/xpto` |
 | Exigir aprovação | Não | ✅ se entrega só sai com aprovação manual |
 | E-mails de notificação | Não | `maria@xpto.com,operacao@xpto.com` |
 
-> Crie a pasta antes: `mkdir -p /tmp/softon-entregas/xpto`.
+> Crie a pasta antes: `mkdir -p /tmp/nexus-entregas/xpto`.
 
 ### Tipo `SFTP`
 
@@ -571,7 +571,7 @@ Sidebar → **Releases → Nova release**.
 
 | Campo | Obrigatório | Exemplo |
 |---|---|---|
-| Produto | Sim | `DTEC` |
+| Produto | Sim | `Nexus` |
 | Versão | Sim | `1.1.0` (UNIQUE por produto) |
 | Tipo | Sim | `MAJOR`/`MINOR`/`PATCH` |
 | Título | Sim | `Sprint 24 — novos relatórios` |
@@ -593,10 +593,10 @@ Cada item vira uma linha do release-notes.
 Para cada módulo do produto, defina a versão da release **naquele módulo** (geralmente igual à versão da release, mas pode diferir).
 
 ```text
-DTEC-LD       → 1.1.0
-DTEC-CR       → 1.1.0
+NEXUS-LD       → 1.1.0
+Nexus-CR       → 1.1.0
 POWERMATCH    → 1.1.0
-DTEC-BANCO    → 1.1.0
+Nexus-BANCO    → 1.1.0
 ```
 
 ### Transição de status
@@ -608,7 +608,7 @@ DTEC-BANCO    → 1.1.0
 SELECT r.versao, r.status, r.titulo, COUNT(ri.id) AS qtd_itens
 FROM tb_release r
 LEFT JOIN tb_release_item ri ON ri.release_id = r.id
-WHERE r.produto_id = (SELECT id FROM tb_produto_rh WHERE sigla = 'DTEC')
+WHERE r.produto_id = (SELECT id FROM tb_produto_rh WHERE sigla = 'Nexus')
 GROUP BY r.id;
 
 -- Versões por módulo
@@ -636,7 +636,7 @@ Detalhe da release → aba **Artefatos**.
 Pré-requisito: aba GitHub do produto configurada (seção 3) **e** GitHub Release publicado com asset nomeado `{SIGLA}-{MODULO}-{VERSAO}.{EXT}`.
 
 1. Clicar **Sincronizar do GitHub** no header da aba.
-2. Sistema lê a release `v1.1.0` no GitHub, baixa cada asset, cacheia em `storage/artefatos/github-cache/DTEC/1.1.0/{modulo}/` e cria linhas em `tb_artefato_release_modulo` com `sha256` calculado.
+2. Sistema lê a release `v1.1.0` no GitHub, baixa cada asset, cacheia em `storage/artefatos/github-cache/Nexus/1.1.0/{modulo}/` e cria linhas em `tb_artefato_release_modulo` com `sha256` calculado.
 
 ### Caminho B — Upload manual
 Para cada módulo, clicar **Adicionar artefato** e fazer upload de um arquivo (WAR/JAR/ZIP).
@@ -650,7 +650,7 @@ WHERE arm.release_id = (SELECT id FROM tb_release WHERE versao = '1.1.0')
 ORDER BY mp.ordem;
 
 -- Disco
-ls -lh softon-portal-api/storage/artefatos/
+ls -lh nexus-portal-api/storage/artefatos/
 ```
 
 ### Critérios de aceite
@@ -665,16 +665,16 @@ ls -lh softon-portal-api/storage/artefatos/
 Checklist do estado mínimo após estas configurações:
 
 - [ ] Backend e frontend up; `/actuator/health` `UP`.
-- [ ] Produto `DTEC` cadastrado, ativo.
+- [ ] Produto `Nexus` cadastrado, ativo.
 - [ ] Aba GitHub do produto preenchida e **testar conexão verde** (se vai sincronizar do CI).
 - [ ] (Opcional) aba Jenkins preenchida.
-- [ ] Módulos `DTEC-LD`, `DTEC-CR`, `POWERMATCH`, `DTEC-BANCO` cadastrados.
+- [ ] Módulos `NEXUS-LD`, `Nexus-CR`, `POWERMATCH`, `Nexus-BANCO` cadastrados.
 - [ ] Pelo menos 1 domínio com funcionalidades cadastrado.
 - [ ] Cliente `XPTO` ativo com ambiente `HOM`.
 - [ ] 1+ contato `TECNICO` no cliente.
-- [ ] Cliente tem produto `DTEC` contratado e módulos com `versao_atual = 1.0.0`.
+- [ ] Cliente tem produto `Nexus` contratado e módulos com `versao_atual = 1.0.0`.
 - [ ] Funcionalidades do cliente marcadas conforme licença.
 - [ ] Config. entrega configurada (PASTA local mais rápido para smoke) e **testar conexão verde**.
-- [ ] Release `1.1.0` do produto `DTEC` está `PUBLICADA` com itens e artefatos.
+- [ ] Release `1.1.0` do produto `Nexus` está `PUBLICADA` com itens e artefatos.
 
 A partir daqui, siga [`03-fluxo-completo-entrega.md`](03-fluxo-completo-entrega.md) para gerar a entrega.

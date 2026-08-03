@@ -1,9 +1,9 @@
-# Jenkins Configuration as Code — Softon Portal (minimal)
+# Jenkins Configuration as Code — Nexus Portal (minimal)
 # Provisiona apenas admin + credenciais + tool Maven. Resto fica com
 # defaults seguros do Jenkins moderno.
 
 jenkins:
-  systemMessage: "Jenkins Softon Portal — pipeline build-on-tag"
+  systemMessage: "Jenkins Nexus Portal — pipeline build-on-tag"
   securityRealm:
     local:
       allowsSignup: false
@@ -20,14 +20,14 @@ credentials:
       - credentials:
           - string:
               scope: GLOBAL
-              id: "github-pat-softon"
+              id: "github-pat-nexus"
               secret: "${GITHUB_PAT:-}"
               description: "GitHub PAT — upload de releases"
           - string:
               scope: GLOBAL
-              id: "softon-portal-webhook-secret"
+              id: "nexus-portal-webhook-secret"
               secret: "${PORTAL_WEBHOOK_SECRET:-}"
-              description: "Webhook secret do Softon Portal"
+              description: "Webhook secret do Nexus Portal"
           - usernamePassword:
               scope: GLOBAL
               id: "github-user-pat"

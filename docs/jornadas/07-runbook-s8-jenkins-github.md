@@ -1,7 +1,7 @@
-# 07 — Runbook S8: piloto Jenkins + GitHub (DTEC-LD)
+# 07 — Runbook S8: piloto Jenkins + GitHub (NEXUS-LD)
 
 Operacional para fechar a [Sprint 8](02-checklist-por-sprint.md) — **fora do
-portal** — colocando o piloto DTEC-LD em build-on-tag com publicação no GitHub
+portal** — colocando o piloto NEXUS-LD em build-on-tag com publicação no GitHub
 Releases. Cobre instalação do Jenkins do zero, PAT, job, primeira tag de
 teste e validação.
 
@@ -91,11 +91,11 @@ transição de status. O Jenkinsfile template já tem essa lógica em
    com um valor aleatório (32+ chars). Ex.: `openssl rand -hex 32`.
 2. No Jenkins, **Manage Credentials → Add Credentials**:
    - Kind: `Secret text`
-   - ID: `softon-portal-webhook-secret` (igual ao referenciado no
-     Jenkinsfile template via `credentials('softon-portal-webhook-secret')`)
+   - ID: `nexus-portal-webhook-secret` (igual ao referenciado no
+     Jenkinsfile template via `credentials('nexus-portal-webhook-secret')`)
    - Secret: o mesmo valor configurado no passo 1
 3. Ajuste `PORTAL_WEBHOOK_URL` no Jenkinsfile para a URL pública do portal
-   (`https://portal.softon.tld/api/v1/release-orchestrator/webhooks/jenkins`).
+   (`https://portal.nexus.tld/api/v1/release-orchestrator/webhooks/jenkins`).
 
 > Quando o secret está vazio no portal, o endpoint do webhook retorna
 > `403` em qualquer chamada — modo seguro por padrão.
@@ -179,13 +179,13 @@ Se faltar `gh`, o `Jenkinsfile` cai para `curl` direto na API REST.
 
 1. Em github.com → seu perfil → **Settings → Developer settings → Personal access tokens → Tokens (classic)**.
 2. **Generate new token (classic)** com:
-   - Nome: `softon-jenkins-{{ produto-sigla }}-build`
+   - Nome: `nexus-jenkins-{{ produto-sigla }}-build`
    - Expiration: 90 dias (renovar via lembrete no calendário)
    - Escopos: `repo` (todos os subitens) + `workflow`
 3. Guardar o token em local seguro (não vai aparecer de novo).
 
 > Para um único PAT compartilhado entre repos do mesmo time, use o nome
-> genérico `softon-jenkins` e armazene em vault.
+> genérico `nexus-jenkins` e armazene em vault.
 
 ---
 
@@ -194,7 +194,7 @@ Se faltar `gh`, o `Jenkinsfile` cai para `curl` direto na API REST.
 1. Jenkins → **Manage Jenkins → Credentials → System → Global credentials**.
 2. **Add Credentials**:
    - Kind: `Secret text`
-   - ID: `github-pat-softon` (este ID está hardcoded no Jenkinsfile template)
+   - ID: `github-pat-nexus` (este ID está hardcoded no Jenkinsfile template)
    - Secret: cole o PAT
    - Description: `GitHub PAT - upload de releases (escopo repo)`
 3. Salvar.
@@ -203,14 +203,14 @@ Se faltar `gh`, o `Jenkinsfile` cai para `curl` direto na API REST.
 
 ## 3. Preparar o repositório do produto
 
-Considerando `softon/dtec-ld` como exemplo:
+Considerando `nexus/nexus-ld` como exemplo:
 
 ```bash
-cd softon/dtec-ld
+cd nexus/nexus-ld
 git checkout -b chore/cicd-setup
-cp ../../softon-portal-api/docs/release-orchestrator/templates/Jenkinsfile .
+cp ../../nexus-portal-api/docs/release-orchestrator/templates/Jenkinsfile .
 mkdir -p docs
-cp ../../softon-portal-api/docs/release-orchestrator/templates/VERSIONING.md docs/
+cp ../../nexus-portal-api/docs/release-orchestrator/templates/VERSIONING.md docs/
 
 # ajuste os placeholders {{ }} no Jenkinsfile e no VERSIONING.md:
 $EDITOR Jenkinsfile docs/VERSIONING.md
@@ -223,10 +223,10 @@ git push origin chore/cicd-setup
 
 Variáveis a preencher (em `Jenkinsfile`):
 
-| Variável | DTEC-LD |
+| Variável | NEXUS-LD |
 |---|---|
-| `PRODUTO_SIGLA` | `dtecld` |
-| `MODULO_CODIGO` | `dtec-web` |
+| `PRODUTO_SIGLA` | `nexusld` |
+| `MODULO_CODIGO` | `nexus-web` |
 | `ARTIFACT_EXT` | `war` |
 | `BUILD_CMD` | `mvn -B -ntp clean package -DskipTests` |
 | `BUILD_OUTPUT_DIR` | `target` |
@@ -235,13 +235,13 @@ Variáveis a preencher (em `Jenkinsfile`):
 
 ## 4. Criar o job no Jenkins
 
-1. **New Item → Pipeline**, nome: `dtec-ld-build`.
-2. **General → GitHub project**: `https://github.com/softon/dtec-ld`.
+1. **New Item → Pipeline**, nome: `nexus-ld-build`.
+2. **General → GitHub project**: `https://github.com/nexus/nexus-ld`.
 3. **Build Triggers**: marcar **GitHub hook trigger for GITScm polling**.
 4. **Pipeline**:
    - Definition: `Pipeline script from SCM`
    - SCM: Git
-   - Repository URL: `https://github.com/softon/dtec-ld.git`
+   - Repository URL: `https://github.com/nexus/nexus-ld.git`
    - Credentials: outra credencial (Username/Password) para clone — pode reutilizar o PAT como password com qualquer usuário.
    - Branch Specifier: `refs/tags/v*.*.*`
    - Script Path: `Jenkinsfile`
@@ -255,9 +255,9 @@ Variáveis a preencher (em `Jenkinsfile`):
 
 ## 5. Configurar o webhook no GitHub
 
-Em `softon/dtec-ld → Settings → Webhooks → Add webhook`:
+Em `nexus/nexus-ld → Settings → Webhooks → Add webhook`:
 
-- **Payload URL**: `https://jenkins.softon.{{ tld }}/github-webhook/`
+- **Payload URL**: `https://jenkins.nexus.{{ tld }}/github-webhook/`
 - **Content type**: `application/json`
 - **Events**: `Just the push event` (suficiente; tags são push events).
 - Ative SSL verification.
@@ -269,7 +269,7 @@ Após adicionar, o GitHub envia um ping; confirmar status verde.
 ## 6. Tag de teste
 
 ```bash
-cd softon/dtec-ld
+cd nexus/nexus-ld
 git checkout main && git pull --ff-only
 git tag -a v0.0.1 -m "Teste do pipeline build-on-tag"
 git push origin v0.0.1
@@ -277,13 +277,13 @@ git push origin v0.0.1
 
 Acompanhar:
 
-1. Jenkins: `dtec-ld-build` deve aparecer em "Build History" rodando.
+1. Jenkins: `nexus-ld-build` deve aparecer em "Build History" rodando.
 2. Console deve mostrar:
    - `Build da tag v0.0.1`
    - `mvn package` rodando
    - `Locate artifact` achando o `.war`
    - `Publish to GitHub Release` com `Asset uploaded`
-3. GitHub → `softon/dtec-ld/releases/tag/v0.0.1` → **deve conter** o asset `dtecld-dtec-web-0.0.1.war`.
+3. GitHub → `nexus/nexus-ld/releases/tag/v0.0.1` → **deve conter** o asset `nexusld-nexus-web-0.0.1.war`.
 
 Se falhar, ver troubleshooting em `VERSIONING.md` §Troubleshooting.
 
@@ -308,7 +308,7 @@ git tag -d v0.0.1
 Pré-requisito: release `1.5.0` deve estar **PUBLICADA** no Release Orchestrator (`/release-orchestrator/releases`).
 
 ```bash
-cd softon/dtec-ld
+cd nexus/nexus-ld
 git checkout main && git pull --ff-only
 git tag -a v1.5.0 -m "Release 1.5.0 — corresponde à release publicada no portal"
 git push origin v1.5.0
@@ -316,7 +316,7 @@ git push origin v1.5.0
 
 Conferir:
 - Jenkins `SUCCESS`
-- Asset `dtecld-dtec-web-1.5.0.war` no GitHub Release
+- Asset `nexusld-nexus-web-1.5.0.war` no GitHub Release
 - SHA-256 do asset (campo `Digest`)
 
 ---
@@ -325,24 +325,24 @@ Conferir:
 
 Da [`02-checklist-por-sprint.md`](02-checklist-por-sprint.md) §S8:
 
-- [x] Repo `softon/dtec-ld` com `Jenkinsfile` build-on-tag — passo 3
-- [x] Job Jenkins `dtec-ld-build` apontando ao repo — passo 4
+- [x] Repo `nexus/nexus-ld` com `Jenkinsfile` build-on-tag — passo 3
+- [x] Job Jenkins `nexus-ld-build` apontando ao repo — passo 4
 - [x] Credencial GitHub PAT no Jenkins — passo 2
 - [x] Tag teste `v0.0.1` → GitHub Release com asset nomeado `{sigla}-{modulo}-{versao}.war` — passo 6
 - [x] `docs/VERSIONING.md` publicado no repo — passo 3
 - [ ] Repo BD (se existir separadamente) — usar checklist BANCO em [`templates/README.md`](../release-orchestrator/templates/README.md#banco)
 - [ ] Repo Kettle (se existir) — usar checklist KETTLE
 
-DoD principal: **um produto piloto com pipeline repo → Jenkins → GitHub Release funcionando**. Atingido com DTEC-LD.
+DoD principal: **um produto piloto com pipeline repo → Jenkins → GitHub Release funcionando**. Atingido com NEXUS-LD.
 
 ---
 
 ## 10. Próximos repos
 
-Para cada novo produto (DTEC-CR, DTEC-ONLINE, FOLHA-WEB, etc.):
+Para cada novo produto (Nexus-CR, Nexus-ONLINE, FOLHA-WEB, etc.):
 
 1. Repetir os passos 3–6 com as variáveis do produto.
-2. Reutilizar o PAT `github-pat-softon`.
+2. Reutilizar o PAT `github-pat-nexus`.
 3. Reutilizar a credencial Jenkins.
 4. Tempo estimado por repo: **2 horas** se o produto já compila com Maven/Gradle padrão.
 

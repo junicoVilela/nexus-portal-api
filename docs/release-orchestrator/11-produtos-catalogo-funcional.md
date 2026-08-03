@@ -5,7 +5,7 @@
 
 ## 1. Papel da tela
 
-**Cadastro mestre** de domínios e funcionalidades de um produto (ex.: DTEC-LD). Define o vocabulário funcional que:
+**Cadastro mestre** de domínios e funcionalidades de um produto (ex.: NEXUS-LD). Define o vocabulário funcional que:
 
 - aparece na matriz de cada cliente (`05`);
 - alimenta os módulos `FUNCIONALIDADES` e `REGRAS` na geração do pacote (`21`).
@@ -27,7 +27,7 @@ CAMADA A — Catálogo (ESTA SPEC, por PRODUTO)
    └─ Funcionalidade "Exportar"      (codigo: exportar)
 
 CAMADA B — Matriz (spec 05, por CLIENTE + produto)
-  Cliente ACME + DTEC-LD
+  Cliente ACME + NEXUS-LD
    ├─ Usuários.Inserir    ✅ habilitada
    ├─ Usuários.Bloquear   ❌ desabilitada
    └─ Usuários.Exportar   ✅ habilitada
@@ -65,7 +65,7 @@ Master-detail em três colunas (referência visual: matriz do módulo Segurança
 
 ```text
 ┌────────────────────────────────────────────────────────────────────────┐
-│ < DTEC-LD     Catálogo funcional                    [+ Domínio] [⋯]   │
+│ < NEXUS-LD     Catálogo funcional                    [+ Domínio] [⋯]   │
 ├────────────────────────────────────────────────────────────────────────┤
 │ 🔍 [Buscar domínio ou funcionalidade...]     Resumo: 7 dom. • 48 func. │
 ├────────────────────────────────────────────────────────────────────────┤
@@ -201,7 +201,7 @@ Response:
 ```json
 {
   "produtoId": "uuid",
-  "produtoSigla": "DTECLD",
+  "produtoSigla": "NEXUSLD",
   "resumo": { "dominios": 7, "funcionalidades": 48, "funcionalidadesAtivas": 45 },
   "dominios": [
     {
@@ -547,7 +547,7 @@ pacote/
 ```json
 {
   "clienteSigla": "ACME",
-  "produtoSigla": "DTECLD",
+  "produtoSigla": "NEXUSLD",
   "dominiosPossuidos": ["via", "usuarios"],
   "funcionalidadesHabilitadas": [
     { "cdFuncionalidade": 2, "cdDominioFuncional": 1, "codigoOperacao": "P", "codigoComposto": "via.pesquisar" }

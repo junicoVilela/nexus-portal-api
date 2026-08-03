@@ -37,11 +37,11 @@ Acessível em `/orchestrator/entregas/:id/documento`.
 ┌────────────────────────────────────────────────────────────────────────┐
 │ Documento da Entrega — ENTR-2026-0142                                  │
 ├────────────────────────────────────────────────────────────────────────┤
-│ Template: [DTEC-LD Cliente v2 ▼]  [Restaurar default]  [Gerar PDF]    │
+│ Template: [NEXUS-LD Cliente v2 ▼]  [Restaurar default]  [Gerar PDF]    │
 ├────────────────────────────────────────────────────────────────────────┤
 │ ┌─ Markdown ───────────────────┐ ┌─ Preview PDF ───────────────────┐ │
-│ │ # Release DTEC-LD 1.5.0       │ │                                  │ │
-│ │                               │ │  Release DTEC-LD 1.5.0           │ │
+│ │ # Release NEXUS-LD 1.5.0       │ │                                  │ │
+│ │                               │ │  Release NEXUS-LD 1.5.0           │ │
 │ │ ## Cliente: ACME LTDA         │ │  ════════════════════            │ │
 │ │ ## Ambiente: PROD             │ │                                  │ │
 │ │ ## Data: 31/05/2026           │ │  Cliente: ACME LTDA              │ │
@@ -174,7 +174,7 @@ GET /api/v1/orchestrator/entregas/{id}/documento
 ```json
 {
   "templateAtualId": "uuid",
-  "templateNome": "DTEC-LD Cliente",
+  "templateNome": "NEXUS-LD Cliente",
   "templateVersao": 2,
   "markdownAtual": "# Release...",  // já resolvido OU bruto
   "modoEdicao": "TEMPLATE_PURO" | "OVERRIDE_ENTREGA",

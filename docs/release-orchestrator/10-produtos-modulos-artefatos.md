@@ -18,16 +18,16 @@ Acessível em `/orchestrator/produtos/:produtoId/modulos`.
 - O cliente contrata módulos individualmente (ver `06-cliente-produtos-contratados.md`).
 
 ```text
-Produto DTEC-LD
-├─ Módulo dtec-portal      (WEB)   ← app principal (.war)
-├─ Módulo dtec-api         (WEB)   ← API REST (.jar ou .war)
-├─ Módulo dtec-front-spa   (WEB)   ← build estático (.zip)
-├─ Módulo dtec-batch       (BATCH)
-├─ Módulo dtec-db-ddl      (BANCO)
-├─ Módulo dtec-db-dml      (BANCO)
-├─ Módulo dtec-etl         (KETTLE)
-├─ Módulo dtec-funcs       (FUNCIONALIDADES)
-└─ Módulo dtec-regras      (REGRAS)
+Produto NEXUS-LD
+├─ Módulo nexus-portal      (WEB)   ← app principal (.war)
+├─ Módulo nexus-api         (WEB)   ← API REST (.jar ou .war)
+├─ Módulo nexus-front-spa   (WEB)   ← build estático (.zip)
+├─ Módulo nexus-batch       (BATCH)
+├─ Módulo nexus-db-ddl      (BANCO)
+├─ Módulo nexus-db-dml      (BANCO)
+├─ Módulo nexus-etl         (KETTLE)
+├─ Módulo nexus-funcs       (FUNCIONALIDADES)
+└─ Módulo nexus-regras      (REGRAS)
 ```
 
 > Um módulo `WEB`/`BATCH` = **um slot de artefato** na release (upload no MVP; asset da `TO_TAG` no pós-MVP). Cada um com `destinoPacote` distinto no ZIP final.
@@ -77,20 +77,20 @@ Validadas no upload (MVP) e no `padraoAsset` / download GitHub (pós-MVP). Lista
 
 ```text
 ┌────────────────────────────────────────────────────────────────────────┐
-│ < DTEC-LD       Módulos                                [+ Novo módulo] │
+│ < NEXUS-LD       Módulos                                [+ Novo módulo] │
 ├────────────────────────────────────────────────────────────────────────┤
 │ ☰ (drag para reordenar)                                                │
 │ ┌──────────────────────────────────────────────────────────────────┐  │
 │ │ Ord │ Status │ Código        │ Nome             │ Tipo  │ Δ │ ⚙️ │  │
 │ ├──────────────────────────────────────────────────────────────────┤  │
-│ │ 1   │ ✅     │ dtec-db-ddl   │ Banco DDL        │ BANCO │✓ │ ⋮  │  │
-│ │ 2   │ ✅     │ dtec-db-dml   │ Banco DML        │ BANCO │✓ │ ⋮  │  │
-│ │ 3   │ ✅     │ dtec-funcs    │ Funcionalidades  │ FUNC  │  │ ⋮  │  │
-│ │ 4   │ ✅     │ dtec-regras   │ Regras           │ REGRAS│  │ ⋮  │  │
-│ │ 5   │ ✅     │ dtec-portal   │ Portal Web       │ WEB   │  │ ⋮  │  │
-│ │ 6   │ ✅     │ dtec-api      │ API REST         │ WEB   │  │ ⋮  │  │
-│ │ 7   │ ✅     │ dtec-batch    │ Processador      │ BATCH │  │ ⋮  │  │
-│ │ 8   │ ❌     │ dtec-etl      │ ETL Kettle       │ KETTLE│✓ │ ⋮  │  │
+│ │ 1   │ ✅     │ nexus-db-ddl   │ Banco DDL        │ BANCO │✓ │ ⋮  │  │
+│ │ 2   │ ✅     │ nexus-db-dml   │ Banco DML        │ BANCO │✓ │ ⋮  │  │
+│ │ 3   │ ✅     │ nexus-funcs    │ Funcionalidades  │ FUNC  │  │ ⋮  │  │
+│ │ 4   │ ✅     │ nexus-regras   │ Regras           │ REGRAS│  │ ⋮  │  │
+│ │ 5   │ ✅     │ nexus-portal   │ Portal Web       │ WEB   │  │ ⋮  │  │
+│ │ 6   │ ✅     │ nexus-api      │ API REST         │ WEB   │  │ ⋮  │  │
+│ │ 7   │ ✅     │ nexus-batch    │ Processador      │ BATCH │  │ ⋮  │  │
+│ │ 8   │ ❌     │ nexus-etl      │ ETL Kettle       │ KETTLE│✓ │ ⋮  │  │
 │ └──────────────────────────────────────────────────────────────────┘  │
 │ ℹ️  Ordem afeta sequência de montagem do pacote.                      │
 └────────────────────────────────────────────────────────────────────────┘
@@ -106,7 +106,7 @@ Validadas no upload (MVP) e no `padraoAsset` / download GitHub (pós-MVP). Lista
 |---|---|
 | Ord | Drag handle + número da ordem |
 | Status | ✅ ativo / ❌ inativo |
-| Código | Slug único no produto (ex.: `dtec-web`) |
+| Código | Slug único no produto (ex.: `nexus-web`) |
 | Nome | Nome amigável |
 | Tipo | Badge colorido por tipo |
 | Δ | Indica se gera delta |
@@ -143,7 +143,7 @@ Campos comuns em `WEB` e `BATCH`:
 |---|---|---|
 | `destinoPacote` | recomendado | Pasta relativa no ZIP final (ex.: `web/portal/`) |
 | `extensoesAceitas` | ❌ | Lista de extensões permitidas; default = tabela §3 |
-| `padraoAsset` | pós-MVP | Glob do asset na GitHub Release (ex.: `dtec-portal-*.war`) |
+| `padraoAsset` | pós-MVP | Glob do asset na GitHub Release (ex.: `nexus-portal-*.war`) |
 | `repositorioGithub` | pós-MVP | `owner/repo` **por módulo**; se omitido, usa o do produto (`09`) |
 | `jenkinsJob` | pós-MVP | Job Jenkins que publica o asset deste módulo |
 
@@ -154,10 +154,10 @@ Campos comuns em `WEB` e `BATCH`:
 Portal Tomcat (repo dedicado):
 ```json
 {
-  "repositorioGithub": "softon/dtec-portal",
-  "padraoAsset": "dtec-portal-*.war",
+  "repositorioGithub": "nexus/nexus-portal",
+  "padraoAsset": "nexus-portal-*.war",
   "extensoesAceitas": [".war"],
-  "jenkinsJob": "dtec-portal-build",
+  "jenkinsJob": "nexus-portal-build",
   "destinoPacote": "web/portal/"
 }
 ```
@@ -165,7 +165,7 @@ Portal Tomcat (repo dedicado):
 API Spring Boot (mesmo repo do produto, asset distinto):
 ```json
 {
-  "padraoAsset": "dtec-api-*.jar",
+  "padraoAsset": "nexus-api-*.jar",
   "extensoesAceitas": [".jar", ".war"],
   "destinoPacote": "web/api/"
 }
@@ -174,8 +174,8 @@ API Spring Boot (mesmo repo do produto, asset distinto):
 Frontend estático (ZIP de build):
 ```json
 {
-  "repositorioGithub": "softon/dtec-front",
-  "padraoAsset": "dtec-front-*.zip",
+  "repositorioGithub": "nexus/nexus-front",
+  "padraoAsset": "nexus-front-*.zip",
   "extensoesAceitas": [".zip", ".tar.gz"],
   "destinoPacote": "web/static/"
 }
@@ -184,9 +184,9 @@ Frontend estático (ZIP de build):
 #### BATCH — exemplo
 ```json
 {
-  "padraoAsset": "dtec-batch-*.jar",
+  "padraoAsset": "nexus-batch-*.jar",
   "extensoesAceitas": [".jar", ".zip"],
-  "jenkinsJob": "dtec-batch-build",
+  "jenkinsJob": "nexus-batch-build",
   "destinoPacote": "batch/"
 }
 ```
@@ -265,7 +265,7 @@ Frontend estático (ZIP de build):
 
 ### 7.8 Vários módulos WEB/BATCH no mesmo produto
 - Permitido e esperado quando há múltiplas aplicações deployáveis.
-- Códigos (slug) únicos por produto: `dtec-portal`, `dtec-api`, etc.
+- Códigos (slug) únicos por produto: `nexus-portal`, `nexus-api`, etc.
 - Cada módulo tem upload/artefato **independente** na release.
 - `destinoPacote` deve ser **único** por módulo para evitar sobrescrita no ZIP.
 - Cliente pode contratar subset (ver `06`); módulos não contratados não entram na entrega.

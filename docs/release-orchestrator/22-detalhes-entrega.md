@@ -27,7 +27,7 @@ Acessível em `/orchestrator/entregas/:id`.
 
 ```text
 ┌────────────────────────────────────────────────────────────────────────┐
-│ < Entregas    #ENTR-2026-0142   ACME LTDA • DTEC-LD v1.5.0             │
+│ < Entregas    #ENTR-2026-0142   ACME LTDA • NEXUS-LD v1.5.0             │
 │ Status: ✅ CONCLUÍDA • Publicada em 31/05/2026 14:35                    │
 ├────────────────────────────────────────────────────────────────────────┤
 │ [⬇️ Download pacote] [🔄 Reentregar] [📄 Regerar PDF] [⋮ Mais]         │
@@ -36,7 +36,7 @@ Acessível em `/orchestrator/entregas/:id`.
 ├────────────────────────────────────────────────────────────────────────┤
 │                                                                        │
 │  Cliente:        ACME LTDA (ACME)                                      │
-│  Produto:        DTEC-LD (DTECLD)                                      │
+│  Produto:        NEXUS-LD (NEXUSLD)                                      │
 │  Ambiente:       PROD                                                  │
 │  Release:        v1.5.0 (MINOR, publicada 15/05/2026)                  │
 │  Tamanho pacote: 53.2 MB                                               │
@@ -44,17 +44,17 @@ Acessível em `/orchestrator/entregas/:id`.
 │                                                                        │
 │  Gerada por:     João Silva (joao.silva)                               │
 │  Gerada em:      31/05/2026 14:32 (duração 3min 12s)                   │
-│  Publicada em:   /var/lib/softon/entregas/cliente-acme/                │
+│  Publicada em:   /var/lib/nexus/entregas/cliente-acme/                │
 │                                                                        │
 │  Próxima entrega vinculada: #1234 (CONVERTIDA)                         │
 │                                                                        │
 │ ┌─ Resumo de módulos ──────────────────────────────────────────────┐ │
-│ │ ✅ dtec-web         WEB    1.4.0 → 1.5.0                          │ │
-│ │ ✅ dtec-batch       BATCH  1.4.0 → 1.4.0 (sem mudança)            │ │
-│ │ ✅ dtec-db-ddl      BANCO  1.4.0 → 1.5.0 (+15 SQL)                │ │
-│ │ ✅ dtec-db-dml      BANCO  1.4.0 → 1.5.0 (+8 SQL)                 │ │
-│ │ ✅ dtec-funcs       FUNC   auto (23 funcionalidades)              │ │
-│ │ ✅ dtec-regras      REGRAS auto                                   │ │
+│ │ ✅ nexus-web         WEB    1.4.0 → 1.5.0                          │ │
+│ │ ✅ nexus-batch       BATCH  1.4.0 → 1.4.0 (sem mudança)            │ │
+│ │ ✅ nexus-db-ddl      BANCO  1.4.0 → 1.5.0 (+15 SQL)                │ │
+│ │ ✅ nexus-db-dml      BANCO  1.4.0 → 1.5.0 (+8 SQL)                 │ │
+│ │ ✅ nexus-funcs       FUNC   auto (23 funcionalidades)              │ │
+│ │ ✅ nexus-regras      REGRAS auto                                   │ │
 │ └──────────────────────────────────────────────────────────────────┘ │
 └────────────────────────────────────────────────────────────────────────┘
 ```
@@ -130,11 +130,11 @@ Click → vai para aba Módulos com expansão na linha.
 ## 7. Aba Arquivos (estrutura)
 
 ```text
-📦 ACME_DTECLD_1.5.0_20260531-1432.zip  (53.2 MB)
+📦 ACME_NEXUSLD_1.5.0_20260531-1432.zip  (53.2 MB)
 ├── 📁 web/
-│   └── 📄 dtec-web-1.5.0.war           47.2 MB  sha256:abc...
+│   └── 📄 nexus-web-1.5.0.war           47.2 MB  sha256:abc...
 ├── 📁 batch/
-│   └── 📄 dtec-batch-1.4.0.jar         12.0 MB  sha256:def...
+│   └── 📄 nexus-batch-1.4.0.jar         12.0 MB  sha256:def...
 ├── 📁 banco/
 │   └── 📁 oracle/
 │       ├── 📄 DDL.sql                   45 KB   sha256:ghi...

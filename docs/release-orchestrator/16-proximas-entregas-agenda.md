@@ -38,14 +38,14 @@ Acessível em `/orchestrator/proximas-entregas`. Atalho a partir do dashboard.
 ├────────────────────────────────────────────────────────────────────────┤
 │ ┌─ Tabela ─────────────────────────┐ ┌─ Calendário / Próx 48h ────┐  │
 │ │ Data  Cliente  Produto Vers Stat │ │  Maio 2026                 │  │
-│ │ 01/06 ACME    DTECLD 1.5.0 ⚠️PLA│ │  S  T  Q  Q  S  S  D       │  │
+│ │ 01/06 ACME    NEXUSLD 1.5.0 ⚠️PLA│ │  S  T  Q  Q  S  S  D       │  │
 │ │ 02/06 BETA    FOLHA  2.1.0 ✅APR│ │  1  2  3  4  5  6  7       │  │
-│ │ 02/06 GAMMA   DTECLD 1.5.0 🟡PLA│ │  ●  ●●         ●           │  │
+│ │ 02/06 GAMMA   NEXUSLD 1.5.0 🟡PLA│ │  ●  ●●         ●           │  │
 │ │ 05/06 DELTA   CONTAS 0.9.0 ⚠️CRI│ │  8  9 10 11 12 13 14       │  │
 │ │ 10/06 ACME    INTPAG 1.0.0 ✅PLA│ │     ●                 ●   │  │
 │ │                                  │ │  ...                       │  │
 │ │ [< 1 2 3 >]                      │ │  Próximas 48h:             │  │
-│ │                                  │ │  • ACME DTEC-LD 1.5.0      │  │
+│ │                                  │ │  • ACME NEXUS-LD 1.5.0      │  │
 │ │                                  │ │  • BETA FOLHA 2.1.0        │  │
 │ └──────────────────────────────────┘ └────────────────────────────┘  │
 └────────────────────────────────────────────────────────────────────────┘
@@ -219,7 +219,7 @@ GET /api/v1/orchestrator/proximas-entregas
     {
       "id": "uuid",
       "clienteId": "uuid", "clienteSigla": "ACME", "clienteNome": "ACME LTDA",
-      "produtoId": "uuid", "produtoSigla": "DTECLD", "produtoCor": "#2563eb",
+      "produtoId": "uuid", "produtoSigla": "NEXUSLD", "produtoCor": "#2563eb",
       "releaseId": "uuid", "versao": "1.5.0",
       "ambiente": "PROD",
       "dataPlanejada": "2026-06-01T22:00:00-03:00",

@@ -2,37 +2,37 @@
 
 ## Objetivo
 
-O módulo DocFlow é responsável pela criação, organização, versionamento, geração e publicação de documentação dos sistemas internos da Softon.
+O módulo DocFlow é responsável pela criação, organização, versionamento, geração e publicação de documentação dos sistemas internos da nexus.
 
 Abrange: clientes, projetos, módulos, páginas, publicações, preview, auditoria, usuários e empresa.
 
 ## Localização Maven
 
 ```text
-doc-flow/src/main/java/br/com/softon/portal/docflow/
+doc-flow/src/main/java/br/com/nexus/portal/docflow/
 ```
 
 ## Pacote base
 
 ```text
-br.com.softon.portal.docflow
+com.nexus.portal.docflow
 ```
 
 ## Estrutura de pacotes
 
 ```text
-br.com.softon.portal.docflow.controller
-br.com.softon.portal.docflow.service
-br.com.softon.portal.docflow.repository
-br.com.softon.portal.docflow.entity
-br.com.softon.portal.docflow.dto.request
-br.com.softon.portal.docflow.dto.response
+com.nexus.portal.docflow.controller
+com.nexus.portal.docflow.service
+com.nexus.portal.docflow.repository
+com.nexus.portal.docflow.entity
+com.nexus.portal.docflow.dto.request
+com.nexus.portal.docflow.dto.response
 ```
 
 ## Estrutura de pastas
 
 ```text
-doc-flow/src/main/java/br/com/softon/portal/
+doc-flow/src/main/java/br/com/nexus/portal/
 └── docflow/
     ├── controller/
     │   ├── ClienteController.java
@@ -203,13 +203,13 @@ GET    /api/v1/auditoria
   profile `prod`; use `SPRINGDOC_ENABLED=true` para habilitação controlada.
 - A autenticação Bearer JWT é declarada globalmente no contrato.
 - O snapshot consumido pelo frontend fica em
-  `softon-portal-web/frontend/openapi/softon-portal-api.json`.
+  `nexus-portal-web/frontend/openapi/nexus-portal-api.json`.
 
 ## Observações para IA
 
 Ao gerar código para este módulo:
 
-- Usar pacote `br.com.softon.portal.docflow.{camada}`.
+- Usar pacote `com.nexus.portal.docflow.{camada}`.
 - Não criar sub-pacotes por contexto dentro das camadas.
 - Não usar `modules` no caminho do pacote.
 - Priorizar simplicidade.

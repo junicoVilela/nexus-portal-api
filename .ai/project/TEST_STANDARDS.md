@@ -77,7 +77,7 @@ em unit tests — use `@DataJpaTest` se precisar validar o preenchimento.
 ## Organização
 
 ```text
-{modulo}/src/test/java/br/com/softon/portal/{modulo}/
+{modulo}/src/test/java/br/com/nexus/portal/{modulo}/
 ├── service/
 ├── controller/  (quando aplicável)
 └── repository/  (quando aplicável)

@@ -24,7 +24,7 @@ Acessível ao clicar "Manual" no passo de seleção de módulos (`19`), ou em `/
 ┌────────────────────────────────────────────────────────────────────────┐
 │ Range Manual / Cálculo de Delta                                        │
 ├────────────────────────────────────────────────────────────────────────┤
-│ ┌─ dtec-db-ddl (BANCO) ───────────────────────────────────────────┐  │
+│ ┌─ nexus-db-ddl (BANCO) ───────────────────────────────────────────┐  │
 │ │ FROM_TAG: [v1.4.0 ▼]     TO_TAG: [v1.5.0 ▼]                      │  │
 │ │ Origem: última entrega ao cliente em 15/04/2026 — tag v1.4.0    │  │
 │ │ Justificativa (se alterou): [_______________________________]   │  │
@@ -37,9 +37,9 @@ Acessível ao clicar "Manual" no passo de seleção de módulos (`19`), ou em `/
 │ │   Total: 4 arquivos                                              │  │
 │ └──────────────────────────────────────────────────────────────────┘  │
 │                                                                        │
-│ ┌─ dtec-web (WEB) ────────────────────────────────────────────────┐  │
+│ ┌─ nexus-web (WEB) ────────────────────────────────────────────────┐  │
 │ │ FROM_TAG: [v1.4.0 ▼]     TO_TAG: [v1.5.0 ▼]                      │  │
-│ │ Conteúdo: asset dtec-web-1.5.0.war (47MB estimado)               │  │
+│ │ Conteúdo: asset nexus-web-1.5.0.war (47MB estimado)               │  │
 │ └──────────────────────────────────────────────────────────────────┘  │
 │                                                                        │
 │ ⚠️  Avisos:                                                            │
@@ -177,7 +177,7 @@ Response:
   "modulos": [
     {
       "moduloProdutoId": "uuid",
-      "codigo": "dtec-db-ddl",
+      "codigo": "nexus-db-ddl",
       "tipo": "BANCO",
       "fromTag": "v1.4.0",
       "toTag": "v1.5.0",

@@ -4,7 +4,7 @@ Plano executável em sprints de **~2 semanas**. Ajuste a duração conforme o ti
 
 **Legenda:** `[ ]` pendente · `[x]` concluído · **🔧** repo/infra (fora do portal) · **📋** portal
 
-**Produto piloto sugerido:** DTEC-LD (`DTECLD`)
+**Produto piloto sugerido:** NEXUS-LD (`NEXUSLD`)
 
 ---
 
@@ -68,8 +68,8 @@ _Validado em 2026-06-19: smoke test end-to-end — login JWT de `admin`/`editor`
 
 Bloco curto no início da sprint pra fechar dívida técnica que ficou exposta no fim da S0 (o bug do hash BCrypt do `revisor` só apareceu no smoke manual — CI teria pegado em PR).
 
-- [x] GitHub Actions: workflow `ci.yml` rodando `./mvnw test` em push/PR pra `main` (`softon-portal-api`) — _job `Test (Java 21)`_
-- [x] GitHub Actions: workflow `ci.yml` rodando `ng test --watch=false --browsers=ChromeHeadless` em push/PR pra `main` (`softon-portal-web`) — _job `Test (Node 22, Chrome headless)`_
+- [x] GitHub Actions: workflow `ci.yml` rodando `./mvnw test` em push/PR pra `main` (`nexus-portal-api`) — _job `Test (Java 21)`_
+- [x] GitHub Actions: workflow `ci.yml` rodando `ng test --watch=false --browsers=ChromeHeadless` em push/PR pra `main` (`nexus-portal-web`) — _job `Test (Node 22, Chrome headless)`_
 - [ ] ~~Branch protection em `main` (ambos repos)~~ — **bloqueado pelo plano:** branch protection e rulesets exigem GitHub Pro pra repos privados. Reabrir se decidirmos upgrade ou tornar repos públicos.
 - [x] Teste de integração com Testcontainers: `AuthSeedsIntegrationTest` aplica V1–V17 num Postgres efêmero e valida login dos 3 seeds (`admin/admin`, `editor/editor`, `revisor/revisor`) — pega regressões nos seeds em CI antes do smoke manual
 
@@ -86,7 +86,7 @@ Bloco curto no início da sprint pra fechar dívida técnica que ficou exposta n
 
 ### DoD
 - [x] CI rodando em ambos repos, teste de seeds verde (branch protection adiada — exige Pro)
-- [ ] Postman/curl: criar módulo WEB em DTEC-LD, upload `.war` na release em rascunho (validação manual pendente — endpoints prontos)
+- [ ] Postman/curl: criar módulo WEB em NEXUS-LD, upload `.war` na release em rascunho (validação manual pendente — endpoints prontos)
 
 **Specs:** `10-produtos-modulos-artefatos.md`, ROADMAP F0.3–F0.6
 
@@ -109,7 +109,7 @@ Bloco curto no início da sprint pra fechar dívida técnica que ficou exposta n
 - [x] Vincular versão por módulo na release (input dentro do card do módulo na aba Artefatos)
 
 ### DoD
-- [ ] Release DTEC-LD 1.5.0: módulos catalogados, `.war` + `.zip` sql uploadados, PDF baixado (validação manual pendente)
+- [ ] Release NEXUS-LD 1.5.0: módulos catalogados, `.war` + `.zip` sql uploadados, PDF baixado (validação manual pendente)
 
 **Specs:** `14-release-orchestrator-detalhe.md`, `25-documento-release-md-pdf.md`, ROADMAP F0.7–F0.14
 
@@ -132,7 +132,7 @@ Bloco curto no início da sprint pra fechar dívida técnica que ficou exposta n
 - [ ] (Opcional) telas na S5 — validar via API neste sprint
 
 ### DoD
-- [ ] Cliente ACME cadastrado: DTEC-LD contratado, módulos WEB+BANCO, v1.4.0 instalada, 23 funcionalidades marcadas (validação manual via Postman — endpoints prontos)
+- [ ] Cliente ACME cadastrado: NEXUS-LD contratado, módulos WEB+BANCO, v1.4.0 instalada, 23 funcionalidades marcadas (validação manual via Postman — endpoints prontos)
 
 **Specs:** `02`–`07`, ROADMAP F1.2–F1.6
 
@@ -218,7 +218,7 @@ Bloco curto no início da sprint pra fechar dívida técnica que ficou exposta n
 
 ---
 
-## Sprint 8 — 🔧 F2.0: Jenkins + GitHub (piloto DTEC-LD)
+## Sprint 8 — 🔧 F2.0: Jenkins + GitHub (piloto NEXUS-LD)
 
 **Objetivo:** tag no repo → asset no GitHub Release. **Fora do portal.**
 
@@ -237,10 +237,10 @@ Bloco curto no início da sprint pra fechar dívida técnica que ficou exposta n
 - [x] [`templates/README-versionamento.md`](../release-orchestrator/templates/README-versionamento.md) — snippet pro README de cada repo
 
 ### Por repositório (spec `39`)
-- [ ] Repo WEB `softon/dtec-ld`: `Jenkinsfile` build-on-tag (aplicar template)
+- [ ] Repo WEB `nexus/nexus-ld`: `Jenkinsfile` build-on-tag (aplicar template)
 - [ ] (Se separado) repo DB: pastas `db/`, convenção DDL_### / DML_###
 - [ ] (Se separado) repo Kettle: pasta `kettle/` ou `pdi/`
-- [ ] Job Jenkins `dtec-ld-build` apontando ao repo
+- [ ] Job Jenkins `nexus-ld-build` apontando ao repo
 - [ ] Credencial GitHub PAT no Jenkins (`repo` + upload release)
 - [ ] Tag teste `v0.0.1` → GitHub Release com asset nomeado `{sigla}-{versao}.war`
 - [ ] Publicar `docs/VERSIONING.md` no repo (baseado em spec `40`)
@@ -372,7 +372,7 @@ Bloco curto no início da sprint pra fechar dívida técnica que ficou exposta n
 
 ## Checklist rápido — ambiente externo (copiar por produto)
 
-Use para **cada** produto (DTEC-LD, DTEC-CR, …):
+Use para **cada** produto (NEXUS-LD, Nexus-CR, …):
 
 ```markdown
 ### Produto: ___________  Repo: ___________

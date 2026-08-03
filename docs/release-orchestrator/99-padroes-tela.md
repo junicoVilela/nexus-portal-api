@@ -2,7 +2,7 @@
 
 Critérios que se aplicam a **todas** as telas do orchestrator. Cada spec de tela (01–28) assume estes critérios sem repetir.
 
-> Pareado com a documentação do frontend em `softon-portal-web/docs/release-orchestrator/` (por tela).
+> Pareado com a documentação do frontend em `nexus-portal-web/docs/release-orchestrator/` (por tela).
 
 ---
 
@@ -319,7 +319,7 @@ Estado próprio: ver `21-geracao-pacote.md` e `34-observabilidade.md`.
 - ID completo mostrado em **tooltip** ou em URL ao expandir um detalhe.
 
 ### Códigos curtos (humanos)
-- Releases: `DTECLD v1.5.0` (sigla + versão).
+- Releases: `NEXUSLD v1.5.0` (sigla + versão).
 - Entregas: `#1234` (sequencial por cliente) ou `#ENTR-2026-001` (formato com ano).
 - Decisão: sequencial humano-amigável + UUID interno para FKs.
 
@@ -347,4 +347,4 @@ Estado próprio: ver `21-geracao-pacote.md` e `34-observabilidade.md`.
 - [`35-testes-qa.md`](35-testes-qa.md) — Testes E2E e a11y.
 - [`38-glossario.md`](38-glossario.md) — Termos do domínio.
 - Padrões de erro e Problem Details — consolidados neste documento.
-- [`../../softon-portal-web/docs/release-orchestrator/`](../../softon-portal-web/docs/release-orchestrator/README.md) — Documentação do frontend (componentes, estados, por tela).
+- [`../../nexus-portal-web/docs/release-orchestrator/`](../../nexus-portal-web/docs/release-orchestrator/README.md) — Documentação do frontend (componentes, estados, por tela).

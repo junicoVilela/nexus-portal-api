@@ -1,7 +1,7 @@
 # Versionamento e release
 
 > Copie este arquivo para `docs/VERSIONING.md` no repositório do produto e
-> ajuste o que estiver entre `{{ }}`. Guia mestre: [`softon-portal-api/docs/release-orchestrator/40-guia-versao-tag.md`](../40-guia-versao-tag.md)
+> ajuste o que estiver entre `{{ }}`. Guia mestre: [`nexus-portal-api/docs/release-orchestrator/40-guia-versao-tag.md`](../40-guia-versao-tag.md)
 
 ---
 
@@ -40,10 +40,10 @@ A versão registrada no Release Orchestrator é **sem o prefixo `v`** (ex.: `1.5
 
 - Job: `{{ produto-sigla }}-build`
 - Jenkinsfile: na raiz do repositório (`Jenkinsfile`)
-- Credencial necessária: `github-pat-softon` (PAT com escopo `repo`)
+- Credencial necessária: `github-pat-nexus` (PAT com escopo `repo`)
 - Output: asset no GitHub Release nomeado conforme padrão acima
 
-Veja o template do Jenkinsfile em [`softon-portal-api/docs/release-orchestrator/templates/Jenkinsfile`](../templates/Jenkinsfile).
+Veja o template do Jenkinsfile em [`nexus-portal-api/docs/release-orchestrator/templates/Jenkinsfile`](../templates/Jenkinsfile).
 
 ---
 
@@ -91,6 +91,6 @@ Se a tag tem apenas alguns segundos de vida e não saiu para outros consumidores
 
 ## Cross-reference
 
-- [`softon-portal-api/docs/release-orchestrator/40-guia-versao-tag.md`](../40-guia-versao-tag.md) — guia operacional mestre
-- [`softon-portal-api/docs/release-orchestrator/39-entregaveis-cicd-repositorios.md`](../39-entregaveis-cicd-repositorios.md) — entregáveis por tipo de módulo
-- [`softon-portal-api/docs/release-orchestrator/templates/`](../templates/) — Jenkinsfile + README
+- [`nexus-portal-api/docs/release-orchestrator/40-guia-versao-tag.md`](../40-guia-versao-tag.md) — guia operacional mestre
+- [`nexus-portal-api/docs/release-orchestrator/39-entregaveis-cicd-repositorios.md`](../39-entregaveis-cicd-repositorios.md) — entregáveis por tipo de módulo
+- [`nexus-portal-api/docs/release-orchestrator/templates/`](../templates/) — Jenkinsfile + README

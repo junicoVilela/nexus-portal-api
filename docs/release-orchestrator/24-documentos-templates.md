@@ -31,8 +31,8 @@ Acessível em `/orchestrator/documentos/templates`.
 │ ┌──────────────────────────────────────────────────────────────────┐  │
 │ │ Nome           │ Tipo      │ Produto   │ Versão │ Status │ Ações │  │
 │ ├──────────────────────────────────────────────────────────────────┤  │
-│ │ DTEC-LD Padrão │ Base      │ DTEC-LD   │ v3     │ ATIVO  │ ⋮     │  │
-│ │ DTEC-LD Cliente│ Cliente   │ DTEC-LD   │ v2     │ ATIVO  │ ⋮     │  │
+│ │ NEXUS-LD Padrão │ Base      │ NEXUS-LD   │ v3     │ ATIVO  │ ⋮     │  │
+│ │ NEXUS-LD Cliente│ Cliente   │ NEXUS-LD   │ v2     │ ATIVO  │ ⋮     │  │
 │ │ FOLHA Padrão   │ Base      │ FOLHA-WEB │ v1     │ ATIVO  │ ⋮     │  │
 │ │ Global Padrão  │ Base      │ —         │ v5     │ ATIVO  │ ⋮     │  │
 │ │ DDL Banco      │ Banco     │ —         │ v2     │ INATIVO│ ⋮     │  │
@@ -141,10 +141,10 @@ POST /api/v1/orchestrator/templates
 
 ```json
 {
-  "nome": "DTEC-LD Cliente",
+  "nome": "NEXUS-LD Cliente",
   "tipo": "CLIENTE",
   "produtoId": "uuid",
-  "descricao": "Template do cliente final para DTEC-LD",
+  "descricao": "Template do cliente final para NEXUS-LD",
   "conteudoMarkdown": "# Release {{produto.sigla}} {{release.versao}}\n\n## Novidades\n{{itens.novidades}}\n\n..."
 }
 ```

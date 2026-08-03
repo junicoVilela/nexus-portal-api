@@ -2,11 +2,11 @@
 
 ## Nome do projeto
 
-Softon Portal API
+Nexus Portal API
 
 ## Objetivo
 
-Backend do portal interno corporativo da Softon. Centraliza aplicações
+Backend do portal interno corporativo da nexus. Centraliza aplicações
 internas, módulos administrativos e ferramentas de apoio ao
 desenvolvimento, operação e documentação.
 
@@ -71,9 +71,9 @@ Usar:
 ## Estrutura Maven
 
 ```text
-softon-portal-api/
+nexus-portal-api/
 ├── shared/             ← módulo Maven compartilhado (todos os módulos dependem)
-├── application/        ← módulo Spring Boot runnable (SoftonPortalApplication + application.yml)
+├── application/        ← módulo Spring Boot runnable (NexusPortalApplication + application.yml)
 ├── doc-flow/           ← módulo Maven do docflow (depende de shared)
 ├── release-orchestrator/       ← módulo Maven do release-orchestrator (depende de shared)
 ├── gateway/            ← módulo Maven do gateway (depende de shared)
@@ -86,27 +86,27 @@ softon-portal-api/
 ## Pacote raiz e convenção
 
 ```text
-br.com.softon.portal
+com.nexus.portal
 ```
 
 Padrão de pacote por módulo:
 
 ```text
-br.com.softon.portal.{modulo}.{camada}
+com.nexus.portal.{modulo}.{camada}
 ```
 
 Exemplos:
 
 ```text
-br.com.softon.portal.docflow.controller
-br.com.softon.portal.docflow.service
-br.com.softon.portal.docflow.repository
-br.com.softon.portal.docflow.entity
-br.com.softon.portal.docflow.dto.request
-br.com.softon.portal.docflow.dto.response
-br.com.softon.portal.shared.config
-br.com.softon.portal.shared.exception
-br.com.softon.portal.shared.domain
+com.nexus.portal.docflow.controller
+com.nexus.portal.docflow.service
+com.nexus.portal.docflow.repository
+com.nexus.portal.docflow.entity
+com.nexus.portal.docflow.dto.request
+com.nexus.portal.docflow.dto.response
+com.nexus.portal.shared.config
+com.nexus.portal.shared.exception
+com.nexus.portal.shared.domain
 ```
 
 **Não usar `modules` no caminho do pacote.**

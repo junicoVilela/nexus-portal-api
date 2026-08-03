@@ -2,7 +2,7 @@
 
 Documento de sugestão, **não aplicado em código** (decisão pendente). Lista os pontos de drift de nomenclatura encontrados entre código backend, frontend, banco e specs, e propõe um conjunto coerente.
 
-> Última revisão: 2026-05-31. Aplicável tanto a `softon-portal-api` quanto a `softon-portal-web`.
+> Última revisão: 2026-05-31. Aplicável tanto a `nexus-portal-api` quanto a `nexus-portal-web`.
 
 ---
 
@@ -106,7 +106,7 @@ Médio. Renomear classes/arquivos + atualizar imports + atualizar `loadComponent
 
 ### Estado atual
 
-`softon-portal-api/.ai/project/DATABASE_STANDARDS.md` diz:
+`nexus-portal-api/.ai/project/DATABASE_STANDARDS.md` diz:
 > Tabelas com prefixo `tb_{recurso}`.
 
 Mas as tabelas reais não seguem:
@@ -150,7 +150,7 @@ A rota do release-orchestrator no Angular usa a constante `RELEASE_ORCHESTRATOR_
 
 ### Estado atual
 - Módulo Maven: `release-orchestrator` (com hífen)
-- Pacote Java: `br.com.softon.portal.releaseorchestrator` (sem hífen — Java não permite)
+- Pacote Java: `com.nexus.portal.releaseorchestrator` (sem hífen — Java não permite)
 
 Isso **não é drift, é necessidade técnica**. Pacotes Java não aceitam hífen. Manter como está.
 

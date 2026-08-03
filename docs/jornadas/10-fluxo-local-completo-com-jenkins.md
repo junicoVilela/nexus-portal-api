@@ -43,8 +43,8 @@ Como tudo roda em `localhost`, planeje as portas antes:
 | Conta no GitHub | com repo de teste | — |
 
 Crie um **repo no GitHub** para servir de produto-cobaia. Pode ser um repo
-Java/Maven mínimo. Exemplo: `seuuser/dtec-lite-mock` com um `pom.xml` simples
-que gera um WAR. Vou referenciar como `seuuser/dtec-lite-mock` daqui pra
+Java/Maven mínimo. Exemplo: `seuuser/nexus-lite-mock` com um `pom.xml` simples
+que gera um WAR. Vou referenciar como `seuuser/nexus-lite-mock` daqui pra
 frente.
 
 ---
@@ -59,7 +59,7 @@ completos em [`infra/docker/README.md`](../../infra/docker/README.md).
 ### 2.1 Preparar o `.env`
 
 ```bash
-cd softon-portal-api/infra/docker
+cd nexus-portal-api/infra/docker
 cp .env.example .env
 
 # Gere o secret do webhook (vamos usar agora e exportar pro backend depois)
@@ -96,7 +96,7 @@ curl -fs http://localhost:8090/login >/dev/null && echo "Jenkins OK"
 
 ```bash
 # Backend
-cd softon-portal-api
+cd nexus-portal-api
 mkdir -p storage/{artefatos,entregas,publicacoes}
 export RELEASE_ORCHESTRATOR_WEBHOOKS_JENKINS_SECRET=$WEBHOOK  # mesmo do .env
 ./mvnw -pl application spring-boot:run -Dspring-boot.run.profiles=dev
@@ -104,7 +104,7 @@ export RELEASE_ORCHESTRATOR_WEBHOOKS_JENKINS_SECRET=$WEBHOOK  # mesmo do .env
 
 ```bash
 # Frontend
-cd softon-portal-web/frontend
+cd nexus-portal-web/frontend
 npm ci && npm start
 ```
 
@@ -112,7 +112,7 @@ Confira:
 - Portal API: `curl http://localhost:8080/actuator/health` → `UP`
 - Frontend: `http://localhost:4200` → tela de login
 
-Login: `admin@softon.com.br` / `admin`.
+Login: `admin@nexus.local` / `admin`.
 
 ---
 
@@ -126,9 +126,9 @@ contém Dockerfile + JCasC que provisionam tudo no boot:
 | Admin local | `casc.yaml` lê de `$JENKINS_ADMIN_USER`/`$JENKINS_ADMIN_PASSWORD` | default `admin`/`admin` |
 | Tool `jdk-21` | `casc.yaml` → tool/jdk | Adoptium auto-install |
 | Tool `maven-3.9` | `casc.yaml` → tool/maven | 3.9.9 auto-install |
-| Credencial `github-pat-softon` | `casc.yaml` lê de `$GITHUB_PAT` | (do `.env`) |
+| Credencial `github-pat-nexus` | `casc.yaml` lê de `$GITHUB_PAT` | (do `.env`) |
 | Credencial `github-user-pat` | `casc.yaml` lê de `$GITHUB_USER`/`$GITHUB_PAT` | (do `.env`) — pra clone HTTPS |
-| Credencial `softon-portal-webhook-secret` | `casc.yaml` lê de `$PORTAL_WEBHOOK_SECRET` | (do `.env`) |
+| Credencial `nexus-portal-webhook-secret` | `casc.yaml` lê de `$PORTAL_WEBHOOK_SECRET` | (do `.env`) |
 | Plugins (Pipeline, GitHub, JCasC, Stage View, Timestamper, etc.) | `plugins.txt` versionado | instalados na build da imagem |
 | `gh` CLI | `Dockerfile` | `apt install gh` |
 
@@ -141,7 +141,7 @@ Acesse `http://localhost:8090` e logue com `admin`/`admin`. Confira em
 
 ---
 
-## §4 — Repositório do produto (`dtec-lite-mock`)
+## §4 — Repositório do produto (`nexus-lite-mock`)
 
 Vamos preparar o repo de teste no GitHub.
 
@@ -150,7 +150,7 @@ Vamos preparar o repo de teste no GitHub.
 Estrutura:
 
 ```
-dtec-lite-mock/
+nexus-lite-mock/
 ├── Jenkinsfile
 ├── pom.xml
 └── src/main/webapp/index.html
@@ -162,12 +162,12 @@ dtec-lite-mock/
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>com.softon</groupId>
-  <artifactId>dtec-web</artifactId>
+  <groupId>com.nexus</groupId>
+  <artifactId>nexus-web</artifactId>
   <version>1.0.0</version>
   <packaging>war</packaging>
   <build>
-    <finalName>dtec-web</finalName>
+    <finalName>nexus-web</finalName>
   </build>
 </project>
 ```
@@ -176,7 +176,7 @@ dtec-lite-mock/
 
 ```html
 <!doctype html>
-<html><body><h1>DTEC Lite mock 1.0.0</h1></body></html>
+<html><body><h1>Nexus Lite mock 1.0.0</h1></body></html>
 ```
 
 ### 4.2 Jenkinsfile
@@ -184,16 +184,16 @@ dtec-lite-mock/
 Copie o template e ajuste:
 
 ```bash
-cd dtec-lite-mock
-cp ~/softon-portal-api/docs/release-orchestrator/templates/Jenkinsfile .
+cd nexus-lite-mock
+cp ~/nexus-portal-api/docs/release-orchestrator/templates/Jenkinsfile .
 ```
 
 Edite os campos no topo do Jenkinsfile:
 
 ```groovy
 environment {
-  PRODUTO_SIGLA    = 'DTECLD'
-  MODULO_CODIGO    = 'dtec-web'
+  PRODUTO_SIGLA    = 'NEXUSLD'
+  MODULO_CODIGO    = 'nexus-web'
   ARTIFACT_EXT     = 'war'
   BUILD_CMD        = 'mvn -B -ntp clean package -DskipTests'
   BUILD_OUTPUT_DIR = 'target'
@@ -201,8 +201,8 @@ environment {
   // 👇 IMPORTANTE: usa host.docker.internal pra acessar o portal local
   PORTAL_WEBHOOK_URL = 'http://host.docker.internal:8080/api/v1/release-orchestrator/webhooks/jenkins'
 
-  GH_TOKEN     = credentials('github-pat-softon')
-  PORTAL_SECRET = credentials('softon-portal-webhook-secret')
+  GH_TOKEN     = credentials('github-pat-nexus')
+  PORTAL_SECRET = credentials('nexus-portal-webhook-secret')
 }
 ```
 
@@ -215,7 +215,7 @@ Commit e push:
 ```bash
 git init && git add . && git commit -m "chore: setup"
 git branch -M main
-git remote add origin git@github.com:seuuser/dtec-lite-mock.git
+git remote add origin git@github.com:seuuser/nexus-lite-mock.git
 git push -u origin main
 ```
 
@@ -225,11 +225,11 @@ git push -u origin main
 
 ### 5.1 Criar o job
 
-Jenkins → **New Item → Pipeline**, nome: `dtec-ld-build`.
+Jenkins → **New Item → Pipeline**, nome: `nexus-ld-build`.
 
 #### General
 - ✅ GitHub project
-  - Project url: `https://github.com/seuuser/dtec-lite-mock/`
+  - Project url: `https://github.com/seuuser/nexus-lite-mock/`
 
 #### Build Triggers
 - ✅ **GitHub hook trigger for GITScm polling**
@@ -237,7 +237,7 @@ Jenkins → **New Item → Pipeline**, nome: `dtec-ld-build`.
 #### Pipeline
 - Definition: **Pipeline script from SCM**
 - SCM: **Git**
-- Repository URL: `https://github.com/seuuser/dtec-lite-mock.git`
+- Repository URL: `https://github.com/seuuser/nexus-lite-mock.git`
 - Credentials: **Add** → Username + Password
   - Username: seu user do GitHub
   - Password: o mesmo PAT (`ghp_...`)
@@ -284,8 +284,8 @@ Agora a parte que conecta o portal ao GitHub + Jenkins.
 
 | Campo | Valor |
 |---|---|
-| Sigla | `DTECLD` |
-| Nome | `DTec Lite` |
+| Sigla | `NEXUSLD` |
+| Nome | `Nexus Lite` |
 | Cor | qualquer |
 | Ativo | ✅ |
 
@@ -295,7 +295,7 @@ Save. Entra no detalhe do produto.
 
 | Campo | Valor |
 |---|---|
-| Repositório | `seuuser/dtec-lite-mock` |
+| Repositório | `seuuser/nexus-lite-mock` |
 | Branch padrão | `main` |
 | Regex de tag | `^v\d+\.\d+\.\d+$` |
 | Token | cole o mesmo PAT do §3.6 |
@@ -308,7 +308,7 @@ não tem releases — é esperado).
 | Campo | Valor |
 |---|---|
 | URL base | `http://localhost:8090` |
-| Nome do job | `dtec-ld-build` |
+| Nome do job | `nexus-ld-build` |
 | Usuário | `admin` |
 | API token | gere em Jenkins → top-right user → Configure → API Token → Add new |
 
@@ -320,7 +320,7 @@ Cadastre só o módulo que vamos buildar:
 
 | Código | Nome | Tipo |
 |---|---|---|
-| `dtec-web` | Web | `WEB` |
+| `nexus-web` | Web | `WEB` |
 
 Pra esse fluxo de teste, **um módulo só basta**. Depois você adiciona BANCO/KETTLE.
 
@@ -329,10 +329,10 @@ Pra esse fluxo de teste, **um módulo só basta**. Depois você adiciona BANCO/K
 Mesmo do guia 09 §7 — versão resumida:
 
 1. Sidebar → **Clientes → Novo cliente**, sigla `ACME`.
-2. Aba **Produtos → Contratar produto → DTECLD**. Versão atual do `dtec-web`: `0.9.0`.
+2. Aba **Produtos → Contratar produto → NEXUSLD**. Versão atual do `nexus-web`: `0.9.0`.
 3. Aba **Config. entrega → Editar**:
    - Tipo: `Pasta local`
-   - Caminho base: `/tmp/softon-entregas/acme` (crie a pasta antes: `mkdir -p /tmp/softon-entregas/acme`)
+   - Caminho base: `/tmp/nexus-entregas/acme` (crie a pasta antes: `mkdir -p /tmp/nexus-entregas/acme`)
 4. **Salvar**.
 
 ---
@@ -347,7 +347,7 @@ Sidebar → **Release Orchestrator → Releases → Nova release**:
 
 | Campo | Valor |
 |---|---|
-| Produto | `DTECLD` |
+| Produto | `NEXUSLD` |
 | Versão | `1.0.0` (vai casar com a primeira tag) |
 | Tipo | `MAJOR` |
 | Título | `Primeiro release automatizado` |
@@ -364,7 +364,7 @@ Status: `RASCUNHO → EM_REVISAO → APROVADA → PUBLICADA`.
 No repo do produto:
 
 ```bash
-cd dtec-lite-mock
+cd nexus-lite-mock
 git tag v1.0.0
 git push origin v1.0.0
 ```
@@ -373,7 +373,7 @@ O webhook GitHub bate no Jenkins → job dispara automaticamente.
 
 #### Caminho B — build manual
 
-Jenkins → job `dtec-ld-build` → **Build with Parameters**.
+Jenkins → job `nexus-ld-build` → **Build with Parameters**.
 
 Se o job não tem parâmetro, mude temporariamente pra ter `TAG_NAME`
 ou crie a tag e clique **Scan repository now / Build Now** (Pipeline
@@ -389,8 +389,8 @@ Jenkins job → **Build History → #1 → Console Output**.
 
 Stages esperadas:
 1. **Checkout tag** — clona do GitHub
-2. **Build** — `mvn package` → gera `target/dtec-web.war`
-3. **Locate artifact** — encontra o WAR + monta `dtec-web-1.0.0.war`
+2. **Build** — `mvn package` → gera `target/nexus-web.war`
+3. **Locate artifact** — encontra o WAR + monta `nexus-web-1.0.0.war`
 4. **Publish to GitHub Release** — cria release no GitHub e sobe o asset
 5. **post → success → notificarPortal('SUCCESS')** → POST no webhook do portal
 
@@ -404,8 +404,8 @@ Em até 1 segundo após o `success` do Jenkins:
 
 Na aba **Artefatos** da release, clique **Sincronizar do GitHub**:
 - Portal lê a release `v1.0.0` no GitHub
-- Baixa o `dtec-web-1.0.0.war`
-- Cacheia em `storage/artefatos/github-cache/DTECLD/1.0.0/dtec-web/`
+- Baixa o `nexus-web-1.0.0.war`
+- Cacheia em `storage/artefatos/github-cache/NEXUSLD/1.0.0/nexus-web/`
 - Cria registro `ArtefatoReleaseModulo` com SHA-256 calculado
 
 **Pronto:** a release tem artefato sem você ter feito upload.
@@ -420,10 +420,10 @@ Sidebar → **Entregas → Nova entrega**.
 
 | Passo | Valor |
 |---|---|
-| 1 | Cliente `ACME` + Produto `DTECLD` |
+| 1 | Cliente `ACME` + Produto `NEXUSLD` |
 | 2 | Release `1.0.0` + responsável (você) |
-| 3 | Módulo `dtec-web` marcado, FROM `0.9.0`, TO `1.0.0` |
-| 4 | **Calcular delta** → mostra 1 artefato (`dtec-web-1.0.0.war`) |
+| 3 | Módulo `nexus-web` marcado, FROM `0.9.0`, TO `1.0.0` |
+| 4 | **Calcular delta** → mostra 1 artefato (`nexus-web-1.0.0.war`) |
 | 5 | Documento gerado → **Gerar entrega** |
 
 ### 8.2 Acompanhar
@@ -435,15 +435,15 @@ Tela: **Detalhe da entrega**.
 - Botão **Baixar pacote** baixa o ZIP local
 
 ```bash
-ls -lh /tmp/softon-entregas/acme/
-unzip -l /tmp/softon-entregas/acme/*.zip
+ls -lh /tmp/nexus-entregas/acme/
+unzip -l /tmp/nexus-entregas/acme/*.zip
 ```
 
 Estrutura esperada:
 
 ```
-documento-acme-dtecld-1.0.0.pdf
-modulos/dtec-web/dtec-web-1.0.0.war
+documento-acme-nexusld-1.0.0.pdf
+modulos/nexus-web/nexus-web-1.0.0.war
 ```
 
 ---
@@ -453,7 +453,7 @@ modulos/dtec-web/dtec-web-1.0.0.war
 Pra validar que tudo está fluido, repita:
 
 ```bash
-cd dtec-lite-mock
+cd nexus-lite-mock
 # edite o index.html pra mudar a mensagem
 echo "<h1>v1.1.0</h1>" > src/main/webapp/index.html
 git commit -am "chore: bump"
@@ -477,16 +477,16 @@ Esse é o loop de operação real — **zero upload manual**.
 ```
 ┌─────────────────────────────┐    git push v1.1.0
 │ Repo GitHub                 │ ◄────────────── você
-│ seuuser/dtec-lite-mock      │
+│ seuuser/nexus-lite-mock      │
 └──────┬──────────────────────┘
        │ webhook (ngrok)
        ▼
 ┌─────────────────────────────┐
 │ Jenkins (localhost:8090)    │
-│  - dtec-ld-build            │
+│  - nexus-ld-build            │
 │  - tools: jdk-21, maven-3.9 │
-│  - cred: github-pat-softon  │
-│  - cred: softon-portal-...  │
+│  - cred: github-pat-nexus  │
+│  - cred: nexus-portal-...  │
 └──────┬──────────────────────┘
        │ gh release upload (PAT)
        │
@@ -516,9 +516,9 @@ Esse é o loop de operação real — **zero upload manual**.
 |---|---|
 | Jenkins não builda | Console output do job; tipicamente é `pom.xml` quebrado ou plugin faltando |
 | `git push` não dispara webhook | GitHub → repo → Settings → Webhooks → Recent Deliveries: deve ter resposta 200 |
-| Build OK mas asset não foi pro GitHub | Credencial `github-pat-softon` ausente ou PAT sem escopo `repo` |
+| Build OK mas asset não foi pro GitHub | Credencial `github-pat-nexus` ausente ou PAT sem escopo `repo` |
 | Build OK, asset OK, badge não aparece | `PORTAL_WEBHOOK_URL` usa `localhost` em vez de `host.docker.internal` |
-| Webhook bate, portal devolve 403 | Secret divergente entre `RELEASE_ORCHESTRATOR_WEBHOOKS_JENKINS_SECRET` (portal) e credencial `softon-portal-webhook-secret` (Jenkins) |
+| Webhook bate, portal devolve 403 | Secret divergente entre `RELEASE_ORCHESTRATOR_WEBHOOKS_JENKINS_SECRET` (portal) e credencial `nexus-portal-webhook-secret` (Jenkins) |
 | Portal "Sincronizar do GitHub" não acha release | Tag não casa com regex configurado no produto (`^v\d+\.\d+\.\d+$`) |
 | Sync OK mas asset não baixa | PAT no portal sem escopo `repo`, ou nome do asset ≠ `{PRODUTO_SIGLA}-{MODULO}-{VERSAO}.{EXT}` |
 | Wizard passo 3 não lista o módulo | Cliente não tem produto contratado, ou módulo `ativo=false` |
@@ -543,13 +543,13 @@ Quando esse fluxo estiver redondo, evolua:
 
 ```bash
 # Derruba serviços e apaga volumes
-cd softon-portal-api/infra/docker
+cd nexus-portal-api/infra/docker
 docker compose --profile all down -v
 
 # Portal + frontend: Ctrl+C nos terminais
 
 # Artefatos gerados
-rm -rf ../../storage/* /tmp/softon-entregas
+rm -rf ../../storage/* /tmp/nexus-entregas
 ```
 
 Volta pra §2 e refaz limpo.

@@ -32,7 +32,7 @@ docs/validacao/
   README.md                              ← você está aqui
   01-configuracoes-iniciais.md           ← o que precisa estar cadastrado antes do fluxo
   02-validacao-tela-por-tela.md          ← campos, mensagens e persistência de cada tela
-  03-fluxo-completo-entrega.md           ← XPTO / DTEC v1.0.0 → v1.1.0 ponta a ponta
+  03-fluxo-completo-entrega.md           ← XPTO / Nexus v1.0.0 → v1.1.0 ponta a ponta
   04-checklist-final.md                  ← lista marcável para fechar a validação
   05-cenarios-de-erro.md                 ← falhas esperadas e como reproduzir
 ```
@@ -42,7 +42,7 @@ Ordem de leitura recomendada na primeira validação:
 1. `README.md` (este arquivo) — entender escopo e premissas.
 2. `01-configuracoes-iniciais.md` — fazer todos os cadastros base.
 3. `02-validacao-tela-por-tela.md` — passar tela por tela conferindo campos e mensagens.
-4. `03-fluxo-completo-entrega.md` — executar a jornada de XPTO / DTEC.
+4. `03-fluxo-completo-entrega.md` — executar a jornada de XPTO / Nexus.
 5. `05-cenarios-de-erro.md` — provocar as falhas para validar reação do sistema.
 6. `04-checklist-final.md` — marcar tudo que foi validado.
 
@@ -74,14 +74,14 @@ Para tornar concreto, o roteiro de validação usa um cenário fictício consist
 | Item | Valor |
 |---|---|
 | Cliente | `XPTO` — Banco XPTO S.A. |
-| Produto | `DTEC` — Suite DTEC |
-| Módulos | `DTEC-LD` (WEB), `DTEC-CR` (WEB), `POWERMATCH` (BATCH), `DTEC-BANCO` (BANCO) |
+| Produto | `Nexus` — Suite Nexus |
+| Módulos | `NEXUS-LD` (WEB), `Nexus-CR` (WEB), `POWERMATCH` (BATCH), `Nexus-BANCO` (BANCO) |
 | Ambiente do contrato | `HOM` (Homologação) |
 | Versão atual instalada no XPTO | `1.0.0` |
 | Nova release | `1.1.0` |
-| Pacote final esperado | `XPTO_DTEC_1.0.0_1.1.0.zip` |
+| Pacote final esperado | `XPTO_NEXUS_1.0.0_1.1.0.zip` |
 
-> O monorepo já documenta um cenário canônico com `ACME` / `DTECLD`. Os dois são equivalentes — qualquer um serve de smoke. Use `XPTO`/`DTEC` se quiser seguir esta doc de validação literalmente, ou `ACME`/`DTECLD` se preferir alinhar com [`docs/jornadas/00-cenario-feliz-acme.md`](../jornadas/00-cenario-feliz-acme.md).
+> O monorepo já documenta um cenário canônico com `ACME` / `NEXUSLD`. Os dois são equivalentes — qualquer um serve de smoke. Use `XPTO`/`Nexus` se quiser seguir esta doc de validação literalmente, ou `ACME`/`NEXUSLD` se preferir alinhar com [`docs/jornadas/00-cenario-feliz-acme.md`](../jornadas/00-cenario-feliz-acme.md).
 
 ---
 
@@ -96,7 +96,7 @@ Antes de abrir qualquer tela, garanta:
 | Migrations aplicadas (V1–V7) | `psql … -c "SELECT version FROM flyway_schema_history ORDER BY installed_rank"` → 7 linhas |
 | Seeds RBAC + usuário admin | login com `admin / admin` no `/login` |
 | Frontend Angular rodando | `http://localhost:4200` abre a tela de login |
-| Pastas de storage existentes | `ls softon-portal-api/storage/{artefatos,entregas,publicacoes}` |
+| Pastas de storage existentes | `ls nexus-portal-api/storage/{artefatos,entregas,publicacoes}` |
 | Encryption key (se for usar SFTP/FTP/BUCKET) | `echo $RELEASE_ORCHESTRATOR_ENCRYPTION_KEY` ≠ vazio |
 
 O passo a passo completo de subida do ambiente está em [`docs/jornadas/09-passo-a-passo-local-tela-a-tela.md`](../jornadas/09-passo-a-passo-local-tela-a-tela.md) §1–§3.
@@ -117,5 +117,5 @@ O passo a passo completo de subida do ambiente está em [`docs/jornadas/09-passo
 ## 7. Onde reportar falhas
 
 - **Spec divergente da implementação:** abrir PR atualizando [`docs/release-orchestrator/`](../release-orchestrator/) (spec é a fonte da verdade).
-- **Implementação divergente da spec:** abrir issue no repo `softon-portal-api` (back) ou `softon-portal-web` (front), referenciando o item desta doc.
+- **Implementação divergente da spec:** abrir issue no repo `nexus-portal-api` (back) ou `nexus-portal-web` (front), referenciando o item desta doc.
 - **Gap funcional:** registrar em [`docs/jornadas/06-gaps-jornada-acme.md`](../jornadas/06-gaps-jornada-acme.md).

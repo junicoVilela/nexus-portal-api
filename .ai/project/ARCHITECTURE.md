@@ -11,10 +11,10 @@ flat por camada.
 ## Estrutura Maven
 
 ```text
-softon-portal-api/
+nexus-portal-api/
 ├── shared/             ← módulo Maven compartilhado (utilities transversais)
-├── dtec-rbac/          ← lib RBAC/identidade/auditoria (Usuario, Grupo, Permissao,
-│                         Auth, Auditoria — reutilizável em produtos DTEC)
+├── nexus-identity-access/          ← lib RBAC/identidade/auditoria (Usuario, Grupo, Permissao,
+│                         Auth, Auditoria — reutilizável em produtos Nexus)
 ├── application/        ← módulo Spring Boot runnable (boot class + application.yml)
 ├── doc-flow/           ← módulo do docflow (Cliente, Projeto, Módulo, Página,
 │                         Publicação, Empresa/logo, Preview)
@@ -25,15 +25,15 @@ softon-portal-api/
 
 `application/` contém:
 
-- `SoftonPortalApplication` com `@SpringBootApplication(scanBasePackages = "br.com.softon")` (raiz ampla para pegar `br.com.softon.portal.*` e `br.com.softon.rbac.*`).
+- `NexusPortalApplication` com `@SpringBootApplication(scanBasePackages = "com.nexus.portal")` (raiz ampla para pegar `com.nexus.portal.*` e `com.nexus.identityaccess.*`).
 - `src/main/resources/application.yml` (+ `application-dev.yml`, `application-prod.yml`).
 - **Fonte única das migrations Flyway** — todos os módulos compartilham `application/src/main/resources/db/migration/V*.sql`.
 
 ## Pacotes raiz
 
 ```text
-br.com.softon.portal   ← doc-flow, release-orchestrator, gateway, shared (o "portal" DTEC)
-br.com.softon.rbac     ← dtec-rbac (lib de identidade/RBAC/auditoria; sem prefixo "portal"
+com.nexus.portal   ← doc-flow, release-orchestrator, gateway, shared (o "portal" Nexus)
+com.nexus.identityaccess     ← nexus-identity-access (lib de identidade/RBAC/auditoria; sem prefixo "portal"
                          porque é reutilizável fora do portal)
 ```
 
@@ -42,13 +42,13 @@ br.com.softon.rbac     ← dtec-rbac (lib de identidade/RBAC/auditoria; sem pref
 Cada módulo de negócio dentro do portal usa o padrão:
 
 ```text
-br.com.softon.portal.{modulo}.{camada}
+com.nexus.portal.{modulo}.{camada}
 ```
 
-O módulo transversal `dtec-rbac` usa:
+O módulo transversal `nexus-identity-access` usa:
 
 ```text
-br.com.softon.rbac.{camada}
+com.nexus.identityaccess.{camada}
 ```
 
 **Não usar `modules` no caminho do pacote.**
@@ -56,15 +56,15 @@ br.com.softon.rbac.{camada}
 Correto:
 
 ```text
-br.com.softon.portal.docflow.controller
-br.com.softon.portal.releaseorchestrator.service
-br.com.softon.portal.docflow.entity
+com.nexus.portal.docflow.controller
+com.nexus.portal.releaseorchestrator.service
+com.nexus.portal.docflow.entity
 ```
 
 Errado:
 
 ```text
-br.com.softon.portal.modules.docflow.controller   // ERRADO
+com.nexus.portal.modules.docflow.controller   // ERRADO
 ```
 
 ## Estrutura padrão de módulo
@@ -172,20 +172,20 @@ public class ClienteService {
 }
 ```
 
-## Módulo `dtec-rbac` (identidade + autorização + auditoria)
+## Módulo `nexus-identity-access` (identidade + autorização + auditoria)
 
-Isolado do `doc-flow` para poder ser reutilizado em outros produtos DTEC. Contém:
+Isolado do `doc-flow` para poder ser reutilizado em outros produtos Nexus. Contém:
 
 ```text
-br.com.softon.rbac.entity          ← Usuario, Grupo, Permissao, Dominio,
+com.nexus.identityaccess.entity          ← Usuario, Grupo, Permissao, Dominio,
                                      Funcionalidade, AuditoriaEvento
-br.com.softon.rbac.repository      ← UsuarioRepository, GrupoRepository,
+com.nexus.identityaccess.repository      ← UsuarioRepository, GrupoRepository,
                                      PermissaoRepository, AuditoriaRepository
-br.com.softon.rbac.service         ← UsuarioService, GrupoService, RbacService,
+com.nexus.identityaccess.service         ← UsuarioService, GrupoService, RbacService,
                                      AuditoriaService
-br.com.softon.rbac.controller      ← AuthController, UsuarioController,
+com.nexus.identityaccess.controller      ← AuthController, UsuarioController,
                                      GrupoController, AuditoriaController
-br.com.softon.rbac.dto             ← DTOs de login/me/usuario/grupo/auditoria
+com.nexus.identityaccess.dto             ← DTOs de login/me/usuario/grupo/auditoria
 ```
 
 Endpoints expostos:
@@ -196,7 +196,7 @@ Endpoints expostos:
 - `/api/v1/rbac/auditoria`
 
 Módulos de negócio (`doc-flow`, `release-orchestrator`) declaram
-`dtec-rbac` no `pom.xml` quando precisam do `RbacService` /
+`nexus-identity-access` no `pom.xml` quando precisam do `RbacService` /
 `AuditoriaService`. Não devem depender diretamente de entidades
 `Usuario`/`Grupo` — só via API dos serviços.
 
@@ -205,14 +205,14 @@ Módulos de negócio (`doc-flow`, `release-orchestrator`) declaram
 A pasta `shared` contém apenas itens genéricos:
 
 ```text
-br.com.softon.portal.shared.config     ← SecurityConfig, JwtService, JwtAuthFilter,
+com.nexus.portal.shared.config     ← SecurityConfig, JwtService, JwtAuthFilter,
                                          JpaAuditingConfig, StorageProperties…
-br.com.softon.portal.shared.exception  ← GlobalExceptionHandler, BusinessException,
+com.nexus.portal.shared.exception  ← GlobalExceptionHandler, BusinessException,
                                          NotFoundException
-br.com.softon.portal.shared.api        ← PageResponse, PageableUtils, SortUtils
-br.com.softon.portal.shared.domain     ← AuditableEntity (createdAt/updatedAt/
+com.nexus.portal.shared.api        ← PageResponse, PageableUtils, SortUtils
+com.nexus.portal.shared.domain     ← AuditableEntity (createdAt/updatedAt/
                                          createdBy/updatedBy + AuditingEntityListener)
-br.com.softon.portal.shared.util       ← SlugUtils…
+com.nexus.portal.shared.util       ← SlugUtils…
 ```
 
 Não colocar regras de negócio específicas em `shared`.

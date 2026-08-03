@@ -39,10 +39,10 @@ PLANEJADA → AGENDADA → APROVADA → EM_GERACAO → CONVERTIDA  (caminho feli
 │ │ [ACME LTDA (ACME) ▼]                                             │  │
 │ │                                                                  │  │
 │ │ Produto*                            Ambiente*                    │  │
-│ │ [DTEC-LD ▼]                         [PROD ▼]                     │  │
+│ │ [NEXUS-LD ▼]                         [PROD ▼]                     │  │
 │ │                                                                  │  │
 │ │ Release vinculada*  (status: APROVADA ou PUBLICADA)              │  │
-│ │ [DTEC-LD v1.5.0 - APROVADA ▼]                                    │  │
+│ │ [NEXUS-LD v1.5.0 - APROVADA ▼]                                    │  │
 │ │ ℹ️  Versão prevista: 1.5.0                                        │  │
 │ └──────────────────────────────────────────────────────────────────┘  │
 │                                                                        │
@@ -58,7 +58,7 @@ PLANEJADA → AGENDADA → APROVADA → EM_GERACAO → CONVERTIDA  (caminho feli
 │ ┌─ Dependências (opcional) ───────────────────────────────────────┐  │
 │ │ Outras próximas entregas que precisam acontecer antes:           │  │
 │ │ ☑ #1234 - BETA FOLHA 2.0.0 (planejada 30/05)                    │  │
-│ │ ☐ #1235 - GAMMA DTEC-LD 1.5.0 (planejada 02/06)                 │  │
+│ │ ☐ #1235 - GAMMA NEXUS-LD 1.5.0 (planejada 02/06)                 │  │
 │ └──────────────────────────────────────────────────────────────────┘  │
 │                                                                        │
 │ ┌─ Observações ───────────────────────────────────────────────────┐  │

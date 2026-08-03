@@ -38,20 +38,20 @@ A forma mais simples é usar a stack Docker centralizada em
 [`infra/docker/`](../../infra/docker/), que já tem tudo configurado:
 
 ```bash
-cd softon-portal-api/infra/docker
+cd nexus-portal-api/infra/docker
 cp .env.example .env       # defaults batem com application-dev.yml
 docker compose up -d       # sobe só o Postgres (sem profiles)
 docker compose ps          # confere que está UP (healthy)
 ```
 
-> Defaults: db `softon_intranet`, user `softon_intranet`, senha `softon!@#`,
+> Defaults: db `nexus_platform`, user `nexus_platform`, senha `nexus!@#`,
 > porta `5432`. Para mudar, edite o `.env` e (atenção!) exporte
 > `DB_URL`/`DB_USERNAME`/`DB_PASSWORD` antes de subir o backend.
 
 Quer só validar a conexão antes de seguir?
 
 ```bash
-docker compose exec postgres pg_isready -U softon_intranet
+docker compose exec postgres pg_isready -U nexus_platform
 # /var/run/postgresql:5432 - accepting connections
 ```
 
@@ -64,7 +64,7 @@ docker compose exec postgres pg_isready -U softon_intranet
 ## §2 — Subir o backend
 
 ```bash
-cd softon-portal-api
+cd nexus-portal-api
 
 # Pastas onde os artefatos/entregas vão parar (dev usa caminhos relativos)
 mkdir -p storage/artefatos storage/entregas storage/publicacoes
@@ -74,7 +74,7 @@ mkdir -p storage/artefatos storage/entregas storage/publicacoes
   -Dspring-boot.run.profiles=dev
 ```
 
-Aguarde a linha `Started SoftonPortalApplication in X.Xs`. O Flyway aplica
+Aguarde a linha `Started NexusPortalApplication in X.Xs`. O Flyway aplica
 todas as migrations (V1..V14) automaticamente. Cheque:
 
 ```bash
@@ -92,7 +92,7 @@ curl -s http://localhost:8080/actuator/health | jq
 Em **outro terminal**:
 
 ```bash
-cd softon-portal-web/frontend
+cd nexus-portal-web/frontend
 npm ci          # primeira vez; depois usa npm i
 npm start       # ng serve com proxy.conf.json
 ```
@@ -103,7 +103,7 @@ Aguarde a linha `Application bundle generation complete`. Acesse:
 http://localhost:4200
 ```
 
-Você deve ver a **tela de login** do Softon Portal.
+Você deve ver a **tela de login** do Nexus Portal.
 
 ---
 
@@ -113,7 +113,7 @@ Você deve ver a **tela de login** do Softon Portal.
 
 | Campo | Valor padrão dev |
 |---|---|
-| E-mail | `admin@softon.com.br` |
+| E-mail | `admin@nexus.local` |
 | Senha | `admin` |
 
 > A senha vem de `ADMIN_PASSWORD` no `application-dev.yml`. O usuário-seed
@@ -138,7 +138,7 @@ Sidebar → **Segurança** → cabeçalho **Usuários** → botão **Novo usuár
 | Campo | Exemplo |
 |---|---|
 | Nome | João Operador |
-| E-mail | `joao@softon.local` |
+| E-mail | `joao@nexus.local` |
 | Senha temporária | `troqueisso` |
 | Grupos | `RBAC_RELEASE_ORCHESTRATOR_OP` (ou `LEITOR` se for só consultar) |
 
@@ -158,8 +158,8 @@ Botão azul **Novo produto** no canto direito.
 
 | Campo | Exemplo | Obs |
 |---|---|---|
-| Sigla | `DTECLD` | CAIXA-ALTA; vira parte do nome dos pacotes |
-| Nome | `DTec Lite` | |
+| Sigla | `NEXUSLD` | CAIXA-ALTA; vira parte do nome dos pacotes |
+| Nome | `Nexus Lite` | |
 | Cor | clique no quadradinho → `#2563eb` | badge na UI |
 | Ativo | ✅ marcado | |
 
@@ -171,7 +171,7 @@ Volte na lista, clique no card do produto, vá na seção **Integração GitHub*
 
 | Campo | Exemplo |
 |---|---|
-| Repositório | `softon/dtec-lite` |
+| Repositório | `nexus/nexus-lite` |
 | Branch padrão | `main` |
 | Regex de tag | `^v\d+\.\d+\.\d+$` |
 | Token | cole um PAT com escopo `repo` |
@@ -195,16 +195,16 @@ Adicione pelo menos:
 
 | Código | Nome | Tipo | Observação |
 |---|---|---|---|
-| `dtec-web` | Web | `WEB` | Aceita upload de WAR |
-| `dtec-batch` | Batch | `BATCH` | Aceita upload de JAR |
-| `dtec-banco` | Banco | `BANCO` | Delta via GitHub se configurado |
-| `dtec-kettle` | Kettle | `KETTLE` | Delta via GitHub |
+| `nexus-web` | Web | `WEB` | Aceita upload de WAR |
+| `nexus-batch` | Batch | `BATCH` | Aceita upload de JAR |
+| `nexus-banco` | Banco | `BANCO` | Delta via GitHub se configurado |
+| `nexus-kettle` | Kettle | `KETTLE` | Delta via GitHub |
 
 Para BANCO, expanda **Configuração de banco** e preencha:
-- `caminhoRepo`: ex `db/dtec`
+- `caminhoRepo`: ex `db/nexus`
 - `prefixoDDL`: ex `DDL_`
 - `prefixoDML`: ex `DML_`
-- Dialetos: `[{ nome: "oracle", caminhoRepo: "db/dtec/oracle" }]` (se monodialeto, deixe vazio)
+- Dialetos: `[{ nome: "oracle", caminhoRepo: "db/nexus/oracle" }]` (se monodialeto, deixe vazio)
 
 ---
 
@@ -244,7 +244,7 @@ Receberão notificações de entrega.
 
 #### Aba Produtos
 
-Botão **Contratar produto** → seleciona `DTECLD` no dropdown → **Adicionar**.
+Botão **Contratar produto** → seleciona `NEXUSLD` no dropdown → **Adicionar**.
 
 Aparece a linha com os módulos do produto. Para cada módulo, edite a
 coluna **Versão atual** com a versão que o cliente está rodando hoje.
@@ -267,11 +267,11 @@ A mais importante. Botão **Editar** (canto direito).
 | Campo | Valor |
 |---|---|
 | Tipo de destino | `Pasta local` |
-| Caminho base | `/tmp/softon-entregas/acme` (caminho absoluto) |
+| Caminho base | `/tmp/nexus-entregas/acme` (caminho absoluto) |
 | Exigir aprovação | desmarcado |
 | E-mails | `maria@acme.com` |
 
-Antes de salvar, crie a pasta: `mkdir -p /tmp/softon-entregas/acme`.
+Antes de salvar, crie a pasta: `mkdir -p /tmp/nexus-entregas/acme`.
 
 ##### Opção 2 — SFTP local (se quiser testar publicação remota)
 
@@ -333,7 +333,7 @@ Sidebar → **Release Orchestrator** → **Releases** → **Nova release**.
 
 | Campo | Exemplo |
 |---|---|
-| Produto | `DTECLD` |
+| Produto | `NEXUSLD` |
 | Versão | `1.5.0` |
 | Tipo | `MINOR` |
 | Título | `Sprint 23 — relatórios novos` |
@@ -361,7 +361,7 @@ publicadas no GitHub e cria registros em `artefato_release_modulo`.
 
 **Se não cadastrou GitHub** (caminho mais fácil pra local):
 Botão **Adicionar artefato** (upload manual) por módulo:
-- Selecione o módulo (`dtec-web`)
+- Selecione o módulo (`nexus-web`)
 - Faça upload de qualquer ZIP de teste (até um arquivo `.txt` renomeado pra
   `.war` serve pra esse fluxo)
 - Sistema calcula SHA-256 + tamanho automaticamente
@@ -388,7 +388,7 @@ Abre o **Wizard** com barra de progresso 1/5.
 | Campo | Valor |
 |---|---|
 | Cliente | `ACME — ACME Indústria Ltda` |
-| Produto | `DTECLD — DTec Lite` |
+| Produto | `NEXUSLD — Nexus Lite` |
 | Ambiente | `PROD` (vem do contrato) |
 
 **Próximo**.
@@ -471,7 +471,7 @@ Card extra aparece:
   card **Publicação remota**:
   - Badge **PENDENTE** (primeira tentativa marcada para "agora")
   - Em até 2 min, o `PublicacaoRetryJob` dispara
-  - Vira `OK` (verde) com destino final (ex: `sftp://localhost:2222/upload/dtecld-...zip`)
+  - Vira `OK` (verde) com destino final (ex: `sftp://localhost:2222/upload/nexusld-...zip`)
   - Se algo falhar, badge `PENDENTE` com mensagem da falha + próxima tentativa
   - Botão **Tentar agora** força nova tentativa sem esperar o backoff
 
@@ -492,20 +492,20 @@ Abra outro terminal:
 
 ```bash
 # Pacote ZIP gerado
-ls -lh softon-portal-api/storage/entregas/acme/dtecld/1.5.0/
+ls -lh nexus-portal-api/storage/entregas/acme/nexusld/1.5.0/
 
 # Conteúdo (releases-notes em PDF + artefatos por módulo)
-unzip -l softon-portal-api/storage/entregas/acme/dtecld/1.5.0/*.zip
+unzip -l nexus-portal-api/storage/entregas/acme/nexusld/1.5.0/*.zip
 ```
 
 Estrutura esperada dentro do ZIP:
 
 ```
-documento-acme-dtecld-1.5.0.pdf
+documento-acme-nexusld-1.5.0.pdf
 modulos/
-  dtec-web/
-    dtec-web-1.5.0.war
-  dtec-banco/
+  nexus-web/
+    nexus-web-1.5.0.war
+  nexus-banco/
     oracle/
       DDL.sql
       DML.sql
@@ -544,7 +544,7 @@ PDF é baixado direto pelo browser.
 | Backend API | http://localhost:8080 | `curl /actuator/health` |
 | Frontend Angular | http://localhost:4200 | navegador |
 | Métricas Prometheus | http://localhost:8080/actuator/prometheus | grep `entrega_geracao` |
-| H2 console (não, é Postgres) | — | `psql -h localhost -U softon_intranet softon_intranet` |
+| H2 console (não, é Postgres) | — | `psql -h localhost -U nexus_platform nexus_platform` |
 | Logs do backend | terminal do `mvnw spring-boot:run` | tail no terminal |
 | Logs do frontend | terminal do `npm start` | reload automático nas mudanças |
 
@@ -553,7 +553,7 @@ PDF é baixado direto pelo browser.
 ## §14 — Resetar tudo se algo deu errado
 
 ```bash
-cd softon-portal-api/infra/docker
+cd nexus-portal-api/infra/docker
 docker compose --profile all down -v    # tudo + volumes
 
 # Pacotes gerados pelo backend

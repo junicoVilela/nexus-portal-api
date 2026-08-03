@@ -1,8 +1,8 @@
-# 03 — Fluxo completo de entrega (XPTO / DTEC v1.0.0 → v1.1.0)
+# 03 — Fluxo completo de entrega (XPTO / Nexus v1.0.0 → v1.1.0)
 
 Cenário de validação executando o sistema ponta a ponta. Cada passo tem **ação**, **resultado esperado**, **onde confirmar**, **critério de aceite**.
 
-> Pré-requisito: terminou [`01-configuracoes-iniciais.md`](01-configuracoes-iniciais.md). Cliente `XPTO`, produto `DTEC`, módulos, contrato e release `1.1.0` PUBLICADA já existem.
+> Pré-requisito: terminou [`01-configuracoes-iniciais.md`](01-configuracoes-iniciais.md). Cliente `XPTO`, produto `Nexus`, módulos, contrato e release `1.1.0` PUBLICADA já existem.
 
 ---
 
@@ -11,13 +11,13 @@ Cenário de validação executando o sistema ponta a ponta. Cada passo tem **aç
 | Item | Valor |
 |---|---|
 | Cliente | `XPTO` — Banco XPTO S.A. |
-| Produto | `DTEC` — Suite DTEC |
-| Módulos contratados | `DTEC-LD` (WEB), `DTEC-CR` (WEB), `POWERMATCH` (BATCH), `DTEC-BANCO` (BANCO) |
+| Produto | `Nexus` — Suite Nexus |
+| Módulos contratados | `NEXUS-LD` (WEB), `Nexus-CR` (WEB), `POWERMATCH` (BATCH), `Nexus-BANCO` (BANCO) |
 | Ambiente do contrato | `HOM` |
 | Versão atual instalada | `1.0.0` (todos os módulos) |
 | Versão alvo | `1.1.0` |
-| Destino | `PASTA` local → `/tmp/softon-entregas/xpto` |
-| Pacote esperado | `XPTO_DTEC_1.0.0_1.1.0.zip` (ou nome equivalente conforme política do projeto) |
+| Destino | `PASTA` local → `/tmp/nexus-entregas/xpto` |
+| Pacote esperado | `XPTO_NEXUS_1.0.0_1.1.0.zip` (ou nome equivalente conforme política do projeto) |
 
 > Nome canônico do projeto: `{SIGLA_CLIENTE}_{SIGLA_PRODUTO}_{VERSAO_FROM}_{VERSAO_TO}.zip`. Pode haver variação (timestamp, ambiente) — confira o real na seção 11 abaixo e ajuste o critério.
 
@@ -29,7 +29,7 @@ Cenário de validação executando o sistema ponta a ponta. Cada passo tem **aç
 1. Login admin
 2. Conferir que release 1.1.0 está PUBLICADA com artefatos sincronizados
 3. Abrir wizard de Nova entrega
-   ├── Passo 1: Cliente XPTO + Produto DTEC
+   ├── Passo 1: Cliente XPTO + Produto Nexus
    ├── Passo 2: Release 1.1.0 + responsável
    ├── Passo 3: 4 módulos marcados, FROM 1.0.0, TO 1.1.0
    ├── Passo 4: Calcular delta
@@ -56,21 +56,21 @@ Abrir uma sessão psql ou DevTools para validar pré-requisitos.
 SELECT sigla, ambiente_padrao, ativo FROM tb_cliente_orchestrator WHERE sigla = 'XPTO';
 -- esperado: 1 linha, ativo = TRUE
 
--- Cliente tem produto DTEC contratado e módulos com versao_atual?
+-- Cliente tem produto Nexus contratado e módulos com versao_atual?
 SELECT mp.codigo, cpm.versao_atual, cpm.ativo
 FROM tb_cliente_produto cp
 JOIN tb_cliente_produto_modulo cpm ON cpm.cliente_produto_id = cp.id
 JOIN tb_modulo_produto mp ON mp.id = cpm.modulo_produto_id
 JOIN tb_cliente_orchestrator c ON c.id = cp.cliente_id
 WHERE c.sigla = 'XPTO';
--- esperado: 4 linhas (DTEC-LD, DTEC-CR, POWERMATCH, DTEC-BANCO), todas com versao_atual=1.0.0
+-- esperado: 4 linhas (NEXUS-LD, Nexus-CR, POWERMATCH, Nexus-BANCO), todas com versao_atual=1.0.0
 
 -- Release 1.1.0 está PUBLICADA?
 SELECT r.versao, r.status, COUNT(arm.id) AS qtd_artefatos
 FROM tb_release r
 LEFT JOIN tb_artefato_release_modulo arm ON arm.release_id = r.id
 WHERE r.versao = '1.1.0'
-  AND r.produto_id = (SELECT id FROM tb_produto_rh WHERE sigla = 'DTEC')
+  AND r.produto_id = (SELECT id FROM tb_produto_rh WHERE sigla = 'Nexus')
 GROUP BY r.id;
 -- esperado: status=PUBLICADA, qtd_artefatos ≥ 3 (1 por módulo WEB/BATCH)
 
@@ -78,15 +78,15 @@ GROUP BY r.id;
 SELECT tipo_destino, caminho_base
 FROM tb_config_entrega_orchestrator
 WHERE cliente_id = (SELECT id FROM tb_cliente_orchestrator WHERE sigla = 'XPTO');
--- esperado: PASTA, /tmp/softon-entregas/xpto
+-- esperado: PASTA, /tmp/nexus-entregas/xpto
 
 -- Pasta existe?
-\! ls -ld /tmp/softon-entregas/xpto
+\! ls -ld /tmp/nexus-entregas/xpto
 ```
 
 ### Critério de aceite
 - [ ] Todas as 4 queries retornam o esperado.
-- [ ] Pasta `/tmp/softon-entregas/xpto` existe e é gravável.
+- [ ] Pasta `/tmp/nexus-entregas/xpto` existe e é gravável.
 
 ---
 
@@ -126,7 +126,7 @@ Sidebar → **Release Orchestrator → Entregas → Nova entrega** (ou direto `/
 | Campo | Valor |
 |---|---|
 | Cliente | `XPTO — Banco XPTO S.A.` |
-| Produto | `DTEC — Suite DTEC` |
+| Produto | `Nexus — Suite Nexus` |
 | Ambiente | `HOM` (default vem do contrato) |
 
 Clicar **Próximo**.
@@ -173,7 +173,7 @@ Marcar os 4 módulos como **Ativos**. Para cada um:
 Clicar **Próximo**.
 
 ### Resultado esperado
-- 4 linhas: `DTEC-LD`, `DTEC-CR`, `POWERMATCH`, `DTEC-BANCO`.
+- 4 linhas: `NEXUS-LD`, `Nexus-CR`, `POWERMATCH`, `Nexus-BANCO`.
 - Toggle "Ativo" default = `true` para módulos contratados.
 - Coluna **Fora do contrato** aparece se algum módulo do produto não está no `tb_cliente_produto_modulo` do cliente.
 
@@ -194,10 +194,10 @@ Clicar **Calcular delta**.
 
 | Módulo | Tipo | Contagem | O que está dentro |
 |---|---|---|---|
-| `DTEC-LD` | WEB | `+1` | `dtec-ld-1.1.0.war` |
-| `DTEC-CR` | WEB | `+1` | `dtec-cr-1.1.0.war` |
+| `NEXUS-LD` | WEB | `+1` | `nexus-ld-1.1.0.war` |
+| `Nexus-CR` | WEB | `+1` | `nexus-cr-1.1.0.war` |
 | `POWERMATCH` | BATCH | `+1` | `powermatch-1.1.0.jar` |
-| `DTEC-BANCO` | BANCO | `+N` (depende do diff entre tags v1.0.0 e v1.1.0 no GitHub) | `DDL.sql` + `DML.sql` (por dialeto) |
+| `Nexus-BANCO` | BANCO | `+N` (depende do diff entre tags v1.0.0 e v1.1.0 no GitHub) | `DDL.sql` + `DML.sql` (por dialeto) |
 
 - Header mostra **total agregado** (soma de N e bytes).
 - Botão **Detalhes** por linha expande a lista de arquivos.
@@ -206,7 +206,7 @@ Clicar **Calcular delta**.
 
 #### WEB / BATCH
 - Origem: artefatos da release (`tb_artefato_release_modulo`).
-- Se `DTEC-LD` tem 0 artefatos na release → linha aparece com `+0` e badge amarelo "Sem artefato".
+- Se `NEXUS-LD` tem 0 artefatos na release → linha aparece com `+0` e badge amarelo "Sem artefato".
 
 #### BANCO
 - Origem: `GitHubReleasesAdapter.compare()` entre tag `v1.0.0` e `v1.1.0`.
@@ -266,7 +266,7 @@ Tempo esperado em dev local: 5–30 segundos com 4 módulos.
 
 ### Validação durante o processo
 - KPIs atualizam: "Módulos selecionados" = 4, "Itens no delta" = soma do passo 6.
-- Storage: `softon-portal-api/storage/entregas/xpto/dtec/1.1.0/` começa a ter arquivos temporários, depois consolida no ZIP final.
+- Storage: `nexus-portal-api/storage/entregas/xpto/nexus/1.1.0/` começa a ter arquivos temporários, depois consolida no ZIP final.
 
 ### Critério de aceite
 - [ ] Polling para automaticamente quando status sai de `EM_GERACAO`.
@@ -288,31 +288,31 @@ Tempo esperado em dev local: 5–30 segundos com 4 módulos.
 ### Ação
 ```bash
 # Local do pacote
-ls -lh softon-portal-api/storage/entregas/xpto/dtec/1.1.0/
+ls -lh nexus-portal-api/storage/entregas/xpto/nexus/1.1.0/
 
 # Conferir SHA-256
-sha256sum softon-portal-api/storage/entregas/xpto/dtec/1.1.0/*.zip
+sha256sum nexus-portal-api/storage/entregas/xpto/nexus/1.1.0/*.zip
 # deve bater com tb_entrega.arquivo_pacote_sha256 do passo 8
 
 # Listar conteúdo
-unzip -l softon-portal-api/storage/entregas/xpto/dtec/1.1.0/*.zip
+unzip -l nexus-portal-api/storage/entregas/xpto/nexus/1.1.0/*.zip
 ```
 
 ### Conteúdo esperado do ZIP
 
 ```text
-XPTO_DTEC_1.0.0_1.1.0/
-├── documento-xpto-dtec-1.1.0.pdf
+XPTO_NEXUS_1.0.0_1.1.0/
+├── documento-xpto-nexus-1.1.0.pdf
 ├── manifest.json
 ├── SHA256SUMS.txt
 ├── modulos/
-│   ├── dtec-ld/
-│   │   └── dtec-ld-1.1.0.war
-│   ├── dtec-cr/
-│   │   └── dtec-cr-1.1.0.war
+│   ├── nexus-ld/
+│   │   └── nexus-ld-1.1.0.war
+│   ├── nexus-cr/
+│   │   └── nexus-cr-1.1.0.war
 │   ├── powermatch/
 │   │   └── powermatch-1.1.0.jar
-│   └── dtec-banco/
+│   └── nexus-banco/
 │       ├── oracle/
 │       │   ├── DDL.sql
 │       │   └── DML.sql
@@ -326,7 +326,7 @@ XPTO_DTEC_1.0.0_1.1.0/
 
 #### `manifest.json`
 ```bash
-unzip -p softon-portal-api/storage/entregas/xpto/dtec/1.1.0/*.zip manifest.json | jq
+unzip -p nexus-portal-api/storage/entregas/xpto/nexus/1.1.0/*.zip manifest.json | jq
 ```
 Deve conter:
 - `cliente`, `produto`, `ambiente`, `versaoFrom`, `versaoTo`
@@ -335,22 +335,22 @@ Deve conter:
 
 #### `SHA256SUMS.txt`
 ```bash
-unzip -p softon-portal-api/storage/entregas/xpto/dtec/1.1.0/*.zip SHA256SUMS.txt
+unzip -p nexus-portal-api/storage/entregas/xpto/nexus/1.1.0/*.zip SHA256SUMS.txt
 ```
 Uma linha por arquivo do pacote no formato padrão `sha256  caminho`.
 
 Para validar integridade:
 ```bash
-cd /tmp && unzip softon-portal-api/storage/entregas/xpto/dtec/1.1.0/*.zip
-cd XPTO_DTEC_1.0.0_1.1.0 && sha256sum -c SHA256SUMS.txt
+cd /tmp && unzip nexus-portal-api/storage/entregas/xpto/nexus/1.1.0/*.zip
+cd XPTO_NEXUS_1.0.0_1.1.0 && sha256sum -c SHA256SUMS.txt
 # todas as linhas devem dar OK
 ```
 
 ### Critério de aceite
-- [ ] ZIP existe em `storage/entregas/xpto/dtec/1.1.0/` (caminho conforme `caminho_base` da config).
+- [ ] ZIP existe em `storage/entregas/xpto/nexus/1.1.0/` (caminho conforme `caminho_base` da config).
 - [ ] SHA-256 do arquivo bate com `tb_entrega.arquivo_pacote_sha256`.
 - [ ] `unzip -l` mostra a estrutura esperada.
-- [ ] `manifest.json` é JSON válido com cliente=XPTO, produto=DTEC, versões.
+- [ ] `manifest.json` é JSON válido com cliente=XPTO, produto=Nexus, versões.
 - [ ] `sha256sum -c SHA256SUMS.txt` → todos OK.
 
 ---
@@ -362,8 +362,8 @@ cd XPTO_DTEC_1.0.0_1.1.0 && sha256sum -c SHA256SUMS.txt
 - Opção 2: extrair do ZIP.
 
 ```bash
-unzip -j softon-portal-api/storage/entregas/xpto/dtec/1.1.0/*.zip "documento-*.pdf" -d /tmp/
-xdg-open /tmp/documento-xpto-dtec-1.1.0.pdf  # ou abrir manual
+unzip -j nexus-portal-api/storage/entregas/xpto/nexus/1.1.0/*.zip "documento-*.pdf" -d /tmp/
+xdg-open /tmp/documento-xpto-nexus-1.1.0.pdf  # ou abrir manual
 ```
 
 ### Conteúdo esperado
@@ -396,8 +396,8 @@ Pode gerar os 3 tipos pelo botão dropdown no header da release (`/releases/{id}
 ### Ação
 ```bash
 # Extrair só a parte de banco
-unzip -p softon-portal-api/storage/entregas/xpto/dtec/1.1.0/*.zip 'modulos/dtec-banco/oracle/DDL.sql' > /tmp/DDL.sql
-unzip -p softon-portal-api/storage/entregas/xpto/dtec/1.1.0/*.zip 'modulos/dtec-banco/oracle/DML.sql' > /tmp/DML.sql
+unzip -p nexus-portal-api/storage/entregas/xpto/nexus/1.1.0/*.zip 'modulos/nexus-banco/oracle/DDL.sql' > /tmp/DDL.sql
+unzip -p nexus-portal-api/storage/entregas/xpto/nexus/1.1.0/*.zip 'modulos/nexus-banco/oracle/DML.sql' > /tmp/DML.sql
 
 # Inspecionar
 head -50 /tmp/DDL.sql
@@ -409,10 +409,10 @@ Cada bloco no arquivo deve ter um header indicando a procedência:
 
 ```sql
 -- ============================================================
--- Origem: db/dtec/oracle/DDL_002__alter_tabela_xpto.sql
+-- Origem: db/nexus/oracle/DDL_002__alter_tabela_xpto.sql
 -- Tag:    v1.0.1
 -- Commit: a1b2c3d
--- Autor:  Fulano <fulano@softon.com>
+-- Autor:  Fulano <fulano@nexus.com>
 -- ============================================================
 ALTER TABLE tb_foo ADD COLUMN bar VARCHAR(100);
 ...
@@ -441,21 +441,21 @@ Aplica **apenas se** a config. entrega do cliente é `FTP`, `SFTP` ou `BUCKET`. 
 ### Ação
 No detalhe da entrega, observe o card **Publicação remota**:
 - Badge muda de `PENDENTE` para `OK` em até 2 min (cron do `PublicacaoRetryJob` é `0 */2 * * * *`).
-- Campo "Destino final" mostra a URL/path completo (ex.: `sftp://localhost:2222/upload/XPTO_DTEC_1.0.0_1.1.0.zip`).
+- Campo "Destino final" mostra a URL/path completo (ex.: `sftp://localhost:2222/upload/XPTO_NEXUS_1.0.0_1.1.0.zip`).
 
 ### Validar destino
 Dependendo do tipo:
 
 ```bash
 # SFTP
-docker compose -f softon-portal-api/infra/docker/docker-compose.yml exec sftp \
+docker compose -f nexus-portal-api/infra/docker/docker-compose.yml exec sftp \
   ls -lh /home/foo/upload/
 
 # FTP (com client local)
 ftp localhost  # navegar até o path
 
 # MinIO
-docker compose -f softon-portal-api/infra/docker/docker-compose.yml exec minio \
+docker compose -f nexus-portal-api/infra/docker/docker-compose.yml exec minio \
   mc ls local/xpto-releases/  # se mc estiver no container; senão usar console http://localhost:9001
 ```
 
@@ -463,7 +463,7 @@ docker compose -f softon-portal-api/infra/docker/docker-compose.yml exec minio \
 Baixar o arquivo de volta e comparar com `tb_entrega.arquivo_pacote_sha256`:
 ```bash
 # SFTP
-sftp -P 2222 foo@localhost <<< "get /upload/XPTO_DTEC_1.0.0_1.1.0.zip /tmp/baixado.zip"
+sftp -P 2222 foo@localhost <<< "get /upload/XPTO_NEXUS_1.0.0_1.1.0.zip /tmp/baixado.zip"
 sha256sum /tmp/baixado.zip
 # bate com tb_entrega.arquivo_pacote_sha256
 ```

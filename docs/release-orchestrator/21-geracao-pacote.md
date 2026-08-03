@@ -24,7 +24,7 @@ Acessível em `/orchestrator/entregas/:id/geracao` ou diretamente após disparar
 ```text
 ┌────────────────────────────────────────────────────────────────────────┐
 │ Geração de Pacote — Entrega #ENTR-2026-0142                            │
-│ ACME LTDA • DTEC-LD v1.5.0 • Iniciada em 31/05 14:32                   │
+│ ACME LTDA • NEXUS-LD v1.5.0 • Iniciada em 31/05 14:32                   │
 ├────────────────────────────────────────────────────────────────────────┤
 │ Status: 🔵 PROCESSANDO • 6/11 etapas concluídas                        │
 │ ━━━━━━━━━━━━━━━━░░░░░░░░░░░░░░░░░░░░  54%                              │
@@ -44,7 +44,7 @@ Acessível em `/orchestrator/entregas/:id/geracao` ou diretamente após disparar
 │ Log:                                                                   │
 │ 14:32:01 INFO Validação OK                                             │
 │ 14:32:02 INFO Coletando 6 artefatos da release v1.5.0                  │
-│ 14:32:14 INFO Coletados: dtec-web.war (47MB), DDL_001..DDL_012 (...)   │
+│ 14:32:14 INFO Coletados: nexus-web.war (47MB), DDL_001..DDL_012 (...)   │
 │ 14:32:18 INFO Gerando manifest...                                      │
 │ 14:32:22 INFO Renderizando PDF release-notes.pdf                       │
 │                                                                        │
@@ -175,8 +175,8 @@ Path final no servidor:
   },
   "produto": {
     "id": "uuid",
-    "sigla": "DTECLD",
-    "nome": "DTEC-LD"
+    "sigla": "NEXUSLD",
+    "nome": "NEXUS-LD"
   },
   "releaseId": "uuid",
   "versao": "1.5.0",
@@ -185,18 +185,18 @@ Path final no servidor:
   "geradoPor": "joao.silva",
   "modulos": [
     {
-      "codigo": "dtec-web",
-      "nome": "DTEC Web",
+      "codigo": "nexus-web",
+      "nome": "Nexus Web",
       "tipo": "WEB",
       "fromTag": "v1.4.0",
       "toTag": "v1.5.0",
       "modo": "AUTOMATICO",
       "artefatos": [
-        { "caminho": "web/dtec-web-1.5.0.war", "sha256": "abc...", "tamanhoBytes": 49283746 }
+        { "caminho": "web/nexus-web-1.5.0.war", "sha256": "abc...", "tamanhoBytes": 49283746 }
       ]
     },
     {
-      "codigo": "dtec-db-ddl",
+      "codigo": "nexus-db-ddl",
       "tipo": "BANCO",
       "modo": "AUTOMATICO",
       "artefatos": [
@@ -204,7 +204,7 @@ Path final no servidor:
       ]
     }
   ],
-  "destino": { "tipo": "PASTA", "caminho": "/var/lib/softon/entregas/cliente-acme" },
+  "destino": { "tipo": "PASTA", "caminho": "/var/lib/nexus/entregas/cliente-acme" },
   "checksumManifest": "ghi..."
 }
 ```

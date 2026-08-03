@@ -295,4 +295,4 @@ Diferenças justificadas:
 
 - [`99-padroes-tela.md`](99-padroes-tela.md) — Padrões UX.
 - [`30-rotas-angular-sugeridas.md`](30-rotas-angular-sugeridas.md) — Rotas.
-- [`../../softon-portal-web/docs/release-orchestrator/`](../../softon-portal-web/docs/release-orchestrator/README.md) — Documentação do frontend (componentes, estados de UI, por tela).
+- [`../../nexus-portal-web/docs/release-orchestrator/`](../../nexus-portal-web/docs/release-orchestrator/README.md) — Documentação do frontend (componentes, estados de UI, por tela).

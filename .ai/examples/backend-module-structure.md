@@ -1,9 +1,9 @@
 # Exemplo — Estrutura de Módulo Backend
 
-Estrutura padrão de um módulo de negócio do Softon Portal API. Cada módulo vive em seu próprio submódulo Maven (`doc-flow/`, `release-orchestrator/`, etc.) e seu próprio sub-pacote direto sob `br.com.softon.portal`. **Nunca usar `modules` no caminho do pacote.**
+Estrutura padrão de um módulo de negócio do Nexus Portal API. Cada módulo vive em seu próprio submódulo Maven (`doc-flow/`, `release-orchestrator/`, etc.) e seu próprio sub-pacote direto sob `com.nexus.portal`. **Nunca usar `modules` no caminho do pacote.**
 
 ```text
-doc-flow/src/main/java/br/com/softon/portal/docflow/
+doc-flow/src/main/java/br/com/nexus/portal/docflow/
 ├── controller/
 │   └── ManualController.java
 ├── service/

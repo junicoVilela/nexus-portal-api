@@ -2,13 +2,13 @@
 
 ## Versionamento e release
 
-Este repositório faz parte do **Softon Release Orchestrator**.
+Este repositório faz parte do **Nexus Release Orchestrator**.
 
 - **Tag**: `vMAJOR.MINOR.PATCH` (ex.: `v1.5.0`)
 - **Trigger**: ao criar uma tag, o Jenkins compila e publica os assets no GitHub Release correspondente.
 - **Job Jenkins**: `{{ produto-sigla }}-build`
 - **Guia operacional**: [`docs/VERSIONING.md`](docs/VERSIONING.md)
-- **Guia mestre**: [softon-portal-api/docs/release-orchestrator/40-guia-versao-tag.md](https://github.com/softon/softon-portal-api/blob/main/docs/release-orchestrator/40-guia-versao-tag.md)
+- **Guia mestre**: [nexus-portal-api/docs/release-orchestrator/40-guia-versao-tag.md](https://github.com/nexus/nexus-portal-api/blob/main/docs/release-orchestrator/40-guia-versao-tag.md)
 
 Para criar uma release nova:
 

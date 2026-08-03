@@ -1,6 +1,6 @@
 # Prompt - Criar Novo Módulo Backend
 
-Crie um novo módulo para o projeto Softon Portal API.
+Crie um novo módulo para o projeto Nexus Portal API.
 
 ## Regras obrigatórias
 
@@ -13,16 +13,16 @@ Crie um novo módulo para o projeto Softon Portal API.
 
 ## Localização
 
-Cada módulo de negócio vive em seu próprio sub-pacote direto sob `br.com.softon.portal`:
+Cada módulo de negócio vive em seu próprio sub-pacote direto sob `com.nexus.portal`:
 
 ```text
-src/main/java/br/com/softon/portal/{nomeModulo}/
+src/main/java/br/com/nexus/portal/{nomeModulo}/
 ```
 
 Exemplo para um módulo `sistemas`:
 
 ```text
-doc-flow/src/main/java/br/com/softon/portal/sistemas/
+doc-flow/src/main/java/br/com/nexus/portal/sistemas/
 ```
 
 ## Estrutura obrigatória de pastas
@@ -43,12 +43,12 @@ doc-flow/src/main/java/br/com/softon/portal/sistemas/
 ## Pacotes Java
 
 ```text
-br.com.softon.portal.{nomeModulo}.controller
-br.com.softon.portal.{nomeModulo}.service
-br.com.softon.portal.{nomeModulo}.repository
-br.com.softon.portal.{nomeModulo}.entity
-br.com.softon.portal.{nomeModulo}.dto.request
-br.com.softon.portal.{nomeModulo}.dto.response
+com.nexus.portal.{nomeModulo}.controller
+com.nexus.portal.{nomeModulo}.service
+com.nexus.portal.{nomeModulo}.repository
+com.nexus.portal.{nomeModulo}.entity
+com.nexus.portal.{nomeModulo}.dto.request
+com.nexus.portal.{nomeModulo}.dto.response
 ```
 
 ## Gerar
@@ -84,8 +84,8 @@ br.com.softon.portal.{nomeModulo}.dto.response
 
 ```java
 // CORRETO
-package br.com.softon.portal.sistemas.controller;
+package com.nexus.portal.sistemas.controller;
 
 // ERRADO
-package br.com.softon.portal.modules.sistemas.controller;
+package com.nexus.portal.modules.sistemas.controller;
 ```

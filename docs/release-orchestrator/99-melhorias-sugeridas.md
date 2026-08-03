@@ -236,7 +236,7 @@ Ver `34-observabilidade.md` (novo). Resumo:
 
 ---
 
-## G. UX / Frontend (módulo Orchestrator a criar no `softon-portal-web`)
+## G. UX / Frontend (módulo Orchestrator a criar no `nexus-portal-web`)
 
 ### G.1 Wizard de Nova Entrega genuinamente multi-step
 - Hoje provavelmente form longo. Wizard com progress bar.
@@ -380,7 +380,7 @@ Ver `34-observabilidade.md` (novo). Resumo:
 
 ## Cross-reference
 
-- `softon-portal-web/docs/release-orchestrator/` — Documentação do frontend (por tela).
+- `nexus-portal-web/docs/release-orchestrator/` — Documentação do frontend (por tela).
 - [`../ROADMAP.md`](../ROADMAP.md) — Roadmap consolidado.
 - [`../naming-suggestions.md`](../naming-suggestions.md) — Renomeações.
 - [`34-observabilidade.md`](34-observabilidade.md) — Detalhes de F.

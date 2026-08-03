@@ -104,7 +104,7 @@ Release Orchestrator (módulo Maven `release-orchestrator`)
 ### CI/CD nos repositórios (adicionados 2026-06-16)
 - [39 — Entregáveis CI/CD nos repositórios](39-entregaveis-cicd-repositorios.md)
 - [40 — Guia versão / tag](40-guia-versao-tag.md)
-- [41 — Runbook DTEC Suite V5 com Jenkins local](41-runbook-dtec-suite-v5-jenkins-local.md)
+- [41 — Runbook Nexus Suite V5 com Jenkins local](41-runbook-nexus-suite-v5-jenkins-local.md)
 
 ### Backlog
 - [99 — Melhorias Sugeridas](99-melhorias-sugeridas.md)
@@ -125,6 +125,6 @@ Release Orchestrator (módulo Maven `release-orchestrator`)
 - [`../ROADMAP.md`](../ROADMAP.md) — Roadmap consolidado (back + front).
 - [`../jornadas/README.md`](../jornadas/README.md) — Jornadas de uso (narrativa end-to-end).
 - [`../doc-flow/README.md`](../doc-flow/README.md) — DocFlow backend (API).
-- `softon-portal-web/docs/release-orchestrator/` — Documentação do frontend (por tela).
+- `nexus-portal-web/docs/release-orchestrator/` — Documentação do frontend (por tela).
 
 > **Nota**: este é o **único** conjunto de specs do backend do Release Orchestrator (releases + entregas no mesmo módulo Maven).

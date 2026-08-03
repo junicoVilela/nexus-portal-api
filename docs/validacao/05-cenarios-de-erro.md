@@ -94,18 +94,18 @@ Casos negativos que **precisam ser provocados** para validar que o sistema reage
 
 | Item | Valor |
 |---|---|
-| **Ação** | Criar produto `DTEC`. Tentar criar outro com `DTEC`. |
+| **Ação** | Criar produto `Nexus`. Tentar criar outro com `Nexus`. |
 | **Resultado esperado** | 409 Conflict |
-| **Mensagem** | "Sigla DTEC já cadastrada" |
+| **Mensagem** | "Sigla Nexus já cadastrada" |
 | **HTTP** | 409 |
 | **Como corrigir** | Outra sigla |
-| **Critério de aceite** | [ ] Toast · [ ] `tb_produto_rh` continua com apenas 1 DTEC |
+| **Critério de aceite** | [ ] Toast · [ ] `tb_produto_rh` continua com apenas 1 Nexus |
 
 ### 5. Cadastrar módulo duplicado no produto
 
 | Item | Valor |
 |---|---|
-| **Ação** | Produto DTEC tem módulo `dtec-ld`. Tentar criar outro `dtec-ld` no mesmo produto. |
+| **Ação** | Produto Nexus tem módulo `nexus-ld`. Tentar criar outro `nexus-ld` no mesmo produto. |
 | **Resultado esperado** | 409 (UNIQUE produto_id+codigo) |
 | **Mensagem** | "Já existe um módulo com este código neste produto" |
 | **HTTP** | 409 |
@@ -127,7 +127,7 @@ Casos negativos que **precisam ser provocados** para validar que o sistema reage
 
 | Item | Valor |
 |---|---|
-| **Ação** | Módulo `dtec-banco` → campo `config_especifica` → colar `{ caminhoRepo: "db/dtec"` (sem aspas + sem fechar `}`) |
+| **Ação** | Módulo `nexus-banco` → campo `config_especifica` → colar `{ caminhoRepo: "db/nexus"` (sem aspas + sem fechar `}`) |
 | **Resultado esperado** | Validação client-side bloqueia · OU backend 400 |
 | **Mensagem** | "JSON inválido — verifique aspas e chaves" + linha/coluna se possível |
 | **HTTP** | 400 (se passar do client-side) |
@@ -138,9 +138,9 @@ Casos negativos que **precisam ser provocados** para validar que o sistema reage
 
 | Item | Valor |
 |---|---|
-| **Ação** | Produto DTEC tem release `1.0.0`. Tentar criar outra `1.0.0` para o mesmo produto. |
+| **Ação** | Produto Nexus tem release `1.0.0`. Tentar criar outra `1.0.0` para o mesmo produto. |
 | **Resultado esperado** | 409 (UNIQUE produto_id+versao) |
-| **Mensagem** | "Versão 1.0.0 já existe para o produto DTEC" |
+| **Mensagem** | "Versão 1.0.0 já existe para o produto Nexus" |
 | **HTTP** | 409 |
 | **Como corrigir** | Usar versão diferente |
 | **Critério de aceite** | [ ] Toast · [ ] `tb_release` preserva apenas 1 com versao=1.0.0 |
@@ -197,7 +197,7 @@ Casos negativos que **precisam ser provocados** para validar que o sistema reage
 
 | Item | Valor |
 |---|---|
-| **Ação** | Release `1.2.0` em `RASCUNHO`. Abrir wizard passo 2 com produto DTEC. |
+| **Ação** | Release `1.2.0` em `RASCUNHO`. Abrir wizard passo 2 com produto Nexus. |
 | **Resultado esperado** | Apenas releases `PUBLICADA` aparecem; `1.2.0` não está na lista |
 | **Mensagem** | n/a |
 | **HTTP** | Filtro `status=PUBLICADA` |
@@ -208,7 +208,7 @@ Casos negativos que **precisam ser provocados** para validar que o sistema reage
 
 | Item | Valor |
 |---|---|
-| **Ação** | Módulo `dtec-banco` sem `config_especifica` populado. Wizard passo 4 → **Calcular delta**. |
+| **Ação** | Módulo `nexus-banco` sem `config_especifica` populado. Wizard passo 4 → **Calcular delta**. |
 | **Resultado esperado** | Linha do módulo aparece com **erro** ou contagem 0 |
 | **Mensagem** | "Configuração BANCO ausente — defina `caminhoRepo`, `prefixoDDL`, `prefixoDML`" |
 | **HTTP** | 200 com warning no payload OU 400 dependendo da política |
@@ -256,7 +256,7 @@ Casos negativos que **precisam ser provocados** para validar que o sistema reage
 
 | Item | Valor |
 |---|---|
-| **Ação** | Aba GitHub → repositório = `softon/repo-que-nao-existe` → **Testar conexão** |
+| **Ação** | Aba GitHub → repositório = `nexus/repo-que-nao-existe` → **Testar conexão** |
 | **Resultado esperado** | Toast vermelho |
 | **Mensagem** | "Repositório não encontrado — confira owner/repo e permissões do PAT" |
 | **HTTP** | 404 do GitHub propagado |
@@ -289,10 +289,10 @@ Casos negativos que **precisam ser provocados** para validar que o sistema reage
 
 | Item | Valor |
 |---|---|
-| **Ação** | Release no GitHub `v1.1.0` tem asset chamado `dtec-ld.war` (sem versão). Esperado: `DTEC-dtec-ld-1.1.0.war`. |
+| **Ação** | Release no GitHub `v1.1.0` tem asset chamado `nexus-ld.war` (sem versão). Esperado: `Nexus-nexus-ld-1.1.0.war`. |
 | **Resultado esperado** | Sync ignora assets que não batem com padrão `{SIGLA}-{MODULO}-{VERSAO}.{EXT}` |
 | **Mensagem** | "0 artefatos sincronizados. Conferir nome dos assets no GitHub Release." + lista de assets ignorados |
-| **HTTP** | 200 com `{ sincronizados: 0, ignorados: ["dtec-ld.war"] }` |
+| **HTTP** | 200 com `{ sincronizados: 0, ignorados: ["nexus-ld.war"] }` |
 | **Como corrigir** | Ajustar Jenkinsfile para nomear o asset corretamente |
 | **Critério de aceite** | [ ] Mostra exatamente quais assets foram ignorados · [ ] Não cria artefato com nome errado |
 
@@ -323,7 +323,7 @@ Teste manual:
 curl -i -X POST http://localhost:8080/api/v1/release-orchestrator/webhooks/jenkins \
   -H "Content-Type: application/json" \
   -H "X-Webhook-Secret: secret_errado" \
-  -d '{"produto":"DTEC","versao":"1.1.0","status":"SUCCESS","numero":42,"url":"http://localhost:8090/job/x/42/"}'
+  -d '{"produto":"Nexus","versao":"1.1.0","status":"SUCCESS","numero":42,"url":"http://localhost:8090/job/x/42/"}'
 # esperado: HTTP/1.1 403 Forbidden
 ```
 
@@ -390,7 +390,7 @@ curl -i -X POST http://localhost:8080/api/v1/release-orchestrator/webhooks/jenki
 
 | Item | Valor |
 |---|---|
-| **Ação** | Encher `/tmp/softon-entregas/xpto` até quase cheio. Gerar entrega grande. |
+| **Ação** | Encher `/tmp/nexus-entregas/xpto` até quase cheio. Gerar entrega grande. |
 | **Resultado esperado** | Geração falha com `IOException: No space left on device`. Status `FALHA`, motivo preenchido. |
 | **Mensagem** | "Espaço em disco insuficiente para gerar o pacote" |
 | **HTTP** | n/a (assíncrono) |
@@ -449,9 +449,9 @@ curl -i -X POST http://localhost:8080/api/v1/release-orchestrator/webhooks/jenki
 
 | Item | Valor |
 |---|---|
-| **Ação** | Tentar excluir produto `DTEC` que tem releases publicadas. |
+| **Ação** | Tentar excluir produto `Nexus` que tem releases publicadas. |
 | **Resultado esperado** | 409 Conflict |
-| **Mensagem** | "Não é possível excluir o produto DTEC: existem 3 releases vinculadas" |
+| **Mensagem** | "Não é possível excluir o produto Nexus: existem 3 releases vinculadas" |
 | **HTTP** | 409 |
 | **Como corrigir** | Excluir/arquivar dependentes primeiro OU inativar o produto |
 | **Critério de aceite** | [ ] Mensagem cita exatamente o que está bloqueando · [ ] Sugere alternativa (inativar) |

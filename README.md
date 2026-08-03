@@ -1,4 +1,4 @@
-# Softon Portal API - AI Kit
+# Nexus Portal API - AI Kit
 
 Este pacote contém arquivos de contexto, regras, skills e prompts para orientar ferramentas de IA como Cursor, Codex e Claude Code no desenvolvimento do backend.
 
@@ -18,7 +18,7 @@ Arquitetura desejada:
 Estrutura recomendada no projeto:
 
 ```text
-softon-portal-api/
+nexus-portal-api/
 ├── .ai/
 │   ├── project/
 │   ├── modules/
@@ -26,7 +26,7 @@ softon-portal-api/
 ├── .cursor/rules/
 ├── AGENTS.md
 ├── CLAUDE.md
-└── src/main/java/br/com/softon/portal/
+└── src/main/java/com/nexus/portal/
 ```
 
 Como usar:

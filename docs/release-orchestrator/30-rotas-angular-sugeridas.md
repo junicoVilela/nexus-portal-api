@@ -372,7 +372,7 @@ Hoje desktop-first. Quando mobile entrar:
 
 ## 14. Cross-reference
 
-- [`../../softon-portal-web/docs/release-orchestrator/01-shell-navegacao.md`](../../softon-portal-web/docs/release-orchestrator/01-shell-navegacao.md) — Shell e navegação do release flow.
-- [`../../softon-portal-web/docs/release-orchestrator/`](../../softon-portal-web/docs/release-orchestrator/README.md) — Documentação do frontend (por tela).
+- [`../../nexus-portal-web/docs/release-orchestrator/01-shell-navegacao.md`](../../nexus-portal-web/docs/release-orchestrator/01-shell-navegacao.md) — Shell e navegação do release flow.
+- [`../../nexus-portal-web/docs/release-orchestrator/`](../../nexus-portal-web/docs/release-orchestrator/README.md) — Documentação do frontend (por tela).
 - [`../naming-suggestions.md`](../naming-suggestions.md) — Renomeações.
 - [`99-padroes-tela.md`](99-padroes-tela.md) — Padrões.

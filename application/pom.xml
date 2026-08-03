@@ -5,30 +5,30 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>br.com.softon</groupId>
-    <artifactId>softon-portal-api</artifactId>
+    <groupId>com.nexus.portal</groupId>
+    <artifactId>nexus-portal-api</artifactId>
     <version>0.1.0-SNAPSHOT</version>
     <relativePath>..</relativePath>
   </parent>
 
-  <artifactId>softon-portal-application</artifactId>
-  <name>softon-portal-application</name>
-  <description>Softon Portal — `SoftonPortalApplication` (Doc Flow + Release Orchestrator + gateway na mesma porta).</description>
+  <artifactId>nexus-application</artifactId>
+  <name>nexus-application</name>
+  <description>Nexus Portal — `NexusPortalApplication` (Doc Flow + Release Orchestrator + gateway na mesma porta).</description>
 
   <dependencies>
     <dependency>
-      <groupId>br.com.softon</groupId>
-      <artifactId>doc-flow-backend</artifactId>
+      <groupId>com.nexus.portal</groupId>
+      <artifactId>nexus-docflow</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>br.com.softon</groupId>
-      <artifactId>release-orchestrator-backend</artifactId>
+      <groupId>com.nexus.portal</groupId>
+      <artifactId>nexus-release-orchestrator</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>br.com.softon</groupId>
-      <artifactId>softon-portal-gateway</artifactId>
+      <groupId>com.nexus.portal</groupId>
+      <artifactId>nexus-gateway</artifactId>
       <version>${project.version}</version>
     </dependency>
     <!-- F4 observability — actuator endpoints + prometheus metrics -->
@@ -81,7 +81,7 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
         <configuration>
-          <mainClass>br.com.softon.portal.SoftonPortalApplication</mainClass>
+          <mainClass>com.nexus.portal.NexusPortalApplication</mainClass>
         </configuration>
       </plugin>
       <!-- OpenAPI export: manual goal only (requires running server on 8080). Not bound to mvn test. -->

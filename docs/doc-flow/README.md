@@ -1,8 +1,8 @@
 # DocFlow — Backend (API)
 
-Módulo Maven **`doc-flow/`** do `softon-portal-api`. Gestão de manuais: clientes, projetos, módulos, páginas, publicações, preview, usuários, grupos e auditoria.
+Módulo Maven **`doc-flow/`** do `nexus-portal-api`. Gestão de manuais: clientes, projetos, módulos, páginas, publicações, preview, usuários, grupos e auditoria.
 
-> Documentação frontend: `softon-portal-web/docs/docflow/`  
+> Documentação frontend: `nexus-portal-web/docs/docflow/`  
 > Jornada integrada (manual + release): [`../jornadas/00-cenario-feliz-acme.md`](../jornadas/00-cenario-feliz-acme.md)
 
 ---
@@ -11,11 +11,11 @@ Módulo Maven **`doc-flow/`** do `softon-portal-api`. Gestão de manuais: client
 
 | Item       | Caminho                                                                                                           |
 | ---------- | ----------------------------------------------------------------------------------------------------------------- |
-| Código     | `softon-portal-api/doc-flow/src/main/java/br/com/softon/portal/docflow/`                                          |
+| Código     | `nexus-portal-api/docflow/src/main/java/com/nexus/portal/docflow/`                                          |
 | Migrations | `application/src/main/resources/db/migration/` (todas centralizadas) — ver [`../MIGRATIONS.md`](../MIGRATIONS.md) |
-| Resumo IA  | `softon-portal-api/.ai/modules/docflow.md`                                                                        |
+| Resumo IA  | `nexus-portal-api/.ai/modules/docflow.md`                                                                        |
 
-Pacote base: `br.com.softon.portal.docflow.{controller|service|repository|entity|dto}`
+Pacote base: `com.nexus.portal.docflow.{controller|service|repository|entity|dto}`
 
 ---
 
@@ -83,7 +83,7 @@ Transições: `POST /paginas/{id}/enviar-revisao`, `/aprovar`, `/publicar`, `/ar
 | `EmpresaController`          | `/docflow/empresa/logo` | Logo global nos manuais                                   |
 | `AuthController`             | `/api/v1/auth`          | Login JWT                                                 |
 | `UsuarioController`          | `/docflow/usuarios`     | CRUD (ADMIN)                                              |
-| `GrupoController`            | `/rbac/grupos`          | CRUD + membros + permissões (ADMIN) — módulo `dtec-rbac`  |
+| `GrupoController`            | `/rbac/grupos`          | CRUD + membros + permissões (ADMIN) — módulo `nexus-identity-access`  |
 | `AuditoriaController`        | `/docflow/auditoria`    | Listagem (ADMIN)                                          |
 
 As exclusões de conteúdo seguem a ordem segura `publicações → cliente` e
@@ -203,9 +203,9 @@ Grupos (`tb_grupo`, `tb_grupo_permissao`) existem na API; permissões vêm do **
 | Permissões menu       | `GET /auth/me` → `permissoes[]` do catálogo RBAC | `tb_dominio` → `tb_permissao` + grupos | ✅ S0.5                               |
 | Logo empresa          | `ConfiguracaoService` → HttpClient               | `EmpresaController`                    | ✅ S0                                 |
 | Preview tokens        | UI no painel de vínculos de clientes             | API existe                             | ✅ Gerar, listar, copiar URL, revogar |
-| Grupos/usuários admin | Módulo `seguranca` — HTTP em `dtec-rbac` (`/api/v1/rbac/*`) | API RBAC | ✅ CRUD usuários/grupos; catálogo domínio/funcionalidade/permissão ainda mock no front |
+| Grupos/usuários admin | Módulo `seguranca` — HTTP em `nexus-identity-access` (`/api/v1/rbac/*`) | API RBAC | ✅ CRUD usuários/grupos; catálogo domínio/funcionalidade/permissão ainda mock no front |
 
-Proxy dev (`softon-portal-web/frontend/proxy.conf.json`): reescreve `/api/doc-flow` → `/api/v1/docflow`.
+Proxy dev (`nexus-portal-web/frontend/proxy.conf.json`): reescreve `/api/doc-flow` → `/api/v1/docflow`.
 
 ---
 
@@ -221,10 +221,10 @@ qualidade editorial, além das integrações de geração e download.
 | Documento                                                                      | Conteúdo                         |
 | ------------------------------------------------------------------------------ | -------------------------------- |
 | [`../jornadas/00-cenario-feliz-acme.md`](../jornadas/00-cenario-feliz-acme.md) | Jornada manual + release         |
-| `softon-portal-web/docs/docflow/`                                              | Specs frontend                   |
+| `nexus-portal-web/docs/docflow/`                                              | Specs frontend                   |
 | [`../release-orchestrator/README.md`](../release-orchestrator/README.md)       | Módulo irmão (entregas técnicas) |
 | [`../ROADMAP.md`](../ROADMAP.md)                                               | Prioridades gerais do portal     |
 
 ### Specs detalhadas por tela (futuro)
 
-Espelhar o padrão `release-orchestrator/` conforme necessidade (ex.: `01-paginas-workflow.md`). Por ora, contratos estão nos controllers + `softon-portal-web/docs/docflow/04-services-e-models.md`.
+Espelhar o padrão `release-orchestrator/` conforme necessidade (ex.: `01-paginas-workflow.md`). Por ora, contratos estão nos controllers + `nexus-portal-web/docs/docflow/04-services-e-models.md`.

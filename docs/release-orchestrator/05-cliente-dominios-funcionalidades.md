@@ -48,7 +48,7 @@ Cada cliente enxerga **todo o catálogo do produto** na tela de edição, mas **
 
 ### Exemplo — mesmo produto, matrizes distintas
 
-Catálogo do produto **DTEC-LD** (`11`):
+Catálogo do produto **NEXUS-LD** (`11`):
 
 ```text
 Domínio A → funcionalidades 1, 2, 4
@@ -65,7 +65,7 @@ Domínio T → funcionalidades 2, 3, 5
 Funcionalidade **2** pode estar habilitada nos dois clientes; **1** só no X; **3** só no Y. Domínios **B** e **C** podem ser compartilhados, mas com funcionalidades diferentes dentro deles.
 
 ```text
-Catálogo (produto DTEC-LD) — vocabulário completo
+Catálogo (produto NEXUS-LD) — vocabulário completo
   A.{1,2,4}  B.{1,2,3}  C.{2,3}  T.{2,3,5}
 
 Cliente X — subconjunto contratado
@@ -104,7 +104,7 @@ Cliente "ACME":
 ┌────────────────────────────────────────────────────────────────────────┐
 │ < Voltar para Cliente ACME                                             │
 ├────────────────────────────────────────────────────────────────────────┤
-│ Domínios e Funcionalidades                       Produto: [DTEC-LD ▼] │
+│ Domínios e Funcionalidades                       Produto: [NEXUS-LD ▼] │
 ├────────────────────────────────────────────────────────────────────────┤
 │ Filtros: [Apenas possuídos] [Apenas desabilitadas] [Habilitadas] [Todas] │
 │ 🔍 [Buscar funcionalidade...]                                          │
@@ -240,7 +240,7 @@ Rota complementar (read-only ou com drill-down para matriz):
 
 ```text
 ┌────────────────────────────────────────────────────────────────────────┐
-│ Resumo funcional — DTEC-LD                         Produto: [DTEC-LD ▼] │
+│ Resumo funcional — NEXUS-LD                         Produto: [NEXUS-LD ▼] │
 ├────────────────────────────────────────────────────────────────────────┤
 │ Cliente      │ Domínios possuídos │ Funcionalidades (códigos) │ Ações  │
 ├────────────────────────────────────────────────────────────────────────┤
@@ -263,7 +263,7 @@ Response (trecho):
 ```json
 {
   "produtoId": "uuid",
-  "produtoSigla": "DTECLD",
+  "produtoSigla": "NEXUSLD",
   "clientes": [
     {
       "clienteId": "uuid-x",
@@ -295,7 +295,7 @@ Response:
 ```json
 {
   "produtoId": "uuid",
-  "produtoSigla": "DTECLD",
+  "produtoSigla": "NEXUSLD",
   "resumo": {
     "habilitadas": 32,
     "total": 48,

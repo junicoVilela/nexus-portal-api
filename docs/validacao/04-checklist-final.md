@@ -35,7 +35,7 @@ Lista marcável que consolida todos os critérios de aceite das docs anteriores.
 
 ## C. Cadastro de Produto
 
-- [ ] Produto `DTEC` criado, ativo
+- [ ] Produto `Nexus` criado, ativo
 - [ ] Sigla duplicada rejeitada com 409
 - [ ] Aba **GitHub**: repo + branch + regex + PAT cadastrados
 - [ ] **Testar conexão GitHub** → verde
@@ -44,7 +44,7 @@ Lista marcável que consolida todos os critérios de aceite das docs anteriores.
 - [ ] Aba **Jenkins**: URL + job + user + token cadastrados (se aplicável)
 - [ ] **Testar conexão Jenkins** → verde
 - [ ] `/actuator/health/jenkins` → `UP`
-- [ ] Aba **Módulos**: 4 módulos cadastrados (DTEC-LD, DTEC-CR, POWERMATCH, DTEC-BANCO)
+- [ ] Aba **Módulos**: 4 módulos cadastrados (NEXUS-LD, Nexus-CR, POWERMATCH, Nexus-BANCO)
 - [ ] Módulos BANCO/KETTLE têm `config_especifica` populado e JSON válido
 - [ ] Aba **Catálogo funcional**: pelo menos 1 domínio com funcionalidades
 
@@ -55,10 +55,10 @@ Lista marcável que consolida todos os critérios de aceite das docs anteriores.
 - [ ] Cliente `XPTO` criado com ambiente padrão `HOM`, ativo
 - [ ] CNPJ válido (se preenchido) e UNIQUE
 - [ ] Aba **Contatos**: ≥ 1 contato `TECNICO` com e-mail
-- [ ] Aba **Produtos**: contrato com produto `DTEC` ativo
+- [ ] Aba **Produtos**: contrato com produto `Nexus` ativo
 - [ ] Módulos do contrato têm `versao_atual = 1.0.0`
 - [ ] Aba **Funcionalidades**: matriz preenchida conforme licença
-- [ ] Aba **Config. entrega**: `PASTA` configurada para `/tmp/softon-entregas/xpto`
+- [ ] Aba **Config. entrega**: `PASTA` configurada para `/tmp/nexus-entregas/xpto`
 - [ ] **Testar conexão** verde
 - [ ] Pasta destino existe e é gravável
 
@@ -66,7 +66,7 @@ Lista marcável que consolida todos os critérios de aceite das docs anteriores.
 
 ## E. Cadastro de Release
 
-- [ ] Release `1.1.0` do produto `DTEC` criada
+- [ ] Release `1.1.0` do produto `Nexus` criada
 - [ ] Versão é UNIQUE por produto
 - [ ] Aba **Itens**: ≥ 3 itens cadastrados (NOVIDADE, MELHORIA, CORRECAO)
 - [ ] Aba **Artefatos**: artefatos sincronizados do GitHub OU upload manual
@@ -123,20 +123,20 @@ Lista marcável que consolida todos os critérios de aceite das docs anteriores.
 
 ## I. Pacote ZIP gerado
 
-- [ ] ZIP existe em `storage/entregas/xpto/dtec/1.1.0/`
+- [ ] ZIP existe em `storage/entregas/xpto/nexus/1.1.0/`
 - [ ] Nome do arquivo segue padrão `{CLIENTE}_{PRODUTO}_{FROM}_{TO}.zip`
 - [ ] `sha256sum` do arquivo bate com `tb_entrega.arquivo_pacote_sha256`
 - [ ] Estrutura interna:
-  - [ ] `documento-xpto-dtec-1.1.0.pdf`
+  - [ ] `documento-xpto-nexus-1.1.0.pdf`
   - [ ] `manifest.json`
   - [ ] `SHA256SUMS.txt`
-  - [ ] `modulos/dtec-ld/dtec-ld-1.1.0.war`
-  - [ ] `modulos/dtec-cr/dtec-cr-1.1.0.war`
+  - [ ] `modulos/nexus-ld/nexus-ld-1.1.0.war`
+  - [ ] `modulos/nexus-cr/nexus-cr-1.1.0.war`
   - [ ] `modulos/powermatch/powermatch-1.1.0.jar`
-  - [ ] `modulos/dtec-banco/oracle/DDL.sql`
-  - [ ] `modulos/dtec-banco/oracle/DML.sql`
-  - [ ] (se multi-dialeto) `modulos/dtec-banco/sqlserver/{DDL,DML}.sql`
-- [ ] `manifest.json` é JSON válido com cliente=XPTO, produto=DTEC, versões
+  - [ ] `modulos/nexus-banco/oracle/DDL.sql`
+  - [ ] `modulos/nexus-banco/oracle/DML.sql`
+  - [ ] (se multi-dialeto) `modulos/nexus-banco/sqlserver/{DDL,DML}.sql`
+- [ ] `manifest.json` é JSON válido com cliente=XPTO, produto=Nexus, versões
 - [ ] `sha256sum -c SHA256SUMS.txt` → todos OK
 
 ---
@@ -194,7 +194,7 @@ Lista marcável que consolida todos os critérios de aceite das docs anteriores.
 ## N. Atualização do contrato pós-entrega
 
 - [ ] `tb_cliente_produto_modulo.versao_atual` dos 4 módulos atualizou para `1.1.0`
-- [ ] Próximo wizard com XPTO+DTEC mostra FROM padrão = `1.1.0`
+- [ ] Próximo wizard com XPTO+Nexus mostra FROM padrão = `1.1.0`
 
 ---
 
@@ -216,7 +216,7 @@ Lista marcável que consolida todos os critérios de aceite das docs anteriores.
 
 ## Q. Próximas entregas (agenda)
 
-- [ ] **Nova entrega prevista** criada para XPTO/DTEC com data futura
+- [ ] **Nova entrega prevista** criada para XPTO/Nexus com data futura
 - [ ] Aparece no dashboard como KPI "Pendentes"
 - [ ] **Converter em entrega** abre wizard com prefill
 - [ ] Após conversão, `tb_proxima_entrega.status = CONVERTIDA` e `entrega_convertida_id` preenchido

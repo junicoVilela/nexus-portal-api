@@ -12,7 +12,7 @@ A história **Releases (GitHub + Jenkins)** inclui trabalho em **dois lugares**:
 
 | Onde | O quê |
 |---|---|
-| **Repositórios de produto** (ex.: `softon/dtec-ld`) | Jenkinsfile, pipelines, scripts de banco/kettle/func/regras, publicação de assets no GitHub Release |
+| **Repositórios de produto** (ex.: `nexus/nexus-ld`) | Jenkinsfile, pipelines, scripts de banco/kettle/func/regras, publicação de assets no GitHub Release |
 | **Portal Release Orchestrator** | Cadastro de produto/módulos, releases, entregas a clientes, montagem do pacote final por cliente |
 
 Este documento cobre o **primeiro bloco** — o que cada repositório deve entregar para o orchestrator consumir na Fase 2+.
@@ -39,10 +39,10 @@ Este documento cobre o **primeiro bloco** — o que cada repositório deve entre
 
 | Produto | Sigla | Repositório (exemplo) | Módulo portal |
 |---|---|---|---|
-| Configuração base | — | `softon/release-pipeline-base` | template Jenkins compartilhado |
-| DTEC-LD | `DTECLD` | `softon/dtec-ld` | `WEB` |
-| DTEC-CR | `DTECCR` | `softon/dtec-cr` | `WEB` |
-| DTEC-ONLINE | `DTECONLINE` | `softon/dtec-online` | `WEB` |
+| Configuração base | — | `nexus/release-pipeline-base` | template Jenkins compartilhado |
+| NEXUS-LD | `NEXUSLD` | `nexus/nexus-ld` | `WEB` |
+| Nexus-CR | `NEXUSCR` | `nexus/nexus-cr` | `WEB` |
+| Nexus-ONLINE | `NEXUSONLINE` | `nexus/nexus-online` | `WEB` |
 
 ### 2.2 Release Java Batch
 
@@ -102,7 +102,7 @@ Este documento cobre o **primeiro bloco** — o que cada repositório deve entre
 | Conteúdo no repo | Jobs em `kettle/` ou `pdi/` |
 | Saída no release | ZIP com arquivos alterados entre tags |
 | Publicação | Asset no GitHub Release |
-| Prazo história | DTEC-LD — 2 dias; DTEC-CR — 2 dias |
+| Prazo história | NEXUS-LD — 2 dias; Nexus-CR — 2 dias |
 | Módulo portal | `KETTLE` |
 
 ---

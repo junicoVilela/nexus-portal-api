@@ -1,12 +1,12 @@
 // =============================================================================
-// Jenkinsfile — build-on-tag para produtos Softon
+// Jenkinsfile — build-on-tag para produtos Nexus
 // =============================================================================
 // Copie este arquivo para a raiz do repositório do produto (`Jenkinsfile`)
 // e ajuste os valores em PIPELINE_CONFIG abaixo. Documentação completa em
-// softon-portal-api/docs/release-orchestrator/39-entregaveis-cicd-repositorios.md
+// nexus-portal-api/docs/release-orchestrator/39-entregaveis-cicd-repositorios.md
 //
 // Pré-requisitos no Jenkins:
-//   - Credencial String 'github-pat-softon'  → Personal Access Token com
+//   - Credencial String 'github-pat-nexus'  → Personal Access Token com
 //     escopo `repo` (upload de releases). Ver runbook S8.
 //   - Tool 'maven-3.9' configurada (ou ajuste em options.tool)
 //   - Plugin Pipeline + GitHub Branch Source
@@ -28,17 +28,17 @@ pipeline {
 
   environment {
     // ----- ajuste por produto -----
-    PRODUTO_SIGLA    = 'DTECLD'           // sigla maiúscula igual ao cadastro do portal
-    MODULO_CODIGO    = 'dtec-web'         // ex: dtec-web, dtec-batch
+    PRODUTO_SIGLA    = 'NEXUSLD'           // sigla maiúscula igual ao cadastro do portal
+    MODULO_CODIGO    = 'nexus-web'         // ex: nexus-web, nexus-batch
     ARTIFACT_EXT     = 'war'              // war | jar | zip | tar.gz
     BUILD_CMD        = 'mvn -B -ntp clean package -DskipTests'
     BUILD_OUTPUT_DIR = 'target'           // dir onde o artefato é gerado
     // Webhook do portal: URL absoluta + secret. S11 P2 — badge na release.
-    PORTAL_WEBHOOK_URL = 'https://portal.softon.local/api/v1/release-orchestrator/webhooks/jenkins'
+    PORTAL_WEBHOOK_URL = 'https://portal.nexus.local/api/v1/release-orchestrator/webhooks/jenkins'
     // ------------------------------
 
-    GH_TOKEN     = credentials('github-pat-softon')
-    PORTAL_SECRET = credentials('softon-portal-webhook-secret')
+    GH_TOKEN     = credentials('github-pat-nexus')
+    PORTAL_SECRET = credentials('nexus-portal-webhook-secret')
   }
 
   tools {
@@ -150,7 +150,7 @@ pipeline {
 }
 
 // =============================================================================
-// Função auxiliar: notifica o portal Softon sobre o status do build (S11 P2).
+// Função auxiliar: notifica o portal Nexus sobre o status do build (S11 P2).
 // Falha silenciosa — se o portal estiver fora, não invalida o build.
 // =============================================================================
 def notificarPortal(String status) {

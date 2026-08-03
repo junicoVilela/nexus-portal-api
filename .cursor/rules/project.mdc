@@ -1,9 +1,9 @@
 ---
-description: Padrões do projeto Softon Portal API
+description: Padrões do projeto Nexus Portal API
 alwaysApply: true
 ---
 
-# Softon Portal API
+# Nexus Portal API
 
 Backend Java 21 / Spring Boot 4.x — monólito modular simples.
 
@@ -19,9 +19,9 @@ Toda a documentação de padrões está centralizada em `.ai/`. Consulte antes d
 
 ## Specs por módulo
 
-- `.ai/modules/` — specs de cada módulo (docflow, releases, gateway, etc.)
+- `.ai/modules/` — specs de cada módulo (docflow, releases, gateway, identity-access, etc.)
 - `docs/release-orchestrator/` — spec técnica detalhada do Release Orchestrator
-- `docs/release-orchestrator/` — spec funcional do Release Orchestrator
+- `docs/doc-flow/` ou `docs/docflow/` — spec do DocFlow, quando existir
 
 ## Prompts e exemplos
 

@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Padrões mínimos de segurança para o backend do Softon Portal API.
+Padrões mínimos de segurança para o backend do Nexus Portal API.
 
 ## Autenticação
 
@@ -25,7 +25,7 @@ shared/security          ← constantes de SpEL (Permissoes)
 ```
 
 Importante: nenhum módulo fica sob um pacote `modules/`. Cada módulo é um
-sub-pacote direto de `br.com.softon.portal`.
+sub-pacote direto de `com.nexus.portal`.
 
 ### Modelo de autorização — granular por permissão
 
@@ -35,7 +35,7 @@ não por role. Isso significa que **cada endpoint** carrega uma
 permissões em `tb_permissao` é a fonte da verdade.
 
 As permissões disponíveis estão em
-`shared/src/main/java/br/com/softon/portal/shared/security/Permissoes.java`.
+`shared/src/main/java/br/com/nexus/portal/shared/security/Permissoes.java`.
 Use as constantes (não digite strings) — compile-time inlining mantém as
 anotações com SpEL literal, sem custo extra.
 

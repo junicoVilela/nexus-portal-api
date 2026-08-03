@@ -1,6 +1,6 @@
-# Softon Intranet — Roadmap Consolidado
+# Nexus Platform — Roadmap Consolidado
 
-Roadmap do **Release Orchestrator** cobrindo backend (`softon-portal-api`) e frontend (`softon-portal-web`).
+Roadmap do **Release Orchestrator** cobrindo backend (`nexus-portal-api`) e frontend (`nexus-portal-web`).
 
 > Documento vivo. Última revisão: 2026-05-31.
 > Convenção: cada item tem **prioridade** (P0/P1/P2/P3), **esforço** (S/M/L/XL) e **dependências**.
@@ -181,7 +181,7 @@ Roadmap do **Release Orchestrator** cobrindo backend (`softon-portal-api`) e fro
 ### Cross-cutting
 - **CI**: GitHub Actions / GitLab CI rodando build + testes + lint em cada PR.
 - **Pré-commit hooks** (formatter Java, ESLint+Prettier frontend).
-- **Versionamento semântico** dos próprios módulos (`softon-portal-api 1.0.0`, etc.).
+- **Versionamento semântico** dos próprios módulos (`nexus-portal-api 1.0.0`, etc.).
 
 ---
 
@@ -204,4 +204,4 @@ Roadmap do **Release Orchestrator** cobrindo backend (`softon-portal-api`) e fro
 - [`release-orchestrator/39-entregaveis-cicd-repositorios.md`](release-orchestrator/39-entregaveis-cicd-repositorios.md) — entregáveis nos repos (Jenkins/GitHub).
 - [`release-orchestrator/40-guia-versao-tag.md`](release-orchestrator/40-guia-versao-tag.md) — guia operacional de tags.
 - [`release-orchestrator/99-melhorias-sugeridas.md`](release-orchestrator/99-melhorias-sugeridas.md) — backlog do backend.
-- `softon-portal-web/docs/release-orchestrator/` — specs do frontend (por tela).
+- `nexus-portal-web/docs/release-orchestrator/` — specs do frontend (por tela).

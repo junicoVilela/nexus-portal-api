@@ -7,7 +7,7 @@ Termos do domínio do **Release Orchestrator + Orchestrator**. Use este document
 ## Domínios de negócio
 
 ### **Cliente**
-Pessoa jurídica que recebe entregas (pacotes) dos produtos Softon. Tem CNPJ, sigla, contatos, configuração de entrega.
+Pessoa jurídica que recebe entregas (pacotes) dos produtos Nexus. Tem CNPJ, sigla, contatos, configuração de entrega.
 
 ### **Contato (do cliente)**
 Pessoa física associada a um cliente. Recebe notificações por e-mail/papel quando uma entrega acontece.
@@ -32,7 +32,7 @@ Catálogo **de segurança** em `doc-flow` (módulo lógico `rbac`) — `SEGURANC
 ## Produto e módulos
 
 ### **Produto** (`ProdutoRh` — a renomear)
-Sistema gerenciado pela Softon (ex.: DTEC-LD, FOLHA-WEB). Tem nome, sigla, cor, módulos, releases.
+Sistema gerenciado pela Nexus (ex.: NEXUS-LD, FOLHA-WEB). Tem nome, sigla, cor, módulos, releases.
 
 ### **ModuloProduto**
 Sub-componente do produto: WEB, BATCH, BANCO, KETTLE, FUNCIONALIDADES ou REGRAS. Catálogo por produto.
@@ -155,7 +155,7 @@ Padrão Jenkins: pipeline executado ao criar tag `v*.*.*` no repositório. Ver [
 Intervalo de versões para cálculo de delta (banco, kettle). `FROM` = última entregue ao cliente; `TO` = release-alvo. Ver [`20-range-manual-delta.md`](20-range-manual-delta.md).
 
 ### **Entregável de repositório**
-Artefato ou pipeline que a equipe de produto mantém **fora do portal** (Jenkinsfile, scripts, publicação no GitHub). Distinto de funcionalidade implementada no `softon-portal-api`.
+Artefato ou pipeline que a equipe de produto mantém **fora do portal** (Jenkinsfile, scripts, publicação no GitHub). Distinto de funcionalidade implementada no `nexus-portal-api`.
 
 ---
 

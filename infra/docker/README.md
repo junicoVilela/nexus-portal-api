@@ -1,4 +1,4 @@
-# `infra/docker` — Stack Docker local do Softon Portal
+# `infra/docker` — Stack Docker local do Nexus Portal
 
 Toda a infraestrutura de **desenvolvimento local** numa pasta só:
 Postgres, Jenkins (com plugins + JCasC), MinIO e SFTP. Cada serviço
@@ -75,7 +75,7 @@ local já cobre. Variáveis críticas:
 
 | Variável | Onde usar |
 |---|---|
-| `GITHUB_PAT` | PAT classic com escopos `repo` + `workflow`. Vira credencial `github-pat-softon` no Jenkins via JCasC. |
+| `GITHUB_PAT` | PAT classic com escopos `repo` + `workflow`. Vira credencial `github-pat-nexus` no Jenkins via JCasC. |
 | `PORTAL_WEBHOOK_SECRET` | **Tem que ser o mesmo valor** de `RELEASE_ORCHESTRATOR_WEBHOOKS_JENKINS_SECRET` no backend. Gere com `openssl rand -hex 32`. |
 | `JENKINS_ADMIN_PASSWORD` | Default `admin` — troque em qualquer cenário que não seja `localhost`. |
 | `POSTGRES_PASSWORD` | Bate com `application-dev.yml` por default; mude **junto** se trocar. |
@@ -111,14 +111,14 @@ docker compose --profile ci up -d        # recria com a imagem nova
 ### Resetar tudo (apaga dados!)
 ```bash
 docker compose --profile all down -v
-docker volume rm $(docker volume ls -q --filter name=softon-) 2>/dev/null
+docker volume rm $(docker volume ls -q --filter name=nexus-) 2>/dev/null
 ```
 
 ---
 
 ## Como o Jenkins é provisionado
 
-A imagem custom `softon-portal/jenkins:latest` é construída pelo Compose
+A imagem custom `nexus-portal/jenkins:latest` é construída pelo Compose
 a partir de `jenkins/Dockerfile`:
 
 1. **Base** `jenkins/jenkins:lts-jdk21` — já vem com JDK 21.
@@ -128,8 +128,8 @@ a partir de `jenkins/Dockerfile`:
 4. **Plugins** instalados via `jenkins-plugin-cli --plugin-file plugins.txt`.
 5. **JCasC** carrega `casc.yaml` no boot:
    - `securityRealm` local com admin lido de `JENKINS_ADMIN_USER`/`PASSWORD`
-   - 3 credenciais lidas de env: `github-pat-softon`, `github-user-pat`,
-     `softon-portal-webhook-secret`
+   - 3 credenciais lidas de env: `github-pat-nexus`, `github-user-pat`,
+     `nexus-portal-webhook-secret`
    - tools `jdk-21` (Adoptium auto-install) e `maven-3.9` (3.9.9 auto-install)
    - timestamper ligado em todos os pipelines
 
@@ -155,7 +155,7 @@ docker compose --profile ci up -d
 > https://plugins.jenkins.io/{plugin-id}/ ou rode dentro do container:
 >
 > ```bash
-> docker exec softon-jenkins jenkins-plugin-cli --list \
+> docker exec nexus-jenkins jenkins-plugin-cli --list \
 >   | grep workflow-aggregator
 > ```
 
@@ -187,7 +187,7 @@ docker compose --profile ci up -d
 
 ```bash
 # Postgres
-docker compose exec postgres pg_isready -U softon_intranet
+docker compose exec postgres pg_isready -U nexus_platform
 
 # Jenkins
 curl -fs http://localhost:8090/login >/dev/null && echo "Jenkins OK"
@@ -208,11 +208,11 @@ direto da IDE ou shell, pra ter hot-reload:
 
 ```bash
 # Backend (em outro terminal)
-cd ../../              # volta pra raiz do softon-portal-api
+cd ../../              # volta pra raiz do nexus-portal-api
 ./mvnw -pl application spring-boot:run -Dspring-boot.run.profiles=dev
 
 # Frontend (em outro terminal)
-cd ../softon-portal-web/frontend
+cd ../nexus-portal-web/frontend
 npm start
 ```
 
@@ -249,3 +249,15 @@ npm start
   [`docs/jornadas/08-runbook-primeira-publicacao.md`](../../docs/jornadas/08-runbook-primeira-publicacao.md).
 - O template Jenkinsfile fica em
   [`docs/release-orchestrator/templates/Jenkinsfile`](../../docs/release-orchestrator/templates/Jenkinsfile).
+
+## Migração nexus → Nexus (DB local)
+
+Os defaults locais passaram a `nexus_platform` (DB/usuário) e volumes `nexus-*`.
+Se você já tinha stack antiga (`nexus_*` / volumes `nexus-*`), recrie o banco local:
+
+```bash
+docker compose down
+docker volume rm nexus-pgdata-18 nexus-pgdata 2>/dev/null || true
+docker compose up -d
+```
+

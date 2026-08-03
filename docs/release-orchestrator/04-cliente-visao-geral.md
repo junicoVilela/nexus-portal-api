@@ -37,7 +37,7 @@ Acessível em `/orchestrator/clientes/:id`.
 │ [⚠️ 1 alerta] Próxima entrega planejada para 20/05/2026 está atrasada  │
 ├────────────────────────────────────────────────────────────────────────┤
 │ ┌─ Última entrega ─────┐ ┌─ Próxima ──────────┐ ┌─ Produtos ────────┐ │
-│ │ DTEC-LD v1.4.0        │ │ DTEC-LD v1.5.0      │ │ 3 ativos          │ │
+│ │ NEXUS-LD v1.4.0        │ │ NEXUS-LD v1.5.0      │ │ 3 ativos          │ │
 │ │ 15/05/2026            │ │ Atrasada (5 dias)   │ │ 12 módulos        │ │
 │ │ ✅ CONCLUIDA          │ │ 🟡 APROVADA         │ │ Ver detalhes →    │ │
 │ │ Ver detalhes →        │ │ Ver agenda →        │ │                   │ │
@@ -47,20 +47,20 @@ Acessível em `/orchestrator/clientes/:id`.
 ├────────────────────────────────────────────────────────────────────────┤
 │                                                                        │
 │ ┌─ Próximas entregas ────────────┐ ┌─ Últimas entregas ──────────────┐ │
-│ │ DTEC-LD v1.5.0 - hoje (atras.) │ │ DTEC-LD v1.4.0 - 15/05/2026 ✅  │ │
-│ │ FOLHA v2.1.0 - +5 dias         │ │ DTEC-LD v1.3.0 - 10/04/2026 ✅  │ │
-│ │                                │ │ DTEC-LD v1.2.0 - 02/03/2026 ✅  │ │
+│ │ NEXUS-LD v1.5.0 - hoje (atras.) │ │ NEXUS-LD v1.4.0 - 15/05/2026 ✅  │ │
+│ │ FOLHA v2.1.0 - +5 dias         │ │ NEXUS-LD v1.3.0 - 10/04/2026 ✅  │ │
+│ │                                │ │ NEXUS-LD v1.2.0 - 02/03/2026 ✅  │ │
 │ │ [Ver agenda →]                 │ │ [Ver histórico →]               │ │
 │ └────────────────────────────────┘ └─────────────────────────────────┘ │
 │                                                                        │
 │ ┌─ Produtos contratados ───────────────────────────────────────────┐  │
-│ │ DTEC-LD  (PROD)   • 5 módulos    Última: v1.4.0      [Configurar]│  │
+│ │ NEXUS-LD  (PROD)   • 5 módulos    Última: v1.4.0      [Configurar]│  │
 │ │ FOLHA    (PROD)   • 4 módulos    Última: v2.0.0      [Configurar]│  │
 │ │ CONTAS   (HOM)    • 3 módulos    Última: v0.9.0      [Configurar]│  │
 │ └──────────────────────────────────────────────────────────────────┘  │
 │                                                                        │
 │ ┌─ Alertas operacionais ──────────────────────────────────────────┐  │
-│ │ ⚠️  Próxima entrega DTEC-LD v1.5.0 atrasada (planejada 20/05)   │  │
+│ │ ⚠️  Próxima entrega NEXUS-LD v1.5.0 atrasada (planejada 20/05)   │  │
 │ │ ℹ️  Janela de manutenção do cliente: 22h-6h                      │  │
 │ └──────────────────────────────────────────────────────────────────┘  │
 └────────────────────────────────────────────────────────────────────────┘
@@ -194,14 +194,14 @@ Retorna **dados agregados** para essa tela em 1 request (evita N chamadas):
   "cliente": { ...ClienteResponse... },
   "ultimaEntrega": {
     "id": "uuid",
-    "produtoSigla": "DTECLD",
+    "produtoSigla": "NEXUSLD",
     "versao": "1.4.0",
     "dataPublicacao": "2026-05-15",
     "status": "CONCLUIDO"
   },
   "proximaEntrega": {
     "id": "uuid",
-    "produtoSigla": "DTECLD",
+    "produtoSigla": "NEXUSLD",
     "versao": "1.5.0",
     "dataPlanejada": "2026-05-20",
     "status": "APROVADA",
@@ -216,7 +216,7 @@ Retorna **dados agregados** para essa tela em 1 request (evita N chamadas):
   "produtosContratados": [
     {
       "produtoId": "uuid",
-      "produtoSigla": "DTECLD",
+      "produtoSigla": "NEXUSLD",
       "ambiente": "PROD",
       "totalModulos": 5,
       "ultimaVersaoEntregue": "1.4.0"
@@ -226,7 +226,7 @@ Retorna **dados agregados** para essa tela em 1 request (evita N chamadas):
     {
       "tipo": "ENTREGA_ATRASADA",
       "severidade": "WARN",
-      "mensagem": "Próxima entrega DTEC-LD v1.5.0 atrasada (planejada para 2026-05-20).",
+      "mensagem": "Próxima entrega NEXUS-LD v1.5.0 atrasada (planejada para 2026-05-20).",
       "entidadeRelacionadaId": "uuid-proxima-entrega"
     }
   ]

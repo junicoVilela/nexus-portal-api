@@ -36,7 +36,7 @@ springdoc:
     path: /swagger-ui.html
     tags-sorter: alpha
     operations-sorter: method
-  packages-to-scan: br.com.softon.portal.orchestrator
+  packages-to-scan: com.nexus.portal.orchestrator
   show-actuator: false
 ```
 
@@ -140,7 +140,7 @@ Tags principais sugeridas:
 public OpenAPI customOpenAPI() {
     return new OpenAPI()
         .info(new Info()
-            .title("Softon Portal — Release Orchestrator API")
+            .title("Nexus Portal — Release Orchestrator API")
             .version("1.0.0")
             .description("API para orquestração de entregas a clientes."))
         .components(new Components()
@@ -268,7 +268,7 @@ Gera `docs/api/openapi.yaml` em cada build. Versionado em git.
 
 ### cURL gerado pelo Swagger UI
 ```bash
-curl -X POST 'https://intranet.softon.com.br/api/v1/orchestrator/clientes' \
+curl -X POST 'https://intranet.nexus.com.br/api/v1/orchestrator/clientes' \
   -H 'Authorization: Bearer eyJhbGc...' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -300,7 +300,7 @@ Importar `openapi.yaml` diretamente. Coleções geradas com todos os endpoints.
 ### Link
 Adicionar no header do Swagger UI:
 ```java
-.description("Documentação técnica completa em: https://github.com/softon/portal-api/tree/main/docs/release-orchestrator")
+.description("Documentação técnica completa em: https://github.com/nexus/portal-api/tree/main/docs/release-orchestrator")
 ```
 
 ---

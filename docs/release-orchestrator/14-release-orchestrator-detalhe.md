@@ -20,7 +20,7 @@ Detalhes técnicos completos em:
 
 ```text
 ┌────────────────────────────────────────────────────────────────────────┐
-│ < Releases     DTEC-LD v1.5.0      Status: APROVADA  [Ações ⋮]         │
+│ < Releases     NEXUS-LD v1.5.0      Status: APROVADA  [Ações ⋮]         │
 ├────────────────────────────────────────────────────────────────────────┤
 │ [Visão Geral] [Itens] [Artefatos*] [PDF*] [Histórico] [Validação]     │
 │                       ^^^^^^^^^^^^ ^^^^^^                              │
@@ -42,30 +42,30 @@ Permitir ao operador anexar arquivos físicos da release por módulo do produto,
 
 ```text
 ┌────────────────────────────────────────────────────────────────────────┐
-│ Artefatos da Release DTEC-LD v1.5.0                                    │
+│ Artefatos da Release NEXUS-LD v1.5.0                                    │
 ├────────────────────────────────────────────────────────────────────────┤
 │ Resumo: 4/6 módulos com artefato. 2 pendentes obrigatórios.            │
 ├────────────────────────────────────────────────────────────────────────┤
-│ ┌─ dtec-db-ddl (BANCO) ────────────────── Obrigatório ─ ✅ 1 arq.  ─┐ │
+│ ┌─ nexus-db-ddl (BANCO) ────────────────── Obrigatório ─ ✅ 1 arq.  ─┐ │
 │ │ DDL_001_users.sql  •  12KB  •  sha256: abc..ef0   [⬇️] [🗑️]      │ │
 │ │ Anexar: [Choose file]  Obs: [_______________]   [+ Adicionar]    │ │
 │ └──────────────────────────────────────────────────────────────────┘ │
 │                                                                        │
-│ ┌─ dtec-db-dml (BANCO) ────────────────── Obrigatório ─ ⚠️ Pendente─┐ │
+│ ┌─ nexus-db-dml (BANCO) ────────────────── Obrigatório ─ ⚠️ Pendente─┐ │
 │ │ Nenhum artefato anexado.                                          │ │
 │ │ Anexar: [Choose file]  Obs: [_______________]   [+ Adicionar]    │ │
 │ └──────────────────────────────────────────────────────────────────┘ │
 │                                                                        │
-│ ┌─ dtec-portal (WEB) ──────────────────── Obrigatório ─ ✅ 1 arq.  ─┐ │
-│ │ dtec-portal-1.5.0.war  •  47MB  •  sha256: 123..789  [⬇️] [🗑️]   │ │
+│ ┌─ nexus-portal (WEB) ──────────────────── Obrigatório ─ ✅ 1 arq.  ─┐ │
+│ │ nexus-portal-1.5.0.war  •  47MB  •  sha256: 123..789  [⬇️] [🗑️]   │ │
 │ │ ✅ Aceita: .war, .jar, .zip, .tar.gz, .tgz, .ear (config módulo)  │ │
 │ └──────────────────────────────────────────────────────────────────┘ │
 │                                                                        │
-│ ┌─ dtec-api (WEB) ─────────────────────── Obrigatório ─ ✅ 1 arq.  ─┐ │
-│ │ dtec-api-1.5.0.jar  •  38MB  •  sha256: abc..012  [⬇️] [🗑️]     │ │
+│ ┌─ nexus-api (WEB) ─────────────────────── Obrigatório ─ ✅ 1 arq.  ─┐ │
+│ │ nexus-api-1.5.0.jar  •  38MB  •  sha256: abc..012  [⬇️] [🗑️]     │ │
 │ └──────────────────────────────────────────────────────────────────┘ │
 │                                                                        │
-│ ┌─ dtec-funcs (FUNCIONALIDADES) ──────── Auto-gerado ─ N/A          ┐│
+│ ┌─ nexus-funcs (FUNCIONALIDADES) ──────── Auto-gerado ─ N/A          ┐│
 │ │ ℹ️  Tipo não aceita upload. Gerado a partir do cliente na entrega.│ │
 │ └──────────────────────────────────────────────────────────────────┘ │
 └────────────────────────────────────────────────────────────────────────┘
@@ -126,12 +126,12 @@ A tela de **Validação** (já implementada) deve ser expandida:
 ```
 Pendências:
 ✗ A release não possui itens cadastrados.
-✗ Módulo obrigatório "dtec-db-dml" sem artefato uploadado.
-✗ Módulo obrigatório "dtec-batch" sem artefato uploadado.
+✗ Módulo obrigatório "nexus-db-dml" sem artefato uploadado.
+✗ Módulo obrigatório "nexus-batch" sem artefato uploadado.
 
 Alertas:
 ⚠ A release não possui data prevista definida.
-⚠ Módulo opcional "dtec-etl" sem artefato.
+⚠ Módulo opcional "nexus-etl" sem artefato.
 ```
 
 Publicação bloqueada se há pendência.
@@ -160,15 +160,15 @@ Gerar e baixar o PDF da release a partir do conteúdo já cadastrado (release + 
 
 ```text
 ┌────────────────────────────────────────────────────────────────────────┐
-│ PDF da Release DTEC-LD v1.5.0                                          │
+│ PDF da Release NEXUS-LD v1.5.0                                          │
 ├────────────────────────────────────────────────────────────────────────┤
-│ Template: [DTEC-LD Padrão ▼]   Visibilidade: [Cliente ▼]               │
+│ Template: [NEXUS-LD Padrão ▼]   Visibilidade: [Cliente ▼]               │
 │                                                                        │
 │ [Pré-visualizar]   [Baixar PDF]   [Gerar snapshot]                     │
 ├────────────────────────────────────────────────────────────────────────┤
 │ ┌─ Pré-visualização ────────────────────────────────────────────────┐│
 │ │                                                                    ││
-│ │   DTEC-LD - Release Notes                                          ││
+│ │   NEXUS-LD - Release Notes                                          ││
 │ │   Versão 1.5.0 • MINOR • Publicada em 15/05/2026                   ││
 │ │                                                                    ││
 │ │   ## Novidades                                                     ││

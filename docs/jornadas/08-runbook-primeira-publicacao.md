@@ -1,6 +1,6 @@
 # 08 — Runbook de primeira publicação e configuração do ambiente
 
-Guia operacional **end-to-end** para subir o Softon Portal pela primeira vez,
+Guia operacional **end-to-end** para subir o Nexus Portal pela primeira vez,
 fazer os cadastros mínimos e disparar a primeira entrega real para um cliente.
 
 Pré-requisito: você terminou de ler o [07-runbook-s8-jenkins-github.md](07-runbook-s8-jenkins-github.md)
@@ -32,18 +32,18 @@ curl -fsSL https://deb.nodesource.com/setup_20.x | sudo bash -
 sudo apt-get install -y nodejs
 
 # 1.4 — Pastas de runtime
-sudo mkdir -p /var/lib/softon/{artefatos,entregas,backup}
-sudo chown -R softon:softon /var/lib/softon
+sudo mkdir -p /var/lib/nexus/{artefatos,entregas,backup}
+sudo chown -R nexus:nexus /var/lib/nexus
 ```
 
 ### 1.1 — Banco
 
 ```sql
 -- Como superuser postgres
-CREATE USER softon_portal WITH PASSWORD 'TROQUE_AQUI';
-CREATE DATABASE softon_portal OWNER softon_portal ENCODING 'UTF8';
-\c softon_portal
-GRANT ALL ON SCHEMA public TO softon_portal;
+CREATE USER nexus_portal WITH PASSWORD 'TROQUE_AQUI';
+CREATE DATABASE nexus_portal OWNER nexus_portal ENCODING 'UTF8';
+\c nexus_portal
+GRANT ALL ON SCHEMA public TO nexus_portal;
 ```
 
 Flyway roda as migrations (V1..V14) automaticamente no startup.
@@ -52,20 +52,20 @@ Flyway roda as migrations (V1..V14) automaticamente no startup.
 
 ## §2 — Variáveis de ambiente sensíveis
 
-Crie `/etc/softon-portal/portal.env` (modo 600, dono `softon`):
+Crie `/etc/nexus-portal/portal.env` (modo 600, dono `nexus`):
 
 ```bash
 # Banco
-SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/softon_portal
-SPRING_DATASOURCE_USERNAME=softon_portal
+SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/nexus_portal
+SPRING_DATASOURCE_USERNAME=nexus_portal
 SPRING_DATASOURCE_PASSWORD=TROQUE_AQUI
 
 # Profile (ativa logs JSON, retenção real, etc)
 SPRING_PROFILES_ACTIVE=prod
 
 # Storage
-RELEASE_ORCHESTRATOR_STORAGE_ARTEFATOS_DIR=/var/lib/softon/artefatos
-RELEASE_ORCHESTRATOR_STORAGE_ENTREGAS_DIR=/var/lib/softon/entregas
+RELEASE_ORCHESTRATOR_STORAGE_ARTEFATOS_DIR=/var/lib/nexus/artefatos
+RELEASE_ORCHESTRATOR_STORAGE_ENTREGAS_DIR=/var/lib/nexus/entregas
 RELEASE_ORCHESTRATOR_STORAGE_RETENCAO_DIAS=90
 
 # Cifragem AES-GCM para senhas FTP/SFTP/S3 e tokens GitHub/Jenkins
@@ -94,48 +94,48 @@ SECURITY_JWT_SECRET=cole_aqui_outra_chave_base64
 
 ```bash
 # 3.1 — Clone e build
-git clone https://github.com/junicoVilela/softon-portal-api.git
-cd softon-portal-api
+git clone https://github.com/junicoVilela/nexus-portal-api.git
+cd nexus-portal-api
 ./mvnw -pl application -am package -DskipTests
 
 # 3.2 — JAR final
-ls application/target/softon-portal-application-*.jar
-# Copie para /opt/softon-portal/portal.jar
+ls application/target/nexus-application-*.jar
+# Copie para /opt/nexus-portal/portal.jar
 ```
 
 ### 3.1 — systemd unit
 
-`/etc/systemd/system/softon-portal.service`:
+`/etc/systemd/system/nexus-portal.service`:
 
 ```ini
 [Unit]
-Description=Softon Portal API
+Description=Nexus Portal API
 After=network.target postgresql.service
 Wants=postgresql.service
 
 [Service]
 Type=simple
-User=softon
-Group=softon
-EnvironmentFile=/etc/softon-portal/portal.env
-WorkingDirectory=/opt/softon-portal
-ExecStart=/home/softon/.sdkman/candidates/java/current/bin/java \
+User=nexus
+Group=nexus
+EnvironmentFile=/etc/nexus-portal/portal.env
+WorkingDirectory=/opt/nexus-portal
+ExecStart=/home/nexus/.sdkman/candidates/java/current/bin/java \
   -Xms512m -Xmx2g \
-  -jar /opt/softon-portal/portal.jar
+  -jar /opt/nexus-portal/portal.jar
 Restart=on-failure
 RestartSec=10
-StandardOutput=append:/var/log/softon-portal/portal.log
-StandardError=append:/var/log/softon-portal/portal.log
+StandardOutput=append:/var/log/nexus-portal/portal.log
+StandardError=append:/var/log/nexus-portal/portal.log
 
 [Install]
 WantedBy=multi-user.target
 ```
 
 ```bash
-sudo mkdir -p /var/log/softon-portal && sudo chown softon:softon $_
+sudo mkdir -p /var/log/nexus-portal && sudo chown nexus:nexus $_
 sudo systemctl daemon-reload
-sudo systemctl enable --now softon-portal
-sudo systemctl status softon-portal
+sudo systemctl enable --now nexus-portal
+sudo systemctl status nexus-portal
 curl http://localhost:8080/actuator/health   # esperado: {"status":"UP",...}
 ```
 
@@ -145,23 +145,23 @@ curl http://localhost:8080/actuator/health   # esperado: {"status":"UP",...}
 
 ```bash
 # 4.1 — Clone, build de produção
-git clone https://github.com/junicoVilela/softon-portal-web.git
-cd softon-portal-web/frontend
+git clone https://github.com/junicoVilela/nexus-portal-web.git
+cd nexus-portal-web/frontend
 npm ci
 npm run build -- --configuration production
 
 # 4.2 — Publicar via nginx
-sudo cp -r dist/frontend/browser/* /var/www/softon-portal/
+sudo cp -r dist/frontend/browser/* /var/www/nexus-portal/
 ```
 
-`/etc/nginx/sites-available/softon-portal`:
+`/etc/nginx/sites-available/nexus-portal`:
 
 ```nginx
 server {
   listen 80;
-  server_name portal.softon.local;
+  server_name portal.nexus.local;
 
-  root /var/www/softon-portal;
+  root /var/www/nexus-portal;
   index index.html;
 
   # SPA fallback
@@ -180,11 +180,11 @@ server {
 ```
 
 ```bash
-sudo ln -s /etc/nginx/sites-available/softon-portal /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/nexus-portal /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
-Acesse `http://portal.softon.local` — deve abrir a tela de login.
+Acesse `http://portal.nexus.local` — deve abrir a tela de login.
 
 ---
 
@@ -196,8 +196,8 @@ Usuário inicial criado pelas migrations do `seguranca`:
 
 | Campo | Valor |
 |---|---|
-| Email | `admin@softon.local` |
-| Senha | `softon` (**troque na primeira sessão!**) |
+| Email | `admin@nexus.local` |
+| Senha | `nexus` (**troque na primeira sessão!**) |
 
 Vá em **Configurações → Usuários** e:
 
@@ -213,26 +213,26 @@ Vá em **Configurações → Usuários** e:
 
 | Campo | Exemplo |
 |---|---|
-| Sigla | `DTECLD` (CAIXA-ALTA, usado em assets e nomes de pacote) |
-| Nome | `DTec Lite` |
+| Sigla | `NEXUSLD` (CAIXA-ALTA, usado em assets e nomes de pacote) |
+| Nome | `Nexus Lite` |
 | Cor | `#2563eb` (badges na UI) |
 | Ativo | `true` |
 
 **Aba GitHub** (S9):
-- Repositório: `softon/dtec-lite`
+- Repositório: `nexus/nexus-lite`
 - Branch padrão: `main`
 - Regex de tag: `^v\d+\.\d+\.\d+$`
 - Token GitHub: PAT com escopo `repo` (cifrado no banco — nunca devolvido)
 - Clique **Testar conexão** — deve listar últimas 5 releases.
 
 **Aba Jenkins** (S11):
-- URL base: `https://jenkins.softon.local`
-- Nome do job: `dtec-lite-build`
+- URL base: `https://jenkins.nexus.local`
+- Nome do job: `nexus-lite-build`
 - Usuário + API token do Jenkins
 - Clique **Testar conexão**.
 
-**Aba Módulos:** cadastre os módulos do produto (ex: `dtec-web`, `dtec-batch`,
-`dtec-banco`, `dtec-kettle`) com `tipo` (WEB/BATCH/BANCO/KETTLE) e
+**Aba Módulos:** cadastre os módulos do produto (ex: `nexus-web`, `nexus-batch`,
+`nexus-banco`, `nexus-kettle`) com `tipo` (WEB/BATCH/BANCO/KETTLE) e
 `caminhoRepo`/`prefixoDDL`/`prefixoDML` (BANCO) ou `caminhoRepo` (KETTLE).
 
 ### 5.3 — Cadastrar o cliente
@@ -251,7 +251,7 @@ Vá em **Configurações → Usuários** e:
 **Aba Contatos:** adicione pelo menos um contato técnico e um operacional
 (receberão e-mails de notificação).
 
-**Aba Produtos:** **Contratar produto** → escolha `DTECLD`. Para cada módulo,
+**Aba Produtos:** **Contratar produto** → escolha `NEXUSLD`. Para cada módulo,
 informe a `versão atual` que o cliente está rodando (ex: `1.4.0`). Isso é o
 ponto de partida do delta.
 
@@ -284,7 +284,7 @@ entrega só puder ser publicada depois de validada por um segundo operador.
 
 | Campo | Exemplo |
 |---|---|
-| Produto | `DTECLD` |
+| Produto | `NEXUSLD` |
 | Versão | `1.5.0` |
 | Tipo | `MINOR` |
 | Status | `RASCUNHO` |
@@ -313,7 +313,7 @@ badge **Build: Sucesso · #N** apontando para o build no Jenkins.
 
 Na aba **Artefatos** da release, clique **Sincronizar do GitHub**. O portal
 baixa os assets WEB/BATCH e cacheia em
-`/var/lib/softon/artefatos/github-cache/{produto}/{release}/{módulo}/`.
+`/var/lib/nexus/artefatos/github-cache/{produto}/{release}/{módulo}/`.
 
 ---
 
@@ -324,7 +324,7 @@ em 5 passos)
 
 ### Passo 1 — Cliente + produto + release
 - Cliente: `ACME`
-- Produto: `DTECLD`
+- Produto: `NEXUSLD`
 - Release: `1.5.0`
 
 ### Passo 2 — Módulos a entregar
@@ -349,7 +349,7 @@ empacotamento usa esse conteúdo.
 
 ### Passo 5 — Geração + publicação
 Clique **Gerar pacote**. Em background:
-1. `EmpacotadorEntrega` cria ZIP em `/var/lib/softon/entregas/acme/dtecld/1.5.0/`.
+1. `EmpacotadorEntrega` cria ZIP em `/var/lib/nexus/entregas/acme/nexusld/1.5.0/`.
 2. Status: `EM_GERACAO → CONCLUIDA`. SHA-256 salvo em audit.
 3. Se `ConfigEntrega.tipoDestino != PASTA`, status_publicacao vira `PENDENTE`
    e a primeira tentativa é agendada para "agora".
@@ -384,7 +384,7 @@ Aponte um Prometheus/Grafana para o endpoint se quiser dashboards.
 
 ### 8.3 — Logs JSON
 ```bash
-tail -f /var/log/softon-portal/portal.log | jq
+tail -f /var/log/nexus-portal/portal.log | jq
 # Procure por entregaId/clienteId via MDC enrichment.
 ```
 
@@ -397,7 +397,7 @@ arquivo físico — SHA-256 e metadados preservados para auditoria.
 **Banco:** `pg_dump` diário do schema. Sem o banco você perde todo o
 histórico, contratos, deltas e cifragens.
 
-**Storage local:** rsync de `/var/lib/softon/entregas/` para máquina
+**Storage local:** rsync de `/var/lib/nexus/entregas/` para máquina
 secundária (rclone, restic, etc). Pacotes antigos já são reproduzíveis a
 partir do banco + GitHub, então backup é desejável mas não crítico.
 

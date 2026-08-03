@@ -1,6 +1,6 @@
-# CLAUDE.md - Softon Portal API
+# CLAUDE.md - Nexus Portal API
 
-Backend do **Softon Portal API** — monólito modular simples em Java 21 / Spring Boot 4.x / PostgreSQL.
+Backend do **Nexus Portal API** — monólito modular simples em Java 21 / Spring Boot 4.x / PostgreSQL.
 
 ---
 

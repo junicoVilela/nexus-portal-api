@@ -1,4 +1,4 @@
-# 05 — Roteiro de demo: ACME recebe DTEC-LD v1.5.0
+# 05 — Roteiro de demo: ACME recebe NEXUS-LD v1.5.0
 
 Roteiro operacional de **15–30 minutos** para mostrar a jornada feliz do
 [`00-cenario-feliz-acme.md`](00-cenario-feliz-acme.md) usando o que está
@@ -27,10 +27,10 @@ cinco — o foco é mostrar a sequência de telas.
 
 | # | Ação | Onde | Como |
 |---|---|---|---|
-| 0.1 | Backend up | `softon-portal-api` | `./mvnw spring-boot:run -pl application` (profile `dev`) |
-| 0.2 | Frontend up | `softon-portal-web/frontend` | `npx ng serve` (proxy `proxy.conf.json` cuida do roteamento) |
+| 0.1 | Backend up | `nexus-portal-api` | `./mvnw spring-boot:run -pl application` (profile `dev`) |
+| 0.2 | Frontend up | `nexus-portal-web/frontend` | `npx ng serve` (proxy `proxy.conf.json` cuida do roteamento) |
 | 0.3 | Login | `/login` | usuário ADMIN do seed |
-| 0.4 | Produto DTEC-LD cadastrado | `/release-orchestrator/produtos` | Sigla `DTECLD`, cor azul. Cadastra 1× se não existir. |
+| 0.4 | Produto NEXUS-LD cadastrado | `/release-orchestrator/produtos` | Sigla `NEXUSLD`, cor azul. Cadastra 1× se não existir. |
 | 0.5 | Módulos catálogo cadastrados | `/release-orchestrator/produtos/:id/modulos` | `WEB`, `BATCH`, `BANCO`, `KETTLE` (1× cada). FUNC/REGRAS opcionais. |
 | 0.6 | Cliente ACME ativo | `/release-orchestrator/clientes/novo` | Sigla `ACME`, CNPJ `12345678000199`, ambiente `PROD`, banco `ORACLE`, 1 contato técnico. |
 
@@ -48,7 +48,7 @@ Tempo de prep: ~5 min se já estiver familiarizado com as telas.
 | Passo | Ação | Tela |
 |---|---|---|
 | 1.1 | Abrir builder | `/release-orchestrator/builder` |
-| 1.2 | Selecionar produto `DTEC-LD` |  |
+| 1.2 | Selecionar produto `NEXUS-LD` |  |
 | 1.3 | Preencher versão `1.5.0`, título "Release de mai/26", tipo MINOR | |
 | 1.4 | Adicionar 3-4 itens (FEATURE, FIX, NOTA) e Salvar como `RASCUNHO` → Avançar para `EM_DESENVOLVIMENTO` | |
 | 1.5 | Abrir detalhe da release recém-criada | `/release-orchestrator/releases/:id` |
@@ -73,7 +73,7 @@ Tempo de prep: ~5 min se já estiver familiarizado com as telas.
 |---|---|---|
 | 3.1 | Abrir agenda | `/release-orchestrator/proximas-entregas` |
 | 3.2 | Clicar **Planejar entrega** → wizard de cadastro | |
-| 3.3 | Selecionar ACME, DTEC-LD, ambiente `PROD`, release `1.5.0`, data prevista (sábado próximo), prioridade `ALTA` | |
+| 3.3 | Selecionar ACME, NEXUS-LD, ambiente `PROD`, release `1.5.0`, data prevista (sábado próximo), prioridade `ALTA` | |
 | 3.4 | Salvar → status `PLANEJADA` | volta para `/proximas-entregas` |
 | 3.5 | Clicar **Agendada** na linha → muda para `AGENDADA` | |
 
@@ -147,7 +147,7 @@ release já `PUBLICADA` no seed. Cena 4 é o ponto alto.
 
 | Sintoma | Causa provável | Correção |
 |---|---|---|
-| `EM_GERACAO` nunca avança | `@Async` não habilitado ou falta diretório de saída | Conferir log; criar `/var/lib/softon/entregas` (ou path do `application-dev.yml`) |
+| `EM_GERACAO` nunca avança | `@Async` não habilitado ou falta diretório de saída | Conferir log; criar `/var/lib/nexus/entregas` (ou path do `application-dev.yml`) |
 | 404 ao listar clientes | Backend não subiu o módulo release-orchestrator | `./mvnw spring-boot:run -pl application` em dev |
 | Wizard mostra "nenhuma release disponível" | Release ainda não está `APROVADA`/`PUBLICADA` | Cena 2 antes da 4 |
 | PDF do documento dá erro | Templates Thymeleaf faltando para FUNC/REGRAS | Marcar apenas WEB/BANCO no passo 4 (ou cadastrar templates) |

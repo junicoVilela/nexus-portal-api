@@ -13,15 +13,15 @@ Usar Spring Boot 4.x.
 Base package:
 
 ```text
-br.com.softon.portal
+com.nexus.portal
 ```
 
 Módulos:
 
 ```text
-br.com.softon.portal.gateway
-br.com.softon.portal.docflow
-br.com.softon.portal.releaseorchestrator
+com.nexus.portal.gateway
+com.nexus.portal.docflow
+com.nexus.portal.releaseorchestrator
 ```
 
 **Não usar `modules` no caminho do pacote.**

@@ -4,14 +4,14 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>br.com.softon</groupId>
-    <artifactId>softon-portal-api</artifactId>
+    <groupId>com.nexus.portal</groupId>
+    <artifactId>nexus-portal-api</artifactId>
     <version>0.1.0-SNAPSHOT</version>
     <relativePath>..</relativePath>
   </parent>
 
-  <artifactId>release-orchestrator-backend</artifactId>
-  <name>release-orchestrator-backend</name>
+  <artifactId>nexus-release-orchestrator</artifactId>
+  <name>nexus-release-orchestrator</name>
   <description>Release Orchestrator — gestão de versões, produtos, itens e templates de release.</description>
 
   <properties>
@@ -20,13 +20,13 @@
 
   <dependencies>
     <dependency>
-      <groupId>br.com.softon</groupId>
-      <artifactId>softon-portal-shared</artifactId>
+      <groupId>com.nexus.portal</groupId>
+      <artifactId>nexus-shared</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>br.com.softon</groupId>
-      <artifactId>dtec-rbac</artifactId>
+      <groupId>com.nexus.portal</groupId>
+      <artifactId>nexus-identity-access</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

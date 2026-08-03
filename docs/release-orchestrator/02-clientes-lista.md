@@ -85,7 +85,7 @@ Multi-select. Lista produtos cadastrados. Filtro mostra clientes que contrataram
 - **Cadastro entre datas**: date range.
 
 ### Persistência
-- Filtros vão para querystring: `?status=ATIVO&produto=DTECLD&q=acme`.
+- Filtros vão para querystring: `?status=ATIVO&produto=NEXUSLD&q=acme`.
 - Resetam paginação para página 1.
 - Botão "Limpar tudo" só aparece com ≥ 2 filtros aplicados.
 
@@ -232,7 +232,7 @@ GET /api/v1/orchestrator/clientes
       "ultimaEntrega": {
         "id": "uuid",
         "dataPublicacao": "2026-05-15",
-        "produtoSigla": "DTECLD",
+        "produtoSigla": "NEXUSLD",
         "versao": "1.4.0"
       },
       "proximaEntrega": {

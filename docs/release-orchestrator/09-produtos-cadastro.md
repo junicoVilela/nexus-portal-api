@@ -63,7 +63,7 @@ No **MVP**, integrações GitHub/Jenkins ficam ocultas; artefatos entram por upl
 │                                                                        │
 │ ┌─ Integração GitHub (Pós-MVP) ───────────────────────────────────┐  │
 │ │ URL do repositório*                                              │  │
-│ │ [https://github.com/softon/dtec-ld                  ]            │  │
+│ │ [https://github.com/nexus/nexus-ld                  ]            │  │
 │ │ Branch padrão           Padrão de tag                            │  │
 │ │ [main]                  [^v\d+\.\d+\.\d+$]                       │  │
 │ │ Credencial: [Token GitHub: ghp_•••••••••••• Alterar]             │  │
@@ -72,9 +72,9 @@ No **MVP**, integrações GitHub/Jenkins ficam ocultas; artefatos entram por upl
 │                                                                        │
 │ ┌─ Integração Jenkins (Pós-MVP) ──────────────────────────────────┐  │
 │ │ URL do Jenkins                                                   │  │
-│ │ [https://jenkins.softon.internal                    ]            │  │
+│ │ [https://jenkins.nexus.internal                    ]            │  │
 │ │ Nome do job                                                      │  │
-│ │ [dtec-ld-build]                                                  │  │
+│ │ [nexus-ld-build]                                                  │  │
 │ │ Trigger:  ◉ build-on-tag  ○ manual                               │  │
 │ │ Credencial: [User: deploy / Token: ••••• Alterar]                │  │
 │ │ [Testar conexão]                                                 │  │
@@ -82,7 +82,7 @@ No **MVP**, integrações GitHub/Jenkins ficam ocultas; artefatos entram por upl
 │                                                                        │
 │ ┌─ Templates de Documento ────────────────────────────────────────┐  │
 │ │ Template padrão para PDF de release (do produto):                │  │
-│ │ [Template DTEC-LD Padrão ▼]                                      │  │
+│ │ [Template NEXUS-LD Padrão ▼]                                      │  │
 │ └──────────────────────────────────────────────────────────────────┘  │
 │                                                                        │
 │              [Cancelar]   [Salvar e configurar módulos]   [Salvar]     │
@@ -187,8 +187,8 @@ No **MVP**, integrações GitHub/Jenkins ficam ocultas; artefatos entram por upl
 - Token mascarado em GETs.
 
 ### 6.6 Sigla — exemplos válidos
-- `DTECLD`, `DTEC-CR`, `FOLHA`, `CONTAS-V2`.
-- Inválidos: `dtec ld` (espaço), `dtec_ld` (underscore), `dtec/ld` (slash).
+- `NEXUSLD`, `Nexus-CR`, `FOLHA`, `CONTAS-V2`.
+- Inválidos: `nexus ld` (espaço), `nexus_ld` (underscore), `nexus/ld` (slash).
 
 ---
 
@@ -206,22 +206,22 @@ Para pós-MVP, body amplia com campos GitHub/Jenkins:
 
 ```json
 {
-  "nome": "DTEC-LD",
-  "sigla": "DTECLD",
+  "nome": "NEXUS-LD",
+  "sigla": "NEXUSLD",
   "tipo": "SISTEMA",
   "descricao": "Sistema de legislação digital",
   "cor": "#2563eb",
   "ativo": true,
   "responsavelId": "uuid",
   "github": {
-    "repositorioUrl": "https://github.com/softon/dtec-ld",
+    "repositorioUrl": "https://github.com/nexus/nexus-ld",
     "branchPadrao": "main",
     "padraoTag": "^v\\d+\\.\\d+\\.\\d+$",
     "credencialId": "uuid"
   },
   "jenkins": {
-    "url": "https://jenkins.softon.internal",
-    "job": "dtec-ld-build",
+    "url": "https://jenkins.nexus.internal",
+    "job": "nexus-ld-build",
     "triggerMode": "BUILD_ON_TAG",
     "credencialId": "uuid"
   },
@@ -250,7 +250,7 @@ Response:
 {
   "ok": true,
   "detalhes": {
-    "repoEncontrado": "softon/dtec-ld",
+    "repoEncontrado": "nexus/nexus-ld",
     "ultimaTag": "v1.5.0",
     "ultimoCommitData": "2026-05-30T18:00:00Z"
   }
@@ -268,7 +268,7 @@ Response:
 {
   "ok": true,
   "detalhes": {
-    "jobEncontrado": "dtec-ld-build",
+    "jobEncontrado": "nexus-ld-build",
     "ultimoBuild": "#234",
     "ultimoBuildStatus": "SUCCESS"
   }
@@ -368,8 +368,8 @@ public record ProdutoRequest(
 
 | Produto | Sigla | Tipo |
 |---|---|---|
-| DTEC-LD | DTECLD | SISTEMA |
-| DTEC-CR | DTECCR | SISTEMA |
+| NEXUS-LD | NEXUSLD | SISTEMA |
+| Nexus-CR | NEXUSCR | SISTEMA |
 | FOLHA-WEB | FOLHA | SISTEMA |
 | Integração Pagamentos | INTPAG | INTEGRACAO |
 | Lib Util Comum | LIBUTIL | LIBRARY |

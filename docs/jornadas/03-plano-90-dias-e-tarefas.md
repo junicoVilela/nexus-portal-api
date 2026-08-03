@@ -3,7 +3,7 @@
 Complemento de [`02-checklist-por-sprint.md`](02-checklist-por-sprint.md): **marcos fixos**, **paralelismo** e **backlog pronto para Jira/Linear**.
 
 **Início sugerido:** 2026-06-16 · **Fim MVP (Fase 1):** 2026-09-14 (90 dias)  
-**Produto piloto:** DTEC-LD · **Cliente piloto:** ACME
+**Produto piloto:** NEXUS-LD · **Cliente piloto:** ACME
 
 **Estimativa:** story points Fibonacci (SP). Conversão orientativa: **1 SP ≈ 0,5 dia-dev** (dev full-stack maduro no projeto).
 
@@ -29,7 +29,7 @@ Complemento de [`02-checklist-por-sprint.md`](02-checklist-por-sprint.md): **mar
 
 | Marco | Data alvo | Entregável | Sprint ref. |
 |---|---|---|---|
-| **M0** Kickoff | 2026-06-16 | Ambiente local OK, piloto DTEC-LD + ACME definidos | — |
+| **M0** Kickoff | 2026-06-16 | Ambiente local OK, piloto NEXUS-LD + ACME definidos | — |
 | **M1** DocFlow integrado | 2026-06-30 | Login JWT + publicação ZIP end-to-end | S0 |
 | **M2** Release com artefatos | 2026-07-14 | Módulos catalogados + upload + PDF release 1.5.0 rascunho | S1–S2 |
 | **M3** Cliente operacional | 2026-07-28 | ACME cadastrado (API); produtos/módulos/funcionalidades | S3 |
@@ -109,7 +109,7 @@ Sem  W24 W25 W26 W27 W28 W29 W30 W31 W32 W33 W34 W35 W36 W37
 |---|---|---:|---|---|
 | RO-201 | Renderer MD → PDF (3 tipos) | 8 | RO-102 | PDF INTERNO/CLIENTE/SUPORTE |
 | RO-202 | API `GET /releases/{id}/pdf` | 2 | RO-201 | Content-Disposition download |
-| RO-203 | FE: CRUD módulos por produto | 5 | RO-104 | Lista/criar/editar módulos DTEC-LD |
+| RO-203 | FE: CRUD módulos por produto | 5 | RO-104 | Lista/criar/editar módulos NEXUS-LD |
 | RO-204 | FE: aba Artefatos na release | 5 | RO-105 | Upload por módulo; progresso; delete |
 | RO-205 | FE: versão por módulo na release | 3 | RO-102 | Campos versão atual/nova visíveis |
 | RO-206 | FE: botão gerar/baixar PDF | 2 | RO-202 | Preview ou download direto |
@@ -210,7 +210,7 @@ Iniciar **semana 5** (≈ 2026-07-21); concluir idealmente até **2026-09-30**.
 
 | ID | Título | SP | Dep. | Critério de aceite |
 |---|---|---:|---|---|
-| INF-801 | Jenkinsfile DTEC-LD (build-on-tag) | 5 | — | Build local ou CI sandbox OK |
+| INF-801 | Jenkinsfile NEXUS-LD (build-on-tag) | 5 | — | Build local ou CI sandbox OK |
 | INF-802 | Job Jenkins + credencial PAT | 3 | INF-801 | Trigger tag `v*.*.*` |
 | INF-803 | Tag teste v0.0.1 → GitHub Release | 3 | INF-802 | Asset `.war` nomeado |
 | INF-804 | VERSIONING.md + estrutura db/kettle | 2 | — | Spec `40` no repo |
@@ -275,7 +275,7 @@ para que o cliente receba ZIP com artefatos, delta MVP, PDF e manifest.
 - [ ] 11 etapas persistidas com status (PENDENTE/EXECUTANDO/OK/ERRO)
 - [ ] ZIP final em pasta configurada em ConfigEntrega
 - [ ] Falha em etapa marca entrega ERRO com mensagem
-- [ ] Testes cobrem caminho feliz ACME DTEC-LD 1.4.0→1.5.0
+- [ ] Testes cobrem caminho feliz ACME NEXUS-LD 1.4.0→1.5.0
 
 ## Dependências
 - Blocked by: RO-403, RO-103

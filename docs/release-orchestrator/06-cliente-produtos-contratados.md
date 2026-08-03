@@ -36,12 +36,12 @@ Para cada módulo do produto contratado, registra:
 
 ```text
 Cliente ACME
-├─ ClienteProduto(DTEC-LD, ambiente=PROD)
-│  ├─ ClienteProdutoModulo(dtec-web,       versaoAtual=1.4.0, ativo=true)
-│  ├─ ClienteProdutoModulo(dtec-batch,     versaoAtual=1.4.0, ativo=true)
-│  ├─ ClienteProdutoModulo(dtec-db-ddl,    versaoAtual=1.4.0, ativo=true)
-│  ├─ ClienteProdutoModulo(dtec-db-dml,    versaoAtual=1.4.0, ativo=true)
-│  └─ ClienteProdutoModulo(dtec-etl,       versaoAtual=null,  ativo=false)
+├─ ClienteProduto(NEXUS-LD, ambiente=PROD)
+│  ├─ ClienteProdutoModulo(nexus-web,       versaoAtual=1.4.0, ativo=true)
+│  ├─ ClienteProdutoModulo(nexus-batch,     versaoAtual=1.4.0, ativo=true)
+│  ├─ ClienteProdutoModulo(nexus-db-ddl,    versaoAtual=1.4.0, ativo=true)
+│  ├─ ClienteProdutoModulo(nexus-db-dml,    versaoAtual=1.4.0, ativo=true)
+│  └─ ClienteProdutoModulo(nexus-etl,       versaoAtual=null,  ativo=false)
 └─ ClienteProduto(FOLHA, ambiente=PROD)
    └─ ...
 ```
@@ -54,17 +54,17 @@ Cliente ACME
 ┌────────────────────────────────────────────────────────────────────────┐
 │ Produtos Contratados                              [+ Adicionar produto]│
 ├────────────────────────────────────────────────────────────────────────┤
-│ Filtros: [Apenas ativos]  [Por produto: DTEC-LD ▼]                    │
+│ Filtros: [Apenas ativos]  [Por produto: NEXUS-LD ▼]                    │
 ├────────────────────────────────────────────────────────────────────────┤
-│ ▼ DTEC-LD       (PROD)   3/5 módulos ativos    Última: v1.4.0 ✅      │
+│ ▼ NEXUS-LD       (PROD)   3/5 módulos ativos    Última: v1.4.0 ✅      │
 │ ┌──────────────────────────────────────────────────────────────────┐  │
 │ │ Módulo          │ Tipo │ Versão atual │ Última entrega │ Ações    │  │
 │ ├──────────────────────────────────────────────────────────────────┤  │
-│ │ ✅ dtec-web     │ WEB  │ 1.4.0        │ 2026-05-15     │ ⋮        │  │
-│ │ ✅ dtec-batch   │ BATCH│ 1.4.0        │ 2026-05-15     │ ⋮        │  │
-│ │ ✅ dtec-db-ddl  │ BANCO│ 1.4.0        │ 2026-05-15     │ ⋮        │  │
-│ │ ❌ dtec-etl     │ KETTLE│ —           │ —              │ ⋮        │  │
-│ │ ❌ dtec-func    │ FUNC │ —            │ —              │ ⋮        │  │
+│ │ ✅ nexus-web     │ WEB  │ 1.4.0        │ 2026-05-15     │ ⋮        │  │
+│ │ ✅ nexus-batch   │ BATCH│ 1.4.0        │ 2026-05-15     │ ⋮        │  │
+│ │ ✅ nexus-db-ddl  │ BANCO│ 1.4.0        │ 2026-05-15     │ ⋮        │  │
+│ │ ❌ nexus-etl     │ KETTLE│ —           │ —              │ ⋮        │  │
+│ │ ❌ nexus-func    │ FUNC │ —            │ —              │ ⋮        │  │
 │ └──────────────────────────────────────────────────────────────────┘  │
 │                                                                        │
 │ ▼ FOLHA        (PROD)   4/4 módulos ativos     Última: v2.0.0 ✅      │
@@ -176,8 +176,8 @@ Response:
     {
       "id": "uuid-cliente-produto",
       "produtoId": "uuid",
-      "produtoSigla": "DTECLD",
-      "produtoNome": "DTEC-LD",
+      "produtoSigla": "NEXUSLD",
+      "produtoNome": "NEXUS-LD",
       "produtoCor": "#2563eb",
       "ambiente": "PROD",
       "ativo": true,
@@ -189,8 +189,8 @@ Response:
         {
           "id": "uuid-cpm",
           "moduloProdutoId": "uuid-modulo",
-          "codigo": "dtec-web",
-          "nome": "DTEC Web",
+          "codigo": "nexus-web",
+          "nome": "Nexus Web",
           "tipo": "WEB",
           "versaoAtual": "1.4.0",
           "ativo": true,

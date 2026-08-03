@@ -41,7 +41,7 @@ Acessível em:
 │                                                                        │
 │ ┌─ Pasta local ───────────────────────────────────────────────────┐  │
 │ │ Caminho base*                                                    │  │
-│ │ [/var/lib/softon/entregas/cliente-acme              ]            │  │
+│ │ [/var/lib/nexus/entregas/cliente-acme              ]            │  │
 │ │ ℹ️  Pasta deve existir e ter permissão de escrita.                │  │
 │ │ [Testar acesso]                                                  │  │
 │ └──────────────────────────────────────────────────────────────────┘  │
@@ -95,7 +95,7 @@ Acessível em:
 | Caminho base | text | ✅ | path válido, normalizado (sem `..`), absoluto |
 
 **Validação:**
-- Backend valida que path é absoluto, não tem `..`, não escape para fora de `/var/lib/softon/`.
+- Backend valida que path é absoluto, não tem `..`, não escape para fora de `/var/lib/nexus/`.
 - "Testar acesso" verifica se path existe e é escrevível.
 
 ### 4.3 FTP / SFTP (pós-MVP)
@@ -228,7 +228,7 @@ Response:
 ```json
 {
   "tipoDestino": "PASTA",
-  "caminhoBase": "/var/lib/softon/entregas/cliente-acme",
+  "caminhoBase": "/var/lib/nexus/entregas/cliente-acme",
   "credenciaisResumo": "Sem credenciais (PASTA)",
   "janela": {
     "restringida": true,

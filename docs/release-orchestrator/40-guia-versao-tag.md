@@ -77,17 +77,17 @@ Padronizar como **criar, publicar e consumir tags** de versão para que:
 
 ---
 
-## 5. Exemplo: DTEC-LD v1.5.0
+## 5. Exemplo: NEXUS-LD v1.5.0
 
 | Passo | Ação |
 |---|---|
-| 1 | Release `DTEC-LD 1.5.0` **PUBLICADA** no portal com itens revisados |
-| 2 | Módulos: `dtec-web` (WEB), `dtec-db` (BANCO), `dtec-etl` (KETTLE) |
-| 3 | Tag `v1.5.0` nos repos `dtec-ld`, `dtec-ld-db`, `dtec-ld-kettle` |
+| 1 | Release `NEXUS-LD 1.5.0` **PUBLICADA** no portal com itens revisados |
+| 2 | Módulos: `nexus-web` (WEB), `nexus-db` (BANCO), `nexus-etl` (KETTLE) |
+| 3 | Tag `v1.5.0` nos repos `nexus-ld`, `nexus-ld-db`, `nexus-ld-kettle` |
 | 4 | Jenkins publica assets no GitHub Release de cada repo |
 | 5 | Cliente ACME: última entrega foi `v1.4.0` → delta `v1.4.0..v1.5.0` |
 | 6 | Assistente de entrega (`18`) seleciona módulos; operador confirma range (`20`) |
-| 7 | Geração (`21`) monta pacote `ACME_DTECLD_1.5.0_*.zip` |
+| 7 | Geração (`21`) monta pacote `ACME_NEXUSLD_1.5.0_*.zip` |
 
 ---
 
@@ -129,7 +129,7 @@ Cada produto pode incluir no repo:
 - Release: criar tag após aprovação no Release Orchestrator
 - Jenkins: job `{produto}-build` (build-on-tag)
 - Assets: publicados no GitHub Release da tag
-- Guia completo: softon-portal-api/docs/release-orchestrator/40-guia-versao-tag.md
+- Guia completo: nexus-portal-api/docs/release-orchestrator/40-guia-versao-tag.md
 ```
 
 ---

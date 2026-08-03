@@ -33,18 +33,18 @@ Acessível como passo do wizard, ou diretamente em `/orchestrator/entregas/:id/m
 │ ┌──────────────────────────────────────────────────────────────────┐  │
 │ │ Env│Módulo         │Tipo │Contr.│Atual │Nova  │Mudança│Obs    │  │
 │ ├──────────────────────────────────────────────────────────────────┤  │
-│ │ ☑ │dtec-db-ddl    │BANCO│ Sim  │1.4.0 │1.5.0 │+15 SQL│[___]  │  │
-│ │ ☑ │dtec-db-dml    │BANCO│ Sim  │1.4.0 │1.5.0 │+8 SQL │[___]  │  │
-│ │ ☑ │dtec-funcs     │FUNC │ Sim  │ —    │ —    │auto   │[___]  │  │
-│ │ ☑ │dtec-regras    │REGRA│ Sim  │ —    │ —    │auto   │[___]  │  │
-│ │ ☑ │dtec-web       │WEB  │ Sim  │1.4.0 │1.5.0 │.war   │[___]  │  │
-│ │ ☐ │dtec-batch     │BATCH│ Sim  │1.4.0 │1.4.0 │nenhuma│[___]  │  │
-│ │ ▒ │dtec-etl       │KETL │ Não  │ —    │ —    │N/C    │       │  │
+│ │ ☑ │nexus-db-ddl    │BANCO│ Sim  │1.4.0 │1.5.0 │+15 SQL│[___]  │  │
+│ │ ☑ │nexus-db-dml    │BANCO│ Sim  │1.4.0 │1.5.0 │+8 SQL │[___]  │  │
+│ │ ☑ │nexus-funcs     │FUNC │ Sim  │ —    │ —    │auto   │[___]  │  │
+│ │ ☑ │nexus-regras    │REGRA│ Sim  │ —    │ —    │auto   │[___]  │  │
+│ │ ☑ │nexus-web       │WEB  │ Sim  │1.4.0 │1.5.0 │.war   │[___]  │  │
+│ │ ☐ │nexus-batch     │BATCH│ Sim  │1.4.0 │1.4.0 │nenhuma│[___]  │  │
+│ │ ▒ │nexus-etl       │KETL │ Não  │ —    │ —    │N/C    │       │  │
 │ └──────────────────────────────────────────────────────────────────┘  │
 │                                                                        │
 │ ☑ Avisos:                                                              │
-│ • dtec-batch: nenhuma mudança detectada (versão atual = nova).         │
-│ • dtec-etl: módulo não contratado.                                     │
+│ • nexus-batch: nenhuma mudança detectada (versão atual = nova).         │
+│ • nexus-etl: módulo não contratado.                                     │
 │                                                                        │
 │              [Voltar]    [Salvar rascunho]    [Continuar →]            │
 └────────────────────────────────────────────────────────────────────────┘
@@ -165,7 +165,7 @@ Response:
   "modulos": [
     {
       "moduloProdutoId": "uuid",
-      "codigo": "dtec-db-ddl",
+      "codigo": "nexus-db-ddl",
       "nome": "Banco DDL",
       "tipo": "BANCO",
       "contratado": true,

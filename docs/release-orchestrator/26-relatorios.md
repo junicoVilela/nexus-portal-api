@@ -159,7 +159,7 @@ POST /api/v1/orchestrator/relatorios/agendados
   "tipo": "entregas-por-cliente",
   "parametros": {...},
   "frequencia": "DIARIA",
-  "destinatarios": ["gerencia@softon.com"],
+  "destinatarios": ["gerencia@nexus.com"],
   "formato": "PDF"
 }
 ```

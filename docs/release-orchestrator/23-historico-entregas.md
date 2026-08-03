@@ -36,12 +36,12 @@ Acessível em `/orchestrator/entregas`. Atalho a partir do dashboard e da visão
 │ ┌──────────────────────────────────────────────────────────────────┐  │
 │ │ ID         │ Cliente │ Produto │ Vers │ Data    │ Status │ Reent│  │
 │ ├──────────────────────────────────────────────────────────────────┤  │
-│ │ ENTR-0142 │ ACME    │ DTECLD  │ 1.5.0│ 31/05/26│ ✅     │ —    │  │
+│ │ ENTR-0142 │ ACME    │ NEXUSLD  │ 1.5.0│ 31/05/26│ ✅     │ —    │  │
 │ │ ENTR-0141 │ BETA    │ FOLHA   │ 2.0.0│ 30/05/26│ ✅     │ —    │  │
 │ │ ENTR-0140 │ GAMMA   │ CONTAS  │ 0.9.0│ 28/05/26│ ⚠️ Prob│ —    │  │
-│ │ ENTR-0139 │ ACME    │ DTECLD  │ 1.4.0│ 15/05/26│ ✅     │ #138 │  │
-│ │ ENTR-0138 │ ACME    │ DTECLD  │ 1.4.0│ 14/05/26│ ❌ Falh│ —    │  │
-│ │ ENTR-0137 │ DELTA   │ DTECCR  │ 1.0.0│ 10/05/26│ ✅     │ —    │  │
+│ │ ENTR-0139 │ ACME    │ NEXUSLD  │ 1.4.0│ 15/05/26│ ✅     │ #138 │  │
+│ │ ENTR-0138 │ ACME    │ NEXUSLD  │ 1.4.0│ 14/05/26│ ❌ Falh│ —    │  │
+│ │ ENTR-0137 │ DELTA   │ NEXUSCR  │ 1.0.0│ 10/05/26│ ✅     │ —    │  │
 │ │ ENTR-0136 │ ACME    │ INTPAG  │ 1.0.0│ 05/05/26│ ✅     │ —    │  │
 │ └──────────────────────────────────────────────────────────────────┘  │
 │                                                                        │
@@ -75,7 +75,7 @@ Acessível em `/orchestrator/entregas`. Atalho a partir do dashboard e da visão
 
 ### Módulo
 - Filtra entregas que incluíram um módulo específico.
-- Útil: "todas entregas que tocaram dtec-db-ddl".
+- Útil: "todas entregas que tocaram nexus-db-ddl".
 
 ### Avançados
 - Apenas problemáticas.
@@ -181,7 +181,7 @@ Response:
       "id": "uuid",
       "codigo": "ENTR-2026-0142",
       "clienteId": "uuid", "clienteSigla": "ACME",
-      "produtoId": "uuid", "produtoSigla": "DTECLD", "produtoCor": "#2563eb",
+      "produtoId": "uuid", "produtoSigla": "NEXUSLD", "produtoCor": "#2563eb",
       "versao": "1.5.0",
       "ambiente": "PROD",
       "status": "CONCLUIDA",

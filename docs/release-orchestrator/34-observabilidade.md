@@ -22,7 +22,7 @@ O orchestrator tem características que tornam observabilidade essencial:
 {
   "timestamp": "2026-05-31T14:30:00Z",
   "level": "INFO",
-  "logger": "br.com.softon.portal.orchestrator.service.EntregaService",
+  "logger": "com.nexus.portal.orchestrator.service.EntregaService",
   "message": "Geração de entrega concluída",
   "correlationId": "abc-...",
   "userId": "joao.silva",

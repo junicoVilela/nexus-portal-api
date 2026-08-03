@@ -41,14 +41,14 @@ Acessível em `/orchestrator` ou rota equivalente. É a primeira tela vista apó
 │ └─────────────────────────────────┘ └────────────────────────────┘│
 ├──────────────────────────────────────────────────────────────────┤
 │ ┌─ Próximas entregas (lista) ────────────────────────────────────┐│
-│ │ Hoje    │ Cliente Acme    │ DTEC-LD 1.5.0 │ APROVADA           ││
+│ │ Hoje    │ Cliente Acme    │ NEXUS-LD 1.5.0 │ APROVADA           ││
 │ │ Amanhã  │ Cliente Beta    │ FOLHA 2.1.0   │ APROVADA           ││
-│ │ +3 dias │ Cliente Gamma   │ DTEC-LD 1.5.0 │ PLANEJADA          ││
+│ │ +3 dias │ Cliente Gamma   │ NEXUS-LD 1.5.0 │ PLANEJADA          ││
 │ │                                          [Ver agenda completa] ││
 │ └────────────────────────────────────────────────────────────────┘│
 ├──────────────────────────────────────────────────────────────────┤
 │ ┌─ Atividades recentes ─────────┐ ┌─ Atalhos ────────────────────┐│
-│ │ 14:30 João publicou DTEC 1.5.0│ │ [+ Cliente]                  ││
+│ │ 14:30 João publicou Nexus 1.5.0│ │ [+ Cliente]                  ││
 │ │ 14:15 Maria aprovou prox X    │ │ [+ Produto]                  ││
 │ │ 13:00 Pacote Acme: SUCESSO    │ │ [+ Release]                  ││
 │ │ 11:42 Pacote Beta: FALHA      │ │ [→ Nova entrega]             ││
@@ -111,7 +111,7 @@ Lista das próximas 10 entregas planejadas/aprovadas, ordenadas por `dataPlaneja
 |---|---|
 | Quando | "Hoje" / "Amanhã" / "+3 dias" / data específica |
 | Cliente | Sigla + nome |
-| Produto + versão | DTEC-LD v1.5.0 |
+| Produto + versão | NEXUS-LD v1.5.0 |
 | Status | PLANEJADA / APROVADA / EM_GERACAO |
 | Ações | Botão de início rápido (se EDITOR/ADMIN) |
 
@@ -210,7 +210,7 @@ GET /api/v1/orchestrator/dashboard?periodo=ULTIMOS_30_DIAS
       "id": "uuid",
       "dataPlanejada": "2026-05-31",
       "cliente": { "sigla": "ACME", "nome": "Acme LTDA" },
-      "produto": { "sigla": "DTECLD", "nome": "DTEC-LD" },
+      "produto": { "sigla": "NEXUSLD", "nome": "NEXUS-LD" },
       "versao": "1.5.0",
       "status": "APROVADA"
     },
@@ -224,7 +224,7 @@ GET /api/v1/orchestrator/dashboard?periodo=ULTIMOS_30_DIAS
       "acao": "ENTREGA_GERADA",
       "entidadeTipo": "ENTREGA",
       "entidadeId": "uuid",
-      "descricao": "Entrega gerada para Acme LTDA - DTEC-LD 1.5.0"
+      "descricao": "Entrega gerada para Acme LTDA - NEXUS-LD 1.5.0"
     },
     ...
   ]

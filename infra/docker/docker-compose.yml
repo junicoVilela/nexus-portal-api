@@ -1,4 +1,4 @@
-# Stack Docker centralizada do Softon Portal — desenvolvimento local.
+# Stack Docker centralizada do Nexus Portal — desenvolvimento local.
 #
 # Sobe o que você precisa, na hora que precisar:
 #
@@ -10,7 +10,7 @@
 #
 # Spec: docs/jornadas/10-fluxo-local-completo-com-jenkins.md
 
-name: softon-portal
+name: nexus-portal
 
 services:
   # =====================================================================
@@ -19,21 +19,21 @@ services:
   # =====================================================================
   postgres:
     image: postgres:18
-    container_name: softon-postgres
+    container_name: nexus-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-softon_intranet}
-      POSTGRES_USER: ${POSTGRES_USER:-softon_intranet}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-softon!@#}
+      POSTGRES_DB: ${POSTGRES_DB:-nexus_platform}
+      POSTGRES_USER: ${POSTGRES_USER:-nexus_platform}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-nexus!@#}
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       # PostgreSQL 18 usa PGDATA versionado; o volume é montado no
       # diretório-pai, em vez do caminho legado /var/lib/postgresql/data.
-      - softon-pgdata-18:/var/lib/postgresql
+      - nexus-pgdata-18:/var/lib/postgresql
       - ./postgres/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-softon_intranet} -d ${POSTGRES_DB:-softon_intranet}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-nexus_platform} -d ${POSTGRES_DB:-nexus_platform}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -47,8 +47,8 @@ services:
     build:
       context: ./jenkins
       dockerfile: Dockerfile
-    image: softon-portal/jenkins:latest
-    container_name: softon-jenkins
+    image: nexus-portal/jenkins:latest
+    container_name: nexus-jenkins
     restart: unless-stopped
     ports:
       # 8090 evita conflito com o portal API (8080) rodando no host.
@@ -62,7 +62,7 @@ services:
       GITHUB_PAT: ${GITHUB_PAT:-}
       PORTAL_WEBHOOK_SECRET: ${PORTAL_WEBHOOK_SECRET:-}
     volumes:
-      - softon-jenkins-home:/var/jenkins_home
+      - nexus-jenkins-home:/var/jenkins_home
       - /var/run/docker.sock:/var/run/docker.sock
     extra_hosts:
       # Permite Jenkinsfile chamar http://host.docker.internal:8080 (portal local).
@@ -81,7 +81,7 @@ services:
   minio:
     profiles: ["bucket", "all"]
     image: minio/minio:latest
-    container_name: softon-minio
+    container_name: nexus-minio
     restart: unless-stopped
     command: server /data --console-address ":9001"
     ports:
@@ -91,7 +91,7 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
     volumes:
-      - softon-minio-data:/data
+      - nexus-minio-data:/data
     healthcheck:
       test: ["CMD", "curl", "-fs", "http://localhost:9000/minio/health/live"]
       interval: 30s
@@ -105,22 +105,22 @@ services:
   sftp:
     profiles: ["sftp", "all"]
     image: atmoz/sftp:latest
-    container_name: softon-sftp
+    container_name: nexus-sftp
     restart: unless-stopped
     ports:
       - "${SFTP_PORT:-2222}:22"
     volumes:
-      - softon-sftp-data:/home/${SFTP_USER:-foo}/upload
+      - nexus-sftp-data:/home/${SFTP_USER:-foo}/upload
     command: "${SFTP_USER:-foo}:${SFTP_PASSWORD:-senha}:::upload"
 
 volumes:
-  softon-pgdata:
-    name: softon-pgdata
-  softon-pgdata-18:
-    name: softon-pgdata-18
-  softon-jenkins-home:
-    name: softon-jenkins-home
-  softon-minio-data:
-    name: softon-minio-data
-  softon-sftp-data:
-    name: softon-sftp-data
+  nexus-pgdata:
+    name: nexus-pgdata
+  nexus-pgdata-18:
+    name: nexus-pgdata-18
+  nexus-jenkins-home:
+    name: nexus-jenkins-home
+  nexus-minio-data:
+    name: nexus-minio-data
+  nexus-sftp-data:
+    name: nexus-sftp-data

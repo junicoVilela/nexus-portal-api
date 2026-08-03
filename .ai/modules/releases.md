@@ -36,11 +36,11 @@ docs/release-orchestrator/00-visao-geral-fluxo-integrado.md
 ## Localização Maven
 
 ```text
-release-orchestrator/src/main/java/br/com/softon/portal/releaseorchestrator/
+release-orchestrator/src/main/java/br/com/nexus/portal/releaseorchestrator/
 ```
 
 ## Pacote base
 
 ```text
-br.com.softon.portal.releaseorchestrator
+com.nexus.portal.releaseorchestrator
 ```

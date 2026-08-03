@@ -1,7 +1,7 @@
 # Templates de CI/CD por repositório
 
-Arquivos prontos para serem **copiados** para os repositórios de produto Softon
-(ex.: `softon/dtec-ld`, `softon/dtec-cr`) no contexto da
+Arquivos prontos para serem **copiados** para os repositórios de produto Nexus
+(ex.: `nexus/nexus-ld`, `nexus/nexus-cr`) no contexto da
 [`Sprint 8`](../../jornadas/02-checklist-por-sprint.md) — Jenkins + GitHub.
 
 | Arquivo | Onde colocar no repo do produto | Quando usar |
@@ -58,7 +58,7 @@ Estes templates **não são executados** pelo portal — são entregáveis de pr
 
 - [ ] Sem Jenkinsfile padrão para a maioria dos casos — versionar `.ktr`/`.kjb` no repo
 - [ ] Para gerar ZIP delta entre tags, criar Jenkinsfile customizado
-  (ver `kettle-delta.sh` em `softon/release-pipeline-base` quando existir)
+  (ver `kettle-delta.sh` em `nexus/release-pipeline-base` quando existir)
 - [ ] Portal: módulo tipo `KETTLE`, `extensoesAceitas=[ktr,kjb,zip]`
 
 ### FUNCIONALIDADES / REGRAS

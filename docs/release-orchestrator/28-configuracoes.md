@@ -36,7 +36,7 @@ Acessível em `/orchestrator/configuracoes`. Apenas ADMIN.
 │                                                                        │
 │ ┌─ Storage de pacotes ─────────────────────────────────────────────┐ │
 │ │ Diretório de pacotes (orchestrator.pacotes.dir)*                  │ │
-│ │ [/var/lib/softon/pacotes              ]                           │ │
+│ │ [/var/lib/nexus/pacotes              ]                           │ │
 │ │ Espaço livre: 250GB / 500GB usados                                │ │
 │ │ [Testar acesso]                                                   │ │
 │ └───────────────────────────────────────────────────────────────────┘ │
@@ -72,9 +72,9 @@ Acessível em `/orchestrator/configuracoes`. Apenas ADMIN.
 
 | Parâmetro | Tipo | Default | Descrição |
 |---|---|---|---|
-| `orchestrator.pacotes.dir` | path | `/var/lib/softon/pacotes` | Onde pacotes gerados ficam |
-| `releaseorchestrator.artefatos.dir` | path | `/var/lib/softon/artefatos` | Onde artefatos uploadados ficam |
-| `releaseorchestrator.pdf.dir` | path | `/var/lib/softon/pdfs` | Snapshots de PDF |
+| `orchestrator.pacotes.dir` | path | `/var/lib/nexus/pacotes` | Onde pacotes gerados ficam |
+| `releaseorchestrator.artefatos.dir` | path | `/var/lib/nexus/artefatos` | Onde artefatos uploadados ficam |
+| `releaseorchestrator.pdf.dir` | path | `/var/lib/nexus/pdfs` | Snapshots de PDF |
 | `releaseorchestrator.artefatos.tamanho-maximo-mb` | int | 500 | Limite de upload |
 | `orchestrator.async.core-pool-size` | int | 2 | Pool de geração |
 | `orchestrator.async.max-pool-size` | int | 4 | Pool máximo |

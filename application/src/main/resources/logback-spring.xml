@@ -8,7 +8,7 @@
 <configuration>
 
   <springProperty scope="context" name="appName" source="spring.application.name"
-                  defaultValue="softon-portal-api"/>
+                  defaultValue="nexus-portal-api"/>
 
   <!-- DEV: padrão Spring Boot (mantém legibilidade no console local). -->
   <springProfile name="!prod">
@@ -41,7 +41,7 @@
     <!-- Ruído de bibliotecas em INFO; só INFO+ pro nosso código. -->
     <logger name="org.hibernate" level="WARN"/>
     <logger name="org.springframework" level="INFO"/>
-    <logger name="br.com.softon" level="INFO"/>
+    <logger name="com.nexus.portal" level="INFO"/>
   </springProfile>
 
 </configuration>

@@ -2,5 +2,5 @@
 # uma única vez na primeira inicialização do Postgres.
 # Documentação: https://hub.docker.com/_/postgres (seção "Initialization scripts").
 #
-# OBS: Hoje as migrations do Softon Portal rodam via Flyway no startup do
+# OBS: Hoje as migrations do Nexus Portal rodam via Flyway no startup do
 # backend Spring Boot, então este diretório fica vazio.

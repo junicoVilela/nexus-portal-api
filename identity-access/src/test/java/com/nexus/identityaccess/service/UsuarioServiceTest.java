@@ -1,0 +1,211 @@
+package com.nexus.identityaccess.service;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+
+import com.nexus.identityaccess.dto.response.MeResponse;
+import com.nexus.identityaccess.entity.Usuario;
+import com.nexus.identityaccess.repository.UsuarioRepository;
+import com.nexus.portal.shared.config.JwtService;
+import com.nexus.portal.shared.exception.BusinessException;
+import com.nexus.portal.shared.exception.NotFoundException;
+import java.lang.reflect.Field;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
+import org.springframework.security.crypto.password.PasswordEncoder;
+
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
+class UsuarioServiceTest {
+
+  @Mock UsuarioRepository usuarioRepository;
+  @Mock com.nexus.identityaccess.repository.GrupoRepository grupoRepository;
+  @Mock PasswordEncoder passwordEncoder;
+  @Mock JwtService jwtService;
+  @Mock RbacService rbacService;
+  @Mock AuditoriaService auditoriaService;
+  @Mock HistoricoLoginService historicoLoginService;
+  @Mock PoliticaSenhaService politicaSenhaService;
+  @Mock SessaoService sessaoService;
+
+  UsuarioService service;
+
+  UUID userId;
+  Usuario usuario;
+  java.security.Principal principal = () -> "admin";
+
+  @BeforeEach
+  void setUp() throws Exception {
+    service = new UsuarioService(usuarioRepository, grupoRepository, passwordEncoder, jwtService,
+        rbacService, auditoriaService, historicoLoginService, politicaSenhaService, sessaoService);
+    userId = UUID.randomUUID();
+    usuario = new Usuario("admin", "hash", "Administrador", "a@x.com");
+    setId(usuario, userId);
+    when(usuarioRepository.save(any(Usuario.class))).thenAnswer(inv -> inv.getArgument(0));
+  }
+
+  @Test
+  void autenticar_geraJwtComPermissoesDoUsuario() {
+    when(usuarioRepository.findByUsernameAndAtivoTrue("admin")).thenReturn(Optional.of(usuario));
+    when(passwordEncoder.matches("plain", "hash")).thenReturn(true);
+    when(rbacService.permissoesDoUsuario(userId)).thenReturn(List.of("CLIENTE:LER", "RELEASE:CRIAR"));
+    when(jwtService.gerarToken(eq("admin"), eq(List.of("CLIENTE:LER", "RELEASE:CRIAR")), any(String.class)))
+        .thenReturn("tok");
+    when(jwtService.expirationMs()).thenReturn(86400000L);
+
+    String jwt = service.autenticar("admin", "plain");
+
+    assertThat(jwt).isEqualTo("tok");
+  }
+
+  @Test
+  void autenticar_falhaSeUsuarioInexistenteOuInativo() {
+    when(usuarioRepository.findByUsernameAndAtivoTrue("x")).thenReturn(Optional.empty());
+
+    assertThatThrownBy(() -> service.autenticar("x", "y"))
+        .isInstanceOf(BusinessException.class)
+        .hasMessageContaining("inválidos");
+    verifyNoInteractions(jwtService, rbacService);
+  }
+
+  @Test
+  void autenticar_falhaSeSenhaNaoBate() {
+    when(usuarioRepository.findByUsernameAndAtivoTrue("admin")).thenReturn(Optional.of(usuario));
+    when(passwordEncoder.matches("wrong", "hash")).thenReturn(false);
+    com.nexus.identityaccess.entity.PoliticaSenha politica = org.mockito.Mockito.mock(
+        com.nexus.identityaccess.entity.PoliticaSenha.class);
+    when(politica.getMaxTentativasInvalidas()).thenReturn(5);
+    when(politicaSenhaService.atual()).thenReturn(politica);
+
+    assertThatThrownBy(() -> service.autenticar("admin", "wrong"))
+        .isInstanceOf(BusinessException.class);
+    verifyNoInteractions(jwtService);
+  }
+
+  @Test
+  void autenticar_bloqueiaAutomaticamenteAposLimiteDeTentativas() {
+    when(usuarioRepository.findByUsernameAndAtivoTrue("admin")).thenReturn(Optional.of(usuario));
+    when(passwordEncoder.matches("wrong", "hash")).thenReturn(false);
+    com.nexus.identityaccess.entity.PoliticaSenha politica = org.mockito.Mockito.mock(
+        com.nexus.identityaccess.entity.PoliticaSenha.class);
+    when(politica.getMaxTentativasInvalidas()).thenReturn(3);
+    when(politicaSenhaService.atual()).thenReturn(politica);
+
+    // 1ª e 2ª falha: incrementa, não bloqueia
+    assertThatThrownBy(() -> service.autenticar("admin", "wrong")).isInstanceOf(BusinessException.class);
+    assertThat(usuario.getTentativasInvalidas()).isEqualTo(1);
+    assertThat(usuario.isBloqueado()).isFalse();
+
+    assertThatThrownBy(() -> service.autenticar("admin", "wrong")).isInstanceOf(BusinessException.class);
+    assertThat(usuario.getTentativasInvalidas()).isEqualTo(2);
+    assertThat(usuario.isBloqueado()).isFalse();
+
+    // 3ª falha: atinge o limite e bloqueia
+    assertThatThrownBy(() -> service.autenticar("admin", "wrong")).isInstanceOf(BusinessException.class);
+    assertThat(usuario.getTentativasInvalidas()).isEqualTo(3);
+    assertThat(usuario.isBloqueado()).isTrue();
+  }
+
+  @Test
+  void autenticar_zeraTentativasInvalidasEmLoginComSucesso() {
+    usuario.setTentativasInvalidas(2);
+    when(usuarioRepository.findByUsernameAndAtivoTrue("admin")).thenReturn(Optional.of(usuario));
+    when(passwordEncoder.matches("plain", "hash")).thenReturn(true);
+    when(rbacService.permissoesDoUsuario(userId)).thenReturn(List.of());
+    when(jwtService.gerarToken(eq("admin"), eq(List.of()), any(String.class))).thenReturn("tok");
+    when(jwtService.expirationMs()).thenReturn(86400000L);
+
+    service.autenticar("admin", "plain");
+
+    assertThat(usuario.getTentativasInvalidas()).isZero();
+  }
+
+  @Test
+  void me_agregaGruposEPermissoesDoRbac() {
+    when(usuarioRepository.findByUsernameAndAtivoTrue("admin")).thenReturn(Optional.of(usuario));
+    when(rbacService.gruposDoUsuario(userId)).thenReturn(List.of());
+    when(rbacService.permissoesDoUsuario(userId)).thenReturn(List.of("CLIENTE:LER"));
+
+    MeResponse me = service.me("admin");
+
+    assertThat(me.id()).isEqualTo(userId);
+    assertThat(me.username()).isEqualTo("admin");
+    assertThat(me.permissoes()).containsExactly("CLIENTE:LER");
+  }
+
+  @Test
+  void me_falhaSeUsuarioInexistente() {
+    when(usuarioRepository.findByUsernameAndAtivoTrue("x")).thenReturn(Optional.empty());
+
+    assertThatThrownBy(() -> service.me("x"))
+        .isInstanceOf(NotFoundException.class);
+  }
+
+  @Test
+  void criar_bloqueiaSeUsernameJaExiste() {
+    when(usuarioRepository.existsByUsername("admin")).thenReturn(true);
+
+    assertThatThrownBy(() -> service.criar("admin", "x", "y", "z@x.com", principal))
+        .isInstanceOf(BusinessException.class)
+        .hasMessageContaining("Já existe");
+  }
+
+  @Test
+  void criar_criptografaSenhaAntesDeSalvar() {
+    when(usuarioRepository.existsByUsername("novo")).thenReturn(false);
+    when(passwordEncoder.encode("plain")).thenReturn("hashed");
+
+    Usuario u = service.criar("novo", "plain", "Novo", "n@x.com", principal);
+
+    assertThat(u.getPassword()).isEqualTo("hashed");
+    assertThat(u.getUsername()).isEqualTo("novo");
+  }
+
+  @Test
+  void atualizar_delegaAoAgregado() {
+    when(usuarioRepository.findById(userId)).thenReturn(Optional.of(usuario));
+
+    Usuario u = service.atualizar(userId, "Novo Nome", "novo@x.com", false, principal);
+
+    assertThat(u.getNome()).isEqualTo("Novo Nome");
+    assertThat(u.getEmail()).isEqualTo("novo@x.com");
+    assertThat(u.isAtivo()).isFalse();
+  }
+
+  @Test
+  void atualizar_falhaSeInexistente() {
+    when(usuarioRepository.findById(userId)).thenReturn(Optional.empty());
+
+    assertThatThrownBy(() -> service.atualizar(userId, "x", "y", true, principal))
+        .isInstanceOf(NotFoundException.class);
+  }
+
+  @Test
+  void alterarSenha_criptografaAntes() {
+    when(usuarioRepository.findById(userId)).thenReturn(Optional.of(usuario));
+    when(passwordEncoder.encode("nova")).thenReturn("hash-nova");
+
+    service.alterarSenha(userId, "nova", principal);
+
+    assertThat(usuario.getPassword()).isEqualTo("hash-nova");
+  }
+
+  private static void setId(Object entity, UUID id) throws Exception {
+    Field f = entity.getClass().getDeclaredField("id");
+    f.setAccessible(true);
+    f.set(entity, id);
+  }
+}

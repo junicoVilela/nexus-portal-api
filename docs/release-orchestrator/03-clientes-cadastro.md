@@ -60,14 +60,14 @@ Acessível em:
 │ │ Tipo de destino*                                                 │  │
 │ │ [Pasta local ▼]                                                  │  │
 │ │ Caminho base*                                                    │  │
-│ │ [/var/lib/softon/entregas/cliente-acme]                          │  │
+│ │ [/var/lib/nexus/entregas/cliente-acme]                          │  │
 │ │                                                                   │  │
 │ │ ℹ️  Configurações avançadas após salvar.                          │  │
 │ └──────────────────────────────────────────────────────────────────┘  │
 │                                                                        │
 │ ┌─ Produtos Contratados ──────────────────────────────────────────┐  │
 │ │ Selecione os produtos que este cliente possui:                   │  │
-│ │ [✅] DTEC-LD   Ambiente: [PROD]                                  │  │
+│ │ [✅] NEXUS-LD   Ambiente: [PROD]                                  │  │
 │ │ [ ] FOLHA-WEB                                                    │  │
 │ │ [✅] CONTAS    Ambiente: [HOM]                                   │  │
 │ │                                                                   │  │
@@ -242,10 +242,10 @@ POST /api/v1/orchestrator/clientes
   ],
   "configuracaoEntrega": {
     "tipoDestino": "PASTA",
-    "caminhoBase": "/var/lib/softon/entregas/cliente-acme"
+    "caminhoBase": "/var/lib/nexus/entregas/cliente-acme"
   },
   "produtosContratados": [
-    { "produtoId": "uuid-dtecld", "ambiente": "PROD" }
+    { "produtoId": "uuid-nexusld", "ambiente": "PROD" }
   ]
 }
 ```

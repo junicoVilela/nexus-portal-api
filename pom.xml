@@ -11,17 +11,17 @@
     <relativePath/>
   </parent>
 
-  <groupId>br.com.softon</groupId>
-  <artifactId>softon-portal-api</artifactId>
+  <groupId>com.nexus.portal</groupId>
+  <artifactId>nexus-portal-api</artifactId>
   <version>0.1.0-SNAPSHOT</version>
   <packaging>pom</packaging>
-  <name>softon-portal-api</name>
+  <name>nexus-portal-api</name>
   <description>Parent POM — Doc Flow, Release Orchestrator, gateway embarcado (biblioteca) e application (runnable).</description>
 
   <modules>
     <module>shared</module>
-    <module>dtec-rbac</module>
-    <module>doc-flow</module>
+    <module>identity-access</module>
+    <module>docflow</module>
     <module>release-orchestrator</module>
     <module>gateway</module>
     <module>application</module>

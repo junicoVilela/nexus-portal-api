@@ -26,7 +26,7 @@ Spec de aspectos operacionais: deploy, configuração, backup, retenção, disas
 ```yaml
 spring:
   application:
-    name: softon-portal-api
+    name: nexus-portal-api
   datasource:
     url: ${DB_URL}
     username: ${DB_USER}
@@ -49,14 +49,14 @@ server:
 
 releaseorchestrator:
   artefatos:
-    dir: ${RELEASEFLOW_ARTEFATOS_DIR:/var/lib/softon/artefatos}
+    dir: ${RELEASEFLOW_ARTEFATOS_DIR:/var/lib/nexus/artefatos}
     tamanho-maximo-mb: 500
   pdf:
-    snapshot-dir: ${RELEASEFLOW_PDFS_DIR:/var/lib/softon/pdfs}
+    snapshot-dir: ${RELEASEFLOW_PDFS_DIR:/var/lib/nexus/pdfs}
 
 orchestrator:
   pacotes:
-    dir: ${ORCHESTRATOR_PACOTES_DIR:/var/lib/softon/pacotes}
+    dir: ${ORCHESTRATOR_PACOTES_DIR:/var/lib/nexus/pacotes}
   async:
     core-pool-size: ${ORCH_ASYNC_CORE:2}
     max-pool-size: ${ORCH_ASYNC_MAX:4}
@@ -79,7 +79,7 @@ management:
 logging:
   level:
     root: INFO
-    br.com.softon: INFO
+    com.nexus.portal: INFO
     org.springframework.security: WARN
 ```
 
@@ -107,7 +107,7 @@ logging:
 ./mvnw -pl application -am clean package -DskipTests=false
 ```
 
-Gera `application/target/softon-portal-api-{version}.jar` (fat jar runnable).
+Gera `application/target/nexus-portal-api-{version}.jar` (fat jar runnable).
 
 ### Dockerfile sugerido
 
@@ -115,20 +115,20 @@ Gera `application/target/softon-portal-api-{version}.jar` (fat jar runnable).
 FROM eclipse-temurin:21-jre-alpine AS runtime
 WORKDIR /app
 
-RUN addgroup -S softon && adduser -S softon -G softon
+RUN addgroup -S nexus && adduser -S nexus -G nexus
 
-COPY --chown=softon:softon application/target/*.jar app.jar
+COPY --chown=nexus:nexus application/target/*.jar app.jar
 
-USER softon
+USER nexus
 EXPOSE 8080
 
 ENTRYPOINT ["java", "-XX:+UseContainerSupport", "-jar", "/app/app.jar"]
 ```
 
 ### Tags Docker
-- `softon/portal-api:1.0.0` (versão).
-- `softon/portal-api:latest` (latest released).
-- `softon/portal-api:sha-abc1234` (commit).
+- `nexus/portal-api:1.0.0` (versão).
+- `nexus/portal-api:latest` (latest released).
+- `nexus/portal-api:sha-abc1234` (commit).
 
 ---
 
@@ -211,7 +211,7 @@ readinessProbe:
 ### MVP
 - Filesystem local. Diretórios separados por tipo:
   ```
-  /var/lib/softon/
+  /var/lib/nexus/
   ├── artefatos/     (release-orchestrator)
   ├── pdfs/          (release-orchestrator snapshots)
   └── pacotes/       (orchestrator)

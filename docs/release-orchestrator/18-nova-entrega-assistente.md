@@ -34,8 +34,8 @@ Acessível em:
 │ ① Cliente│  ─────────────────────────────────────                      │
 │ ② Produto│                                                             │
 │ ③ Versões│  Release vinculada                                          │
-│ ④ Módulos│  ◉ DTEC-LD v1.5.0 (APROVADA, 15/05/2026)                   │
-│ ⑤ Revisão│  ○ DTEC-LD v1.4.5 (PUBLICADA, 02/04/2026)                   │
+│ ④ Módulos│  ◉ NEXUS-LD v1.5.0 (APROVADA, 15/05/2026)                   │
+│ ⑤ Revisão│  ○ NEXUS-LD v1.4.5 (PUBLICADA, 02/04/2026)                   │
 │          │                                                             │
 │          │  Range automático: v1.4.0 → v1.5.0                          │
 │          │  ☑ Pré-vincular próxima entrega #1234                       │

@@ -198,7 +198,7 @@ void deveGerarPacoteComEstruturaCorreta() {
         assertThat(zip.getEntry("manifest.json")).isNotNull();
         assertThat(zip.getEntry("checksums.sha256")).isNotNull();
         assertThat(zip.getEntry("release-notes.pdf")).isNotNull();
-        assertThat(zip.getEntry("web/dtec-web-1.5.0.war")).isNotNull();
+        assertThat(zip.getEntry("web/nexus-web-1.5.0.war")).isNotNull();
         assertThat(zip.getEntry("db/DDL_001.sql")).isNotNull();
         // ...
     }

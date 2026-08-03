@@ -5,20 +5,20 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>br.com.softon</groupId>
-    <artifactId>softon-portal-api</artifactId>
+    <groupId>com.nexus.portal</groupId>
+    <artifactId>nexus-portal-api</artifactId>
     <version>0.1.0-SNAPSHOT</version>
     <relativePath>..</relativePath>
   </parent>
 
-  <artifactId>softon-portal-gateway</artifactId>
-  <name>softon-portal-gateway</name>
+  <artifactId>nexus-gateway</artifactId>
+  <name>nexus-gateway</name>
   <description>Camada gateway embarcada (filtros servlet) — mesma porta que o Doc Flow; sem processo separado.</description>
 
   <dependencies>
     <dependency>
-      <groupId>br.com.softon</groupId>
-      <artifactId>softon-portal-shared</artifactId>
+      <groupId>com.nexus.portal</groupId>
+      <artifactId>nexus-shared</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

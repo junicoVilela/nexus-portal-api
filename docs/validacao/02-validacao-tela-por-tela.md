@@ -2,7 +2,7 @@
 
 Para cada tela do Release Orchestrator: caminho, objetivo, campos, comportamento esperado, persistência e critérios de aceite. Use junto com o [`01-configuracoes-iniciais.md`](01-configuracoes-iniciais.md) — esta doc detalha o que cada tela faz; aquela define a ordem de cadastro.
 
-> Convenção de rotas: tudo abaixo é prefixado por `/release-orchestrator/` (exceto Login e Dashboard global), porque o módulo está montado em [`app.routes.ts`](../../../softon-portal-web/frontend/src/app/app.routes.ts) sob esse path.
+> Convenção de rotas: tudo abaixo é prefixado por `/release-orchestrator/` (exceto Login e Dashboard global), porque o módulo está montado em [`app.routes.ts`](../../../nexus-portal-web/frontend/src/app/app.routes.ts) sob esse path.
 
 ---
 
@@ -43,7 +43,7 @@ Autenticar via JWT antes de qualquer rota do sistema (login é exigido pelo `Aut
 
 | Campo | Obrigatório | Exemplo |
 |---|---|---|
-| E-mail / usuário | Sim | `admin@softon.com.br` ou `admin` |
+| E-mail / usuário | Sim | `admin@nexus.local` ou `admin` |
 | Senha | Sim | `admin` |
 
 ### Comportamento esperado
@@ -471,7 +471,7 @@ Agenda de entregas planejadas (ainda não geradas).
 | Campo | Obrigatório | Exemplo |
 |---|---|---|
 | Cliente | Sim | `XPTO` |
-| Produto | Sim | `DTEC` (apenas produtos contratados pelo cliente) |
+| Produto | Sim | `Nexus` (apenas produtos contratados pelo cliente) |
 | Release alvo | Não | `1.1.0` (se ainda não decidida, deixar vazio) |
 | Data prevista | Sim | `2026-07-15` |
 | Ambiente | Sim | `HOM` |
@@ -499,7 +499,7 @@ Histórico de entregas geradas (e em geração).
 | Coluna | Origem |
 |---|---|
 | Cliente | sigla |
-| Produto + versão release | `DTEC 1.1.0` |
+| Produto + versão release | `Nexus 1.1.0` |
 | Status | badge (RASCUNHO/EM_GERACAO/CONCLUIDA/FALHA/CANCELADA) |
 | Status publicação | badge (NAO_APLICAVEL/PENDENTE/OK/FALHA) |
 | Tamanho | bytes formatados |
@@ -746,4 +746,4 @@ Independente da tela, sempre verifique:
 - [ ] Filtros persistem na URL onde aplicável.
 - [ ] `correlationId` aparece no header de toda resposta (DevTools → Network → Response Headers).
 
-Próximo passo: [`03-fluxo-completo-entrega.md`](03-fluxo-completo-entrega.md) — executa o fluxo XPTO/DTEC ponta a ponta.
+Próximo passo: [`03-fluxo-completo-entrega.md`](03-fluxo-completo-entrega.md) — executa o fluxo XPTO/Nexus ponta a ponta.

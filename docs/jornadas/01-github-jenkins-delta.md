@@ -10,7 +10,7 @@
 
 | Camada | Onde vive | Responsabilidade |
 |---|---|---|
-| **Repositórios GitHub** | `softon/dtec-ld`, `dtec-ld-db`, … | Código, SQL, Kettle, `Jenkinsfile` |
+| **Repositórios GitHub** | `nexus/nexus-ld`, `nexus-ld-db`, … | Código, SQL, Kettle, `Jenkinsfile` |
 | **Jenkins** | Infra interna | Build ao criar tag → publica **assets no GitHub Release** |
 | **Portal Orchestrator** | `release-orchestrator` (API) | Sabe versão **por cliente**; monta **pacote personalizado** |
 
@@ -77,7 +77,7 @@ Pré-visualização antes de gerar: [`../release-orchestrator/20-range-manual-de
 | Executar geração | `/orchestrator/entregas/:id/geracao` | `21` |
 | Resultado + download | `/orchestrator/entregas/:id` | `22` |
 
-Frontend implementado hoje: apenas gestão de **releases** (`softon-portal-web/docs/release-orchestrator/00`–`10`). Entregas: 📋.
+Frontend implementado hoje: apenas gestão de **releases** (`nexus-portal-web/docs/release-orchestrator/00`–`10`). Entregas: 📋.
 
 ---
 

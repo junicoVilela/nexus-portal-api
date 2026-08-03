@@ -13,8 +13,8 @@ Decisões fechadas para o primeiro ciclo de desenvolvimento. Itens marcados *(p�
 ### Storage de artefatos uploadados e pacotes
 - Filesystem local, path configurável via Spring properties.
 - **Chaves**:
-  - `releaseorchestrator.artefatos.dir` — raiz dos artefatos uploadados em releases (ex.: `/var/lib/softon/artefatos`).
-  - `orchestrator.pacotes.dir` — raiz dos pacotes gerados pelo Orchestrator (ex.: `/var/lib/softon/pacotes`).
+  - `releaseorchestrator.artefatos.dir` — raiz dos artefatos uploadados em releases (ex.: `/var/lib/nexus/artefatos`).
+  - `orchestrator.pacotes.dir` — raiz dos pacotes gerados pelo Orchestrator (ex.: `/var/lib/nexus/pacotes`).
 - **Convenção de path**:
   - Artefatos: `{releaseorchestrator.artefatos.dir}/{releaseId}/{moduloId}/{sha256}-{nomeOriginal}`.
   - Pacotes: `{orchestrator.pacotes.dir}/{entregaId}/...`.
@@ -186,17 +186,17 @@ No `pom.xml` parent (em `<dependencyManagement>`) ou direto no módulo onde for 
 ```yaml
 releaseorchestrator:
   artefatos:
-    dir: /var/lib/softon/artefatos
+    dir: /var/lib/nexus/artefatos
     tamanho-maximo-mb: 500
   pdf:
-    snapshot-dir: /var/lib/softon/pdfs
+    snapshot-dir: /var/lib/nexus/pdfs
     cache-rendered:
       enabled: true
       ttl-minutes: 60
 
 orchestrator:
   pacotes:
-    dir: /var/lib/softon/pacotes
+    dir: /var/lib/nexus/pacotes
     retencao-dias: 365
   async:
     core-pool-size: 2

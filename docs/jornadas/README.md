@@ -1,4 +1,4 @@
-# Jornadas de uso — Softon Portal
+# Jornadas de uso — Nexus Portal
 
 Narrativas **end-to-end** que complementam as specs por tela. Use este índice quando precisar entender *quem faz o quê, em qual ordem* — as specs em `release-orchestrator/` e `doc-flow/` detalham *campos, regras e API*.
 
@@ -33,8 +33,8 @@ Narrativas **end-to-end** que complementam as specs por tela. Use este índice q
 | Fluxo integrado (visão técnica) | [`../release-orchestrator/00-visao-geral-fluxo-integrado.md`](../release-orchestrator/00-visao-geral-fluxo-integrado.md) |
 | Roadmap (fases 0–4) | [`../ROADMAP.md`](../ROADMAP.md) |
 | DocFlow backend | [`../doc-flow/README.md`](../doc-flow/README.md) |
-| DocFlow frontend | `softon-portal-web/docs/docflow/` |
-| Release Orchestrator frontend | `softon-portal-web/docs/release-orchestrator/` |
+| DocFlow frontend | `nexus-portal-web/docs/docflow/` |
+| Release Orchestrator frontend | `nexus-portal-web/docs/release-orchestrator/` |
 
 ## Legenda de estado (nas jornadas)
 

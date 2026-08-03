@@ -34,7 +34,7 @@ Acessível em `/orchestrator/produtos`. Também acessível pelo Release Orchestr
 │ ┌──────────────────────────────────────────────────────────────────┐  │
 │ │ Sigla  │ Produto       │ Tipo    │ Módulos │ Clientes │ Releases │  │
 │ ├──────────────────────────────────────────────────────────────────┤  │
-│ │ 🟦DTECLD│ DTEC-LD       │ Sistema │ 5       │ 12       │ 1.4.0 ✅ │  │
+│ │ 🟦NEXUSLD│ NEXUS-LD       │ Sistema │ 5       │ 12       │ 1.4.0 ✅ │  │
 │ │ 🟩FOLHA │ FOLHA-WEB     │ Sistema │ 4       │ 8        │ 2.0.0 ✅ │  │
 │ │ 🟧CONTAS│ CONTAS        │ Sistema │ 3       │ 3        │ 0.9.0 🟡 │  │
 │ │ 🟪INTPAG│ Integração Pag│ Integr. │ 2       │ 5        │ —        │  │
@@ -161,8 +161,8 @@ Response:
   "items": [
     {
       "id": "uuid",
-      "sigla": "DTECLD",
-      "nome": "DTEC-LD",
+      "sigla": "NEXUSLD",
+      "nome": "NEXUS-LD",
       "descricao": "Sistema de legislação digital",
       "cor": "#2563eb",
       "tipo": "SISTEMA",

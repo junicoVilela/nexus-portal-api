@@ -1,0 +1,88 @@
+package com.nexus.portal.releaseorchestrator.controller;
+
+import com.nexus.portal.releaseorchestrator.dto.request.AlterarStatusClienteRequest;
+import com.nexus.portal.releaseorchestrator.dto.request.ClienteRequest;
+import com.nexus.portal.releaseorchestrator.dto.response.ClienteResponse;
+import com.nexus.portal.releaseorchestrator.service.ClienteService;
+import com.nexus.portal.shared.api.PageResponse;
+import com.nexus.portal.shared.api.PageableUtils;
+import com.nexus.portal.shared.api.SortDirection;
+import com.nexus.portal.shared.api.SortUtils;
+import com.nexus.portal.shared.security.Permissoes;
+import jakarta.validation.Valid;
+import java.util.List;
+import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
+
+@RequiredArgsConstructor
+@RestController("orchestratorClienteController")
+@RequestMapping("/api/v1/release-orchestrator/clientes")
+public class ClienteController {
+
+  private final ClienteService service;
+
+  @PostMapping
+  @ResponseStatus(HttpStatus.CREATED)
+  @PreAuthorize(Permissoes.CLIENTE_RO_CRIAR)
+  public ClienteResponse criar(@Valid @RequestBody ClienteRequest request) {
+    return ClienteResponse.from(service.criar(request));
+  }
+
+  @PutMapping("/{id}")
+  @PreAuthorize(Permissoes.CLIENTE_RO_EDITAR)
+  public ClienteResponse atualizar(@PathVariable UUID id,
+      @Valid @RequestBody ClienteRequest request) {
+    return ClienteResponse.from(service.atualizar(id, request));
+  }
+
+  @PatchMapping("/{id}/status")
+  @PreAuthorize(Permissoes.CLIENTE_RO_EDITAR)
+  public ClienteResponse alterarStatus(@PathVariable UUID id,
+      @Valid @RequestBody AlterarStatusClienteRequest request) {
+    return ClienteResponse.from(service.alterarStatus(id, request.ativo()));
+  }
+
+  @DeleteMapping("/{id}")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  @PreAuthorize(Permissoes.CLIENTE_RO_EXCLUIR)
+  public void excluir(@PathVariable UUID id) {
+    service.excluir(id);
+  }
+
+  @PreAuthorize(Permissoes.CLIENTE_RO_LER)
+  @GetMapping("/{id}")
+  public ClienteResponse buscar(@PathVariable UUID id) {
+    return ClienteResponse.from(service.buscar(id));
+  }
+
+  @PreAuthorize(Permissoes.CLIENTE_RO_LER)
+  @GetMapping
+  public PageResponse<ClienteResponse> listar(
+      @RequestParam(required = false) String q,
+      @RequestParam(required = false) Boolean ativo,
+      @RequestParam(required = false) String sort,
+      @RequestParam(required = false) SortDirection direction,
+      @RequestParam(defaultValue = "1") Integer page,
+      @RequestParam(defaultValue = "10") Integer size) {
+    Sort sortOrder = SortUtils.of(sort, direction,
+        List.of("nome", "sigla", "ativo", "createdAt", "updatedAt"),
+        Sort.by("nome"));
+    return PageResponse.from(
+        service.listar(q, ativo, PageableUtils.of(page, size, sortOrder)),
+        ClienteResponse::from);
+  }
+}

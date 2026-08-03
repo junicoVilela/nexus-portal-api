@@ -6,7 +6,7 @@ Documento de entrada para entender como **Gestão de Releases** (já implementad
 
 ## 1. Contexto e motivação
 
-A Softon mantém vários produtos internos (DTEC-LD, FOLHA-WEB, etc.) instalados em **múltiplos clientes**. Cada cliente:
+A nexus mantém vários produtos internos (NEXUS-LD, FOLHA-WEB, etc.) instalados em **múltiplos clientes**. Cada cliente:
 
 - Tem versão própria de cada módulo (banco, web, batch, kettle).
 - Tem combinação própria de funcionalidades habilitadas.
@@ -47,7 +47,7 @@ Hoje (pré-entregas):
 
 ## 3. O que já existe (gestão de releases)
 
-Implementado no módulo Maven `release-orchestrator` do backend `softon-portal-api`. As specs técnicas correspondentes foram consolidadas neste mesmo conjunto de documentos.
+Implementado no módulo Maven `release-orchestrator` do backend `nexus-portal-api`. As specs técnicas correspondentes foram consolidadas neste mesmo conjunto de documentos.
 
 ### Entidades implementadas
 - `ProdutoRh` — produtos gerenciados.
@@ -218,7 +218,7 @@ Legenda: **✅** implementado no portal · **📋** especificado · **🔧** nos
         b. Calcula delta por strategy (Banco, Kettle, Web, etc.)
         c. Monta ZIP com módulos, manifest, checksums
         d. Gera release-notes.pdf (cliente)
-        e. Salva pacote em /var/lib/softon/pacotes/{entregaId}/
+        e. Salva pacote em /var/lib/nexus/pacotes/{entregaId}/
     16. Operador baixa o pacote ou publica no destino
     17. Sistema atualiza ClienteProdutoModulo.versaoAtual
     18. Histórico atualizado, reentrega disponível
@@ -387,5 +387,5 @@ Total MVP (Fase 0 + 1): 3-4 meses. Roadmap completo: [`../ROADMAP.md`](../ROADMA
 - [`40-guia-versao-tag.md`](40-guia-versao-tag.md) — Procedimento de versionamento e tags.
 - [`99-melhorias-sugeridas.md`](99-melhorias-sugeridas.md) — Backlog de melhorias.
 - [`../jornadas/README.md`](../jornadas/README.md) — Jornadas de uso (narrativa end-to-end).
-- `softon-portal-web/docs/release-orchestrator/` — Documentação do frontend (por tela).
+- `nexus-portal-web/docs/release-orchestrator/` — Documentação do frontend (por tela).
 - [`../ROADMAP.md`](../ROADMAP.md) — Roadmap consolidado.
