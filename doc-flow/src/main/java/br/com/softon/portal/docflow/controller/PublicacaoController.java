@@ -156,8 +156,7 @@ public class PublicacaoController {
   @GetMapping(value = "/{id}/download-pdf", produces = MediaType.APPLICATION_PDF_VALUE)
   public ResponseEntity<Resource> downloadPdf(@PathVariable UUID id) {
     Publicacao publicacao = publicacaoService.buscar(id);
-    String html = publicacaoService.previewHtml(publicacao.getCliente().getId(),
-        publicacao.getVersao());
+    String html = publicacaoService.manualPdfHtml(publicacao);
     byte[] pdf = geradorPdfService.gerarPdf(html);
     String filename = "manual-" + publicacao.getCliente().getNome().replaceAll("[^a-zA-Z0-9]", "-")
         + "-v" + publicacao.getVersao() + ".pdf";

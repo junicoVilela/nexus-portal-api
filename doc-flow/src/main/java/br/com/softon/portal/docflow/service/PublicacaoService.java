@@ -39,6 +39,7 @@ public class PublicacaoService {
   private final PublicacaoRepository publicacaoRepository;
   private final ClienteService clienteService;
   private final GeradorPacoteService geradorPacoteService;
+  private final GeradorManualPdfService geradorManualPdfService;
   private final PublicacaoWorkerService publicacaoWorkerService;
   private final PublicacaoChangelogRepository changelogRepository;
   private final EscopoResolver escopoResolver;
@@ -169,6 +170,10 @@ public class PublicacaoService {
   public String previewHtml(UUID clienteId, String versao) {
     Cliente cliente = clienteService.buscar(clienteId);
     return geradorPacoteService.previewHtml(cliente, versao == null || versao.isBlank() ? "prévia" : versao.trim());
+  }
+
+  public String manualPdfHtml(Publicacao publicacao) {
+    return geradorManualPdfService.montarHtmlManual(publicacao.getCliente(), publicacao.getVersao());
   }
 
   public List<DiagnosticoPublicacao> diagnosticar(UUID clienteId) {

@@ -47,6 +47,7 @@ class PublicacaoServiceTest {
   @Mock PublicacaoRepository publicacaoRepository;
   @Mock ClienteService clienteService;
   @Mock GeradorPacoteService geradorPacoteService;
+  @Mock GeradorManualPdfService geradorManualPdfService;
   @Mock PublicacaoWorkerService publicacaoWorkerService;
   @Mock PublicacaoChangelogRepository changelogRepository;
   @Mock br.com.softon.rbac.service.EscopoResolver escopoResolver;
@@ -62,8 +63,8 @@ class PublicacaoServiceTest {
   @BeforeEach
   void setUp() throws Exception {
     service = new PublicacaoService(publicacaoRepository, clienteService,
-        geradorPacoteService, publicacaoWorkerService, changelogRepository, escopoResolver,
-        auditoriaService, new ArquivoRemocaoService(), new ObjectMapper());
+        geradorPacoteService, geradorManualPdfService, publicacaoWorkerService, changelogRepository,
+        escopoResolver, auditoriaService, new ArquivoRemocaoService(), new ObjectMapper());
     when(escopoResolver.clientesPermitidosDoUsuarioAtual()).thenReturn(java.util.Optional.empty());
     when(escopoResolver.podeAcessarCliente(any())).thenReturn(true);
     org.mockito.Mockito.doNothing().when(escopoResolver).assertPodeEscreverEmCliente(any());
@@ -241,6 +242,19 @@ class PublicacaoServiceTest {
     String html = service.previewHtml(clienteId, null);
 
     assertThat(html).isEqualTo("<html/>");
+  }
+
+  @Test
+  void manualPdfHtml_delegaAoGeradorDeManual() throws Exception {
+    Publicacao publicacao = new Publicacao(cliente, "3.0.0", null);
+    setId(publicacao, publicacaoId);
+    when(geradorManualPdfService.montarHtmlManual(cliente, "3.0.0"))
+        .thenReturn("<html>manual</html>");
+
+    String html = service.manualPdfHtml(publicacao);
+
+    assertThat(html).isEqualTo("<html>manual</html>");
+    verify(geradorManualPdfService).montarHtmlManual(cliente, "3.0.0");
   }
 
   @Test
