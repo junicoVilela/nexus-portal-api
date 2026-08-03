@@ -28,10 +28,22 @@ export OPENROUTER_API_KEY=sk-or-...
 ## 3. Verificar
 
 ```bash
+# login
+TOKEN=$(curl -s -X POST http://localhost:8080/api/v1/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"admin","password":"admin"}' | jq -r .token)
+
 curl -s -H "Authorization: Bearer $TOKEN" http://localhost:8080/api/v1/ai/status | jq
 ```
 
-Esperado: `"enabled": true`. Sem key: `"provider": "fake"`, `"prontoParaGerar": false` (triagem ainda funciona).
+Esperado: `"enabled": true`. Sem key: `"provider": "fake"`, `"prontoParaGerar": false` (triagem/geração fake ainda funcionam).
+
+Subir API (com Postgres já rodando):
+
+```bash
+./mvnw -pl application -am install -DskipTests
+NEXUS_AI_ENABLED=true ./mvnw -pl application spring-boot:run -Dspring-boot.run.profiles=dev
+```
 
 ## 4. UI
 

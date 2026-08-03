@@ -402,15 +402,17 @@ Credencial: token por produto/projeto DocFlow (espelhar ideia de `ProdutoRh.gith
 
 ## 11. Critérios de aceite (Fase A)
 
-- [ ] Feature flag `nexus.ai.enabled` liga/desliga UI e API.
-- [ ] Usuário cola briefing ≥ N caracteres e recebe perguntas **ou** proposta em &lt; ~90s (job async + SSE).
-- [ ] Proposta preenche o `pagina-form` sem quebrar autosave / `version`.
-- [ ] HTML gerado passa sanitização; não introduz `<script>` nem `javascript:` links.
-- [ ] Checklist de qualidade roda; erros bloqueantes são visíveis antes de “enviar revisão”.
-- [ ] Página materializada nasce como `RASCUNHO` (se modo persistir) e segue workflow atual.
-- [ ] Testes unitários do orquestrador com `LlmProvider` fake (contrato JSON).
-- [ ] Teste de serviço: aplicar proposta → `Pagina` com `templateOrigem*` quando houver template.
-- [ ] Sem chave configurada → 503 + UI oculta (sem stacktrace).
+- [x] Feature flag `nexus.ai.enabled` liga/desliga UI e API.
+- [x] Usuário cola briefing ≥ N caracteres e recebe perguntas **ou** proposta em &lt; ~90s (job async + SSE).
+- [x] Proposta preenche o `pagina-form` sem quebrar autosave / `version`.
+- [x] HTML gerado passa sanitização; não introduz `<script>` nem `javascript:` links.
+- [x] Checklist de qualidade roda; erros bloqueantes são visíveis antes de “enviar revisão”.
+- [x] Página materializada nasce como `RASCUNHO` (se modo persistir) e segue workflow atual.
+- [x] Testes unitários do orquestrador com `LlmProvider` fake (contrato JSON).
+- [x] Teste de serviço: aplicar proposta → `Pagina` com `templateOrigem*` quando houver template.
+- [x] Sem chave configurada → provider fake + UI/status claros (sem stacktrace); `enabled=false` → 503.
+
+**Smoke local (2026-08-03):** `GET /status` (fake) → sessão `PRONTA_PARA_GERAR` → `POST /gerar` → proposta com `doc-intro`/`screen-placeholder` → `aplicar FORM` → auditoria `AI_SESSAO_CRIADA` + `AI_PROPOSTA_GERADA` + `AI_PROPOSTA_APLICADA_FORM`. OpenRouter real exige `OPENROUTER_API_KEY` no ambiente.
 
 ---
 
