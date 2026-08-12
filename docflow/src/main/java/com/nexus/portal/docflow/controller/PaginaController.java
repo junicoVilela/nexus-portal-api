@@ -1,6 +1,7 @@
 package com.nexus.portal.docflow.controller;
 
 import com.nexus.portal.docflow.service.PaginaAnexoService;
+import com.nexus.portal.docflow.service.PaginaBlocoCatalogoService;
 import com.nexus.portal.docflow.service.PaginaEventService;
 import com.nexus.portal.docflow.service.PaginaService;
 import com.nexus.portal.docflow.service.PaginaTemplateService;
@@ -44,6 +45,7 @@ import com.nexus.portal.docflow.dto.request.PaginaTemplateAplicacaoRequest;
 import com.nexus.portal.docflow.dto.request.PaginaTemplateDuplicarRequest;
 import com.nexus.portal.docflow.dto.request.ReordenarRequest;
 import com.nexus.portal.docflow.dto.response.PaginaAnexoResponse;
+import com.nexus.portal.docflow.dto.response.PaginaBlocoResponse;
 import com.nexus.portal.docflow.dto.response.PaginaResponse;
 import com.nexus.portal.docflow.dto.response.PaginaRevisaoResponse;
 import com.nexus.portal.docflow.dto.response.PaginaTemplateResponse;
@@ -58,9 +60,16 @@ public class PaginaController {
 
   private final PaginaService paginaService;
   private final PaginaAnexoService paginaAnexoService;
+  private final PaginaBlocoCatalogoService paginaBlocoCatalogoService;
   private final PaginaTemplateService paginaTemplateService;
   private final GeradorPacoteService geradorPacoteService;
   private final PaginaEventService paginaEventService;
+
+  @GetMapping("/blocos")
+  @PreAuthorize(Permissoes.PAGINA_LER)
+  public List<PaginaBlocoResponse> blocos() {
+    return paginaBlocoCatalogoService.listar();
+  }
 
   @PreAuthorize(Permissoes.PAGINA_LER)
   @GetMapping("/templates")

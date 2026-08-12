@@ -24,6 +24,7 @@ import com.nexus.portal.ai.repository.AiMensagemRepository;
 import com.nexus.portal.ai.repository.AiPropostaRepository;
 import com.nexus.portal.ai.repository.AiSessaoRepository;
 import com.nexus.portal.docflow.service.PaginaQualidadeService;
+import com.nexus.portal.docflow.dto.response.PaginaBlocoResponse;
 import com.nexus.portal.docflow.service.PaginaQualidadeService.ItemQualidade;
 import com.nexus.portal.docflow.service.PaginaQualidadeService.ResultadoQualidade;
 import com.nexus.portal.docflow.service.PaginaQualidadeService.Severidade;
@@ -55,6 +56,7 @@ class AiJobWorkerServiceTest {
   @BeforeEach
   void setUp() throws Exception {
     AiProperties props = new AiProperties(true, null, null, "fake-model", null, null, 30, 5, 2000, 20);
+    ObjectMapper objectMapper = new ObjectMapper();
     worker = new AiJobWorkerService(
         jobRepository,
         sessaoRepository,
@@ -66,14 +68,16 @@ class AiJobWorkerServiceTest {
         new AiHtmlSanitizer(),
         aiEventService,
         new AiTriagemService(props),
-        new ObjectMapper(),
+        new AiComponenteRetriever(),
+        new AiPageSpecService(objectMapper, docFlowAiBridge),
+        objectMapper,
         auditoriaService);
 
     sessao = new AiSessao(
         AiObjetivo.CRIAR_PAGINA,
         """
             Consulta de pedidos
-            codigoTela: PED-CONSULTA
+            codigoTela: PED-CONSULTA.
             Fluxo completo para filtrar e exportar pedidos do cliente no portal.
             """,
         null, null, null, null, null);
@@ -85,7 +89,18 @@ class AiJobWorkerServiceTest {
 
     when(jobRepository.findById(job.getId())).thenReturn(Optional.of(job));
     when(mensagemRepository.findBySessaoIdOrderByOrdemAsc(sessao.getId())).thenReturn(List.of());
-    when(docFlowAiBridge.buscarTemplate(any(), any(), any())).thenReturn(Optional.empty());
+    when(docFlowAiBridge.buscarTemplate(any(), any(), any(), any())).thenReturn(Optional.empty());
+    when(docFlowAiBridge.listarBlocos()).thenReturn(List.of(
+        bloco("introducao"),
+        bloco("objetivo"),
+        bloco("visao-tela"),
+        bloco("passo-a-passo"),
+        bloco("resultado-esperado")));
+    when(docFlowAiBridge.renderizarBloco(anyString(), any())).thenAnswer(inv -> {
+      String id = inv.getArgument(0);
+      String classe = "introducao".equals(id) ? "doc-intro" : "doc-section";
+      return "<section class=\"" + classe + "\"><p>" + id + "</p></section>";
+    });
     when(docFlowAiBridge.avaliarQualidade(anyString(), anyString(), any(), anyString()))
         .thenReturn(new ResultadoQualidade(true, List.of(
             new ItemQualidade("TITULO", "Título", "ok", true, Severidade.ERRO))));
@@ -106,8 +121,22 @@ class AiJobWorkerServiceTest {
     assertThat(sessao.getStatus()).isEqualTo(AiSessaoStatus.PRONTA);
     assertThat(proposta.getTitulo()).isNotBlank();
     assertThat(proposta.getConteudoHtml()).contains("doc-intro");
+    assertThat(proposta.getPageSpecJson()).contains("\"componenteId\":\"introducao\"");
     assertThat(proposta.getCodigoTela()).isEqualTo("PED-CONSULTA");
     verify(aiEventService).publicarJob(eq(job.getId()), eq(sessao.getId()), eq("SUCESSO"), eq(100));
+  }
+
+  private static PaginaBlocoResponse bloco(String id) {
+    return new PaginaBlocoResponse(
+        id,
+        id,
+        "Componente " + id,
+        "Estrutura",
+        "intro",
+        "<section><p>" + id + "</p></section>",
+        null,
+        1,
+        List.of());
   }
 
   private static void setId(AiSessao sessao, UUID id) throws Exception {

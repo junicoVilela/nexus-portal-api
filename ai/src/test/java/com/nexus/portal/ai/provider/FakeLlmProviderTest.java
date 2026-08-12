@@ -30,4 +30,22 @@ class FakeLlmProviderTest {
     assertThat(out.content()).contains("doc-intro");
     assertThat(out.tokensEntrada()).isNotNull();
   }
+
+  @Test
+  void completarUsaEsqueletoDaBibliotecaQuandoPresente() {
+    var out = provider.completar(
+        "GERAR_RASCUNHO",
+        """
+            titulo: Consulta
+            codigoTela: PED-001
+            resumo: Resumo
+            esqueletoHtml:
+            <section class="modelo-biblioteca"><p>Do template</p></section>
+            INSTRUCAO_FINAL: preencher
+            """);
+
+    assertThat(out.content()).contains("modelo-biblioteca");
+    assertThat(out.content()).contains("Do template");
+    assertThat(out.content()).doesNotContain("Guia da funcionalidade");
+  }
 }

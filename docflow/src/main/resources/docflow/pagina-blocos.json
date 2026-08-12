@@ -1,0 +1,365 @@
+[
+  {
+    "id": "introducao",
+    "nome": "Introdução editorial",
+    "descricao": "Contexto, tipo de conteúdo e resumo da página.",
+    "categoria": "Estrutura",
+    "visual": "intro",
+    "html": "<section class=\"doc-intro\"><span class=\"doc-kicker\">Visão geral</span><h2>Título da introdução</h2><p>Apresente o contexto e o resultado que o usuário encontrará nesta página.</p></section>"
+  },
+  {
+    "id": "objetivo",
+    "nome": "Objetivo de negócio",
+    "descricao": "Destaca o propósito e o impacto da funcionalidade.",
+    "categoria": "Orientação",
+    "visual": "objective",
+    "html": "<div class=\"objective-card\"><p><strong>Objetivo de negócio</strong></p><p>Objetivo desta consulta e o resultado esperado para o usuário.</p></div>"
+  },
+  {
+    "id": "pre-requisitos",
+    "nome": "Pré-requisitos",
+    "descricao": "Perfil, permissão, parâmetro ou dado mestre necessário antes de operar.",
+    "categoria": "Orientação",
+    "visual": "status",
+    "html": "<section class=\"doc-section doc-section--soft\"><h2>Pré-requisitos</h2><ul class=\"checklist\"><li>Perfil ou permissão necessária para acessar a tela.</li><li>Parâmetro ou configuração prévia, se houver.</li><li>Cadastro mestre ou dado de referência já disponível.</li></ul></section>"
+  },
+  {
+    "id": "visao-tela",
+    "nome": "Visão da tela",
+    "descricao": "Área preparada para inserir uma captura do sistema.",
+    "categoria": "Estrutura",
+    "visual": "screen",
+    "html": "<section class=\"doc-section\"><h2>Visão da tela</h2><figure class=\"screen-frame\"><div class=\"screen-placeholder\"><p><strong>Insira aqui uma captura da tela</strong></p><p><span>Use a ferramenta de imagem do editor.</span></p></div><figcaption>Legenda da captura da tela.</figcaption></figure></section>"
+  },
+  {
+    "id": "captura-anotada",
+    "nome": "Captura anotada",
+    "descricao": "Placeholder de tela + 3 callouts numerados alinhados à imagem.",
+    "categoria": "Estrutura",
+    "visual": "screen",
+    "html": "<section class=\"doc-section\"><h2>Visão da tela</h2><figure class=\"screen-frame\"><div class=\"screen-placeholder\"><p><strong>Insira a captura anotada</strong></p><p><span>Numere os pontos 1, 2 e 3 na imagem.</span></p></div><figcaption>Legenda da captura.</figcaption></figure><div class=\"annotation-grid annotation-grid--3\"><article class=\"annotation-card\"><h3>Ponto 1</h3><p>Primeiro elemento destacado na captura.</p></article><article class=\"annotation-card\"><h3>Ponto 2</h3><p>Segundo elemento destacado na captura.</p></article><article class=\"annotation-card\"><h3>Ponto 3</h3><p>Terceiro elemento destacado na captura.</p></article></div></section>"
+  },
+  {
+    "id": "antes-depois",
+    "nome": "Antes e depois",
+    "descricao": "Dois frames lado a lado: estado inicial × resultado da ação.",
+    "categoria": "Estrutura",
+    "visual": "screen",
+    "html": "<section class=\"doc-section\"><h2>Antes e depois</h2><div class=\"content-grid content-grid--2\"><figure class=\"screen-frame\"><div class=\"screen-placeholder screen-placeholder--compact\"><p><strong>Antes</strong></p><p><span>Estado inicial da tela.</span></p></div><figcaption>Antes da ação</figcaption></figure><figure class=\"screen-frame\"><div class=\"screen-placeholder screen-placeholder--compact\"><p><strong>Depois</strong></p><p><span>Estado após concluir a operação.</span></p></div><figcaption>Depois da ação</figcaption></figure></div></section>"
+  },
+  {
+    "id": "passo-a-passo",
+    "nome": "Passo a passo",
+    "descricao": "Procedimento numerado com etapas claras de execução.",
+    "categoria": "Estrutura",
+    "visual": "flow",
+    "html": "<section class=\"doc-section\"><div class=\"steps\"><h2>Passo a passo</h2><ol><li>Acesse a tela pelo menu indicado e confira os pré-requisitos.</li><li>Preencha ou selecione os critérios necessários.</li><li>Execute a ação principal (pesquisar, salvar, confirmar).</li><li>Valide o resultado esperado na tela.</li></ol></div></section>"
+  },
+  {
+    "id": "elementos-tela-toda",
+    "nome": "Elementos · 1 card tela toda",
+    "descricao": "Um único card ocupando a linha inteira.",
+    "categoria": "Referência",
+    "visual": "annotations",
+    "html": "<section class=\"doc-section\"><h2>Elementos da tela</h2><div class=\"annotation-grid annotation-grid--1\"><article class=\"annotation-card\"><h3>Filtros</h3><p>Critérios da pesquisa, combinações úteis e valores padrão.</p></article></div></section>"
+  },
+  {
+    "id": "elementos-um-meia-tela",
+    "nome": "Elementos · 1 card meia tela",
+    "descricao": "Um único card com metade da largura (coluna esquerda).",
+    "categoria": "Referência",
+    "visual": "annotations",
+    "html": "<section class=\"doc-section\"><h2>Elementos da tela</h2><div class=\"annotation-grid annotation-grid--half\"><article class=\"annotation-card\"><h3>Filtros</h3><p>Critérios da pesquisa, combinações úteis e valores padrão.</p></article></div></section>"
+  },
+  {
+    "id": "elementos-meia-tela",
+    "nome": "Elementos · 2 cards meia tela",
+    "descricao": "Dois cards lado a lado (metade da largura cada).",
+    "categoria": "Referência",
+    "visual": "annotations",
+    "html": "<section class=\"doc-section\"><h2>Elementos da tela</h2><div class=\"annotation-grid annotation-grid--2\"><article class=\"annotation-card\"><h3>Filtros</h3><p>Critérios da pesquisa e combinações úteis.</p></article><article class=\"annotation-card\"><h3>Pesquisar e limpar</h3><p>Comportamento de cada ação na tela.</p></article></div></section>"
+  },
+  {
+    "id": "elementos-3-colunas",
+    "nome": "Elementos · 3 colunas",
+    "descricao": "Três cards em grade — padrão para pontos numerados da captura.",
+    "categoria": "Referência",
+    "visual": "annotations",
+    "html": "<section class=\"doc-section\"><h2>Elementos da tela</h2><div class=\"annotation-grid annotation-grid--3\"><article class=\"annotation-card\"><h3>Primeiro elemento</h3><p>Função e uso do primeiro elemento.</p></article><article class=\"annotation-card\"><h3>Segundo elemento</h3><p>Regras e comportamentos do segundo elemento.</p></article><article class=\"annotation-card\"><h3>Terceiro elemento</h3><p>Ação disponível no terceiro elemento.</p></article></div></section>"
+  },
+  {
+    "id": "filtros-resultado",
+    "nome": "Filtros → resultado",
+    "descricao": "Critérios de pesquisa e o que a grade deve exibir.",
+    "categoria": "Referência",
+    "visual": "annotations",
+    "html": "<section class=\"doc-section\"><h2>Filtros e resultado</h2><div class=\"content-grid content-grid--2\"><article class=\"rule-card\"><h3>Critérios</h3><p>Filtros principais, combinações úteis e valores padrão.</p></article><article class=\"rule-card\"><h3>Resultado na grade</h3><p>Colunas retornadas, ordenação padrão e estado sem registros.</p></article></div></section>"
+  },
+  {
+    "id": "acoes-tela",
+    "nome": "Ações da tela",
+    "descricao": "Botão → efeito → quando fica habilitado.",
+    "categoria": "Referência",
+    "visual": "table",
+    "parametrizacao": "acoes-tela",
+    "html": "<section class=\"doc-section\"><h2>Ações da tela</h2><div class=\"table-wrap\"><table><thead><tr><th>Ação</th><th>Efeito</th><th>Quando habilita</th></tr></thead><tbody><tr><td><strong>Pesquisar</strong></td><td>Aplica os filtros e atualiza a listagem.</td><td>Sempre, com ou sem critérios.</td></tr><tr><td><strong>Limpar</strong></td><td>Remove filtros e restaura o estado inicial.</td><td>Quando houver critério preenchido.</td></tr><tr><td><strong>Incluir / Salvar</strong></td><td>Abre o formulário ou grava o registro.</td><td>Conforme permissão e campos obrigatórios.</td></tr></tbody></table></div></section>"
+  },
+  {
+    "id": "permissoes",
+    "nome": "Permissões",
+    "descricao": "Quem vê, quem edita e o que some sem o perfil.",
+    "categoria": "Orientação",
+    "visual": "rules",
+    "html": "<section class=\"doc-section\"><h2>Permissões</h2><div class=\"content-grid content-grid--3\"><article class=\"rule-card\"><h3>Visualizar</h3><p>Perfis que acessam a consulta ou o detalhe.</p></article><article class=\"rule-card\"><h3>Editar / Incluir</h3><p>Perfis que podem alterar ou criar registros.</p></article><article class=\"rule-card\"><h3>Sem permissão</h3><p>Elementos ocultos ou mensagem exibida sem o perfil.</p></article></div></section>"
+  },
+  {
+    "id": "regras",
+    "nome": "Regras de negócio",
+    "descricao": "Grade de validações, permissões e impactos (3 colunas).",
+    "categoria": "Orientação",
+    "visual": "rules",
+    "html": "<section class=\"doc-section\"><h2>Regras de negócio</h2><div class=\"content-grid content-grid--3\"><article class=\"rule-card\"><h3>Validação</h3><p>Regra obrigatória do processo.</p></article><article class=\"rule-card\"><h3>Permissão</h3><p>Perfis autorizados para a ação.</p></article><article class=\"rule-card\"><h3>Impacto</h3><p>Efeito no fluxo após a validação.</p></article></div></section>"
+  },
+  {
+    "id": "se-entao",
+    "nome": "SE → ENTÃO",
+    "descricao": "Matriz de condição e efeito para regras do sistema.",
+    "categoria": "Orientação",
+    "visual": "rules",
+    "html": "<section class=\"doc-section\"><h2>Condições SE → ENTÃO</h2><div class=\"condition-stack\"><article class=\"condition-block\"><span class=\"condition-block__label\">SE</span><h3>Condição de entrada</h3><p>Critérios, limiares e combinações que disparam a regra.</p></article><article class=\"condition-block condition-block--then\"><span class=\"condition-block__label\">ENTÃO</span><h3>Efeito esperado</h3><p>Classificação, notificação, bloqueio ou próximo passo.</p></article></div></section>"
+  },
+  {
+    "id": "fluxo",
+    "nome": "Fluxo horizontal",
+    "descricao": "Quatro etapas conectadas de um procedimento.",
+    "categoria": "Estrutura",
+    "visual": "flow",
+    "html": "<section class=\"doc-section\"><h2>Etapas do processo</h2><ol class=\"flow-strip\"><li><strong>Início</strong><span>Entrada do processo.</span></li><li><strong>Análise</strong><span>Validação dos dados.</span></li><li><strong>Decisão</strong><span>Responsável pela aprovação.</span></li><li><strong>Conclusão</strong><span>Resultado final da operação.</span></li></ol></section>"
+  },
+  {
+    "id": "jornada",
+    "nome": "Jornada inicial",
+    "descricao": "Sequência de cinco cards para onboarding.",
+    "categoria": "Estrutura",
+    "visual": "journey",
+    "html": "<section class=\"doc-section\"><h2>Jornada inicial</h2><div class=\"journey-grid\"><article class=\"journey-card\"><span class=\"journey-card__number\">1</span><h3>Primeiro acesso</h3><p>Oriente o início.</p></article><article class=\"journey-card\"><span class=\"journey-card__number\">2</span><h3>Segurança</h3><p>Proteja a conta.</p></article><article class=\"journey-card\"><span class=\"journey-card__number\">3</span><h3>Configuração</h3><p>Ajuste preferências.</p></article><article class=\"journey-card\"><span class=\"journey-card__number\">4</span><h3>Primeira tarefa</h3><p>Realize uma ação.</p></article><article class=\"journey-card\"><span class=\"journey-card__number\">5</span><h3>Resultado</h3><p>Consulte informações.</p></article></div></section>"
+  },
+  {
+    "id": "dicionario",
+    "nome": "Dicionário de campos",
+    "descricao": "Tabela com obrigatoriedade, exemplo e impacto.",
+    "categoria": "Referência",
+    "visual": "table",
+    "html": "<section class=\"doc-section\"><h2>Dicionário de campos</h2><div class=\"table-wrap\"><table><thead><tr><th>#</th><th>Campo</th><th>Descrição</th><th>Obrigatório?</th><th>Exemplo</th><th>Impacto</th></tr></thead><tbody><tr><td><span class=\"number-badge\">1</span></td><td><strong>Campo principal</strong></td><td>Finalidade do campo na operação.</td><td><span class=\"status-badge status-badge--sim\">Sim</span></td><td>Valor de exemplo</td><td>Impacto no negócio.</td></tr><tr><td><span class=\"number-badge\">2</span></td><td><strong>Outro campo</strong></td><td>Regras e limites do campo.</td><td><span class=\"status-badge status-badge--nao\">Não</span></td><td>Valor de exemplo</td><td>Efeito no processo.</td></tr></tbody></table></div></section>"
+  },
+  {
+    "id": "campos-criticos",
+    "nome": "Campos críticos",
+    "descricao": "Mini-dicionário só dos obrigatórios ou sensíveis.",
+    "categoria": "Referência",
+    "visual": "table",
+    "parametrizacao": "campos-criticos",
+    "html": "<section class=\"doc-section\"><h2>Campos críticos</h2><div class=\"table-wrap\"><table><thead><tr><th>Campo</th><th>Por que importa</th><th>Obrigatório?</th></tr></thead><tbody><tr><td><strong>Campo principal</strong></td><td>Sem este valor a operação não conclui.</td><td><span class=\"status-badge status-badge--sim\">Sim</span></td></tr><tr><td><strong>Campo sensível</strong></td><td>Impacta risco, compliance ou integração.</td><td><span class=\"status-badge status-badge--sim\">Sim</span></td></tr></tbody></table></div></section>"
+  },
+  {
+    "id": "mensagens-sistema",
+    "nome": "Mensagens do sistema",
+    "descricao": "Texto exibido → causa → o que fazer.",
+    "categoria": "Referência",
+    "visual": "table",
+    "parametrizacao": "mensagens-sistema",
+    "html": "<section class=\"doc-section\"><h2>Mensagens do sistema</h2><div class=\"table-wrap\"><table><thead><tr><th>Mensagem</th><th>Causa provável</th><th>O que fazer</th></tr></thead><tbody><tr><td><strong>Texto da mensagem de erro ou alerta</strong></td><td>Condição que gera a mensagem.</td><td>Correção ou próximo passo.</td></tr><tr><td><strong>Outra mensagem recorrente</strong></td><td>Origem da mensagem.</td><td>Verificação ou suporte.</td></tr></tbody></table></div></section>"
+  },
+  {
+    "id": "callout-info",
+    "nome": "Callout · Informação",
+    "descricao": "Dica ou contexto complementar (azul).",
+    "categoria": "Orientação",
+    "visual": "objective",
+    "html": "<div class=\"callout\"><p><strong>Dica</strong></p><p>Orientação útil para concluir a tarefa com segurança.</p></div>"
+  },
+  {
+    "id": "callout-atencao",
+    "nome": "Callout · Atenção",
+    "descricao": "Alerta de cuidado ou restrição (amarelo).",
+    "categoria": "Orientação",
+    "visual": "objective",
+    "html": "<div class=\"warning\"><p><strong>Atenção</strong></p><p>Risco, restrição, prazo ou dado que exige validação.</p></div>"
+  },
+  {
+    "id": "callout-erro",
+    "nome": "Callout · Erro comum",
+    "descricao": "Falha recorrente e como contornar (vermelho).",
+    "categoria": "Orientação",
+    "visual": "objective",
+    "html": "<div class=\"callout callout--danger\"><p><strong>Erro comum</strong></p><p>Sintoma, causa frequente e ação corretiva recomendada.</p></div>"
+  },
+  {
+    "id": "resultado-esperado",
+    "nome": "Resultado esperado",
+    "descricao": "O que deve aparecer após salvar, consultar ou confirmar.",
+    "categoria": "Orientação",
+    "visual": "status",
+    "html": "<div class=\"result-card\"><p><strong>Resultado esperado</strong></p><p>Mensagem de sucesso, registro na lista ou estado da tela após a conclusão.</p></div>"
+  },
+  {
+    "id": "checklist-validacao",
+    "nome": "Checklist de validação",
+    "descricao": "Itens para conferir antes de concluir a operação.",
+    "categoria": "Orientação",
+    "visual": "status",
+    "html": "<section class=\"doc-section\"><h2>Antes de concluir, confira</h2><ul class=\"checklist\"><li>Campos obrigatórios preenchidos corretamente.</li><li>Permissão e perfil adequados para a ação.</li><li>Resultado exibido na tela corresponde ao esperado.</li></ul></section>"
+  },
+  {
+    "id": "badge-sim",
+    "nome": "Badge · Sim",
+    "descricao": "Selo azul — clique na célula e depois neste bloco.",
+    "categoria": "Referência",
+    "visual": "table",
+    "html": "<span class=\"status-badge status-badge--sim\">Sim</span>"
+  },
+  {
+    "id": "badge-nao",
+    "nome": "Badge · Não",
+    "descricao": "Selo cinza — clique na célula e depois neste bloco.",
+    "categoria": "Referência",
+    "visual": "table",
+    "html": "<span class=\"status-badge status-badge--nao\">Não</span>"
+  },
+  {
+    "id": "badge-ativo",
+    "nome": "Badge · Ativo",
+    "descricao": "Selo verde — clique na célula e depois neste bloco.",
+    "categoria": "Referência",
+    "visual": "table",
+    "html": "<span class=\"status-badge status-badge--ativo\">Ativo</span>"
+  },
+  {
+    "id": "badge-inativo",
+    "nome": "Badge · Inativo",
+    "descricao": "Selo neutro — clique na célula e depois neste bloco.",
+    "categoria": "Referência",
+    "visual": "table",
+    "html": "<span class=\"status-badge status-badge--inativo\">Inativo</span>"
+  },
+  {
+    "id": "badge-pendente",
+    "nome": "Badge · Pendente",
+    "descricao": "Selo amarelo de atenção.",
+    "categoria": "Referência",
+    "visual": "table",
+    "html": "<span class=\"status-badge status-badge--warn\">Pendente</span>"
+  },
+  {
+    "id": "badge-bloqueado",
+    "nome": "Badge · Bloqueado",
+    "descricao": "Selo vermelho de bloqueio.",
+    "categoria": "Referência",
+    "visual": "table",
+    "html": "<span class=\"status-badge status-badge--danger\">Bloqueado</span>"
+  },
+  {
+    "id": "badges-status",
+    "nome": "Tabela de exemplos de badges",
+    "descricao": "Insere uma tabela-demo. Para um selo na célula, use Badge · Sim/Não/…",
+    "categoria": "Referência",
+    "visual": "table",
+    "html": "<section class=\"doc-section\"><h2>Status e flags</h2><div class=\"table-wrap\"><table><thead><tr><th>Campo</th><th>Valor</th><th>Quando usar</th></tr></thead><tbody><tr><td><strong>Obrigatório</strong></td><td><span class=\"status-badge status-badge--sim\">Sim</span></td><td>Campo exigido para salvar.</td></tr><tr><td><strong>Obrigatório</strong></td><td><span class=\"status-badge status-badge--nao\">Não</span></td><td>Campo opcional.</td></tr><tr><td><strong>Situação</strong></td><td><span class=\"status-badge status-badge--ativo\">Ativo</span></td><td>Registro disponível para uso.</td></tr><tr><td><strong>Situação</strong></td><td><span class=\"status-badge status-badge--inativo\">Inativo</span></td><td>Registro desligado.</td></tr><tr><td><strong>Alerta</strong></td><td><span class=\"status-badge status-badge--warn\">Pendente</span></td><td>Aguarda revisão.</td></tr><tr><td><strong>Bloqueio</strong></td><td><span class=\"status-badge status-badge--danger\">Bloqueado</span></td><td>Não pode ser usado.</td></tr></tbody></table></div></section>"
+  },
+  {
+    "id": "lista-recursos",
+    "nome": "Lista de conteúdos",
+    "descricao": "Índice de guias com resumo e metadados.",
+    "categoria": "Navegação",
+    "visual": "list",
+    "html": "<section class=\"doc-section\"><h2>Conteúdos disponíveis</h2><div class=\"resource-list resource-list--large\"><article class=\"resource-item\"><span class=\"number-badge\">1</span><span><strong>Nome do primeiro guia</strong><small>Resumo do conteúdo em uma frase.</small></span><span class=\"resource-item__meta\">consulta · código</span></article><article class=\"resource-item\"><span class=\"number-badge\">2</span><span><strong>Nome do segundo guia</strong><small>Benefício do guia para o usuário.</small></span><span class=\"resource-item__meta\">inclusão · código</span></article></div></section>"
+  },
+  {
+    "id": "ver-tambem",
+    "nome": "Ver também",
+    "descricao": "Atalhos para outros guias (use data-codigo-tela no pacote).",
+    "categoria": "Navegação",
+    "visual": "links",
+    "html": "<div class=\"related-links\"><p><strong>Ver também</strong><span data-codigo-tela=\"CODIGO-1\">Guia relacionado 1</span><span data-codigo-tela=\"CODIGO-2\">Guia relacionado 2</span><span data-codigo-tela=\"CODIGO-3\">Guia relacionado 3</span></p></div>"
+  },
+  {
+    "id": "glossario",
+    "nome": "Glossário",
+    "descricao": "Termos do domínio com definição curta.",
+    "categoria": "Referência",
+    "visual": "faq",
+    "html": "<section class=\"doc-section\"><h2>Glossário</h2><div class=\"faq-list\"><article class=\"faq-item\"><h3>Termo</h3><p>Definição do conceito no vocabulário do usuário.</p></article><article class=\"faq-item\"><h3>Outro termo</h3><p>Significado e onde aparece na tela.</p></article></div></section>"
+  },
+  {
+    "id": "faq",
+    "nome": "Perguntas frequentes",
+    "descricao": "Grupo de dúvidas com respostas objetivas.",
+    "categoria": "Referência",
+    "visual": "faq",
+    "html": "<section class=\"doc-section\"><h2>Perguntas frequentes</h2><div class=\"faq-list\"><article class=\"faq-item\"><h3>Como realizar esta operação?</h3><p>Resposta direta com o caminho na tela.</p></article><article class=\"faq-item\"><h3>O que fazer em caso de erro?</h3><p>Verificações iniciais recomendadas.</p></article></div></section>"
+  },
+  {
+    "id": "checklist-status",
+    "nome": "Checklist de progresso",
+    "descricao": "Itens concluídos, em andamento e pendentes.",
+    "categoria": "Orientação",
+    "visual": "status",
+    "html": "<section class=\"doc-section\"><h2>Checklist</h2><ul class=\"status-list\"><li class=\"status-item status-item--done\"><span>Primeira atividade</span><strong>Concluído</strong></li><li class=\"status-item status-item--progress\"><span>Segunda atividade</span><strong>Em andamento</strong></li><li class=\"status-item\"><span>Terceira atividade</span><strong>Pendente</strong></li></ul></section>"
+  },
+  {
+    "id": "boas-praticas",
+    "nome": "Boas práticas",
+    "descricao": "Recomendações rápidas em cards.",
+    "categoria": "Orientação",
+    "visual": "cards",
+    "html": "<section class=\"doc-section\"><h2>Boas práticas</h2><div class=\"content-grid content-grid--3\"><article class=\"topic-card\"><span class=\"topic-card__icon\">01</span><h3>Planeje antes</h3><p>Defina o objetivo da atividade.</p></article><article class=\"topic-card\"><span class=\"topic-card__icon\">02</span><h3>Revise os dados</h3><p>Confirme informações importantes.</p></article><article class=\"topic-card\"><span class=\"topic-card__icon\">03</span><h3>Compartilhe</h3><p>Comunique o resultado às pessoas certas.</p></article></div></section>"
+  },
+  {
+    "id": "links-relacionados",
+    "nome": "Links relacionados",
+    "descricao": "Navegação para guias complementares.",
+    "categoria": "Navegação",
+    "visual": "links",
+    "html": "<div class=\"related-links\"><p><strong>Guias relacionados</strong><span>Primeiro conteúdo relacionado</span><span>Segundo conteúdo relacionado</span><span>Terceiro conteúdo relacionado</span></p></div>"
+  },
+  {
+    "id": "kit-lista",
+    "nome": "Kit · Página de lista",
+    "descricao": "Intro + captura + filtros + colunas + ações — base para LISTAR.",
+    "categoria": "Kits",
+    "visual": "kit",
+    "html": "<section class=\"doc-intro\"><span class=\"doc-kicker\">{{MODULO}} · Consulta</span><h2>{{TITULO}}</h2><p>Objetivo desta consulta e quando usar a listagem de registros.</p></section><section class=\"doc-section doc-section--soft\"><h2>Pré-requisitos</h2><ul class=\"checklist\"><li>Perfil com acesso à consulta.</li><li>Dados de referência necessários para filtrar.</li></ul></section><section class=\"doc-section\"><h2>Visão da tela</h2><figure class=\"screen-frame\"><div class=\"screen-placeholder\"><p><strong>Insira a captura da listagem</strong></p><p><span>Use a ferramenta de imagem do editor.</span></p></div><figcaption>Listagem com filtros e grade de resultados.</figcaption></figure></section><section class=\"doc-section\"><h2>Filtros e resultado</h2><div class=\"content-grid content-grid--2\"><article class=\"rule-card\"><h3>Critérios</h3><p>Critérios da pesquisa, combinações e padrões.</p></article><article class=\"rule-card\"><h3>Grade</h3><p>Colunas, ordenação e estado sem registros.</p></article></div></section><section class=\"doc-section\"><h2>Ações da tela</h2><div class=\"table-wrap\"><table><thead><tr><th>Ação</th><th>Efeito</th><th>Quando habilita</th></tr></thead><tbody><tr><td><strong>Pesquisar</strong></td><td>Atualiza a listagem.</td><td>Sempre</td></tr><tr><td><strong>Exportar</strong></td><td>Gera o arquivo.</td><td>Com resultados</td></tr></tbody></table></div></section><div class=\"result-card\"><p><strong>Resultado esperado</strong></p><p>A grade exibe os registros que atendem aos critérios.</p></div>"
+  },
+  {
+    "id": "kit-incluir",
+    "nome": "Kit · Página de inclusão",
+    "descricao": "Pré-reqs + captura + dicionário + validações + resultado — base para INCLUIR.",
+    "categoria": "Kits",
+    "visual": "kit",
+    "html": "<section class=\"doc-intro\"><span class=\"doc-kicker\">{{MODULO}} · Inclusão</span><h2>{{TITULO}}</h2><p>Objetivo da inclusão e impacto no processo.</p></section><div class=\"objective-card\"><p><strong>Objetivo de negócio</strong></p><p>Valor de registrar esta informação no sistema.</p></div><section class=\"doc-section doc-section--soft\"><h2>Pré-requisitos</h2><ul class=\"checklist\"><li>Permissão de inclusão.</li><li>Cadastros mestres necessários já existentes.</li></ul></section><section class=\"doc-section\"><h2>Visão da tela</h2><figure class=\"screen-frame\"><div class=\"screen-placeholder\"><p><strong>Insira a captura do formulário</strong></p><p><span>Use a ferramenta de imagem do editor.</span></p></div><figcaption>Formulário de inclusão.</figcaption></figure></section><section class=\"doc-section\"><h2>Campos críticos</h2><div class=\"table-wrap\"><table><thead><tr><th>Campo</th><th>Por que importa</th><th>Obrigatório?</th></tr></thead><tbody><tr><td><strong>Campo principal</strong></td><td>Sem este valor a inclusão não conclui.</td><td><span class=\"status-badge status-badge--sim\">Sim</span></td></tr></tbody></table></div></section><section class=\"doc-section\"><div class=\"steps\"><h2>Passo a passo</h2><ol><li>Abra a tela de inclusão.</li><li>Preencha os campos obrigatórios.</li><li>Salve e confira a mensagem de sucesso.</li></ol></div></section><div class=\"warning\"><p><strong>Atenção</strong></p><p>Restrições ou validações que bloqueiam o salvamento.</p></div><div class=\"result-card\"><p><strong>Resultado esperado</strong></p><p>O registro aparece na listagem e/ou a mensagem de sucesso é exibida.</p></div>"
+  },
+  {
+    "id": "kit-editar",
+    "nome": "Kit · Página de edição",
+    "descricao": "Pré-reqs + captura + campos editáveis + passo a passo + resultado — base para EDITAR.",
+    "categoria": "Kits",
+    "visual": "kit",
+    "html": "<section class=\"doc-intro\"><span class=\"doc-kicker\">{{MODULO}} · Edição</span><h2>{{TITULO}}</h2><p>Objetivo da edição e impacto no processo.</p></section><section class=\"doc-section doc-section--soft\"><h2>Pré-requisitos</h2><ul class=\"checklist\"><li>Permissão de edição.</li><li>Registro existente localizado na consulta.</li></ul></section><section class=\"doc-section\"><h2>Visão da tela</h2><figure class=\"screen-frame\"><div class=\"screen-placeholder\"><p><strong>Insira a captura do formulário de edição</strong></p><p><span>Use a ferramenta de imagem do editor.</span></p></div><figcaption>Formulário de edição com registro carregado.</figcaption></figure></section><section class=\"doc-section\"><h2>Campos editáveis</h2><div class=\"table-wrap\"><table><thead><tr><th>Campo</th><th>Regra de alteração</th><th>Obrigatório?</th></tr></thead><tbody><tr><td><strong>Campo principal</strong></td><td>Pode ser alterado enquanto o registro estiver ativo.</td><td><span class=\"status-badge status-badge--sim\">Sim</span></td></tr><tr><td><strong>Campo secundário</strong></td><td>Alteração opcional conforme regra de negócio.</td><td><span class=\"status-badge status-badge--nao\">Não</span></td></tr></tbody></table></div></section><section class=\"doc-section\"><div class=\"steps\"><h2>Passo a passo</h2><ol><li>Localize o registro na consulta e abra a edição.</li><li>Altere os campos necessários.</li><li>Salve e valide a mensagem de confirmação.</li></ol></div></section><div class=\"result-card\"><p><strong>Resultado esperado</strong></p><p>O registro atualizado aparece na listagem com os novos valores.</p></div>"
+  },
+  {
+    "id": "kit-indice",
+    "nome": "Kit · Índice de operações",
+    "descricao": "Intro + lista de guias — base para página pai (Operações).",
+    "categoria": "Kits",
+    "visual": "kit",
+    "html": "<section class=\"doc-intro\"><span class=\"doc-kicker\">{{MODULO}} · Operações</span><h2>{{TITULO}}</h2><p>Guias disponíveis nesta seção e quando usar cada um.</p></section><section class=\"doc-section\"><h2>Guias disponíveis</h2><div class=\"resource-list resource-list--large\"><article class=\"resource-item\"><span class=\"number-badge\">1</span><span><strong>Lista / Consulta</strong><small>Localize e acompanhe registros existentes.</small></span><span class=\"resource-item__meta\">consulta · {{CODIGO_TELA}}</span></article><article class=\"resource-item\"><span class=\"number-badge\">2</span><span><strong>Incluir</strong><small>Registre uma nova operação no sistema.</small></span><span class=\"resource-item__meta\">inclusão</span></article></div></section><section class=\"doc-section\"><div class=\"content-grid content-grid--2\"><article class=\"rule-card\"><h2>Quando usar cada guia</h2><ol class=\"rank-list\"><li>Use a lista para localizar registros</li><li>Use a inclusão para criar um novo</li><li>Valide permissões antes de operar</li></ol></article><article class=\"rule-card\"><h2>Fluxo recomendado</h2><div class=\"content-grid content-grid--2\"><article class=\"topic-card\"><span class=\"topic-card__icon\">1</span><h3>Consultar</h3><p>Refine pelos filtros.</p></article><article class=\"topic-card\"><span class=\"topic-card__icon\">2</span><h3>Incluir</h3><p>Registre e confirme.</p></article></div></article></div></section>"
+  },
+  {
+    "id": "kit-menu",
+    "nome": "Kit · Menu / pasta",
+    "descricao": "Intro leve + seção vazia de guias — pasta de navegação para subpáginas.",
+    "categoria": "Kits",
+    "visual": "kit",
+    "html": "<section class=\"doc-intro\"><span class=\"doc-kicker\">{{MODULO}} · Menu</span><h2>{{TITULO}}</h2><p>Pasta de navegação com links para as subpáginas desta seção.</p></section><section class=\"doc-section\"><h2>Guias disponíveis</h2><div class=\"resource-list resource-list--large\"></div></section>"
+  }
+]

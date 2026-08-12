@@ -3,17 +3,21 @@ package com.nexus.portal.ai.integration.docflow;
 import com.nexus.portal.docflow.dto.request.PaginaRequest;
 import com.nexus.portal.docflow.dto.request.PaginaTemplateAplicacaoRequest;
 import com.nexus.portal.docflow.dto.response.PaginaResponse;
+import com.nexus.portal.docflow.dto.response.PaginaBlocoResponse;
 import com.nexus.portal.docflow.dto.response.PaginaTemplateAplicacaoResponse;
 import com.nexus.portal.docflow.entity.Modulo;
 import com.nexus.portal.docflow.entity.Pagina;
 import com.nexus.portal.docflow.entity.PaginaTemplate;
 import com.nexus.portal.docflow.entity.Projeto;
 import com.nexus.portal.docflow.repository.PaginaTemplateRepository;
+import com.nexus.portal.docflow.service.PaginaBlocoCatalogoService;
 import com.nexus.portal.docflow.service.PaginaQualidadeService;
 import com.nexus.portal.docflow.service.PaginaQualidadeService.ResultadoQualidade;
 import com.nexus.portal.docflow.service.PaginaService;
 import com.nexus.portal.docflow.service.PaginaTemplateService;
 import java.security.Principal;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.stereotype.Component;
@@ -30,30 +34,56 @@ public class DocFlowAiBridge {
   private final PaginaTemplateRepository paginaTemplateRepository;
   private final PaginaQualidadeService paginaQualidadeService;
   private final PaginaService paginaService;
+  private final PaginaBlocoCatalogoService paginaBlocoCatalogoService;
 
   public DocFlowAiBridge(
       PaginaTemplateService paginaTemplateService,
       PaginaTemplateRepository paginaTemplateRepository,
       PaginaQualidadeService paginaQualidadeService,
-      PaginaService paginaService) {
+      PaginaService paginaService,
+      PaginaBlocoCatalogoService paginaBlocoCatalogoService) {
     this.paginaTemplateService = paginaTemplateService;
     this.paginaTemplateRepository = paginaTemplateRepository;
     this.paginaQualidadeService = paginaQualidadeService;
     this.paginaService = paginaService;
+    this.paginaBlocoCatalogoService = paginaBlocoCatalogoService;
   }
 
   public boolean disponivel() {
     return true;
   }
 
-  public Optional<PaginaTemplate> buscarTemplate(UUID templateId, UUID projetoId, UUID clienteId) {
+  /**
+   * Resolve o modelo da biblioteca: {@code templateId} explícito, senão sugestão por briefing,
+   * senão {@link #TEMPLATE_PADRAO}.
+   */
+  public Optional<PaginaTemplate> buscarTemplate(
+      UUID templateId, UUID projetoId, UUID clienteId, String briefing) {
     if (templateId != null) {
       return paginaTemplateRepository.findById(templateId);
     }
-    return paginaTemplateService.listar(projetoId, clienteId, false, false).stream()
-        .filter(t -> TEMPLATE_PADRAO.equalsIgnoreCase(t.getCodigo()))
-        .findFirst()
-        .or(() -> paginaTemplateService.listar(projetoId, clienteId, false, false).stream().findFirst());
+    var biblioteca = paginaTemplateService.listar(projetoId, clienteId, false, false);
+    return AiTemplateSelector.selecionar(briefing, biblioteca);
+  }
+
+  public List<AiTemplateSelector.Recomendacao> recomendarTemplates(
+      UUID projetoId, UUID clienteId, String briefing) {
+    var biblioteca = paginaTemplateService.listar(projetoId, clienteId, false, false);
+    return AiTemplateSelector.recomendar(briefing, biblioteca);
+  }
+
+  public List<PaginaBlocoResponse> listarBlocos() {
+    return paginaBlocoCatalogoService.listar();
+  }
+
+  public String renderizarBloco(String blocoId, Map<String, String> textos) {
+    return paginaBlocoCatalogoService.renderizar(blocoId, textos);
+  }
+
+  /** @deprecated use {@link #buscarTemplate(UUID, UUID, UUID, String)} */
+  @Deprecated
+  public Optional<PaginaTemplate> buscarTemplate(UUID templateId, UUID projetoId, UUID clienteId) {
+    return buscarTemplate(templateId, projetoId, clienteId, null);
   }
 
   public PaginaTemplateAplicacaoResponse aplicarTemplate(

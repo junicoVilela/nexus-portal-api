@@ -6,6 +6,7 @@ import com.nexus.portal.ai.audit.AiAuditoriaAcoes;
 import com.nexus.portal.ai.config.AiProperties;
 import com.nexus.portal.ai.dto.request.AiMensagemRequest;
 import com.nexus.portal.ai.dto.request.CriarAiSessaoRequest;
+import com.nexus.portal.ai.dto.request.AiTemplateRecomendacaoRequest;
 import com.nexus.portal.ai.dto.response.AiMensagemResponse;
 import com.nexus.portal.ai.dto.response.AiSessaoResponse;
 import com.nexus.portal.ai.entity.AiMensagem;
@@ -37,6 +38,7 @@ public class AiSessaoService {
   private final AiProperties properties;
   private final ObjectMapper objectMapper;
   private final AuditoriaService auditoriaService;
+  private final AiTemplateRecomendacaoService templateRecomendacaoService;
 
   public AiSessaoService(
       AiSessaoRepository sessaoRepository,
@@ -44,13 +46,15 @@ public class AiSessaoService {
       AiTriagemService triagemService,
       AiProperties properties,
       ObjectMapper objectMapper,
-      AuditoriaService auditoriaService) {
+      AuditoriaService auditoriaService,
+      AiTemplateRecomendacaoService templateRecomendacaoService) {
     this.sessaoRepository = sessaoRepository;
     this.mensagemRepository = mensagemRepository;
     this.triagemService = triagemService;
     this.properties = properties;
     this.objectMapper = objectMapper;
     this.auditoriaService = auditoriaService;
+    this.templateRecomendacaoService = templateRecomendacaoService;
   }
 
   @Transactional
@@ -58,6 +62,7 @@ public class AiSessaoService {
     exigirModuloHabilitado();
     validarObjetivo(request);
 
+    UUID templateId = resolverTemplate(request);
     AiSessao sessao = new AiSessao(
         request.objetivo(),
         request.briefing().trim(),
@@ -65,7 +70,7 @@ public class AiSessaoService {
         request.moduloId(),
         request.clienteId(),
         request.paginaId(),
-        request.templateId());
+        templateId);
     sessaoRepository.save(sessao);
 
     adicionarMensagem(
@@ -200,5 +205,17 @@ public class AiSessaoService {
     if (request.objetivo() == AiObjetivo.ATUALIZAR_PAGINA && request.paginaId() == null) {
       throw new BusinessException("paginaId é obrigatório para ATUALIZAR_PAGINA.");
     }
+  }
+
+  private UUID resolverTemplate(CriarAiSessaoRequest request) {
+    if (request.templateId() != null) {
+      return request.templateId();
+    }
+    var recomendacao = templateRecomendacaoService.recomendar(
+        new AiTemplateRecomendacaoRequest(
+            request.briefing(), request.projetoId(), request.clienteId()));
+    return recomendacao.exigeConfirmacao() || recomendacao.recomendado() == null
+        ? null
+        : recomendacao.recomendado().templateId();
   }
 }

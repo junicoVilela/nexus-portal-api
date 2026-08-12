@@ -39,6 +39,7 @@ Pacote base: `com.nexus.portal.ai.{config|controller|dto|entity|repository|servi
 | Endpoint | Auth | Status |
 |---|---|---|
 | `GET /api/v1/ai/status` | `PAGINA:LER` | ✅ |
+| `POST /api/v1/ai/templates/recomendacao` | `PAGINA:LER` | ✅ ranking + confiança |
 | `POST /api/v1/ai/sessoes` | `PAGINA:CRIAR` | ✅ S1 |
 | `GET /api/v1/ai/sessoes/{id}` | `PAGINA:LER` | ✅ S1 |
 | `POST /api/v1/ai/sessoes/{id}/mensagens` | `PAGINA:CRIAR` ou `EDITAR` | ✅ S1 |
@@ -47,8 +48,38 @@ Pacote base: `com.nexus.portal.ai.{config|controller|dto|entity|repository|servi
 | `GET /api/v1/ai/sessoes/{id}/proposta` | `PAGINA:LER` | ✅ S2 |
 | `POST /api/v1/ai/sessoes/{id}/aplicar` | `PAGINA:CRIAR` | ✅ S2 FORM/PERSISTIR |
 | `GET /api/v1/ai/eventos` | `PAGINA:LER` | ✅ SSE |
+| `GET /api/v1/docflow/paginas/blocos` | `PAGINA:LER` | ✅ catálogo canônico |
 
 Proxy front: `/api/ai` → `/api/v1/ai`.
+
+---
+
+## Geração orientada pelo catálogo
+
+O fluxo não pede HTML livre ao modelo:
+
+1. `AiTemplateSelector` ranqueia os templates da biblioteca e calcula confiança.
+2. Com confiança `>= 0,70`, o template é escolhido automaticamente; abaixo disso, a UI pede
+   confirmação e mantém o seletor manual em **Avançado**.
+3. `AiComponenteRetriever` combina a taxonomia do template com busca lexical nos metadados dos
+   45 blocos canônicos.
+4. O provedor recebe somente IDs, descrições e slots e devolve uma `PageSpec` em JSON Schema.
+5. O servidor valida IDs/slots e `PaginaBlocoCatalogoService` renderiza o HTML confiável.
+6. A `PageSpec` fica persistida em `tb_ai_proposta.page_spec_json` para auditoria e reprodução.
+
+Isso separa decisão editorial de renderização: o modelo escreve textos, mas não inventa DOM,
+classes, scripts ou componentes.
+
+O catálogo fica em
+`docflow/src/main/resources/docflow/pagina-blocos.json`; editor e IA consomem a mesma fonte.
+Ao adicionar um bloco, atualize esse arquivo e seus testes — não crie uma cópia no Angular.
+
+### Quando adicionar RAG vetorial
+
+A recuperação atual é híbrida determinística (template + metadados), adequada para dezenas de
+componentes. Adicione embeddings/pgvector atrás do contrato de `AiComponenteRetriever` quando
+houver centenas de blocos, documentos de domínio extensos ou métricas reais de baixa cobertura.
+Mesmo com RAG, mantenha a `PageSpec`, o allowlist de componentes e a renderização no servidor.
 
 ---
 
@@ -103,6 +134,8 @@ Runbook local: [`RUNBOOK-LOCAL.md`](RUNBOOK-LOCAL.md).
 - [x] `GET /status`
 - [x] Sessões + triagem heurística (S1) — `V16__ai__01_tables.sql`
 - [x] Jobs/propostas (S2) — `V17__ai__02_jobs_propostas.sql`
+- [x] Catálogo canônico + PageSpec auditável — `V18__ai__03_page_spec.sql`
+- [x] Seleção automática com confiança e confirmação humana
 - [x] Wizard UI + aplicar no editor (S3)
 - [x] Hardening: auditoria, métricas, rate limit, prompts, e2e (S4)
 - [ ] Atualizar página (S5)

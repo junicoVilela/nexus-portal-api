@@ -205,14 +205,15 @@ GET    /api/v1/auditoria
 - O snapshot consumido pelo frontend fica em
   `nexus-portal-web/frontend/openapi/nexus-portal-api.json`.
 
-## Assistente Nexus AI (módulo irmão)
+## Assistente Nexus AI
 
-O assistente de páginas **não** vive em `docflow/` — módulo Maven `ai/` (`nexus-ai`):
+**Backend** em módulo Maven `ai/` (`nexus-ai`); **UI** no DocFlow web (`modules/docflow/`):
 
 - Pacote: `com.nexus.portal.ai.*`
 - API: `/api/v1/ai/**`
 - Config: `nexus.ai.*` / `NEXUS_AI_*` (OpenRouter por padrão)
 - Acoplamento DocFlow só em `com.nexus.portal.ai.integration.docflow.DocFlowAiBridge`
+- Front: `/doc-flow/assistente`, `/doc-flow/propostas-ia` (não há módulo Angular separado)
 - Docs: `docs/ai/README.md`, `docs/ai/RUNBOOK-LOCAL.md`, `docs/doc-flow/10-assistente-ia-paginas.md`
 - Auditoria: entidades `AI_SESSAO` / `AI_PROPOSTA`
 - A IA **nunca publica** — só rascunho/proposta

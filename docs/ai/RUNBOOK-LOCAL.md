@@ -34,9 +34,12 @@ TOKEN=$(curl -s -X POST http://localhost:8080/api/v1/auth/login \
   -d '{"username":"admin","password":"admin"}' | jq -r .token)
 
 curl -s -H "Authorization: Bearer $TOKEN" http://localhost:8080/api/v1/ai/status | jq
+curl -s -H "Authorization: Bearer $TOKEN" \
+  http://localhost:8080/api/v1/docflow/paginas/blocos | jq 'length'
 ```
 
-Esperado: `"enabled": true`. Sem key: `"provider": "fake"`, `"prontoParaGerar": false` (triagem/geração fake ainda funcionam).
+Esperado: `"enabled": true` e `45` blocos. Sem key: `"provider": "fake"`,
+`"prontoParaGerar": false` (triagem/geração fake ainda funcionam).
 
 Subir API (com Postgres já rodando):
 
@@ -47,7 +50,7 @@ NEXUS_AI_ENABLED=true ./mvnw -pl application spring-boot:run -Dspring-boot.run.p
 
 ## 4. UI
 
-1. Login → DocFlow → Páginas → **Criar com IA** (ou `/ai/assistente`)
+1. Login → DocFlow → Páginas → **Criar com IA** (ou `/doc-flow/assistente`)
 2. Cole briefing (≥ 40 chars; inclua `codigoTela` para pular perguntas)
 3. **Gerar rascunho** → revisar → **Aplicar no editor**
 4. Salve o rascunho manualmente (IA nunca publica)
@@ -62,6 +65,12 @@ NEXUS_AI_ENABLED=true ./mvnw -pl application spring-boot:run -Dspring-boot.run.p
 | Sintoma | Ação |
 |---|---|
 | CTA “Criar com IA” sumiu | `GET /ai/status` com `enabled=false` |
+| `404` em `http://localhost:4200/api/ai/status` | Inicie com `npm start`/`ng serve` para carregar `proxy.conf.json`; confirme que a API está na porta 8080 |
+| `/paginas/blocos` retorna `400` ou a UI mostra biblioteca indisponível | A API ainda está com classes antigas. Recompile e reinicie o processo Java |
+| O modelo sugerido aparece para confirmação | A confiança ficou abaixo de 70%; selecione uma sugestão ou force um modelo em **Avançado** |
 | 503 nas APIs AI | `NEXUS_AI_ENABLED=true` + restart |
 | 429 | Aumente `NEXUS_AI_MAX_GERACOES_POR_HORA` ou aguarde 1h |
 | HTML pobre | Configure `OPENROUTER_API_KEY` (sai do Fake) |
+
+Nunca coloque a chave no YAML ou no Git. Use `OPENROUTER_API_KEY`/`NEXUS_AI_API_KEY` no ambiente e
+revogue imediatamente qualquer chave que tenha aparecido em arquivo, log ou histórico.

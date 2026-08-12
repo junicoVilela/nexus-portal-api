@@ -111,7 +111,7 @@ Plano executável a partir do desenho [`10-assistente-ia-paginas.md`](10-assiste
 | AI-301 | WEB | Models + `AiAssistenteService` (HTTP + SSE/polling) | ✅ |
 | AI-302 | WEB | `app-ai-perguntas` | ✅ |
 | AI-303 | WEB | `app-ai-proposta-preview` (HTML + checklist) | ✅ |
-| AI-304 | WEB | Wizard “Criar com IA” (brief → chat → revisar) | ✅ `/ai/assistente` |
+| AI-304 | WEB | Wizard “Criar com IA” (brief → chat → revisar) | ✅ `/doc-flow/assistente` |
 | AI-305 | WEB | CTA lista páginas + `?origem=ia` | ✅ |
 | AI-306 | WEB | Integrar aplicar → `patchValue` no `pagina-form` | ✅ |
 | AI-307 | WEB | Feature flag UI (`AiFeatureService`) | ✅ |
@@ -124,7 +124,7 @@ Plano executável a partir do desenho [`10-assistente-ia-paginas.md`](10-assiste
 - [x] AI-301 Service/models (+ SSE `eventosAi`)
 - [x] AI-302 `app-ai-perguntas`
 - [x] AI-303 `app-ai-proposta-preview` (+ checklist)
-- [x] AI-304 Wizard `/ai/assistente` (passos Brief → Chat → Revisar)
+- [x] AI-304 Wizard `/doc-flow/assistente` (passos Brief → Chat → Revisar)
 - [x] AI-305 CTA lista “Criar com IA” + `?origem=ia`
 - [x] AI-306 Aplicar no `pagina-form` (state + dirty)
 - [x] AI-307 `AiFeatureService` (oculta CTAs se AI off)

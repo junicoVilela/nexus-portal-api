@@ -1,18 +1,20 @@
 package com.nexus.portal.ai.provider;
 
 import java.util.Locale;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
  * Provider determinístico para dev/test quando {@code nexus.ai} está desligado ou sem API key.
+ * Quando há {@code esqueletoHtml} da biblioteca, devolve esse HTML (não inventa layout).
  */
 public final class FakeLlmProvider implements LlmProvider {
 
   public static final String ID = "fake";
 
   private static final Pattern CAMPO = Pattern.compile("(?im)^(?:titulo|código tela|codigoTela|resumo)\\s*[:=]\\s*(.+)$");
-
   @Override
   public String id() {
     return ID;
@@ -22,7 +24,9 @@ public final class FakeLlmProvider implements LlmProvider {
   public LlmCompletion completar(String systemPrompt, String userPrompt) {
     String prompt = (systemPrompt == null ? "" : systemPrompt) + "\n" + (userPrompt == null ? "" : userPrompt);
     String content;
-    if (prompt.contains("GERAR_RASCUNHO") || prompt.contains("conteudoHtml")) {
+    if (prompt.contains("GERAR_PAGE_SPEC")) {
+      content = gerarPageSpec(userPrompt == null ? "" : userPrompt);
+    } else if (prompt.contains("GERAR_RASCUNHO") || prompt.contains("conteudoHtml")) {
       content = gerarRascunho(userPrompt == null ? "" : userPrompt);
     } else {
       content = """
@@ -43,14 +47,80 @@ public final class FakeLlmProvider implements LlmProvider {
     return LlmCompletion.of(content, tokens / 2, tokens / 2);
   }
 
+  private String gerarPageSpec(String userPrompt) {
+    String titulo = extrair(userPrompt, "tituloSugerido", "Página gerada pela IA");
+    String codigo = extrair(userPrompt, "codigoTelaSugerido", "AI-DEMO");
+    String resumo = extrair(userPrompt, "resumoSugerido",
+        "Guia gerado automaticamente a partir do briefing informado no assistente Nexus AI.");
+    List<String> componentes = new ArrayList<>();
+    Matcher matcher = Pattern.compile("(?m)^-\\s+([a-z0-9-]+)\\s+\\|").matcher(userPrompt);
+    while (matcher.find() && componentes.size() < 6) {
+      componentes.add(matcher.group(1));
+    }
+    String blocos = componentes.stream()
+        .map(id -> "{\"componenteId\":" + json(id) + ",\"textos\":[]}")
+        .reduce((a, b) -> a + "," + b)
+        .orElse("");
+    return """
+        {
+          "titulo": %s,
+          "slug": %s,
+          "codigoTela": %s,
+          "resumo": %s,
+          "blocos": [%s]
+        }
+        """.formatted(
+        json(titulo),
+        json(slugify(titulo)),
+        json(codigo),
+        json(resumo),
+        blocos);
+  }
+
   private String gerarRascunho(String userPrompt) {
     String titulo = extrair(userPrompt, "titulo", "Página gerada pela IA");
     String codigo = extrair(userPrompt, "codigoTela", "AI-DEMO");
     String resumo = extrair(userPrompt, "resumo",
         "Guia gerado automaticamente a partir do briefing informado no assistente Nexus AI.");
     String slug = slugify(titulo);
+    String esqueleto = extrairEsqueleto(userPrompt);
+    String html = esqueleto != null && !esqueleto.isBlank()
+        ? esqueleto.trim()
+        : htmlFallback(titulo, codigo, resumo);
 
-    String html = """
+    return """
+        {
+          "titulo": %s,
+          "slug": %s,
+          "codigoTela": %s,
+          "resumo": %s,
+          "conteudoHtml": %s
+        }
+        """.formatted(json(titulo), json(slug), json(codigo), json(resumo), json(html));
+  }
+
+  private static String extrairEsqueleto(String userPrompt) {
+    if (userPrompt == null || userPrompt.isBlank()) {
+      return "";
+    }
+    String marker = "esqueletoHtml:";
+    String end = "INSTRUCAO_FINAL:";
+    int start = userPrompt.indexOf(marker);
+    if (start < 0) {
+      return "";
+    }
+    start += marker.length();
+    int stop = userPrompt.indexOf(end, start);
+    String body = (stop < 0 ? userPrompt.substring(start) : userPrompt.substring(start, stop)).trim();
+    // Evita tratar texto de instrução como HTML quando o esqueleto veio vazio.
+    if (body.isBlank() || body.startsWith("INSTRUCAO_FINAL") || !body.contains("<")) {
+      return "";
+    }
+    return body;
+  }
+
+  private static String htmlFallback(String titulo, String codigo, String resumo) {
+    return """
         <section class="doc-intro">
           <span class="doc-kicker">Guia da funcionalidade</span>
           <h2>Visão geral</h2>
@@ -81,16 +151,6 @@ public final class FakeLlmProvider implements LlmProvider {
           <div class="result-card"><strong>Resultado esperado</strong><p>A operação é concluída e o usuário confirma o resultado na tela.</p></div>
         </section>
         """.formatted(escape(resumo), escape(titulo), escape(codigo), escape(titulo));
-
-    return """
-        {
-          "titulo": %s,
-          "slug": %s,
-          "codigoTela": %s,
-          "resumo": %s,
-          "conteudoHtml": %s
-        }
-        """.formatted(json(titulo), json(slug), json(codigo), json(resumo), json(html));
   }
 
   private static String extrair(String texto, String chave, String padrao) {

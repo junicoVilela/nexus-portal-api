@@ -65,7 +65,7 @@ A Fase C reutiliza a **mesma fábrica de rascunhos** da Fase A.
 | Opção | Decisão |
 |---|---|
 | Package dentro de `docflow` | Descartado — dificulta extração |
-| **Maven `nexus-ai` + Angular `modules/ai`** | **Escolhido** — API `/api/v1/ai/**`, UI `/ai` |
+| **Maven `nexus-ai` + UI no DocFlow web** | **Escolhido** — API `/api/v1/ai/**`, UI `/doc-flow/assistente` |
 | Acoplamento DocFlow | Só em `com.nexus.portal.ai.integration.docflow` (troca por HTTP na extração) |
 | GitHub client | Fase C: `ai.integration.github` (não no Release Orchestrator) |
 
@@ -447,7 +447,7 @@ Checklist detalhado com tickets `AI-xxx`: [`11-assistente-ia-checklist-sprints.m
 ## 14. Decisões travadas
 
 1. Humano no loop — IA não publica.
-2. Módulo Maven `nexus-ai` + Angular `modules/ai` (extraível).
+2. Módulo Maven `nexus-ai` (extraível); UI Angular embutida no DocFlow (`/doc-flow/assistente`).
 3. Jobs no padrão Publicação (`@Async` + SSE).
 4. Templates como âncora do HTML gerado.
 5. Match futuro PR↔página por `codigoTela`.

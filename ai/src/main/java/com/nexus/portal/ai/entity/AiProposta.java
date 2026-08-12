@@ -68,6 +68,10 @@ public class AiProposta {
   @Column(name = "qualidade_json", columnDefinition = "jsonb")
   private String qualidadeJson;
 
+  @JdbcTypeCode(SqlTypes.JSON)
+  @Column(name = "page_spec_json", columnDefinition = "jsonb")
+  private String pageSpecJson;
+
   @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 40)
   private AiPropostaStatus status = AiPropostaStatus.PENDENTE;
@@ -92,7 +96,8 @@ public class AiProposta {
       String conteudoHtml,
       UUID templateId,
       Integer templateVersao,
-      String qualidadeJson) {
+      String qualidadeJson,
+      String pageSpecJson) {
     this.sessao = sessao;
     this.job = job;
     this.tipo = tipo;
@@ -104,6 +109,7 @@ public class AiProposta {
     this.templateId = templateId;
     this.templateVersao = templateVersao;
     this.qualidadeJson = qualidadeJson;
+    this.pageSpecJson = pageSpecJson;
   }
 
   public void aceitar(UUID paginaId) {

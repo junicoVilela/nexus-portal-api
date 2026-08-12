@@ -12,6 +12,8 @@ import com.nexus.portal.ai.config.AiProperties;
 import com.nexus.portal.ai.dto.request.AiMensagemRequest;
 import com.nexus.portal.ai.dto.request.CriarAiSessaoRequest;
 import com.nexus.portal.ai.dto.response.AiSessaoResponse;
+import com.nexus.portal.ai.dto.response.AiTemplateRecomendacaoResponse;
+import com.nexus.portal.ai.dto.response.AiTemplateCandidatoResponse;
 import com.nexus.portal.ai.entity.AiMensagem;
 import com.nexus.portal.ai.entity.AiObjetivo;
 import com.nexus.portal.ai.entity.AiPapelMensagem;
@@ -40,6 +42,7 @@ class AiSessaoServiceTest {
   @Mock AiSessaoRepository sessaoRepository;
   @Mock AiMensagemRepository mensagemRepository;
   @Mock AuditoriaService auditoriaService;
+  @Mock AiTemplateRecomendacaoService templateRecomendacaoService;
 
   private final ObjectMapper objectMapper = new ObjectMapper();
   private final List<AiMensagem> mensagens = new ArrayList<>();
@@ -55,7 +58,10 @@ class AiSessaoServiceTest {
         new AiTriagemService(propsEnabled),
         propsEnabled,
         objectMapper,
-        auditoriaService);
+        auditoriaService,
+        templateRecomendacaoService);
+    lenient().when(templateRecomendacaoService.recomendar(any()))
+        .thenReturn(new AiTemplateRecomendacaoResponse(null, List.of(), true));
 
     lenient().when(sessaoRepository.save(any(AiSessao.class))).thenAnswer(inv -> {
       AiSessao s = inv.getArgument(0);
@@ -113,10 +119,43 @@ class AiSessaoServiceTest {
   }
 
   @Test
+  void criarSelecionaTemplateAutomaticamenteSomenteComAltaConfianca() {
+    UUID templateId = UUID.randomUUID();
+    when(templateRecomendacaoService.recomendar(any())).thenReturn(
+        new AiTemplateRecomendacaoResponse(
+            new AiTemplateCandidatoResponse(
+                templateId,
+                "FAQ",
+                "Perguntas frequentes",
+                null,
+                0.95,
+                "Sinais claros no briefing."),
+            List.of(),
+            false));
+
+    AiSessaoResponse response = service.criar(new CriarAiSessaoRequest(
+        AiObjetivo.CRIAR_PAGINA,
+        "Criar uma FAQ com perguntas frequentes sobre o acesso inicial dos usuários ao portal.",
+        null,
+        null,
+        null,
+        null,
+        null), null);
+
+    assertThat(response.templateId()).isEqualTo(templateId);
+  }
+
+  @Test
   void criarComModuloDesligadoRetorna503() {
     AiProperties off = new AiProperties(false, null, null, null, null, null, 30, 5, 1000, 20);
     AiSessaoService offService = new AiSessaoService(
-        sessaoRepository, mensagemRepository, new AiTriagemService(off), off, objectMapper, auditoriaService);
+        sessaoRepository,
+        mensagemRepository,
+        new AiTriagemService(off),
+        off,
+        objectMapper,
+        auditoriaService,
+        templateRecomendacaoService);
 
     assertThatThrownBy(() -> offService.criar(new CriarAiSessaoRequest(
         AiObjetivo.CRIAR_PAGINA,

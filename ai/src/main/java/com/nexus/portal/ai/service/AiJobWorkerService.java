@@ -16,6 +16,7 @@ import com.nexus.portal.ai.entity.AiPropostaStatus;
 import com.nexus.portal.ai.entity.AiPropostaTipo;
 import com.nexus.portal.ai.entity.AiSessao;
 import com.nexus.portal.ai.entity.AiSessaoStatus;
+import com.nexus.portal.ai.integration.docflow.AiTemplateSelector;
 import com.nexus.portal.ai.integration.docflow.DocFlowAiBridge;
 import com.nexus.portal.ai.prompt.AiPromptBuilder;
 import com.nexus.portal.ai.provider.LlmCompletion;
@@ -25,6 +26,7 @@ import com.nexus.portal.ai.repository.AiMensagemRepository;
 import com.nexus.portal.ai.repository.AiPropostaRepository;
 import com.nexus.portal.ai.repository.AiSessaoRepository;
 import com.nexus.portal.docflow.dto.response.PaginaTemplateAplicacaoResponse;
+import com.nexus.portal.docflow.dto.response.PaginaBlocoResponse;
 import com.nexus.portal.docflow.entity.PaginaTemplate;
 import com.nexus.portal.docflow.service.PaginaQualidadeService.ResultadoQualidade;
 import java.util.LinkedHashMap;
@@ -53,6 +55,8 @@ public class AiJobWorkerService {
   private final AiHtmlSanitizer htmlSanitizer;
   private final AiEventService aiEventService;
   private final AiTriagemService triagemService;
+  private final AiComponenteRetriever componenteRetriever;
+  private final AiPageSpecService pageSpecService;
   private final ObjectMapper objectMapper;
   private final AuditoriaService auditoriaService;
 
@@ -74,19 +78,28 @@ public class AiJobWorkerService {
           triagemService.avaliar(sessao.getObjetivo(), sessao.getBriefing(), respostas).contextoExtraido());
       contexto.putAll(respostas);
       String titulo = primeiroNaoVazio(contexto.get("titulo"), extrairTituloBriefing(sessao.getBriefing()), "Página gerada");
-      String codigoTela = primeiroNaoVazio(contexto.get("codigoTela"), "AI-DEMO").toUpperCase(Locale.ROOT);
+      String codigoTela = normalizarCodigoTela(
+          primeiroNaoVazio(contexto.get("codigoTela"), "AI-DEMO"));
       String resumoHint = primeiroNaoVazio(contexto.get("resumo"), contexto.get("fluxo"), sessao.getBriefing());
 
       PaginaTemplate template = docFlowAiBridge
-          .buscarTemplate(sessao.getTemplateId(), sessao.getProjetoId(), sessao.getClienteId())
+          .buscarTemplate(
+              sessao.getTemplateId(),
+              sessao.getProjetoId(),
+              sessao.getClienteId(),
+              sessao.getBriefing())
           .orElse(null);
 
       String esqueleto = "";
+      String templateCodigo = null;
+      String templateNome = null;
       UUID templateId = null;
       Integer templateVersao = null;
       if (template != null) {
         templateId = template.getId();
         templateVersao = template.getVersaoAtual();
+        templateCodigo = template.getCodigo();
+        templateNome = template.getNome();
         sessao.definirTemplateId(templateId);
         PaginaTemplateAplicacaoResponse aplicado = docFlowAiBridge.aplicarTemplate(
             templateId,
@@ -101,26 +114,80 @@ public class AiJobWorkerService {
 
       aiEventService.publicarJob(job.getId(), sessao.getId(), AiJobStatus.PROCESSANDO.name(), 40);
 
-      String system = AiPromptBuilder.systemGerarRascunho();
-      String user = AiPromptBuilder.userGerarRascunho(
-          titulo,
-          codigoTela,
-          truncar(resumoHint, 500),
-          sessao.getBriefing(),
-          contexto,
-          truncar(esqueleto, 6000));
-
-      LlmCompletion completion = llmProvider.completar(system, user);
+      List<PaginaBlocoResponse> candidatos = componenteRetriever.recuperar(
+          templateCodigo, sessao.getBriefing(), docFlowAiBridge.listarBlocos());
+      LlmCompletion completion;
+      JsonNode json;
+      AiPageSpec pageSpec = null;
+      String htmlFinal;
+      if (!candidatos.isEmpty()) {
+        String system = AiPromptBuilder.systemGerarPageSpec();
+        String user = AiPromptBuilder.userGerarPageSpec(
+            titulo,
+            codigoTela,
+            truncar(resumoHint, 500),
+            sessao.getBriefing(),
+            contexto,
+            templateCodigo,
+            templateNome,
+            candidatos);
+        completion = llmProvider.completarEstruturado(
+            system, user, pageSpecService.schema(candidatos));
+        try {
+          json = extrairJson(completion.content());
+        } catch (Exception ex) {
+          log.warn(
+              "ai.job.pagespec_fallback jobId={} motivo=json_invalido detalhe={}",
+              jobId,
+              ex.getMessage());
+          json = objectMapper.createObjectNode()
+              .put("titulo", titulo)
+              .put("slug", slugify(titulo))
+              .put("codigoTela", codigoTela)
+              .put("resumo", truncar(resumoHint, 280));
+        }
+        try {
+          pageSpec = pageSpecService.interpretar(json, candidatos);
+        } catch (IllegalArgumentException ex) {
+          log.warn(
+              "ai.job.pagespec_fallback jobId={} motivo={} componentes={}",
+              jobId,
+              ex.getMessage(),
+              candidatos.stream().map(PaginaBlocoResponse::id).toList());
+          pageSpec = pageSpecService.fallback(
+              text(json, "titulo", titulo),
+              text(json, "slug", slugify(titulo)),
+              text(json, "codigoTela", codigoTela),
+              text(json, "resumo", truncar(resumoHint, 280)),
+              candidatos);
+        }
+        htmlFinal = htmlSanitizer.sanitizar(pageSpecService.renderizar(pageSpec));
+      } else {
+        // Compatibilidade defensiva: em operação normal o catálogo canônico nunca fica vazio.
+        String system = AiPromptBuilder.systemGerarRascunho();
+        String user = AiPromptBuilder.userGerarRascunho(
+            titulo,
+            codigoTela,
+            truncar(resumoHint, 500),
+            sessao.getBriefing(),
+            contexto,
+            truncar(esqueleto, 14_000),
+            templateCodigo,
+            templateNome);
+        completion = llmProvider.completar(system, user);
+        json = extrairJson(completion.content());
+        String htmlLlm = htmlSanitizer.sanitizar(text(json, "conteudoHtml", esqueleto));
+        htmlFinal = decidirHtmlBiblioteca(esqueleto, htmlLlm);
+      }
       job.registrarTokens(completion.tokensEntrada(), completion.tokensSaida());
-      JsonNode json = extrairJson(completion.content());
 
-      String tituloFinal = text(json, "titulo", titulo);
-      String slugFinal = text(json, "slug", slugify(tituloFinal));
-      String codigoFinal = text(json, "codigoTela", codigoTela).toUpperCase(Locale.ROOT);
-      String resumoFinal = text(json, "resumo", truncar(resumoHint, 280));
-      String htmlFinal = htmlSanitizer.sanitizar(text(json, "conteudoHtml", esqueleto));
+      String tituloFinal = truncar(text(json, "titulo", titulo), 200);
+      String slugFinal = truncar(text(json, "slug", slugify(tituloFinal)), 200);
+      String codigoFinal = truncar(
+          normalizarCodigoTela(text(json, "codigoTela", codigoTela)), 120);
+      String resumoFinal = truncar(text(json, "resumo", truncar(resumoHint, 280)), 2_000);
       if (htmlFinal == null || htmlFinal.isBlank()) {
-        throw new IllegalStateException("LLM não retornou conteudoHtml utilizável.");
+        throw new IllegalStateException("A PageSpec não produziu conteúdo utilizável.");
       }
 
       aiEventService.publicarJob(job.getId(), sessao.getId(), AiJobStatus.PROCESSANDO.name(), 75);
@@ -151,7 +218,8 @@ public class AiJobWorkerService {
           htmlFinal,
           templateId,
           templateVersao,
-          qualidadeJson);
+          qualidadeJson,
+          pageSpec == null ? null : objectMapper.writeValueAsString(pageSpec));
       propostaRepository.save(proposta);
 
       job.sucesso();
@@ -164,13 +232,17 @@ public class AiJobWorkerService {
           truncar(codigoFinal + " · " + tituloFinal, 200),
           null);
       log.info(
-          "ai.job.completed jobId={} sessaoId={} status=SUCESSO latencyMs={} tokensIn={} tokensOut={} provider={}",
+          "ai.job.completed jobId={} sessaoId={} status=SUCESSO latencyMs={} tokensIn={} tokensOut={} provider={} template={} componentes={}",
           jobId,
           sessao.getId(),
           job.latenciaMs(),
           job.getTokensEntrada(),
           job.getTokensSaida(),
-          llmProvider.id());
+          llmProvider.id(),
+          templateCodigo,
+          pageSpec == null
+              ? List.of()
+              : pageSpec.blocos().stream().map(AiPageSpec.Bloco::componenteId).toList());
     } catch (Exception ex) {
       log.error("Falha no job AI {}", jobId, ex);
       job.erro(mensagemUsuario(ex));
@@ -219,6 +291,20 @@ public class AiJobWorkerService {
       }
     }
     return acumulado;
+  }
+
+  /**
+   * Garante saída baseada no modelo da biblioteca. Se a IA inventar layout, usa o esqueleto.
+   */
+  static String decidirHtmlBiblioteca(String esqueleto, String htmlLlm) {
+    if (esqueleto != null && !esqueleto.isBlank()) {
+      if (AiTemplateSelector.preservaEstrutura(esqueleto, htmlLlm)) {
+        return htmlLlm;
+      }
+      log.info("ai.job.html_fallback motivo=estrutura_divergente_do_modelo");
+      return esqueleto;
+    }
+    return htmlLlm;
   }
 
   private JsonNode extrairJson(String raw) throws Exception {
@@ -276,6 +362,13 @@ public class AiJobWorkerService {
         .replaceAll("[^a-z0-9]+", "-")
         .replaceAll("(^-|-$)", "");
     return slug.isBlank() ? "pagina-ai" : slug;
+  }
+
+  private static String normalizarCodigoTela(String value) {
+    String codigo = value == null ? "" : value.toUpperCase(Locale.ROOT)
+        .replaceAll("[^A-Z0-9_-]+", "-")
+        .replaceAll("(^-+|-+$)", "");
+    return codigo.isBlank() ? "AI-DEMO" : codigo;
   }
 
   private static String truncar(String value, int max) {

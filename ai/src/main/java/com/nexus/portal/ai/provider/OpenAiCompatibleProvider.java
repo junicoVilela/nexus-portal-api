@@ -5,6 +5,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -42,14 +43,44 @@ public final class OpenAiCompatibleProvider implements LlmProvider {
 
   @Override
   public LlmCompletion completar(String systemPrompt, String userPrompt) {
+    return completar(systemPrompt, userPrompt, null);
+  }
+
+  @Override
+  public LlmCompletion completarEstruturado(
+      String systemPrompt, String userPrompt, JsonNode jsonSchema) {
     try {
-      String body = objectMapper.writeValueAsString(Map.of(
-          "model", properties.model(),
-          "temperature", 0.2,
-          "max_tokens", properties.maxTokensSaida(),
-          "messages", List.of(
-              Map.of("role", "system", "content", systemPrompt),
-              Map.of("role", "user", "content", userPrompt))));
+      return completar(systemPrompt, userPrompt, jsonSchema);
+    } catch (IllegalStateException ex) {
+      String mensagem = ex.getMessage() == null ? "" : ex.getMessage();
+      if (mensagem.contains("LLM HTTP 400") || mensagem.contains("LLM HTTP 422")) {
+        // Alguns modelos OpenAI-compatible não implementam response_format/json_schema.
+        // O prompt ainda exige JSON e a validação/allowlist permanecem no servidor.
+        return completar(systemPrompt, userPrompt, null);
+      }
+      throw ex;
+    }
+  }
+
+  private LlmCompletion completar(
+      String systemPrompt, String userPrompt, JsonNode jsonSchema) {
+    try {
+      Map<String, Object> payload = new LinkedHashMap<>();
+      payload.put("model", properties.model());
+      payload.put("temperature", 0.2);
+      payload.put("max_tokens", properties.maxTokensSaida());
+      payload.put("messages", List.of(
+          Map.of("role", "system", "content", systemPrompt),
+          Map.of("role", "user", "content", userPrompt)));
+      if (jsonSchema != null) {
+        payload.put("response_format", Map.of(
+            "type", "json_schema",
+            "json_schema", Map.of(
+                "name", "docflow_page_spec",
+                "strict", true,
+                "schema", jsonSchema)));
+      }
+      String body = objectMapper.writeValueAsString(payload);
 
       HttpRequest.Builder builder = HttpRequest.newBuilder()
           .uri(URI.create(trimSlash(properties.baseUrl()) + "/chat/completions"))
