@@ -3,6 +3,12 @@ spring:
     active: ${SPRING_PROFILES_ACTIVE:dev}
   application:
     name: nexus-portal-api
+  servlet:
+    multipart:
+      # O maior upload funcional hoje e o manual da IA (15 MiB).
+      # A requisicao recebe uma pequena sobrecarga adicional do multipart.
+      max-file-size: ${MULTIPART_MAX_FILE_SIZE:15MB}
+      max-request-size: ${MULTIPART_MAX_REQUEST_SIZE:16MB}
 
 server:
   port: ${SERVER_PORT:8080}

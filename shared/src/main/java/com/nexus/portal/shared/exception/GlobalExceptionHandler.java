@@ -10,6 +10,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.server.ResponseStatusException;
 
 @RestControllerAdvice
@@ -42,6 +43,11 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(ConstraintViolationException.class)
   ResponseEntity<ApiError> validation(ConstraintViolationException ex) {
     return error(HttpStatus.BAD_REQUEST, ex.getMessage());
+  }
+
+  @ExceptionHandler(MaxUploadSizeExceededException.class)
+  ResponseEntity<ApiError> uploadTooLarge(MaxUploadSizeExceededException ex) {
+    return error(HttpStatus.PAYLOAD_TOO_LARGE, "O arquivo excede o limite permitido de 15 MB.");
   }
 
   @ExceptionHandler(ResponseStatusException.class)
