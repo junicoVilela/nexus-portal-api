@@ -78,19 +78,24 @@ Proxy front: `/api/ai` → `/api/v1/ai`.
 
 O fluxo não pede HTML livre ao modelo:
 
-1. `AiTemplateSelector` ranqueia os templates da biblioteca e calcula confiança.
-2. Com confiança `>= 0,70`, o template é escolhido automaticamente; abaixo disso, a UI pede
+1. Briefings em Markdown são separados por título, seções, parágrafos e listas.
+2. Textos com o ciclo completo de consultar, incluir, editar e excluir são classificados como
+   cadastro/funcionalidade completa, evitando reduzir o manual a uma página de listagem.
+3. `AiTemplateSelector` ranqueia os templates da biblioteca e calcula confiança.
+4. Com confiança `>= 0,70`, o template é escolhido automaticamente; abaixo disso, a UI pede
    confirmação e mantém o seletor manual em **Avançado**.
-3. O código do template resolve um blueprint editorial. Dez blueprints declarativos cobrem os
+5. O código do template resolve um blueprint editorial. Dez blueprints declarativos cobrem os
    vinte templates de sistema e classificam suas seções como obrigatórias, recomendadas ou
    opcionais.
-4. `AiComponenteRetriever` seleciona a menor composição aplicável: mantém a base do blueprint,
-   escolhe alternativas pelo briefing e só inclui opcionais quando houver evidência textual.
-5. O provedor recebe somente o blueprint, IDs, descrições e slots permitidos e devolve uma
+6. `AiComponenteRetriever` mantém a base do blueprint e acrescenta componentes com evidência
+   textual no briefing, até o limite seguro da `PageSpec`.
+7. O provedor recebe somente o blueprint, IDs, descrições e slots permitidos e devolve uma
    `PageSpec` em JSON Schema.
-6. O servidor valida IDs/slots e `PaginaBlocoCatalogoService` renderiza o HTML confiável.
-7. A `PageSpec` v2 persiste `schemaVersion` e `blueprintId` em
-   `tb_ai_proposta.page_spec_json` para auditoria e reprodução.
+8. Slots omitidos pelo provedor recebem, de forma conservadora, o trecho semanticamente
+   correspondente do briefing; textos já definidos pela IA não são substituídos.
+9. O servidor valida IDs/slots e `PaginaBlocoCatalogoService` renderiza o HTML confiável.
+10. A `PageSpec` v2 persiste `schemaVersion` e `blueprintId` em
+    `tb_ai_proposta.page_spec_json` para auditoria e reprodução.
 
 Isso separa decisão editorial de renderização: o modelo escreve textos, mas não inventa DOM,
 classes, scripts ou componentes.

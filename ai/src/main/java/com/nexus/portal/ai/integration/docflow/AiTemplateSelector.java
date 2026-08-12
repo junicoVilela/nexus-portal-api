@@ -141,10 +141,16 @@ public final class AiTemplateSelector {
     }
     int pontos = 0;
     String codigo = template.getCodigo() == null ? "" : template.getCodigo();
+    int operacoesCrud = contarOperacoesCrud(briefingLower);
 
     Pattern padraoCodigo = CODIGO_POR_PADRAO.get(codigo.toUpperCase(Locale.ROOT));
     if (padraoCodigo != null && padraoCodigo.matcher(briefingLower).find()) {
       pontos += 100;
+    }
+    if (operacoesCrud >= 3 && "CADASTRO".equalsIgnoreCase(codigo)) {
+      pontos += 180;
+    } else if (operacoesCrud >= 3 && "FUNCIONALIDADE".equalsIgnoreCase(codigo)) {
+      pontos += 130;
     }
 
     // Overlap com metadados do próprio modelo (inclui personalizados da biblioteca).
@@ -157,6 +163,20 @@ public final class AiTemplateSelector {
       pontos = Math.max(0, pontos - 10);
     }
     return pontos;
+  }
+
+  private static int contarOperacoesCrud(String texto) {
+    int operacoes = 0;
+    for (Pattern padrao : List.of(
+        Pattern.compile("\\b(consultar|consulta|listar|listagem|pesquisar)\\b"),
+        Pattern.compile("\\b(cadastrar|cadastro|incluir|inclus[aã]o|novo registro)\\b"),
+        Pattern.compile("\\b(editar|edi[cç][aã]o|alterar|atualizar)\\b"),
+        Pattern.compile("\\b(excluir|exclus[aã]o|remover)\\b"))) {
+      if (padrao.matcher(texto).find()) {
+        operacoes++;
+      }
+    }
+    return operacoes;
   }
 
   private static int overlapTokens(String briefingLower, String campo) {

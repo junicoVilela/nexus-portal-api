@@ -29,6 +29,19 @@ class AiTemplateSelectorTest {
   }
 
   @Test
+  void prefereCadastroParaManualComCicloCrudCompleto() {
+    var cadastro = template("CADASTRO", "Cadastro ou edição");
+    var lista = template("LISTAR_REGISTROS", "Listar registros");
+    var incluir = template("INCLUIR_REGISTRO", "Incluir registro");
+
+    var hit = AiTemplateSelector.selecionar(
+        "Manual para consultar e listar, cadastrar, editar e excluir registros.",
+        List.of(lista, incluir, cadastro));
+
+    assertThat(hit.get().getCodigo()).isEqualTo("CADASTRO");
+  }
+
+  @Test
   void fallbackFuncionalidadeSomenteSemSinal() {
     var padrao = template("FUNCIONALIDADE", "Guia de funcionalidade");
     var hit = AiTemplateSelector.selecionar("texto genérico sem keywords", List.of(padrao));

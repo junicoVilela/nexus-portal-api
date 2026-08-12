@@ -23,7 +23,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class AiComponenteRetriever {
 
-  private static final int LIMITE = 10;
+  private static final int LIMITE = 12;
   private static final Set<String> TERMOS_GENERICOS = Set.of(
       "pagina",
       "tela",
@@ -123,8 +123,19 @@ public class AiComponenteRetriever {
           });
     }
 
-    int limite = Math.min(LIMITE, blueprint.maximoComponentes());
-    return selecionados.stream().limit(limite).map(catalogo::get).toList();
+    catalogo.values().stream()
+        .filter(bloco -> !selecionados.contains(bloco.id()))
+        .map(bloco -> new Pontuado(bloco, pontuar(briefing, bloco)))
+        .filter(item -> item.pontos() > 0)
+        .sorted(Comparator.comparingInt(Pontuado::pontos).reversed()
+            .thenComparing(item -> item.bloco().id()))
+        .forEach(item -> {
+          if (selecionados.size() < LIMITE) {
+            selecionados.add(item.bloco().id());
+          }
+        });
+
+    return selecionados.stream().limit(LIMITE).map(catalogo::get).toList();
   }
 
   private static java.util.Optional<PaginaBlocoResponse> melhorComponente(

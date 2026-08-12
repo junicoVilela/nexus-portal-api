@@ -49,6 +49,7 @@ public class AiJobWorkerService {
   private final AiTriagemService triagemService;
   private final AiComponenteRetriever componenteRetriever;
   private final AiPageSpecService pageSpecService;
+  private final AiBriefingPageSpecEnricher briefingPageSpecEnricher;
   private final ObjectMapper objectMapper;
 
   @Async
@@ -152,6 +153,7 @@ public class AiJobWorkerService {
               candidatos,
               blueprint);
         }
+        pageSpec = briefingPageSpecEnricher.enriquecer(pageSpec, candidatos, sessao.briefing());
         htmlFinal = htmlSanitizer.sanitizar(pageSpecService.renderizar(pageSpec));
       } else {
         // Compatibilidade defensiva: em operação normal o catálogo canônico nunca fica vazio.
@@ -171,11 +173,17 @@ public class AiJobWorkerService {
         htmlFinal = decidirHtmlBiblioteca(esqueleto, htmlLlm);
       }
 
-      String tituloFinal = truncar(text(json, "titulo", titulo), 200);
-      String slugFinal = truncar(text(json, "slug", slugify(tituloFinal)), 200);
+      String tituloFinal = truncar(
+          pageSpec == null ? text(json, "titulo", titulo) : pageSpec.titulo(), 200);
+      String slugFinal = truncar(
+          pageSpec == null ? text(json, "slug", slugify(tituloFinal)) : pageSpec.slug(), 200);
       String codigoFinal = truncar(
-          normalizarCodigoTela(text(json, "codigoTela", codigoTela)), 120);
-      String resumoFinal = truncar(text(json, "resumo", truncar(resumoHint, 280)), 2_000);
+          normalizarCodigoTela(
+              pageSpec == null ? text(json, "codigoTela", codigoTela) : pageSpec.codigoTela()),
+          120);
+      String resumoFinal = truncar(
+          pageSpec == null ? text(json, "resumo", truncar(resumoHint, 280)) : pageSpec.resumo(),
+          2_000);
       if (htmlFinal == null || htmlFinal.isBlank()) {
         throw new IllegalStateException("A PageSpec não produziu conteúdo utilizável.");
       }
@@ -327,11 +335,19 @@ public class AiJobWorkerService {
     if (briefing == null || briefing.isBlank()) {
       return null;
     }
-    return briefing.lines().findFirst().map(String::trim).filter(l -> l.length() <= 120).orElse(null);
+    return briefing.lines()
+        .map(String::trim)
+        .filter(linha -> !linha.isBlank())
+        .findFirst()
+        .map(linha -> linha.replaceFirst("^#{1,6}\\s+", "").trim())
+        .filter(linha -> linha.length() <= 120)
+        .orElse(null);
   }
 
   private static String slugify(String value) {
-    String slug = value.toLowerCase(Locale.ROOT)
+    String slug = java.text.Normalizer.normalize(value, java.text.Normalizer.Form.NFD)
+        .replaceAll("\\p{M}", "")
+        .toLowerCase(Locale.ROOT)
         .replaceAll("[^a-z0-9]+", "-")
         .replaceAll("(^-|-$)", "");
     return slug.isBlank() ? "pagina-ai" : slug;

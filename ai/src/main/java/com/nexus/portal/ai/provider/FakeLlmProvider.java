@@ -54,7 +54,7 @@ public final class FakeLlmProvider implements LlmProvider {
         "Guia gerado automaticamente a partir do briefing informado no assistente Nexus AI.");
     List<String> componentes = new ArrayList<>();
     Matcher matcher = Pattern.compile("(?m)^-\\s+([a-z0-9-]+)\\s+\\|").matcher(userPrompt);
-    while (matcher.find() && componentes.size() < 6) {
+    while (matcher.find() && componentes.size() < 12) {
       componentes.add(matcher.group(1));
     }
     String blocos = componentes.stream()
@@ -170,7 +170,9 @@ public final class FakeLlmProvider implements LlmProvider {
   }
 
   private static String slugify(String value) {
-    String slug = value.toLowerCase(Locale.ROOT)
+    String slug = java.text.Normalizer.normalize(value, java.text.Normalizer.Form.NFD)
+        .replaceAll("\\p{M}", "")
+        .toLowerCase(Locale.ROOT)
         .replaceAll("[^a-z0-9]+", "-")
         .replaceAll("(^-|-$)", "");
     return slug.isBlank() ? "pagina-ai" : slug;

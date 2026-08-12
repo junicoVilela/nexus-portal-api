@@ -26,7 +26,9 @@ public final class AiPromptBuilder {
 
         Regras:
         - escolha apenas componentes úteis ao objetivo e mantenha uma sequência editorial coerente;
-        - use de 3 a 10 componentes, sem repetir componenteId;
+        - use de 3 a 12 componentes, sem repetir componenteId;
+        - relacione cada seção do briefing ao componente e aos slots semanticamente mais adequados;
+        - não devolva textos vazio quando o briefing trouxer informação para o componente;
         - preserve fatos do briefing e não invente permissões, regras, caminhos ou dados sensíveis;
         - não preencha slots puramente decorativos se o briefing não trouxer informação;
         - titulo, slug, codigoTela e resumo são obrigatórios;

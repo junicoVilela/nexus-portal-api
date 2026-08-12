@@ -23,6 +23,7 @@ import com.nexus.portal.ai.repository.AiJobRepository;
 import com.nexus.portal.ai.repository.AiMensagemRepository;
 import com.nexus.portal.ai.repository.AiPropostaRepository;
 import com.nexus.portal.docflow.dto.response.PaginaBlocoResponse;
+import com.nexus.portal.docflow.dto.response.PaginaBlocoSlotResponse;
 import com.nexus.portal.docflow.service.PaginaQualidadeService.ItemQualidade;
 import com.nexus.portal.docflow.service.PaginaQualidadeService.ResultadoQualidade;
 import com.nexus.portal.docflow.service.PaginaQualidadeService.Severidade;
@@ -66,6 +67,7 @@ class AiJobWorkerServiceTest {
         new AiTriagemService(props),
         new AiComponenteRetriever(),
         new AiPageSpecService(objectMapper, docFlowAiBridge),
+        new AiBriefingPageSpecEnricher(),
         objectMapper);
 
     sessao = new AiSessao(
@@ -131,7 +133,7 @@ class AiJobWorkerServiceTest {
         "<section><p>" + id + "</p></section>",
         null,
         1,
-        List.of());
+        List.of(new PaginaBlocoSlotResponse("t1", "p", "", id)));
   }
 
   private static void setId(AiSessao sessao, UUID id) throws Exception {

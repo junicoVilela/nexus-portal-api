@@ -110,7 +110,13 @@ public class AiTriagemService {
     if (tituloExplicito.find()) {
       ctx.putIfAbsent("titulo", tituloExplicito.group(1).trim());
     } else {
-      String primeiraLinha = texto.lines().findFirst().orElse("").trim();
+      String primeiraLinha = texto.lines()
+          .map(String::trim)
+          .filter(linha -> !linha.isBlank())
+          .findFirst()
+          .orElse("")
+          .replaceFirst("^#{1,6}\\s+", "")
+          .trim();
       if (primeiraLinha.length() >= 8 && primeiraLinha.length() <= 120 && !primeiraLinha.contains(":")) {
         ctx.putIfAbsent("titulo", primeiraLinha);
       }

@@ -60,4 +60,20 @@ class AiTriagemServiceTest {
 
     assertThat(resultado.completa()).isTrue();
   }
+
+  @Test
+  void removeMarcadorMarkdownDoTitulo() {
+    ResultadoTriagem resultado = service.avaliar(
+        AiObjetivo.CRIAR_PAGINA,
+        """
+            # Cadastro de usuários
+
+            ## Objetivo
+            Documentar o cadastro, a consulta e a edição dos usuários autorizados no sistema.
+            Código tela: CAD-USU
+            """,
+        Map.of());
+
+    assertThat(resultado.contextoExtraido()).containsEntry("titulo", "Cadastro de usuários");
+  }
 }
