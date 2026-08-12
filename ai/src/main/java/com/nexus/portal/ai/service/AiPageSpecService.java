@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.nexus.portal.ai.integration.docflow.DocFlowAiBridge;
 import com.nexus.portal.docflow.dto.response.PaginaBlocoResponse;
+import com.nexus.portal.docflow.dto.response.PaginaBlueprintResponse;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -70,6 +71,13 @@ public class AiPageSpecService {
   }
 
   public AiPageSpec interpretar(JsonNode json, List<PaginaBlocoResponse> candidatos) {
+    return interpretar(json, candidatos, null);
+  }
+
+  public AiPageSpec interpretar(
+      JsonNode json,
+      List<PaginaBlocoResponse> candidatos,
+      PaginaBlueprintResponse blueprint) {
     Map<String, PaginaBlocoResponse> permitidos = candidatos.stream()
         .collect(java.util.stream.Collectors.toMap(PaginaBlocoResponse::id, bloco -> bloco));
     JsonNode blocosNode = json.path("blocos");
@@ -113,6 +121,8 @@ public class AiPageSpecService {
       throw new IllegalArgumentException("PageSpec não possui componentes utilizáveis.");
     }
     return new AiPageSpec(
+        2,
+        blueprint == null ? null : blueprint.id(),
         textoObrigatorio(json, "titulo"),
         textoObrigatorio(json, "slug"),
         textoObrigatorio(json, "codigoTela"),
@@ -139,6 +149,16 @@ public class AiPageSpecService {
       String codigoTela,
       String resumo,
       List<PaginaBlocoResponse> candidatos) {
+    return fallback(titulo, slug, codigoTela, resumo, candidatos, null);
+  }
+
+  public AiPageSpec fallback(
+      String titulo,
+      String slug,
+      String codigoTela,
+      String resumo,
+      List<PaginaBlocoResponse> candidatos,
+      PaginaBlueprintResponse blueprint) {
     List<AiPageSpec.Bloco> blocos = candidatos.stream()
         .limit(6)
         .map(bloco -> new AiPageSpec.Bloco(
@@ -147,7 +167,14 @@ public class AiPageSpecService {
     if (blocos.isEmpty()) {
       throw new IllegalStateException("Catálogo não forneceu componentes para a página.");
     }
-    return new AiPageSpec(titulo, slug, codigoTela, resumo, blocos);
+    return new AiPageSpec(
+        2,
+        blueprint == null ? null : blueprint.id(),
+        titulo,
+        slug,
+        codigoTela,
+        resumo,
+        blocos);
   }
 
   private static List<AiPageSpec.Texto> textosFallback(

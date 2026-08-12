@@ -49,6 +49,8 @@ Pacote base: `com.nexus.portal.ai.{config|controller|dto|entity|repository|servi
 | `POST /api/v1/ai/sessoes/{id}/aplicar` | `PAGINA:CRIAR` | ✅ S2 FORM/PERSISTIR |
 | `GET /api/v1/ai/eventos` | `PAGINA:LER` | ✅ SSE |
 | `GET /api/v1/docflow/paginas/blocos` | `PAGINA:LER` | ✅ catálogo canônico |
+| `GET /api/v1/docflow/paginas/blueprints` | `PAGINA:LER` | ✅ receitas editoriais |
+| `GET /api/v1/docflow/paginas/biblioteca` | `PAGINA:LER` | ✅ snapshot composicional v1 |
 
 Proxy front: `/api/ai` → `/api/v1/ai`.
 
@@ -61,11 +63,16 @@ O fluxo não pede HTML livre ao modelo:
 1. `AiTemplateSelector` ranqueia os templates da biblioteca e calcula confiança.
 2. Com confiança `>= 0,70`, o template é escolhido automaticamente; abaixo disso, a UI pede
    confirmação e mantém o seletor manual em **Avançado**.
-3. `AiComponenteRetriever` combina a taxonomia do template com busca lexical nos metadados dos
-   45 blocos canônicos.
-4. O provedor recebe somente IDs, descrições e slots e devolve uma `PageSpec` em JSON Schema.
-5. O servidor valida IDs/slots e `PaginaBlocoCatalogoService` renderiza o HTML confiável.
-6. A `PageSpec` fica persistida em `tb_ai_proposta.page_spec_json` para auditoria e reprodução.
+3. O código do template resolve um blueprint editorial. Dez blueprints declarativos cobrem os
+   vinte templates de sistema e classificam suas seções como obrigatórias, recomendadas ou
+   opcionais.
+4. `AiComponenteRetriever` seleciona a menor composição aplicável: mantém a base do blueprint,
+   escolhe alternativas pelo briefing e só inclui opcionais quando houver evidência textual.
+5. O provedor recebe somente o blueprint, IDs, descrições e slots permitidos e devolve uma
+   `PageSpec` em JSON Schema.
+6. O servidor valida IDs/slots e `PaginaBlocoCatalogoService` renderiza o HTML confiável.
+7. A `PageSpec` v2 persiste `schemaVersion` e `blueprintId` em
+   `tb_ai_proposta.page_spec_json` para auditoria e reprodução.
 
 Isso separa decisão editorial de renderização: o modelo escreve textos, mas não inventa DOM,
 classes, scripts ou componentes.
@@ -73,6 +80,8 @@ classes, scripts ou componentes.
 O catálogo fica em
 `docflow/src/main/resources/docflow/pagina-blocos.json`; editor e IA consomem a mesma fonte.
 Ao adicionar um bloco, atualize esse arquivo e seus testes — não crie uma cópia no Angular.
+As composições ficam em `docflow/src/main/resources/docflow/pagina-blueprints.json` e sempre
+referenciam componentes existentes, sem duplicar HTML.
 
 ### Quando adicionar RAG vetorial
 

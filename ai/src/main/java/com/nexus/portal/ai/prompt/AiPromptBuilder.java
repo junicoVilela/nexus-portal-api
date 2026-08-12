@@ -1,6 +1,7 @@
 package com.nexus.portal.ai.prompt;
 
 import com.nexus.portal.docflow.dto.response.PaginaBlocoResponse;
+import com.nexus.portal.docflow.dto.response.PaginaBlueprintResponse;
 import java.util.List;
 import java.util.Map;
 
@@ -41,6 +42,7 @@ public final class AiPromptBuilder {
       Map<String, String> contexto,
       String templateCodigo,
       String templateNome,
+      PaginaBlueprintResponse blueprint,
       List<PaginaBlocoResponse> componentes) {
     return """
         TAREFA=GERAR_PAGE_SPEC
@@ -56,6 +58,9 @@ public final class AiPromptBuilder {
         contexto confirmado:
         %s
 
+        blueprint editorial selecionado:
+        %s
+
         catálogo permitido (ID, finalidade e slots editáveis):
         %s
 
@@ -68,6 +73,7 @@ public final class AiPromptBuilder {
         nulo(resumo),
         nulo(briefing),
         contexto == null ? "{}" : contexto,
+        descreverBlueprint(blueprint),
         descreverComponentes(componentes));
   }
 
@@ -157,6 +163,19 @@ public final class AiPromptBuilder {
         })
         .reduce((a, b) -> a + "\n" + b)
         .orElse("[]");
+  }
+
+  private static String descreverBlueprint(PaginaBlueprintResponse blueprint) {
+    if (blueprint == null) {
+      return "Não identificado; use a melhor sequência editorial entre os componentes permitidos.";
+    }
+    String secoes = blueprint.secoes().stream()
+        .map(secao -> secao.slot() + "=" + secao.componenteId()
+            + " (" + secao.necessidade() + ")")
+        .reduce((a, b) -> a + " -> " + b)
+        .orElse("");
+    return blueprint.id() + " v" + blueprint.versao() + " | " + blueprint.descricao()
+        + " | ordem: " + secoes;
   }
 
   private static String truncar(String value, int max) {

@@ -1,6 +1,8 @@
 package com.nexus.portal.ai.service;
 
 import com.nexus.portal.docflow.dto.response.PaginaBlocoResponse;
+import com.nexus.portal.docflow.dto.response.PaginaBlueprintResponse;
+import com.nexus.portal.docflow.dto.response.PaginaBlueprintSecaoResponse;
 import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -37,42 +39,19 @@ public class AiComponenteRetriever {
       "disponiveis",
       "esperado",
       "descricao");
-  private static final Map<String, List<String>> COMPONENTES_POR_TEMPLATE = Map.ofEntries(
-      Map.entry("LISTAR_REGISTROS", List.of(
-          "introducao", "objetivo", "pre-requisitos", "visao-tela", "filtros-resultado",
-          "acoes-tela", "resultado-esperado")),
-      Map.entry("CONSULTA", List.of(
-          "introducao", "objetivo", "pre-requisitos", "visao-tela", "filtros-resultado",
-          "acoes-tela", "resultado-esperado")),
-      Map.entry("INCLUIR_REGISTRO", List.of(
-          "introducao", "objetivo", "pre-requisitos", "visao-tela", "campos-criticos",
-          "passo-a-passo", "regras", "resultado-esperado")),
-      Map.entry("CADASTRO", List.of(
-          "introducao", "objetivo", "pre-requisitos", "visao-tela", "campos-criticos",
-          "passo-a-passo", "regras", "resultado-esperado")),
-      Map.entry("EDITAR_REGISTRO", List.of(
-          "introducao", "objetivo", "pre-requisitos", "visao-tela", "campos-criticos",
-          "passo-a-passo", "regras", "resultado-esperado")),
-      Map.entry("PASSO_A_PASSO", List.of(
-          "introducao", "pre-requisitos", "visao-tela", "passo-a-passo",
-          "checklist-validacao", "resultado-esperado")),
-      Map.entry("FAQ", List.of("introducao", "faq", "links-relacionados")),
-      Map.entry("SOLUCAO_PROBLEMAS", List.of(
-          "introducao", "mensagens-sistema", "callout-erro", "checklist-validacao")),
-      Map.entry("RELATORIO", List.of(
-          "introducao", "objetivo", "visao-tela", "filtros-resultado", "acoes-tela",
-          "resultado-esperado")),
-      Map.entry("DICIONARIO_CAMPOS", List.of("introducao", "dicionario", "callout-info")),
-      Map.entry("PROCESSO", List.of(
-          "introducao", "objetivo", "fluxo", "regras", "resultado-esperado")),
-      Map.entry("PRIMEIROS_PASSOS", List.of(
-          "introducao", "jornada", "boas-praticas", "links-relacionados")));
-
   private static final List<String> PADRAO = List.of(
       "introducao", "objetivo", "visao-tela", "passo-a-passo", "resultado-esperado");
 
   public List<PaginaBlocoResponse> recuperar(
       String templateCodigo, String briefing, List<PaginaBlocoResponse> catalogo) {
+    return recuperar(templateCodigo, briefing, catalogo, null);
+  }
+
+  public List<PaginaBlocoResponse> recuperar(
+      String templateCodigo,
+      String briefing,
+      List<PaginaBlocoResponse> catalogo,
+      PaginaBlueprintResponse blueprint) {
     if (catalogo == null || catalogo.isEmpty()) {
       return List.of();
     }
@@ -81,12 +60,13 @@ public class AiComponenteRetriever {
         .collect(java.util.stream.Collectors.toMap(
             PaginaBlocoResponse::id, bloco -> bloco, (a, b) -> a));
 
-    Set<String> selecionados = new LinkedHashSet<>();
-    List<String> base = COMPONENTES_POR_TEMPLATE.getOrDefault(
-        normalizarCodigo(templateCodigo), PADRAO);
-    base.forEach(id -> adicionarSeExiste(selecionados, porId, id));
-
     String texto = normalizar(briefing);
+    if (blueprint != null) {
+      return recuperarPeloBlueprint(texto, porId, blueprint);
+    }
+
+    Set<String> selecionados = new LinkedHashSet<>();
+    PADRAO.forEach(id -> adicionarSeExiste(selecionados, porId, id));
     List<Pontuado> ranking = new ArrayList<>();
     for (PaginaBlocoResponse bloco : porId.values()) {
       ranking.add(new Pontuado(bloco, pontuar(texto, bloco)));
@@ -104,6 +84,61 @@ public class AiComponenteRetriever {
         });
 
     return selecionados.stream().limit(LIMITE).map(porId::get).toList();
+  }
+
+  private static List<PaginaBlocoResponse> recuperarPeloBlueprint(
+      String briefing,
+      Map<String, PaginaBlocoResponse> catalogo,
+      PaginaBlueprintResponse blueprint) {
+    Set<String> selecionados = new LinkedHashSet<>();
+    List<PaginaBlueprintSecaoResponse> opcionais = new ArrayList<>();
+
+    for (PaginaBlueprintSecaoResponse secao : blueprint.secoes()) {
+      if ("OPCIONAL".equals(secao.necessidade())) {
+        opcionais.add(secao);
+        continue;
+      }
+      melhorComponente(secao, briefing, catalogo)
+          .ifPresent(bloco -> selecionados.add(bloco.id()));
+    }
+
+    opcionais.stream()
+        .map(secao -> melhorComponente(secao, briefing, catalogo).orElse(null))
+        .filter(java.util.Objects::nonNull)
+        .map(bloco -> new Pontuado(bloco, pontuar(briefing, bloco)))
+        .filter(item -> item.pontos() > 0)
+        .sorted(Comparator.comparingInt(Pontuado::pontos).reversed()
+            .thenComparing(item -> item.bloco().id()))
+        .forEach(item -> selecionados.add(item.bloco().id()));
+
+    if (selecionados.size() < blueprint.minimoComponentes()) {
+      opcionais.stream()
+          .map(secao -> melhorComponente(secao, briefing, catalogo).orElse(null))
+          .filter(java.util.Objects::nonNull)
+          .map(PaginaBlocoResponse::id)
+          .forEach(id -> {
+            if (selecionados.size() < blueprint.minimoComponentes()) {
+              selecionados.add(id);
+            }
+          });
+    }
+
+    int limite = Math.min(LIMITE, blueprint.maximoComponentes());
+    return selecionados.stream().limit(limite).map(catalogo::get).toList();
+  }
+
+  private static java.util.Optional<PaginaBlocoResponse> melhorComponente(
+      PaginaBlueprintSecaoResponse secao,
+      String briefing,
+      Map<String, PaginaBlocoResponse> catalogo) {
+    List<String> ids = new ArrayList<>();
+    ids.add(secao.componenteId());
+    ids.addAll(secao.alternativas());
+    return ids.stream()
+        .map(catalogo::get)
+        .filter(java.util.Objects::nonNull)
+        .max(Comparator.comparingInt((PaginaBlocoResponse bloco) -> pontuar(briefing, bloco))
+            .thenComparingInt(bloco -> -ids.indexOf(bloco.id())));
   }
 
   private static boolean elegivel(PaginaBlocoResponse bloco) {
@@ -134,10 +169,6 @@ public class AiComponenteRetriever {
     if (porId.containsKey(id)) {
       selecionados.add(id);
     }
-  }
-
-  private static String normalizarCodigo(String value) {
-    return value == null ? "" : value.trim().toUpperCase(Locale.ROOT);
   }
 
   private static String normalizar(String value) {

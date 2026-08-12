@@ -151,6 +151,9 @@ DELETE /api/v1/modulos/{id}
 
 GET    /api/v1/paginas
 GET    /api/v1/paginas/templates
+GET    /api/v1/docflow/paginas/blocos
+GET    /api/v1/docflow/paginas/blueprints
+GET    /api/v1/docflow/paginas/biblioteca
 POST   /api/v1/paginas
 PUT    /api/v1/paginas/{id}
 DELETE /api/v1/paginas/{id}
@@ -178,9 +181,9 @@ GET    /api/v1/auditoria
 - Autosave atualiza somente rascunhos e não cria revisões intermediárias.
 - Revisões registram o tipo e a descrição do evento editorial.
 - O checklist de qualidade é obrigatório antes do envio para revisão.
-- O catálogo possui 12 templates visuais. Além de funcionalidade, passo a passo, cadastro,
-  consulta, dicionário, processo, FAQ e solução, inclui central de ajuda, relatório,
-  índice de categoria e primeiros passos.
+- A biblioteca possui 20 templates visuais, 45 componentes canônicos e 10 blueprints
+  declarativos. Templates oferecem uma página pronta; blueprints permitem recombinar apenas os
+  componentes necessários sem duplicar HTML.
 - A migração V21 atualiza somente o catálogo de templates; páginas existentes não têm
   seu `conteudo_html` sobrescrito.
 - Modelos personalizados possuem escopo de projeto ou cliente, aplicação contextual com
@@ -216,6 +219,8 @@ GET    /api/v1/auditoria
 - Front: `/doc-flow/assistente`, `/doc-flow/propostas-ia` (não há módulo Angular separado)
 - Docs: `docs/ai/README.md`, `docs/ai/RUNBOOK-LOCAL.md`, `docs/doc-flow/10-assistente-ia-paginas.md`
 - Auditoria: entidades `AI_SESSAO` / `AI_PROPOSTA`
+- A `PageSpec` v2 registra `blueprintId`; a seleção mantém componentes obrigatórios/recomendados
+  e inclui opcionais somente quando o briefing fornece evidência.
 - A IA **nunca publica** — só rascunho/proposta
 
 ## Observações para IA

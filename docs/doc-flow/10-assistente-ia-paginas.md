@@ -2,7 +2,7 @@
 
 > Status: **proposta de desenho** (ainda não implementado).  
 > Frontend espelho: `nexus-portal-web/docs/docflow/07-assistente-ia-paginas.md`  
-> Contexto: DocFlow já tem templates, editor WYSIWYG, qualidade (`PaginaQualidadeService`), workflow `RASCUNHO → … → PUBLICADO` e SSE de publicações. Não há LLM no runtime hoje.
+> Contexto: DocFlow já tem templates, editor WYSIWYG, qualidade (`PaginaQualidadeService`), workflow `RASCUNHO → … → PUBLICADO`, SSE e integração runtime com provedor LLM compatível com OpenAI.
 
 ---
 
@@ -287,13 +287,13 @@ Provider padrão: **OpenRouter** (headers `HTTP-Referer` + `X-Title`).
 ### 6.2 Pipeline do job `GERAR_RASCUNHO`
 
 1. Carregar sessão + mensagens + contexto (projeto, módulo, template HTML se houver).
-2. Se `templateId` ausente: sugerir template por similaridade de briefing (mapa fixo inicial: palavras-chave → códigos `FUNCIONALIDADE`, `PASSO_A_PASSO`, `CADASTRO`, `CONSULTA`, `FAQ`, `SOLUCAO_PROBLEMAS`).
-3. Se template escolhido: chamar `PaginaTemplateService.aplicar` para obter esqueleto com variáveis resolvidas.
-4. Prompt de geração com:
-   - system: regras de HTML permitido + classes canônicas `df-doc-content`;
-   - user: briefing + Q&A + esqueleto + páginas irmãs (títulos/`codigoTela` do módulo, max N).
-5. Exigir **JSON schema** estrito (titulo, slug, codigoTela, resumo, conteudoHtml).
-6. Sanitizar HTML (Jsoup whitelist alinhada ao editor).
+2. Se `templateId` ausente: sugerir template por similaridade de briefing e confiança explicável.
+3. Resolver o blueprint editorial associado ao template; manter componentes obrigatórios e
+   recomendados e adicionar opcionais somente quando o briefing justificar.
+4. Montar o prompt com briefing, Q&A, blueprint e somente os componentes candidatos.
+5. Exigir **JSON Schema** estrito para a `PageSpec`, sem HTML livre produzido pelo modelo.
+6. Registrar `schemaVersion`/`blueprintId`, validar IDs/slots, renderizar no servidor e sanitizar
+   o fragmento final com Jsoup.
 7. Pré-rodar regras de `PaginaQualidadeService` sobre um `Pagina` transitório.
 8. Persistir `AiProposta` + job `SUCESSO` + SSE.
 

@@ -4,6 +4,7 @@ import com.nexus.portal.docflow.dto.request.PaginaRequest;
 import com.nexus.portal.docflow.dto.request.PaginaTemplateAplicacaoRequest;
 import com.nexus.portal.docflow.dto.response.PaginaResponse;
 import com.nexus.portal.docflow.dto.response.PaginaBlocoResponse;
+import com.nexus.portal.docflow.dto.response.PaginaBlueprintResponse;
 import com.nexus.portal.docflow.dto.response.PaginaTemplateAplicacaoResponse;
 import com.nexus.portal.docflow.entity.Modulo;
 import com.nexus.portal.docflow.entity.Pagina;
@@ -11,6 +12,7 @@ import com.nexus.portal.docflow.entity.PaginaTemplate;
 import com.nexus.portal.docflow.entity.Projeto;
 import com.nexus.portal.docflow.repository.PaginaTemplateRepository;
 import com.nexus.portal.docflow.service.PaginaBlocoCatalogoService;
+import com.nexus.portal.docflow.service.PaginaBlueprintCatalogoService;
 import com.nexus.portal.docflow.service.PaginaQualidadeService;
 import com.nexus.portal.docflow.service.PaginaQualidadeService.ResultadoQualidade;
 import com.nexus.portal.docflow.service.PaginaService;
@@ -35,18 +37,21 @@ public class DocFlowAiBridge {
   private final PaginaQualidadeService paginaQualidadeService;
   private final PaginaService paginaService;
   private final PaginaBlocoCatalogoService paginaBlocoCatalogoService;
+  private final PaginaBlueprintCatalogoService paginaBlueprintCatalogoService;
 
   public DocFlowAiBridge(
       PaginaTemplateService paginaTemplateService,
       PaginaTemplateRepository paginaTemplateRepository,
       PaginaQualidadeService paginaQualidadeService,
       PaginaService paginaService,
-      PaginaBlocoCatalogoService paginaBlocoCatalogoService) {
+      PaginaBlocoCatalogoService paginaBlocoCatalogoService,
+      PaginaBlueprintCatalogoService paginaBlueprintCatalogoService) {
     this.paginaTemplateService = paginaTemplateService;
     this.paginaTemplateRepository = paginaTemplateRepository;
     this.paginaQualidadeService = paginaQualidadeService;
     this.paginaService = paginaService;
     this.paginaBlocoCatalogoService = paginaBlocoCatalogoService;
+    this.paginaBlueprintCatalogoService = paginaBlueprintCatalogoService;
   }
 
   public boolean disponivel() {
@@ -74,6 +79,10 @@ public class DocFlowAiBridge {
 
   public List<PaginaBlocoResponse> listarBlocos() {
     return paginaBlocoCatalogoService.listar();
+  }
+
+  public Optional<PaginaBlueprintResponse> buscarBlueprint(String templateCodigo) {
+    return paginaBlueprintCatalogoService.buscarPorTemplate(templateCodigo);
   }
 
   public String renderizarBloco(String blocoId, Map<String, String> textos) {

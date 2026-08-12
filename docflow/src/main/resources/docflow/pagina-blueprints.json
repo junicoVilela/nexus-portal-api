@@ -1,0 +1,195 @@
+[
+  {
+    "id": "funcionalidade-geral",
+    "nome": "Funcionalidade geral",
+    "descricao": "Apresenta objetivo, contexto visual, uso e resultado de uma funcionalidade.",
+    "tipoConteudo": "FUNCIONALIDADE",
+    "versao": 1,
+    "status": "PUBLICADO",
+    "minimoComponentes": 3,
+    "maximoComponentes": 7,
+    "templatesCompativeis": ["FUNCIONALIDADE"],
+    "secoes": [
+      {"slot": "abertura", "componenteId": "introducao", "necessidade": "OBRIGATORIA", "repetivel": false, "maximoInstancias": 1, "alternativas": []},
+      {"slot": "objetivo", "componenteId": "objetivo", "necessidade": "OBRIGATORIA", "repetivel": false, "maximoInstancias": 1, "alternativas": []},
+      {"slot": "acesso", "componenteId": "pre-requisitos", "necessidade": "OPCIONAL", "repetivel": false, "maximoInstancias": 1, "alternativas": ["permissoes"]},
+      {"slot": "contexto-visual", "componenteId": "visao-tela", "necessidade": "RECOMENDADA", "repetivel": false, "maximoInstancias": 1, "alternativas": ["captura-anotada"]},
+      {"slot": "uso", "componenteId": "passo-a-passo", "necessidade": "RECOMENDADA", "repetivel": false, "maximoInstancias": 1, "alternativas": ["acoes-tela"]},
+      {"slot": "regras", "componenteId": "regras", "necessidade": "OPCIONAL", "repetivel": false, "maximoInstancias": 1, "alternativas": ["se-entao"]},
+      {"slot": "resultado", "componenteId": "resultado-esperado", "necessidade": "OBRIGATORIA", "repetivel": false, "maximoInstancias": 1, "alternativas": []}
+    ]
+  },
+  {
+    "id": "consulta-operacional",
+    "nome": "Consulta operacional",
+    "descricao": "Orienta busca, filtragem, leitura de resultados e ações disponíveis.",
+    "tipoConteudo": "CONSULTA",
+    "versao": 1,
+    "status": "PUBLICADO",
+    "minimoComponentes": 4,
+    "maximoComponentes": 7,
+    "templatesCompativeis": ["LISTAR_REGISTROS", "CONSULTA", "RELATORIO", "LAB_FILTROS"],
+    "secoes": [
+      {"slot": "abertura", "componenteId": "introducao", "necessidade": "OBRIGATORIA", "repetivel": false, "maximoInstancias": 1, "alternativas": []},
+      {"slot": "objetivo", "componenteId": "objetivo", "necessidade": "RECOMENDADA", "repetivel": false, "maximoInstancias": 1, "alternativas": []},
+      {"slot": "acesso", "componenteId": "pre-requisitos", "necessidade": "OPCIONAL", "repetivel": false, "maximoInstancias": 1, "alternativas": ["permissoes"]},
+      {"slot": "tela", "componenteId": "visao-tela", "necessidade": "OBRIGATORIA", "repetivel": false, "maximoInstancias": 1, "alternativas": ["captura-anotada"]},
+      {"slot": "consulta", "componenteId": "filtros-resultado", "necessidade": "OBRIGATORIA", "repetivel": false, "maximoInstancias": 1, "alternativas": []},
+      {"slot": "acoes", "componenteId": "acoes-tela", "necessidade": "RECOMENDADA", "repetivel": false, "maximoInstancias": 1, "alternativas": []},
+      {"slot": "falhas", "componenteId": "mensagens-sistema", "necessidade": "OPCIONAL", "repetivel": false, "maximoInstancias": 1, "alternativas": ["callout-erro"]},
+      {"slot": "resultado", "componenteId": "resultado-esperado", "necessidade": "OBRIGATORIA", "repetivel": false, "maximoInstancias": 1, "alternativas": []}
+    ]
+  },
+  {
+    "id": "formulario-operacional",
+    "nome": "Formulário operacional",
+    "descricao": "Explica inclusão ou edição de dados, campos críticos, regras e confirmação.",
+    "tipoConteudo": "FORMULARIO",
+    "versao": 1,
+    "status": "PUBLICADO",
+    "minimoComponentes": 4,
+    "maximoComponentes": 8,
+    "templatesCompativeis": ["INCLUIR_REGISTRO", "CADASTRO", "EDITAR_REGISTRO", "CATALOGO_PARAMETROS"],
+    "secoes": [
+      {"slot": "abertura", "componenteId": "introducao", "necessidade": "OBRIGATORIA", "repetivel": false, "maximoInstancias": 1, "alternativas": []},
+      {"slot": "objetivo", "componenteId": "objetivo", "necessidade": "RECOMENDADA", "repetivel": false, "maximoInstancias": 1, "alternativas": []},
+      {"slot": "acesso", "componenteId": "pre-requisitos", "necessidade": "OPCIONAL", "repetivel": false, "maximoInstancias": 1, "alternativas": ["permissoes"]},
+      {"slot": "tela", "componenteId": "visao-tela", "necessidade": "RECOMENDADA", "repetivel": false, "maximoInstancias": 1, "alternativas": ["captura-anotada"]},
+      {"slot": "campos", "componenteId": "campos-criticos", "necessidade": "OBRIGATORIA", "repetivel": false, "maximoInstancias": 1, "alternativas": ["dicionario"]},
+      {"slot": "procedimento", "componenteId": "passo-a-passo", "necessidade": "OBRIGATORIA", "repetivel": false, "maximoInstancias": 1, "alternativas": []},
+      {"slot": "regras", "componenteId": "regras", "necessidade": "RECOMENDADA", "repetivel": false, "maximoInstancias": 1, "alternativas": ["se-entao"]},
+      {"slot": "resultado", "componenteId": "resultado-esperado", "necessidade": "OBRIGATORIA", "repetivel": false, "maximoInstancias": 1, "alternativas": []}
+    ]
+  },
+  {
+    "id": "tutorial-guiado",
+    "nome": "Tutorial guiado",
+    "descricao": "Conduz o usuário por uma jornada ou sequência de passos verificáveis.",
+    "tipoConteudo": "TUTORIAL",
+    "versao": 1,
+    "status": "PUBLICADO",
+    "minimoComponentes": 3,
+    "maximoComponentes": 7,
+    "templatesCompativeis": ["PASSO_A_PASSO", "PRIMEIROS_PASSOS"],
+    "secoes": [
+      {"slot": "abertura", "componenteId": "introducao", "necessidade": "OBRIGATORIA", "repetivel": false, "maximoInstancias": 1, "alternativas": []},
+      {"slot": "preparacao", "componenteId": "pre-requisitos", "necessidade": "RECOMENDADA", "repetivel": false, "maximoInstancias": 1, "alternativas": []},
+      {"slot": "jornada", "componenteId": "jornada", "necessidade": "OPCIONAL", "repetivel": false, "maximoInstancias": 1, "alternativas": ["visao-tela"]},
+      {"slot": "procedimento", "componenteId": "passo-a-passo", "necessidade": "OBRIGATORIA", "repetivel": false, "maximoInstancias": 1, "alternativas": []},
+      {"slot": "validacao", "componenteId": "checklist-validacao", "necessidade": "RECOMENDADA", "repetivel": false, "maximoInstancias": 1, "alternativas": ["checklist-status"]},
+      {"slot": "resultado", "componenteId": "resultado-esperado", "necessidade": "OBRIGATORIA", "repetivel": false, "maximoInstancias": 1, "alternativas": []},
+      {"slot": "continuidade", "componenteId": "links-relacionados", "necessidade": "OPCIONAL", "repetivel": false, "maximoInstancias": 1, "alternativas": ["ver-tambem"]}
+    ]
+  },
+  {
+    "id": "perguntas-frequentes",
+    "nome": "Perguntas frequentes",
+    "descricao": "Organiza respostas objetivas para dúvidas recorrentes e direciona a conteúdos relacionados.",
+    "tipoConteudo": "FAQ",
+    "versao": 1,
+    "status": "PUBLICADO",
+    "minimoComponentes": 2,
+    "maximoComponentes": 4,
+    "templatesCompativeis": ["FAQ"],
+    "secoes": [
+      {"slot": "abertura", "componenteId": "introducao", "necessidade": "OBRIGATORIA", "repetivel": false, "maximoInstancias": 1, "alternativas": []},
+      {"slot": "perguntas", "componenteId": "faq", "necessidade": "OBRIGATORIA", "repetivel": false, "maximoInstancias": 1, "alternativas": []},
+      {"slot": "complementos", "componenteId": "links-relacionados", "necessidade": "RECOMENDADA", "repetivel": false, "maximoInstancias": 1, "alternativas": ["ver-tambem"]},
+      {"slot": "glossario", "componenteId": "glossario", "necessidade": "OPCIONAL", "repetivel": false, "maximoInstancias": 1, "alternativas": []}
+    ]
+  },
+  {
+    "id": "solucao-de-problemas",
+    "nome": "Solução de problemas",
+    "descricao": "Relaciona sintomas, mensagens, causas prováveis e verificações de correção.",
+    "tipoConteudo": "TROUBLESHOOTING",
+    "versao": 1,
+    "status": "PUBLICADO",
+    "minimoComponentes": 3,
+    "maximoComponentes": 6,
+    "templatesCompativeis": ["SOLUCAO_PROBLEMAS"],
+    "secoes": [
+      {"slot": "abertura", "componenteId": "introducao", "necessidade": "OBRIGATORIA", "repetivel": false, "maximoInstancias": 1, "alternativas": []},
+      {"slot": "sintomas", "componenteId": "mensagens-sistema", "necessidade": "OBRIGATORIA", "repetivel": false, "maximoInstancias": 1, "alternativas": ["callout-erro"]},
+      {"slot": "diagnostico", "componenteId": "se-entao", "necessidade": "RECOMENDADA", "repetivel": false, "maximoInstancias": 1, "alternativas": ["regras"]},
+      {"slot": "correcao", "componenteId": "passo-a-passo", "necessidade": "OBRIGATORIA", "repetivel": false, "maximoInstancias": 1, "alternativas": []},
+      {"slot": "validacao", "componenteId": "checklist-validacao", "necessidade": "RECOMENDADA", "repetivel": false, "maximoInstancias": 1, "alternativas": ["resultado-esperado"]},
+      {"slot": "alerta", "componenteId": "callout-atencao", "necessidade": "OPCIONAL", "repetivel": false, "maximoInstancias": 1, "alternativas": []}
+    ]
+  },
+  {
+    "id": "processo-e-regras",
+    "nome": "Processo e regras",
+    "descricao": "Explica fluxo, decisões, regras e resultado de um processo de negócio.",
+    "tipoConteudo": "PROCESSO",
+    "versao": 1,
+    "status": "PUBLICADO",
+    "minimoComponentes": 3,
+    "maximoComponentes": 7,
+    "templatesCompativeis": ["PROCESSO", "ESPECIFICACAO_REGRA", "DOSSIE_DECISAO"],
+    "secoes": [
+      {"slot": "abertura", "componenteId": "introducao", "necessidade": "OBRIGATORIA", "repetivel": false, "maximoInstancias": 1, "alternativas": []},
+      {"slot": "objetivo", "componenteId": "objetivo", "necessidade": "RECOMENDADA", "repetivel": false, "maximoInstancias": 1, "alternativas": []},
+      {"slot": "fluxo", "componenteId": "fluxo", "necessidade": "OBRIGATORIA", "repetivel": false, "maximoInstancias": 1, "alternativas": ["jornada"]},
+      {"slot": "decisoes", "componenteId": "se-entao", "necessidade": "RECOMENDADA", "repetivel": false, "maximoInstancias": 1, "alternativas": []},
+      {"slot": "regras", "componenteId": "regras", "necessidade": "OBRIGATORIA", "repetivel": false, "maximoInstancias": 1, "alternativas": []},
+      {"slot": "riscos", "componenteId": "callout-atencao", "necessidade": "OPCIONAL", "repetivel": false, "maximoInstancias": 1, "alternativas": []},
+      {"slot": "resultado", "componenteId": "resultado-esperado", "necessidade": "RECOMENDADA", "repetivel": false, "maximoInstancias": 1, "alternativas": []}
+    ]
+  },
+  {
+    "id": "referencia-de-campos",
+    "nome": "Referência de campos",
+    "descricao": "Documenta campos, parâmetros, formatos, estados e observações de preenchimento.",
+    "tipoConteudo": "REFERENCIA",
+    "versao": 1,
+    "status": "PUBLICADO",
+    "minimoComponentes": 2,
+    "maximoComponentes": 5,
+    "templatesCompativeis": ["DICIONARIO_CAMPOS"],
+    "secoes": [
+      {"slot": "abertura", "componenteId": "introducao", "necessidade": "OBRIGATORIA", "repetivel": false, "maximoInstancias": 1, "alternativas": []},
+      {"slot": "campos", "componenteId": "dicionario", "necessidade": "OBRIGATORIA", "repetivel": false, "maximoInstancias": 1, "alternativas": ["campos-criticos"]},
+      {"slot": "estados", "componenteId": "badges-status", "necessidade": "OPCIONAL", "repetivel": false, "maximoInstancias": 1, "alternativas": []},
+      {"slot": "regras", "componenteId": "regras", "necessidade": "RECOMENDADA", "repetivel": false, "maximoInstancias": 1, "alternativas": ["callout-info"]},
+      {"slot": "glossario", "componenteId": "glossario", "necessidade": "OPCIONAL", "repetivel": false, "maximoInstancias": 1, "alternativas": []}
+    ]
+  },
+  {
+    "id": "central-de-conteudo",
+    "nome": "Central de conteúdo",
+    "descricao": "Cria uma porta de entrada navegável para categorias, recursos e conteúdos relacionados.",
+    "tipoConteudo": "NAVEGACAO",
+    "versao": 1,
+    "status": "PUBLICADO",
+    "minimoComponentes": 2,
+    "maximoComponentes": 5,
+    "templatesCompativeis": ["CENTRAL_AJUDA", "CATEGORIA_ARTIGOS"],
+    "secoes": [
+      {"slot": "abertura", "componenteId": "introducao", "necessidade": "OBRIGATORIA", "repetivel": false, "maximoInstancias": 1, "alternativas": []},
+      {"slot": "categorias", "componenteId": "lista-recursos", "necessidade": "OBRIGATORIA", "repetivel": false, "maximoInstancias": 1, "alternativas": []},
+      {"slot": "destaques", "componenteId": "elementos-3-colunas", "necessidade": "RECOMENDADA", "repetivel": false, "maximoInstancias": 1, "alternativas": ["elementos-meia-tela"]},
+      {"slot": "jornada", "componenteId": "jornada", "necessidade": "OPCIONAL", "repetivel": false, "maximoInstancias": 1, "alternativas": []},
+      {"slot": "relacionados", "componenteId": "links-relacionados", "necessidade": "RECOMENDADA", "repetivel": false, "maximoInstancias": 1, "alternativas": ["ver-tambem"]}
+    ]
+  },
+  {
+    "id": "painel-analitico",
+    "nome": "Painel analítico",
+    "descricao": "Explica indicadores, filtros, estados e interpretação de um painel ou relatório.",
+    "tipoConteudo": "ANALITICO",
+    "versao": 1,
+    "status": "PUBLICADO",
+    "minimoComponentes": 3,
+    "maximoComponentes": 6,
+    "templatesCompativeis": ["PAINEL_METRICAS"],
+    "secoes": [
+      {"slot": "abertura", "componenteId": "introducao", "necessidade": "OBRIGATORIA", "repetivel": false, "maximoInstancias": 1, "alternativas": []},
+      {"slot": "objetivo", "componenteId": "objetivo", "necessidade": "OBRIGATORIA", "repetivel": false, "maximoInstancias": 1, "alternativas": []},
+      {"slot": "painel", "componenteId": "visao-tela", "necessidade": "RECOMENDADA", "repetivel": false, "maximoInstancias": 1, "alternativas": ["captura-anotada"]},
+      {"slot": "filtros", "componenteId": "filtros-resultado", "necessidade": "OBRIGATORIA", "repetivel": false, "maximoInstancias": 1, "alternativas": []},
+      {"slot": "indicadores", "componenteId": "elementos-3-colunas", "necessidade": "RECOMENDADA", "repetivel": false, "maximoInstancias": 1, "alternativas": ["elementos-meia-tela"]},
+      {"slot": "interpretacao", "componenteId": "callout-info", "necessidade": "OPCIONAL", "repetivel": false, "maximoInstancias": 1, "alternativas": ["resultado-esperado"]}
+    ]
+  }
+]

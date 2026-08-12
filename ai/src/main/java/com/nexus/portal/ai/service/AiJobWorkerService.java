@@ -27,6 +27,7 @@ import com.nexus.portal.ai.repository.AiPropostaRepository;
 import com.nexus.portal.ai.repository.AiSessaoRepository;
 import com.nexus.portal.docflow.dto.response.PaginaTemplateAplicacaoResponse;
 import com.nexus.portal.docflow.dto.response.PaginaBlocoResponse;
+import com.nexus.portal.docflow.dto.response.PaginaBlueprintResponse;
 import com.nexus.portal.docflow.entity.PaginaTemplate;
 import com.nexus.portal.docflow.service.PaginaQualidadeService.ResultadoQualidade;
 import java.util.LinkedHashMap;
@@ -114,8 +115,9 @@ public class AiJobWorkerService {
 
       aiEventService.publicarJob(job.getId(), sessao.getId(), AiJobStatus.PROCESSANDO.name(), 40);
 
+      PaginaBlueprintResponse blueprint = docFlowAiBridge.buscarBlueprint(templateCodigo).orElse(null);
       List<PaginaBlocoResponse> candidatos = componenteRetriever.recuperar(
-          templateCodigo, sessao.getBriefing(), docFlowAiBridge.listarBlocos());
+          templateCodigo, sessao.getBriefing(), docFlowAiBridge.listarBlocos(), blueprint);
       LlmCompletion completion;
       JsonNode json;
       AiPageSpec pageSpec = null;
@@ -130,6 +132,7 @@ public class AiJobWorkerService {
             contexto,
             templateCodigo,
             templateNome,
+            blueprint,
             candidatos);
         completion = llmProvider.completarEstruturado(
             system, user, pageSpecService.schema(candidatos));
@@ -147,7 +150,7 @@ public class AiJobWorkerService {
               .put("resumo", truncar(resumoHint, 280));
         }
         try {
-          pageSpec = pageSpecService.interpretar(json, candidatos);
+          pageSpec = pageSpecService.interpretar(json, candidatos, blueprint);
         } catch (IllegalArgumentException ex) {
           log.warn(
               "ai.job.pagespec_fallback jobId={} motivo={} componentes={}",
@@ -159,7 +162,8 @@ public class AiJobWorkerService {
               text(json, "slug", slugify(titulo)),
               text(json, "codigoTela", codigoTela),
               text(json, "resumo", truncar(resumoHint, 280)),
-              candidatos);
+              candidatos,
+              blueprint);
         }
         htmlFinal = htmlSanitizer.sanitizar(pageSpecService.renderizar(pageSpec));
       } else {
@@ -232,7 +236,7 @@ public class AiJobWorkerService {
           truncar(codigoFinal + " · " + tituloFinal, 200),
           null);
       log.info(
-          "ai.job.completed jobId={} sessaoId={} status=SUCESSO latencyMs={} tokensIn={} tokensOut={} provider={} template={} componentes={}",
+          "ai.job.completed jobId={} sessaoId={} status=SUCESSO latencyMs={} tokensIn={} tokensOut={} provider={} template={} blueprint={} componentes={}",
           jobId,
           sessao.getId(),
           job.latenciaMs(),
@@ -240,6 +244,7 @@ public class AiJobWorkerService {
           job.getTokensSaida(),
           llmProvider.id(),
           templateCodigo,
+          blueprint == null ? null : blueprint.id(),
           pageSpec == null
               ? List.of()
               : pageSpec.blocos().stream().map(AiPageSpec.Bloco::componenteId).toList());

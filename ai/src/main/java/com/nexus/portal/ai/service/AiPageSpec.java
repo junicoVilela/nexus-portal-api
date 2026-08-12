@@ -3,6 +3,8 @@ package com.nexus.portal.ai.service;
 import java.util.List;
 
 public record AiPageSpec(
+    int schemaVersion,
+    String blueprintId,
     String titulo,
     String slug,
     String codigoTela,
