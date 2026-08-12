@@ -47,12 +47,30 @@ Pacote base: `com.nexus.portal.ai.{config|controller|dto|entity|repository|servi
 | `POST /api/v1/ai/sessoes/{id}/gerar` | `PAGINA:CRIAR` | ✅ S2 (202) |
 | `GET /api/v1/ai/sessoes/{id}/proposta` | `PAGINA:LER` | ✅ S2 |
 | `POST /api/v1/ai/sessoes/{id}/aplicar` | `PAGINA:CRIAR` | ✅ S2 FORM/PERSISTIR |
+| `POST /api/v1/ai/importacoes` | `PAGINA:CRIAR` | ✅ DOCX/PDF/TXT → plano |
+| `GET /api/v1/ai/importacoes/{id}` | `PAGINA:LER` | ✅ retoma revisão |
+| `POST /api/v1/ai/importacoes/{id}/paginas/{paginaId}/selecionar` | `PAGINA:CRIAR` | ✅ envia página ao assistente |
 | `GET /api/v1/ai/eventos` | `PAGINA:LER` | ✅ SSE |
 | `GET /api/v1/docflow/paginas/blocos` | `PAGINA:LER` | ✅ catálogo canônico |
 | `GET /api/v1/docflow/paginas/blueprints` | `PAGINA:LER` | ✅ receitas editoriais |
 | `GET /api/v1/docflow/paginas/biblioteca` | `PAGINA:LER` | ✅ snapshot composicional v1 |
 
 Proxy front: `/api/ai` → `/api/v1/ai`.
+
+### Importação de manuais
+
+O assistente aceita `DOC`, `DOCX`, PDF com texto selecionável e `TXT` em UTF-8, até 15 MB. O fluxo:
+
+1. valida extensão, assinatura do arquivo, tamanho e limites internos do DOCX/PDF;
+2. extrai títulos, parágrafos, listas e tabelas sem persistir o binário original;
+3. infere a hierarquia adaptativa `projeto → módulos → páginas` (`H1/H2/H3` quando disponível);
+4. distribui cada seção em um briefing independente, preservando a ordem e sem misturar textos;
+5. recomenda um template da biblioteca para cada página e persiste o plano em JSONB;
+6. permite retomar a revisão por `importacaoId` e enviar uma página por vez ao pipeline existente.
+
+PDFs formados apenas por imagem são recusados com orientação para aplicar OCR. Em `.doc` legado,
+a hierarquia é inferida pelo texto e deve ser revisada. O limite atual é de 300 páginas de origem,
+500.000 caracteres extraídos e 80 páginas no plano.
 
 ---
 
@@ -168,6 +186,7 @@ Runbook local: [`RUNBOOK-LOCAL.md`](RUNBOOK-LOCAL.md).
 - [x] Jobs/propostas (S2) — `V17__ai__02_jobs_propostas.sql`
 - [x] Catálogo canônico + PageSpec auditável — `V18__ai__03_page_spec.sql`
 - [x] Progresso persistente, cancelamento e recuperação — `V19__ai__04_job_resilience.sql`
+- [x] Importação DOCX/PDF/TXT e plano de manual persistido — `V21__ai__06_documento_importacao.sql`
 - [x] Seleção automática com confiança e confirmação humana
 - [x] Wizard UI + aplicar no editor (S3)
 - [x] Hardening: auditoria, métricas, rate limit, prompts, e2e (S4)

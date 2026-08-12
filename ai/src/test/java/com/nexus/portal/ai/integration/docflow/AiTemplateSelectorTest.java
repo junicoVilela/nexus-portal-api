@@ -42,6 +42,18 @@ class AiTemplateSelectorTest {
   }
 
   @Test
+  void usaFuncionalidadeParaExclusaoQuandoBibliotecaNaoTemModeloEspecifico() {
+    var hit = AiTemplateSelector.selecionar(
+        "Exclusão de registro: localize, clique em excluir e confirme a operação.",
+        List.of(
+            template("FUNCIONALIDADE", "Guia de funcionalidade"),
+            template("INCLUIR_REGISTRO", "Incluir registro"),
+            template("EDITAR_REGISTRO", "Editar registro")));
+
+    assertThat(hit.get().getCodigo()).isEqualTo("FUNCIONALIDADE");
+  }
+
+  @Test
   void fallbackFuncionalidadeSomenteSemSinal() {
     var padrao = template("FUNCIONALIDADE", "Guia de funcionalidade");
     var hit = AiTemplateSelector.selecionar("texto genérico sem keywords", List.of(padrao));

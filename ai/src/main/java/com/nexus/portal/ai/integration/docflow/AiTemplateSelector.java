@@ -152,6 +152,11 @@ public final class AiTemplateSelector {
     } else if (operacoesCrud >= 3 && "FUNCIONALIDADE".equalsIgnoreCase(codigo)) {
       pontos += 130;
     }
+    if (operacoesCrud == 1
+        && "FUNCIONALIDADE".equalsIgnoreCase(codigo)
+        && Pattern.compile("\\b(excluir|exclus[aã]o|remover)\\b").matcher(briefingLower).find()) {
+      pontos += 100;
+    }
 
     // Overlap com metadados do próprio modelo (inclui personalizados da biblioteca).
     pontos += overlapTokens(briefingLower, normalizar(codigo));

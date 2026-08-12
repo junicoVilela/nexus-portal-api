@@ -1,0 +1,53 @@
+package com.nexus.portal.ai.controller;
+
+import com.nexus.portal.ai.dto.response.AiImportacaoDocumentoResponse;
+import com.nexus.portal.ai.service.AiDocumentoImportacaoService;
+import com.nexus.portal.shared.security.Permissoes;
+import java.security.Principal;
+import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+
+@RestController
+@RequestMapping("/api/v1/ai/importacoes")
+@RequiredArgsConstructor
+public class AiDocumentoImportacaoController {
+
+  private final AiDocumentoImportacaoService service;
+
+  @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  @ResponseStatus(HttpStatus.CREATED)
+  @PreAuthorize(Permissoes.PAGINA_CRIAR)
+  public AiImportacaoDocumentoResponse importarDocumento(
+      @RequestParam MultipartFile arquivo,
+      @RequestParam(required = false) UUID projetoId,
+      @RequestParam(required = false) UUID clienteId,
+      Principal principal) {
+    return service.importar(arquivo, projetoId, clienteId, principal);
+  }
+
+  @GetMapping("/{id}")
+  @PreAuthorize(Permissoes.PAGINA_LER)
+  public AiImportacaoDocumentoResponse buscarImportacaoDocumento(@PathVariable UUID id, Principal principal) {
+    return service.buscar(id, principal);
+  }
+
+  @PostMapping("/{id}/paginas/{paginaPlanoId}/selecionar")
+  @PreAuthorize(Permissoes.PAGINA_CRIAR)
+  public AiImportacaoDocumentoResponse selecionarPaginaImportada(
+      @PathVariable UUID id,
+      @PathVariable UUID paginaPlanoId,
+      Principal principal) {
+    return service.selecionarPagina(id, paginaPlanoId, principal);
+  }
+}
