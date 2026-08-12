@@ -18,10 +18,14 @@ public record AiSessaoResponse(
     UUID templateId,
     String briefing,
     List<AiMensagemResponse> mensagens,
+    AiJobResponse jobAtual,
     OffsetDateTime createdAt,
     OffsetDateTime updatedAt) {
 
-  public static AiSessaoResponse from(AiSessao sessao, List<AiMensagemResponse> mensagens) {
+  public static AiSessaoResponse from(
+      AiSessao sessao,
+      List<AiMensagemResponse> mensagens,
+      AiJobResponse jobAtual) {
     return new AiSessaoResponse(
         sessao.getId(),
         sessao.getObjetivo(),
@@ -33,6 +37,7 @@ public record AiSessaoResponse(
         sessao.getTemplateId(),
         sessao.getBriefing(),
         mensagens,
+        jobAtual,
         sessao.getCreatedAt(),
         sessao.getUpdatedAt());
   }

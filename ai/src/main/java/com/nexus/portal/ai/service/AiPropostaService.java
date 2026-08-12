@@ -13,7 +13,6 @@ import com.nexus.portal.ai.dto.response.AiJobResponse;
 import com.nexus.portal.ai.dto.response.AiPropostaResponse;
 import com.nexus.portal.ai.dto.response.AiQualidadeItemResponse;
 import com.nexus.portal.ai.entity.AiJob;
-import com.nexus.portal.ai.entity.AiJobStatus;
 import com.nexus.portal.ai.entity.AiJobTipo;
 import com.nexus.portal.ai.entity.AiProposta;
 import com.nexus.portal.ai.entity.AiPropostaStatus;
@@ -28,6 +27,7 @@ import com.nexus.portal.docflow.dto.response.PaginaResponse;
 import com.nexus.portal.shared.exception.BusinessException;
 import com.nexus.portal.shared.exception.NotFoundException;
 import java.security.Principal;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -46,6 +46,7 @@ public class AiPropostaService {
   private final AiJobRepository jobRepository;
   private final AiPropostaRepository propostaRepository;
   private final AiJobWorkerService jobWorkerService;
+  private final AiJobLifecycleService lifecycleService;
   private final AiEventService aiEventService;
   private final AiProperties properties;
   private final DocFlowAiBridge docFlowAiBridge;
@@ -56,23 +57,35 @@ public class AiPropostaService {
   @Transactional
   public AiJobResponse gerar(UUID sessaoId, Principal principal) {
     exigirModuloHabilitado();
-    rateLimitService.exigirGeracaoPermitida(principal);
-    AiSessao sessao = carregarSessao(sessaoId);
+    AiSessao sessao = sessaoRepository.findByIdForUpdate(sessaoId)
+        .orElseThrow(() -> new NotFoundException("Sessão de IA não encontrada."));
+    var jobAtivo = jobRepository.findFirstBySessaoIdAndStatusInOrderByCreatedAtDesc(
+        sessaoId, AiJobLifecycleService.statusAtivos());
+    if (jobAtivo.isPresent()) {
+      AiJob atual = jobAtivo.orElseThrow();
+      long limiteSegundos = Math.max(properties.timeoutSeconds() * 2L, 300L);
+      if (!atual.expirado(OffsetDateTime.now().minusSeconds(limiteSegundos))) {
+        return AiJobResponse.from(atual);
+      }
+      lifecycleService.expirar(
+          atual,
+          "Heartbeat ausente por mais de " + limiteSegundos + " segundos.");
+    }
     if (sessao.getStatus() != AiSessaoStatus.PRONTA_PARA_GERAR
         && sessao.getStatus() != AiSessaoStatus.PRONTA
-        && sessao.getStatus() != AiSessaoStatus.ERRO) {
+        && sessao.getStatus() != AiSessaoStatus.ERRO
+        && sessao.getStatus() != AiSessaoStatus.GERANDO) {
       throw new BusinessException(
-          "Sessão precisa estar PRONTA_PARA_GERAR, PRONTA ou ERRO para gerar. Status atual: "
+          "Sessão precisa estar pronta ou disponível para uma nova tentativa. Status atual: "
               + sessao.getStatus());
     }
-    if (jobRepository.existsBySessaoIdAndStatusIn(
-        sessaoId, List.of(AiJobStatus.PENDENTE, AiJobStatus.PROCESSANDO))) {
-      throw new BusinessException("Já existe um job de geração em andamento para esta sessão.");
-    }
 
-    AiJob job = jobRepository.save(new AiJob(sessao, AiJobTipo.GERAR_RASCUNHO));
+    rateLimitService.exigirGeracaoPermitida(principal);
+    int tentativa = Math.toIntExact(jobRepository.countBySessaoId(sessaoId) + 1);
+    AiJob job = jobRepository.saveAndFlush(
+        new AiJob(sessao, AiJobTipo.GERAR_RASCUNHO, tentativa));
     sessao.gerando();
-    aiEventService.publicarJob(job.getId(), sessao.getId(), AiJobStatus.PENDENTE.name(), 0);
+    aiEventService.publicarJob(job);
     agendarProcessamento(job.getId());
     return AiJobResponse.from(job);
   }

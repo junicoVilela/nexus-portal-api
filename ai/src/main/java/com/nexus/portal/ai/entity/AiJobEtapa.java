@@ -1,0 +1,13 @@
+package com.nexus.portal.ai.entity;
+
+public enum AiJobEtapa {
+  AGUARDANDO,
+  PREPARANDO_CONTEXTO,
+  SELECIONANDO_ESTRUTURA,
+  GERANDO_CONTEUDO,
+  VALIDANDO_QUALIDADE,
+  FINALIZANDO,
+  CONCLUIDA,
+  CANCELADA,
+  FALHA
+}

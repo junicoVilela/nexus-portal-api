@@ -2,34 +2,29 @@ package com.nexus.portal.ai.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nexus.identityaccess.service.AuditoriaService;
-import com.nexus.portal.ai.audit.AiAuditoriaAcoes;
 import com.nexus.portal.ai.config.AiProperties;
 import com.nexus.portal.ai.dto.response.AiQualidadeItemResponse;
-import com.nexus.portal.ai.entity.AiJob;
-import com.nexus.portal.ai.entity.AiJobStatus;
+import com.nexus.portal.ai.entity.AiJobEtapa;
 import com.nexus.portal.ai.entity.AiMensagem;
 import com.nexus.portal.ai.entity.AiObjetivo;
 import com.nexus.portal.ai.entity.AiPapelMensagem;
-import com.nexus.portal.ai.entity.AiProposta;
-import com.nexus.portal.ai.entity.AiPropostaStatus;
 import com.nexus.portal.ai.entity.AiPropostaTipo;
-import com.nexus.portal.ai.entity.AiSessao;
-import com.nexus.portal.ai.entity.AiSessaoStatus;
 import com.nexus.portal.ai.integration.docflow.AiTemplateSelector;
 import com.nexus.portal.ai.integration.docflow.DocFlowAiBridge;
 import com.nexus.portal.ai.prompt.AiPromptBuilder;
 import com.nexus.portal.ai.provider.LlmCompletion;
 import com.nexus.portal.ai.provider.LlmProvider;
-import com.nexus.portal.ai.repository.AiJobRepository;
 import com.nexus.portal.ai.repository.AiMensagemRepository;
-import com.nexus.portal.ai.repository.AiPropostaRepository;
-import com.nexus.portal.ai.repository.AiSessaoRepository;
+import com.nexus.portal.ai.service.AiJobLifecycleService.ContextoExecucao;
+import com.nexus.portal.ai.service.AiJobLifecycleService.ResultadoConclusao;
+import com.nexus.portal.ai.service.AiJobLifecycleService.ResultadoGeracao;
 import com.nexus.portal.docflow.dto.response.PaginaTemplateAplicacaoResponse;
 import com.nexus.portal.docflow.dto.response.PaginaBlocoResponse;
 import com.nexus.portal.docflow.dto.response.PaginaBlueprintResponse;
 import com.nexus.portal.docflow.entity.PaginaTemplate;
 import com.nexus.portal.docflow.service.PaginaQualidadeService.ResultadoQualidade;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -39,56 +34,50 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class AiJobWorkerService {
 
-  private final AiJobRepository jobRepository;
-  private final AiSessaoRepository sessaoRepository;
   private final AiMensagemRepository mensagemRepository;
-  private final AiPropostaRepository propostaRepository;
+  private final AiJobLifecycleService lifecycleService;
   private final DocFlowAiBridge docFlowAiBridge;
   private final LlmProvider llmProvider;
   private final AiProperties properties;
   private final AiHtmlSanitizer htmlSanitizer;
-  private final AiEventService aiEventService;
   private final AiTriagemService triagemService;
   private final AiComponenteRetriever componenteRetriever;
   private final AiPageSpecService pageSpecService;
   private final ObjectMapper objectMapper;
-  private final AuditoriaService auditoriaService;
 
   @Async
-  @Transactional
   public void processar(UUID jobId) {
-    AiJob job = jobRepository.findById(jobId).orElse(null);
-    if (job == null) {
-      log.warn("Job AI {} não encontrado", jobId);
+    var execucao = lifecycleService.iniciar(jobId, properties.model());
+    if (execucao.isEmpty()) {
       return;
     }
-    AiSessao sessao = job.getSessao();
+    ContextoExecucao sessao = execucao.orElseThrow();
     try {
-      job.iniciar(properties.model());
-      aiEventService.publicarJob(job.getId(), sessao.getId(), AiJobStatus.PROCESSANDO.name(), 10);
-
       Map<String, String> respostas = coletarContexto(sessao);
       Map<String, String> contexto = new LinkedHashMap<>(
-          triagemService.avaliar(sessao.getObjetivo(), sessao.getBriefing(), respostas).contextoExtraido());
+          triagemService.avaliar(sessao.objetivo(), sessao.briefing(), respostas).contextoExtraido());
       contexto.putAll(respostas);
-      String titulo = primeiroNaoVazio(contexto.get("titulo"), extrairTituloBriefing(sessao.getBriefing()), "Página gerada");
+      String titulo = primeiroNaoVazio(
+          contexto.get("titulo"), extrairTituloBriefing(sessao.briefing()), "Página gerada");
       String codigoTela = normalizarCodigoTela(
           primeiroNaoVazio(contexto.get("codigoTela"), "AI-DEMO"));
-      String resumoHint = primeiroNaoVazio(contexto.get("resumo"), contexto.get("fluxo"), sessao.getBriefing());
+      String resumoHint = primeiroNaoVazio(
+          contexto.get("resumo"), contexto.get("fluxo"), sessao.briefing());
+
+      lifecycleService.avancar(jobId, AiJobEtapa.SELECIONANDO_ESTRUTURA, 30);
 
       PaginaTemplate template = docFlowAiBridge
           .buscarTemplate(
-              sessao.getTemplateId(),
-              sessao.getProjetoId(),
-              sessao.getClienteId(),
-              sessao.getBriefing())
+              sessao.templateId(),
+              sessao.projetoId(),
+              sessao.clienteId(),
+              sessao.briefing())
           .orElse(null);
 
       String esqueleto = "";
@@ -101,23 +90,21 @@ public class AiJobWorkerService {
         templateVersao = template.getVersaoAtual();
         templateCodigo = template.getCodigo();
         templateNome = template.getNome();
-        sessao.definirTemplateId(templateId);
         PaginaTemplateAplicacaoResponse aplicado = docFlowAiBridge.aplicarTemplate(
             templateId,
-            sessao.getProjetoId(),
-            sessao.getModuloId(),
-            sessao.getClienteId(),
+            sessao.projetoId(),
+            sessao.moduloId(),
+            sessao.clienteId(),
             titulo,
             codigoTela);
         esqueleto = aplicado.conteudoHtml() == null ? "" : aplicado.conteudoHtml();
         templateVersao = aplicado.versao();
       }
 
-      aiEventService.publicarJob(job.getId(), sessao.getId(), AiJobStatus.PROCESSANDO.name(), 40);
-
       PaginaBlueprintResponse blueprint = docFlowAiBridge.buscarBlueprint(templateCodigo).orElse(null);
       List<PaginaBlocoResponse> candidatos = componenteRetriever.recuperar(
-          templateCodigo, sessao.getBriefing(), docFlowAiBridge.listarBlocos(), blueprint);
+          templateCodigo, sessao.briefing(), docFlowAiBridge.listarBlocos(), blueprint);
+      lifecycleService.avancar(jobId, AiJobEtapa.GERANDO_CONTEUDO, 50);
       LlmCompletion completion;
       JsonNode json;
       AiPageSpec pageSpec = null;
@@ -128,7 +115,7 @@ public class AiJobWorkerService {
             titulo,
             codigoTela,
             truncar(resumoHint, 500),
-            sessao.getBriefing(),
+            sessao.briefing(),
             contexto,
             templateCodigo,
             templateNome,
@@ -173,7 +160,7 @@ public class AiJobWorkerService {
             titulo,
             codigoTela,
             truncar(resumoHint, 500),
-            sessao.getBriefing(),
+            sessao.briefing(),
             contexto,
             truncar(esqueleto, 14_000),
             templateCodigo,
@@ -183,7 +170,6 @@ public class AiJobWorkerService {
         String htmlLlm = htmlSanitizer.sanitizar(text(json, "conteudoHtml", esqueleto));
         htmlFinal = decidirHtmlBiblioteca(esqueleto, htmlLlm);
       }
-      job.registrarTokens(completion.tokensEntrada(), completion.tokensSaida());
 
       String tituloFinal = truncar(text(json, "titulo", titulo), 200);
       String slugFinal = truncar(text(json, "slug", slugify(tituloFinal)), 200);
@@ -194,7 +180,7 @@ public class AiJobWorkerService {
         throw new IllegalStateException("A PageSpec não produziu conteúdo utilizável.");
       }
 
-      aiEventService.publicarJob(job.getId(), sessao.getId(), AiJobStatus.PROCESSANDO.name(), 75);
+      lifecycleService.avancar(jobId, AiJobEtapa.VALIDANDO_QUALIDADE, 80);
 
       ResultadoQualidade qualidade = docFlowAiBridge.avaliarQualidade(
           tituloFinal, codigoFinal, resumoFinal, htmlFinal);
@@ -205,15 +191,11 @@ public class AiJobWorkerService {
                   i.codigo(), i.titulo(), i.descricao(), i.ok(), i.severidade().name()))
               .toList()));
 
-      propostaRepository.findFirstBySessaoIdAndStatusOrderByCreatedAtDesc(sessao.getId(), AiPropostaStatus.PENDENTE)
-          .ifPresent(AiProposta::descartar);
-
-      AiPropostaTipo tipo = sessao.getObjetivo() == AiObjetivo.ATUALIZAR_PAGINA
+      lifecycleService.avancar(jobId, AiJobEtapa.FINALIZANDO, 95);
+      AiPropostaTipo tipo = sessao.objetivo() == AiObjetivo.ATUALIZAR_PAGINA
           ? AiPropostaTipo.ATUALIZACAO
           : AiPropostaTipo.NOVA;
-      AiProposta proposta = new AiProposta(
-          sessao,
-          job,
+      ResultadoConclusao conclusao = lifecycleService.concluir(jobId, new ResultadoGeracao(
           tipo,
           tituloFinal,
           slugFinal,
@@ -223,58 +205,38 @@ public class AiJobWorkerService {
           templateId,
           templateVersao,
           qualidadeJson,
-          pageSpec == null ? null : objectMapper.writeValueAsString(pageSpec));
-      propostaRepository.save(proposta);
-
-      job.sucesso();
-      sessao.pronta();
-      aiEventService.publicarJob(job.getId(), sessao.getId(), AiJobStatus.SUCESSO.name(), 100);
-      auditoriaService.registrar(
-          AiAuditoriaAcoes.ENTIDADE_PROPOSTA,
-          proposta.getId(),
-          AiAuditoriaAcoes.PROPOSTA_GERADA,
-          truncar(codigoFinal + " · " + tituloFinal, 200),
-          null);
+          pageSpec == null ? null : objectMapper.writeValueAsString(pageSpec),
+          completion.tokensEntrada(),
+          completion.tokensSaida()));
       log.info(
           "ai.job.completed jobId={} sessaoId={} status=SUCESSO latencyMs={} tokensIn={} tokensOut={} provider={} template={} blueprint={} componentes={}",
           jobId,
-          sessao.getId(),
-          job.latenciaMs(),
-          job.getTokensEntrada(),
-          job.getTokensSaida(),
+          sessao.sessaoId(),
+          conclusao.latenciaMs(),
+          completion.tokensEntrada(),
+          completion.tokensSaida(),
           llmProvider.id(),
           templateCodigo,
           blueprint == null ? null : blueprint.id(),
           pageSpec == null
               ? List.of()
               : pageSpec.blocos().stream().map(AiPageSpec.Bloco::componenteId).toList());
+    } catch (AiJobCanceladoException ex) {
+      log.info("ai.job.cancelled jobId={} sessaoId={}", jobId, sessao.sessaoId());
     } catch (Exception ex) {
       log.error("Falha no job AI {}", jobId, ex);
-      job.erro(mensagemUsuario(ex));
-      if (sessao.getStatus() == AiSessaoStatus.GERANDO) {
-        sessao.erro();
-      }
-      aiEventService.publicarJob(job.getId(), sessao.getId(), AiJobStatus.ERRO.name(), 100);
-      auditoriaService.registrar(
-          AiAuditoriaAcoes.ENTIDADE_SESSAO,
-          sessao.getId(),
-          AiAuditoriaAcoes.PROPOSTA_ERRO,
-          truncar(job.getErroMensagem(), 200),
-          null);
+      lifecycleService.falhar(jobId, mensagemUsuario(ex), detalheTecnico(ex));
       log.info(
-          "ai.job.completed jobId={} sessaoId={} status=ERRO latencyMs={} tokensIn={} tokensOut={} provider={}",
+          "ai.job.completed jobId={} sessaoId={} status=ERRO provider={}",
           jobId,
-          sessao.getId(),
-          job.latenciaMs(),
-          job.getTokensEntrada(),
-          job.getTokensSaida(),
+          sessao.sessaoId(),
           llmProvider.id());
     }
   }
 
-  private Map<String, String> coletarContexto(AiSessao sessao) {
+  private Map<String, String> coletarContexto(ContextoExecucao sessao) {
     Map<String, String> acumulado = new LinkedHashMap<>();
-    for (AiMensagem mensagem : mensagemRepository.findBySessaoIdOrderByOrdemAsc(sessao.getId())) {
+    for (AiMensagem mensagem : mensagemRepository.findBySessaoIdOrderByOrdemAsc(sessao.sessaoId())) {
       if (mensagem.getPapel() == AiPapelMensagem.USUARIO) {
         acumulado.putAll(AiPayloadJson.lerRespostas(objectMapper, mensagem.getPayloadJson()));
       }
@@ -333,6 +295,12 @@ public class AiJobWorkerService {
       return "Falha ao consultar o provedor de IA. Tente novamente em instantes.";
     }
     return "Não foi possível gerar o rascunho. Tente novamente.";
+  }
+
+  private static String detalheTecnico(Exception ex) {
+    StringWriter buffer = new StringWriter();
+    ex.printStackTrace(new PrintWriter(buffer));
+    return truncar(buffer.toString(), 8_000);
   }
 
   private static String text(JsonNode node, String field, String fallback) {

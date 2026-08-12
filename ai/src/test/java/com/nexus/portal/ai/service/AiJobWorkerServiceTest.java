@@ -3,7 +3,7 @@ package com.nexus.portal.ai.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -22,8 +22,6 @@ import com.nexus.portal.ai.provider.FakeLlmProvider;
 import com.nexus.portal.ai.repository.AiJobRepository;
 import com.nexus.portal.ai.repository.AiMensagemRepository;
 import com.nexus.portal.ai.repository.AiPropostaRepository;
-import com.nexus.portal.ai.repository.AiSessaoRepository;
-import com.nexus.portal.docflow.service.PaginaQualidadeService;
 import com.nexus.portal.docflow.dto.response.PaginaBlocoResponse;
 import com.nexus.portal.docflow.service.PaginaQualidadeService.ItemQualidade;
 import com.nexus.portal.docflow.service.PaginaQualidadeService.ResultadoQualidade;
@@ -42,7 +40,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class AiJobWorkerServiceTest {
 
   @Mock AiJobRepository jobRepository;
-  @Mock AiSessaoRepository sessaoRepository;
   @Mock AiMensagemRepository mensagemRepository;
   @Mock AiPropostaRepository propostaRepository;
   @Mock DocFlowAiBridge docFlowAiBridge;
@@ -57,21 +54,19 @@ class AiJobWorkerServiceTest {
   void setUp() throws Exception {
     AiProperties props = new AiProperties(true, null, null, "fake-model", null, null, 30, 5, 2000, 20);
     ObjectMapper objectMapper = new ObjectMapper();
+    AiJobLifecycleService lifecycleService = new AiJobLifecycleService(
+        jobRepository, propostaRepository, aiEventService, auditoriaService);
     worker = new AiJobWorkerService(
-        jobRepository,
-        sessaoRepository,
         mensagemRepository,
-        propostaRepository,
+        lifecycleService,
         docFlowAiBridge,
         new FakeLlmProvider(),
         props,
         new AiHtmlSanitizer(),
-        aiEventService,
         new AiTriagemService(props),
         new AiComponenteRetriever(),
         new AiPageSpecService(objectMapper, docFlowAiBridge),
-        objectMapper,
-        auditoriaService);
+        objectMapper);
 
     sessao = new AiSessao(
         AiObjetivo.CRIAR_PAGINA,
@@ -84,10 +79,10 @@ class AiJobWorkerServiceTest {
     setId(sessao, UUID.randomUUID());
     sessao.gerando();
 
-    job = new AiJob(sessao, AiJobTipo.GERAR_RASCUNHO);
+    job = new AiJob(sessao, AiJobTipo.GERAR_RASCUNHO, 1);
     setJobId(job, UUID.randomUUID());
 
-    when(jobRepository.findById(job.getId())).thenReturn(Optional.of(job));
+    when(jobRepository.findByIdForUpdate(job.getId())).thenReturn(Optional.of(job));
     when(mensagemRepository.findBySessaoIdOrderByOrdemAsc(sessao.getId())).thenReturn(List.of());
     when(docFlowAiBridge.buscarTemplate(any(), any(), any(), any())).thenReturn(Optional.empty());
     when(docFlowAiBridge.listarBlocos()).thenReturn(List.of(
@@ -123,7 +118,7 @@ class AiJobWorkerServiceTest {
     assertThat(proposta.getConteudoHtml()).contains("doc-intro");
     assertThat(proposta.getPageSpecJson()).contains("\"componenteId\":\"introducao\"");
     assertThat(proposta.getCodigoTela()).isEqualTo("PED-CONSULTA");
-    verify(aiEventService).publicarJob(eq(job.getId()), eq(sessao.getId()), eq("SUCESSO"), eq(100));
+    verify(aiEventService, atLeastOnce()).publicarJob(job);
   }
 
   private static PaginaBlocoResponse bloco(String id) {

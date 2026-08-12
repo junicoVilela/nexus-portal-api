@@ -39,6 +39,7 @@ public class AiSessaoService {
   private final ObjectMapper objectMapper;
   private final AuditoriaService auditoriaService;
   private final AiTemplateRecomendacaoService templateRecomendacaoService;
+  private final AiJobLifecycleService jobLifecycleService;
 
   public AiSessaoService(
       AiSessaoRepository sessaoRepository,
@@ -47,7 +48,8 @@ public class AiSessaoService {
       AiProperties properties,
       ObjectMapper objectMapper,
       AuditoriaService auditoriaService,
-      AiTemplateRecomendacaoService templateRecomendacaoService) {
+      AiTemplateRecomendacaoService templateRecomendacaoService,
+      AiJobLifecycleService jobLifecycleService) {
     this.sessaoRepository = sessaoRepository;
     this.mensagemRepository = mensagemRepository;
     this.triagemService = triagemService;
@@ -55,6 +57,7 @@ public class AiSessaoService {
     this.objectMapper = objectMapper;
     this.auditoriaService = auditoriaService;
     this.templateRecomendacaoService = templateRecomendacaoService;
+    this.jobLifecycleService = jobLifecycleService;
   }
 
   @Transactional
@@ -126,6 +129,7 @@ public class AiSessaoService {
     }
     if (!sessao.cancelada()) {
       sessao.cancelar();
+      jobLifecycleService.cancelarSessao(sessao.getId());
       adicionarMensagem(sessao, AiPapelMensagem.SISTEMA, "Sessão cancelada pelo usuário.", null);
       auditoriaService.registrar(
           AiAuditoriaAcoes.ENTIDADE_SESSAO,
@@ -176,7 +180,10 @@ public class AiSessaoService {
         .stream()
         .map(m -> AiMensagemResponse.from(m, AiPayloadJson.lerPerguntas(objectMapper, m.getPayloadJson())))
         .toList();
-    return AiSessaoResponse.from(sessao, mensagens);
+    return AiSessaoResponse.from(
+        sessao,
+        mensagens,
+        jobLifecycleService.atual(sessao.getId()).orElse(null));
   }
 
   private AiSessao carregar(UUID id) {

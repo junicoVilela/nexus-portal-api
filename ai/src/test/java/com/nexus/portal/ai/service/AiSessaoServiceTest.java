@@ -43,6 +43,7 @@ class AiSessaoServiceTest {
   @Mock AiMensagemRepository mensagemRepository;
   @Mock AuditoriaService auditoriaService;
   @Mock AiTemplateRecomendacaoService templateRecomendacaoService;
+  @Mock AiJobLifecycleService jobLifecycleService;
 
   private final ObjectMapper objectMapper = new ObjectMapper();
   private final List<AiMensagem> mensagens = new ArrayList<>();
@@ -59,7 +60,9 @@ class AiSessaoServiceTest {
         propsEnabled,
         objectMapper,
         auditoriaService,
-        templateRecomendacaoService);
+        templateRecomendacaoService,
+        jobLifecycleService);
+    lenient().when(jobLifecycleService.atual(any())).thenReturn(Optional.empty());
     lenient().when(templateRecomendacaoService.recomendar(any()))
         .thenReturn(new AiTemplateRecomendacaoResponse(null, List.of(), true));
 
@@ -155,7 +158,8 @@ class AiSessaoServiceTest {
         off,
         objectMapper,
         auditoriaService,
-        templateRecomendacaoService);
+        templateRecomendacaoService,
+        jobLifecycleService);
 
     assertThatThrownBy(() -> offService.criar(new CriarAiSessaoRequest(
         AiObjetivo.CRIAR_PAGINA,
@@ -200,6 +204,7 @@ class AiSessaoServiceTest {
     AiSessaoResponse response = service.cancelar(id, null);
 
     assertThat(response.status()).isEqualTo(AiSessaoStatus.CANCELADA);
+    verify(jobLifecycleService).cancelarSessao(id);
     ArgumentCaptor<AiMensagem> captor = ArgumentCaptor.forClass(AiMensagem.class);
     verify(mensagemRepository).save(captor.capture());
     assertThat(captor.getValue().getPapel()).isEqualTo(AiPapelMensagem.SISTEMA);

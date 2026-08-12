@@ -4,5 +4,6 @@ public enum AiJobStatus {
   PENDENTE,
   PROCESSANDO,
   SUCESSO,
-  ERRO
+  ERRO,
+  CANCELADO
 }

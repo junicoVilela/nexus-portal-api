@@ -1,8 +1,9 @@
 package com.nexus.portal.ai.service;
 
+import com.nexus.portal.ai.entity.AiJob;
 import java.io.IOException;
+import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -28,12 +29,17 @@ public class AiEventService {
     return emitter;
   }
 
-  public void publicarJob(UUID jobId, UUID sessaoId, String status, Integer progresso) {
-    Map<String, Object> evento = Map.of(
-        "jobId", jobId,
-        "sessaoId", sessaoId,
-        "status", status,
-        "progresso", progresso == null ? 0 : progresso);
+  public void publicarJob(AiJob job) {
+    Map<String, Object> evento = new LinkedHashMap<>();
+    evento.put("jobId", job.getId());
+    evento.put("sessaoId", job.getSessao().getId());
+    evento.put("status", job.getStatus().name());
+    evento.put("etapa", job.getEtapa().name());
+    evento.put("progresso", job.getProgresso());
+    evento.put("tentativa", job.getTentativa());
+    if (job.getDiagnosticoId() != null) {
+      evento.put("diagnosticoId", job.getDiagnosticoId());
+    }
     assinantes.forEach(emitter -> enviar(emitter, evento));
   }
 

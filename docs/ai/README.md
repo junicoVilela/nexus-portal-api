@@ -56,6 +56,24 @@ Proxy front: `/api/ai` → `/api/v1/ai`.
 
 ---
 
+## Execução resiliente dos jobs
+
+- `GET /sessoes/{id}` inclui `jobAtual` com etapa, progresso, tentativa, heartbeat,
+  duração, modelo, tokens e identificador de diagnóstico.
+- `POST /gerar` é idempotente enquanto houver um job ativo: cliques repetidos devolvem o
+  mesmo job e não consomem novamente o limite de geração.
+- O worker não mantém transação aberta durante a chamada ao provedor. Checkpoints curtos
+  persistem `PREPARANDO_CONTEXTO`, `SELECIONANDO_ESTRUTURA`, `GERANDO_CONTEUDO`,
+  `VALIDANDO_QUALIDADE` e `FINALIZANDO`.
+- Cancelar a sessão marca o job como `CANCELADO`; qualquer resposta tardia do provedor é
+  descartada antes de criar ou substituir uma proposta.
+- Após reinício da API, jobs `PENDENTE` são retomados e jobs que estavam `PROCESSANDO` ficam
+  em `ERRO`, liberando uma nova tentativa segura.
+- O detalhe técnico fica restrito ao banco e aos logs. A API devolve apenas a mensagem segura
+  e o `diagnosticoId` para correlação operacional.
+
+---
+
 ## Geração orientada pelo catálogo
 
 O fluxo não pede HTML livre ao modelo:
@@ -144,6 +162,7 @@ Runbook local: [`RUNBOOK-LOCAL.md`](RUNBOOK-LOCAL.md).
 - [x] Sessões + triagem heurística (S1) — `V16__ai__01_tables.sql`
 - [x] Jobs/propostas (S2) — `V17__ai__02_jobs_propostas.sql`
 - [x] Catálogo canônico + PageSpec auditável — `V18__ai__03_page_spec.sql`
+- [x] Progresso persistente, cancelamento e recuperação — `V19__ai__04_job_resilience.sql`
 - [x] Seleção automática com confiança e confirmação humana
 - [x] Wizard UI + aplicar no editor (S3)
 - [x] Hardening: auditoria, métricas, rate limit, prompts, e2e (S4)
