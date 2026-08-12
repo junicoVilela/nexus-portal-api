@@ -130,6 +130,50 @@ class AiDocumentoPlanejadorServiceTest {
   }
 
   @Test
+  void planejar_docLegadoPriorizaSecoesNumeradasENaoTransformaBotoesEmPaginas() {
+    String texto = """
+        4.1 Usuário
+        Permite consultar e manter os usuários autorizados no sistema.
+        "LIMPAR"
+        "CONSULTAR"
+        “SALVAR”
+        “VOLTAR”
+        4.2 Agência
+        Permite consultar e editar os dados cadastrais de uma agência.
+        "LIMPAR"
+        "CONSULTAR"
+        “DETALHAR”
+        “SALVAR”
+        """;
+    var documento = new DocumentoExtraido("manual-legado.doc", AiTipoDocumento.DOC, texto, 1, List.of());
+
+    AiDocumentoPlano plano = service.planejar(documento, null, null);
+
+    var paginas = plano.modulos().getFirst().paginas();
+    assertThat(paginas).extracting(AiDocumentoPlano.Pagina::titulo)
+        .containsExactly("Usuário", "Agência");
+    assertThat(paginas.getFirst().briefing())
+        .contains("\"CONSULTAR\"", "“SALVAR”")
+        .doesNotContain("### Página: \"CONSULTAR\"");
+  }
+
+  @Test
+  void planejar_semNumeracaoContinuaInferindoTitulosEmMaiusculas() {
+    String texto = """
+        CADASTRO DE USUÁRIO
+        Permite incluir usuários e preencher os campos obrigatórios antes de salvar.
+        CONSULTA DE USUÁRIO
+        Permite localizar usuários existentes usando filtros e paginação na listagem.
+        """;
+    var documento = new DocumentoExtraido("manual-sem-numeracao.doc", AiTipoDocumento.DOC, texto, 1, List.of());
+
+    AiDocumentoPlano plano = service.planejar(documento, null, null);
+
+    assertThat(plano.modulos().getFirst().paginas()).extracting(AiDocumentoPlano.Pagina::titulo)
+        .containsExactly("CADASTRO DE USUÁRIO", "CONSULTA DE USUÁRIO");
+  }
+
+  @Test
   void planejar_hierarquiaCompletaInterpretaH1ComoProjetoH2ComoModuloEH3ComoPagina() {
     String texto = """
         # Portal corporativo

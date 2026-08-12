@@ -232,14 +232,20 @@ public class AiDocumentoPlanejadorService {
 
   private String inferirTitulos(String texto) {
     if (texto.lines().anyMatch(linha -> TITULO_MARKDOWN.matcher(linha.trim()).matches())) return texto;
+    List<String> linhas = texto.lines().toList();
+    long titulosNumerados = linhas.stream()
+        .map(String::trim)
+        .filter(linha -> TITULO_NUMERADO.matcher(linha).matches())
+        .count();
+    boolean inferirTitulosEmMaiusculas = titulosNumerados < 2;
     var resultado = new StringBuilder();
-    for (String linha : texto.split("\\n")) {
+    for (String linha : linhas) {
       String limpa = linha.trim();
       Matcher numerado = TITULO_NUMERADO.matcher(limpa);
       if (numerado.matches()) {
         int nivel = Math.min(4, numerado.group(1).split("\\.").length);
         resultado.append("#".repeat(nivel)).append(' ').append(numerado.group(2)).append('\n');
-      } else if (pareceTitulo(limpa)) {
+      } else if (inferirTitulosEmMaiusculas && pareceTitulo(limpa)) {
         resultado.append("## ").append(limpa).append('\n');
       } else {
         resultado.append(linha).append('\n');
