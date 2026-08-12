@@ -14,6 +14,7 @@ public final class AiAuditoriaAcoes {
   public static final String PROPOSTA_ACEITA = "AI_PROPOSTA_ACEITA";
   public static final String PROPOSTA_APLICADA_FORM = "AI_PROPOSTA_APLICADA_FORM";
   public static final String DOCUMENTO_IMPORTADO = "AI_DOCUMENTO_IMPORTADO";
+  public static final String DOCUMENTO_ESTRUTURA_CONFIRMADA = "AI_DOCUMENTO_ESTRUTURA_CONFIRMADA";
 
   private AiAuditoriaAcoes() {}
 }

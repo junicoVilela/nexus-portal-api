@@ -1,8 +1,10 @@
 package com.nexus.portal.ai.controller;
 
+import com.nexus.portal.ai.dto.request.AiConfirmarEstruturaDocumentoRequest;
 import com.nexus.portal.ai.dto.response.AiImportacaoDocumentoResponse;
 import com.nexus.portal.ai.service.AiDocumentoImportacaoService;
 import com.nexus.portal.shared.security.Permissoes;
+import jakarta.validation.Valid;
 import java.security.Principal;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +14,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -40,6 +43,26 @@ public class AiDocumentoImportacaoController {
   @PreAuthorize(Permissoes.PAGINA_LER)
   public AiImportacaoDocumentoResponse buscarImportacaoDocumento(@PathVariable UUID id, Principal principal) {
     return service.buscar(id, principal);
+  }
+
+  @PostMapping("/{id}/estrutura/confirmar")
+  @PreAuthorize(
+      Permissoes.PAGINA_CRIAR + " and "
+          + Permissoes.MODULO_CRIAR + " and "
+          + "((#request.modoProjeto().name() == 'NOVO_PROJETO' and "
+          + Permissoes.PROJETO_CRIAR
+          + ") or (#request.modoProjeto().name() == 'PROJETO_EXISTENTE' and "
+          + Permissoes.PROJETO_LER
+          + ")) and (#request.modoCliente().name() == 'SEM_CLIENTE' or "
+          + Permissoes.CLIENTE_EDITAR
+          + ") and (#request.modoCliente().name() != 'NOVO_CLIENTE' or "
+          + Permissoes.CLIENTE_CRIAR
+          + ")")
+  public AiImportacaoDocumentoResponse confirmarEstruturaDocumento(
+      @PathVariable UUID id,
+      @Valid @RequestBody AiConfirmarEstruturaDocumentoRequest request,
+      Principal principal) {
+    return service.confirmarEstrutura(id, request, principal);
   }
 
   @PostMapping("/{id}/paginas/{paginaPlanoId}/selecionar")

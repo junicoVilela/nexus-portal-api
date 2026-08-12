@@ -153,6 +153,18 @@ public class ClienteService {
         .toList());
   }
 
+  /** Adiciona um projeto ao escopo do cliente sem substituir os vínculos existentes. */
+  @Transactional
+  public void vincularProjeto(UUID clienteId, UUID projetoId) {
+    Cliente cliente = buscar(clienteId);
+    escopoResolver.assertPodeEscreverEmCliente(clienteId);
+    if (clienteProjetoRepository.existsByCliente_IdAndProjeto_Id(clienteId, projetoId)) {
+      return;
+    }
+    Projeto projeto = projetoService.buscar(projetoId);
+    clienteProjetoRepository.save(new ClienteProjeto(cliente, projeto));
+  }
+
   @Transactional
   public void vincularModulos(UUID clienteId, List<UUID> moduloIds) {
     Cliente cliente = buscar(clienteId);

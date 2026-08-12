@@ -64,14 +64,21 @@ public class AiDocumentoPlanejadorService {
       }
       if (!paginas.isEmpty()) {
         modulos.add(new AiDocumentoPlano.Modulo(
-            UUID.randomUUID(), limitar(modulo.nome(), 180), indiceModulo + 1, List.copyOf(paginas)));
+            UUID.randomUUID(), null, limitar(modulo.nome(), 150), indiceModulo + 1, List.copyOf(paginas)));
       }
     }
 
     if (modulos.isEmpty()) {
       throw new BusinessException("Não foi possível identificar conteúdo suficiente para criar o plano do manual.");
     }
-    return new AiDocumentoPlano(limitar(projetoNome, 180), List.copyOf(modulos));
+    String nome = limitar(projetoNome, 150);
+    return new AiDocumentoPlano(
+        nome,
+        "Manual de usuário criado a partir do documento " + documento.nomeArquivo() + ".",
+        projetoId,
+        clienteId,
+        false,
+        List.copyOf(modulos));
   }
 
   private AiDocumentoPlano.Pagina criarPagina(

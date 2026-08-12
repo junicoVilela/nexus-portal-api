@@ -273,7 +273,8 @@ Frontend: subscribe + fallback polling `GET /ai/sessoes/{id}` a cada 3–5s (com
 nexus.ai.enabled=true
 nexus.ai.base-url=${NEXUS_AI_BASE_URL:https://openrouter.ai/api/v1}
 nexus.ai.api-key=${NEXUS_AI_API_KEY:${OPENROUTER_API_KEY:}}
-nexus.ai.model=${NEXUS_AI_MODEL:openai/gpt-4o-mini}
+nexus.ai.model=${NEXUS_AI_MODEL:openai/gpt-5.6-luna}
+nexus.ai.reasoning-effort=${NEXUS_AI_REASONING_EFFORT:low}
 nexus.ai.http-referer=${NEXUS_AI_HTTP_REFERER:http://localhost:4200}
 nexus.ai.app-title=${NEXUS_AI_APP_TITLE:Nexus AI}
 nexus.ai.timeout-seconds=90

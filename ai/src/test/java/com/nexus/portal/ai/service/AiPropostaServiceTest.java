@@ -42,7 +42,7 @@ class AiPropostaServiceTest {
   @BeforeEach
   void setUp() {
     AiProperties properties = new AiProperties(
-        true, null, "sk-test", "modelo-teste", null, null, 90, 5, 1000, 20);
+        true, null, "sk-test", "modelo-teste", null, null, null, 90, 5, 1000, 20);
     service = new AiPropostaService(
         sessaoRepository,
         jobRepository,

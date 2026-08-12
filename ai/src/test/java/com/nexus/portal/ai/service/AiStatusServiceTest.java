@@ -12,7 +12,8 @@ class AiStatusServiceTest {
 
   @Test
   void statusDesabilitadoUsaProviderFake() {
-    AiProperties props = new AiProperties(false, null, null, null, null, null, 0, 0, 0, 20);
+    AiProperties props = new AiProperties(
+        false, null, null, null, null, null, null, 0, 0, 0, 20);
     AiStatusService service = new AiStatusService(props, new FakeLlmProvider());
 
     AiStatusResponse status = service.status();
@@ -29,7 +30,8 @@ class AiStatusServiceTest {
         true,
         AiProperties.OPENROUTER_BASE_URL,
         "sk-or-test",
-        "openai/gpt-4o-mini",
+        "openai/gpt-5.6-luna",
+        "low",
         "http://localhost:4200",
         "Nexus AI",
         30,
@@ -42,7 +44,7 @@ class AiStatusServiceTest {
 
     assertThat(status.enabled()).isTrue();
     assertThat(status.prontoParaGerar()).isTrue();
-    assertThat(status.model()).isEqualTo("openai/gpt-4o-mini");
+    assertThat(status.model()).isEqualTo("openai/gpt-5.6-luna");
     assertThat(props.openRouter()).isTrue();
   }
 }

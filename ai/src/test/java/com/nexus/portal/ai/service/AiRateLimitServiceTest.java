@@ -16,7 +16,8 @@ class AiRateLimitServiceTest {
 
   @BeforeEach
   void setUp() {
-    AiProperties props = new AiProperties(true, null, "k", "m", null, null, 30, 5, 1000, 2);
+    AiProperties props = new AiProperties(
+        true, null, "k", "m", null, null, null, 30, 5, 1000, 2);
     service = new AiRateLimitService(props);
   }
 

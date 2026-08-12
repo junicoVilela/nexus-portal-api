@@ -140,7 +140,8 @@ Provider padrão: [OpenRouter](https://openrouter.ai/docs/quickstart) (`https://
 ```bash
 export NEXUS_AI_ENABLED=true
 export OPENROUTER_API_KEY=sk-or-...   # ou NEXUS_AI_API_KEY
-export NEXUS_AI_MODEL=openai/gpt-4o-mini
+export NEXUS_AI_MODEL=openai/gpt-5.6-luna
+export NEXUS_AI_REASONING_EFFORT=low
 export NEXUS_AI_HTTP_REFERER=http://localhost:4200
 export NEXUS_AI_APP_TITLE=Nexus AI
 ```
@@ -151,7 +152,8 @@ nexus:
     enabled: true
     base-url: https://openrouter.ai/api/v1
     api-key: ${NEXUS_AI_API_KEY:${OPENROUTER_API_KEY:}}
-    model: openai/gpt-4o-mini
+    model: openai/gpt-5.6-luna
+    reasoning-effort: low
     http-referer: http://localhost:4200
     app-title: Nexus AI
     timeout-seconds: 90

@@ -191,6 +191,22 @@ class ClienteServiceTest {
   }
 
   @Test
+  void vincularProjeto_adicionaSemRemoverVinculosExistentes() {
+    UUID clienteId = UUID.randomUUID();
+    UUID projetoId = UUID.randomUUID();
+    Cliente cliente = new Cliente("Acme", "acme", true);
+    Projeto projeto = new Projeto("Portal", "portal", null, true);
+    when(clienteRepository.findById(clienteId)).thenReturn(Optional.of(cliente));
+    when(projetoService.buscar(projetoId)).thenReturn(projeto);
+    when(clienteProjetoRepository.existsByCliente_IdAndProjeto_Id(clienteId, projetoId)).thenReturn(false);
+
+    service.vincularProjeto(clienteId, projetoId);
+
+    verify(clienteProjetoRepository).save(any());
+    verify(clienteProjetoRepository, never()).deleteByCliente_Id(clienteId);
+  }
+
+  @Test
   void copiarVinculos_comMesmoCliente_deveLancarBusinessException() {
     UUID clienteId = UUID.randomUUID();
 

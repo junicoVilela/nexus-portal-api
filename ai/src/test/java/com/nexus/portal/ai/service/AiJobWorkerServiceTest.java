@@ -53,7 +53,8 @@ class AiJobWorkerServiceTest {
 
   @BeforeEach
   void setUp() throws Exception {
-    AiProperties props = new AiProperties(true, null, null, "fake-model", null, null, 30, 5, 2000, 20);
+    AiProperties props = new AiProperties(
+        true, null, null, "fake-model", null, null, null, 30, 5, 2000, 20);
     ObjectMapper objectMapper = new ObjectMapper();
     AiJobLifecycleService lifecycleService = new AiJobLifecycleService(
         jobRepository, propostaRepository, aiEventService, auditoriaService);

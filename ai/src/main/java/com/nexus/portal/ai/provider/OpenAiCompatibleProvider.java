@@ -65,21 +65,7 @@ public final class OpenAiCompatibleProvider implements LlmProvider {
   private LlmCompletion completar(
       String systemPrompt, String userPrompt, JsonNode jsonSchema) {
     try {
-      Map<String, Object> payload = new LinkedHashMap<>();
-      payload.put("model", properties.model());
-      payload.put("temperature", 0.2);
-      payload.put("max_tokens", properties.maxTokensSaida());
-      payload.put("messages", List.of(
-          Map.of("role", "system", "content", systemPrompt),
-          Map.of("role", "user", "content", userPrompt)));
-      if (jsonSchema != null) {
-        payload.put("response_format", Map.of(
-            "type", "json_schema",
-            "json_schema", Map.of(
-                "name", "docflow_page_spec",
-                "strict", true,
-                "schema", jsonSchema)));
-      }
+      Map<String, Object> payload = criarPayload(systemPrompt, userPrompt, jsonSchema);
       String body = objectMapper.writeValueAsString(payload);
 
       HttpRequest.Builder builder = HttpRequest.newBuilder()
@@ -95,7 +81,8 @@ public final class OpenAiCompatibleProvider implements LlmProvider {
         builder.header("X-OpenRouter-Title", properties.appTitle());
       }
 
-      HttpResponse<String> response = httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofString());
+      HttpResponse<String> response =
+          httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofString());
       if (response.statusCode() < 200 || response.statusCode() >= 300) {
         throw new IllegalStateException(
             "LLM HTTP " + response.statusCode() + ": " + truncate(response.body(), 400));
@@ -117,6 +104,32 @@ public final class OpenAiCompatibleProvider implements LlmProvider {
     }
   }
 
+  Map<String, Object> criarPayload(
+      String systemPrompt, String userPrompt, JsonNode jsonSchema) {
+    Map<String, Object> payload = new LinkedHashMap<>();
+    payload.put("model", properties.model());
+    boolean reasoningModel = isReasoningModel(properties.model());
+    if (reasoningModel) {
+      payload.put("reasoning_effort", properties.reasoningEffort());
+      payload.put("max_completion_tokens", properties.maxTokensSaida());
+    } else {
+      payload.put("temperature", 0.2);
+      payload.put("max_tokens", properties.maxTokensSaida());
+    }
+    payload.put("messages", List.of(
+        Map.of("role", reasoningModel ? "developer" : "system", "content", systemPrompt),
+        Map.of("role", "user", "content", userPrompt)));
+    if (jsonSchema != null) {
+      payload.put("response_format", Map.of(
+          "type", "json_schema",
+          "json_schema", Map.of(
+              "name", "docflow_page_spec",
+              "strict", true,
+              "schema", jsonSchema)));
+    }
+    return payload;
+  }
+
   private static Integer intOrNull(JsonNode node) {
     if (node == null || node.isMissingNode() || !node.canConvertToInt()) {
       return null;
@@ -129,6 +142,14 @@ public final class OpenAiCompatibleProvider implements LlmProvider {
       return url.substring(0, url.length() - 1);
     }
     return url;
+  }
+
+  private static boolean isReasoningModel(String model) {
+    if (model == null) {
+      return false;
+    }
+    String normalized = model.toLowerCase(java.util.Locale.ROOT);
+    return normalized.startsWith("gpt-5") || normalized.contains("/gpt-5");
   }
 
   private static String truncate(String value, int max) {

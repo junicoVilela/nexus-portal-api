@@ -1,5 +1,7 @@
 package com.nexus.portal.ai.config;
 
+import java.util.Locale;
+import java.util.Set;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
@@ -9,7 +11,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * NEXUS_AI_ENABLED=true
  * NEXUS_AI_API_KEY=...                 # ou OPENROUTER_API_KEY
  * NEXUS_AI_BASE_URL=https://openrouter.ai/api/v1
- * NEXUS_AI_MODEL=openai/gpt-4o-mini
+ * NEXUS_AI_MODEL=openai/gpt-5.6-luna
+ * NEXUS_AI_REASONING_EFFORT=low
  * NEXUS_AI_HTTP_REFERER=http://localhost:4200
  * NEXUS_AI_APP_TITLE=Nexus AI
  * NEXUS_AI_MAX_GERACOES_POR_HORA=20
@@ -23,6 +26,7 @@ public record AiProperties(
     String baseUrl,
     String apiKey,
     String model,
+    String reasoningEffort,
     String httpReferer,
     String appTitle,
     int timeoutSeconds,
@@ -31,7 +35,10 @@ public record AiProperties(
     int maxGeracoesPorHora) {
 
   public static final String OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
-  public static final String OPENROUTER_DEFAULT_MODEL = "openai/gpt-4o-mini";
+  public static final String OPENROUTER_DEFAULT_MODEL = "openai/gpt-5.6-luna";
+  public static final String DEFAULT_REASONING_EFFORT = "low";
+  private static final Set<String> REASONING_EFFORTS =
+      Set.of("none", "low", "medium", "high", "xhigh", "max");
 
   public AiProperties {
     if (timeoutSeconds <= 0) {
@@ -51,6 +58,15 @@ public record AiProperties(
     }
     if (model == null || model.isBlank()) {
       model = OPENROUTER_DEFAULT_MODEL;
+    }
+    if (reasoningEffort == null || reasoningEffort.isBlank()) {
+      reasoningEffort = DEFAULT_REASONING_EFFORT;
+    } else {
+      reasoningEffort = reasoningEffort.trim().toLowerCase(Locale.ROOT);
+    }
+    if (!REASONING_EFFORTS.contains(reasoningEffort)) {
+      throw new IllegalArgumentException(
+          "nexus.ai.reasoning-effort inválido: " + reasoningEffort);
     }
     if (httpReferer == null || httpReferer.isBlank()) {
       httpReferer = "http://localhost:4200";

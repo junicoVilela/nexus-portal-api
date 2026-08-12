@@ -52,7 +52,8 @@ class AiSessaoServiceTest {
 
   @BeforeEach
   void setUp() {
-    propsEnabled = new AiProperties(true, null, "sk-test", "gpt-test", null, null, 30, 5, 1000, 20);
+    propsEnabled = new AiProperties(
+        true, null, "sk-test", "gpt-test", null, null, null, 30, 5, 1000, 20);
     service = new AiSessaoService(
         sessaoRepository,
         mensagemRepository,
@@ -150,7 +151,8 @@ class AiSessaoServiceTest {
 
   @Test
   void criarComModuloDesligadoRetorna503() {
-    AiProperties off = new AiProperties(false, null, null, null, null, null, 30, 5, 1000, 20);
+    AiProperties off = new AiProperties(
+        false, null, null, null, null, null, null, 30, 5, 1000, 20);
     AiSessaoService offService = new AiSessaoService(
         sessaoRepository,
         mensagemRepository,

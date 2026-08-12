@@ -15,7 +15,8 @@ class AiTriagemServiceTest {
 
   @BeforeEach
   void setUp() {
-    service = new AiTriagemService(new AiProperties(true, null, null, null, null, null, 30, 5, 1000, 20));
+    service = new AiTriagemService(
+        new AiProperties(true, null, null, null, null, null, null, 30, 5, 1000, 20));
   }
 
   @Test

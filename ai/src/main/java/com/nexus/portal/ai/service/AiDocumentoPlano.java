@@ -4,9 +4,15 @@ import com.nexus.portal.ai.entity.AiPaginaPlanoStatus;
 import java.util.List;
 import java.util.UUID;
 
-record AiDocumentoPlano(String projetoNome, List<Modulo> modulos) {
+record AiDocumentoPlano(
+    String projetoNome,
+    String projetoDescricao,
+    UUID projetoId,
+    UUID clienteId,
+    boolean estruturaConfirmada,
+    List<Modulo> modulos) {
 
-  record Modulo(UUID id, String nome, int ordem, List<Pagina> paginas) {}
+  record Modulo(UUID id, UUID moduloId, String nome, int ordem, List<Pagina> paginas) {}
 
   record Pagina(
       UUID id,

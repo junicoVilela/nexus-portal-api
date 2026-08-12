@@ -19,6 +19,10 @@ public record AiImportacaoDocumentoResponse(
     AiImportacaoStatus status,
     long version,
     String projetoNome,
+    String projetoDescricao,
+    UUID projetoId,
+    UUID clienteId,
+    boolean estruturaConfirmada,
     List<Modulo> modulos,
     List<String> avisos,
     OffsetDateTime createdAt,
@@ -27,6 +31,10 @@ public record AiImportacaoDocumentoResponse(
   public static AiImportacaoDocumentoResponse from(
       AiDocumentoImportacao importacao,
       String projetoNome,
+      String projetoDescricao,
+      UUID projetoId,
+      UUID clienteId,
+      boolean estruturaConfirmada,
       List<Modulo> modulos,
       List<String> avisos) {
     return new AiImportacaoDocumentoResponse(
@@ -40,13 +48,17 @@ public record AiImportacaoDocumentoResponse(
         importacao.getStatus(),
         importacao.getVersion(),
         projetoNome,
+        projetoDescricao,
+        projetoId,
+        clienteId,
+        estruturaConfirmada,
         modulos,
         avisos,
         importacao.getCreatedAt(),
         importacao.getUpdatedAt());
   }
 
-  public record Modulo(UUID id, String nome, int ordem, List<Pagina> paginas) {}
+  public record Modulo(UUID id, UUID moduloId, String nome, int ordem, List<Pagina> paginas) {}
 
   public record Pagina(
       UUID id,

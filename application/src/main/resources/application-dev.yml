@@ -60,7 +60,8 @@ nexus:
     enabled: ${NEXUS_AI_ENABLED:true}
     base-url: ${NEXUS_AI_BASE_URL:https://openrouter.ai/api/v1}
     api-key: ${NEXUS_AI_API_KEY:${OPENROUTER_API_KEY:}}
-    model: ${NEXUS_AI_MODEL:openai/gpt-4o-mini}
+    model: ${NEXUS_AI_MODEL:openai/gpt-5.6-luna}
+    reasoning-effort: ${NEXUS_AI_REASONING_EFFORT:low}
     http-referer: ${NEXUS_AI_HTTP_REFERER:http://localhost:4200}
     app-title: ${NEXUS_AI_APP_TITLE:Nexus AI}
     timeout-seconds: ${NEXUS_AI_TIMEOUT_SECONDS:90}
