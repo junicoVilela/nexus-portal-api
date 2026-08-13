@@ -42,7 +42,12 @@ class AiDocumentoImportacaoServiceTest {
         mock(AiDocumentoPlanejadorService.class),
         objectMapper,
         auditoriaService,
-        bridge);
+        bridge,
+        mock(AiDocumentoAnaliseWorkerService.class),
+        mock(AiSessaoService.class),
+        mock(AiPropostaService.class),
+        mock(com.nexus.portal.ai.repository.AiSessaoRepository.class),
+        mock(com.nexus.portal.ai.config.AiProperties.class));
   }
 
   @Test
@@ -173,6 +178,9 @@ class AiDocumentoImportacaoServiceTest {
         "[]");
     importacao.setId(id);
     importacao.setCreatedBy("editor");
+    importacao.atualizarAnalise(
+        objectMapper.writeValueAsString(plano),
+        com.nexus.portal.ai.entity.AiImportacaoStatus.PRONTO_PARA_REVISAO);
     return importacao;
   }
 

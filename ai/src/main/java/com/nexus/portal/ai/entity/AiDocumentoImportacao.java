@@ -53,7 +53,7 @@ public class AiDocumentoImportacao extends AuditableEntity {
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 40)
-  private AiImportacaoStatus status = AiImportacaoStatus.PRONTO_PARA_REVISAO;
+  private AiImportacaoStatus status = AiImportacaoStatus.ANALISANDO_ESTRUTURA;
 
   @JdbcTypeCode(SqlTypes.JSON)
   @Column(name = "plano_json", nullable = false, columnDefinition = "jsonb")
@@ -91,5 +91,10 @@ public class AiDocumentoImportacao extends AuditableEntity {
   public void iniciarRevisao(String planoJson) {
     this.planoJson = planoJson;
     this.status = AiImportacaoStatus.EM_REVISAO;
+  }
+
+  public void atualizarAnalise(String planoJson, AiImportacaoStatus status) {
+    this.planoJson = planoJson;
+    this.status = status;
   }
 }

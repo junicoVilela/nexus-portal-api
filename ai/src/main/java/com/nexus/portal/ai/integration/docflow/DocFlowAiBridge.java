@@ -145,6 +145,15 @@ public class DocFlowAiBridge {
     return PaginaResponse.from(paginaService.criar(request, principal));
   }
 
+  public PaginaDocumento buscarPaginaDocumento(UUID paginaId) {
+    Pagina pagina = paginaService.buscar(paginaId);
+    return new PaginaDocumento(
+        pagina.getId(),
+        pagina.getModulo().getProjeto().getId(),
+        pagina.getModulo().getId(),
+        pagina.getStatus().name());
+  }
+
   /** Cria ou reaproveita a estrutura DocFlow confirmada antes da geração das páginas. */
   public EstruturaDocumento confirmarEstruturaDocumento(
       boolean novoProjeto,
@@ -201,4 +210,6 @@ public class DocFlowAiBridge {
       String projetoNome,
       UUID clienteId,
       List<ModuloDocumentoConfirmado> modulos) {}
+
+  public record PaginaDocumento(UUID id, UUID projetoId, UUID moduloId, String status) {}
 }

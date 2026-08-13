@@ -1,6 +1,7 @@
 package com.nexus.portal.ai.dto.response;
 
 import com.nexus.portal.ai.entity.AiDocumentoImportacao;
+import com.nexus.portal.ai.entity.AiDocumentoAnaliseOrigem;
 import com.nexus.portal.ai.entity.AiImportacaoStatus;
 import com.nexus.portal.ai.entity.AiPaginaPlanoStatus;
 import com.nexus.portal.ai.entity.AiTipoDocumento;
@@ -23,6 +24,11 @@ public record AiImportacaoDocumentoResponse(
     UUID projetoId,
     UUID clienteId,
     boolean estruturaConfirmada,
+    List<String> projetoNomesSugeridos,
+    AiDocumentoAnaliseOrigem analiseOrigem,
+    String analiseMensagem,
+    Integer tokensEntradaAnalise,
+    Integer tokensSaidaAnalise,
     List<Modulo> modulos,
     List<String> avisos,
     OffsetDateTime createdAt,
@@ -35,6 +41,11 @@ public record AiImportacaoDocumentoResponse(
       UUID projetoId,
       UUID clienteId,
       boolean estruturaConfirmada,
+      List<String> projetoNomesSugeridos,
+      AiDocumentoAnaliseOrigem analiseOrigem,
+      String analiseMensagem,
+      Integer tokensEntradaAnalise,
+      Integer tokensSaidaAnalise,
       List<Modulo> modulos,
       List<String> avisos) {
     return new AiImportacaoDocumentoResponse(
@@ -52,6 +63,11 @@ public record AiImportacaoDocumentoResponse(
         projetoId,
         clienteId,
         estruturaConfirmada,
+        projetoNomesSugeridos,
+        analiseOrigem,
+        analiseMensagem,
+        tokensEntradaAnalise,
+        tokensSaidaAnalise,
         modulos,
         avisos,
         importacao.getCreatedAt(),
@@ -70,5 +86,8 @@ public record AiImportacaoDocumentoResponse(
       String templateNome,
       double confiancaTemplate,
       String motivoTemplate,
-      AiPaginaPlanoStatus status) {}
+      AiPaginaPlanoStatus status,
+      UUID paginaId,
+      UUID sessaoId,
+      String erroMensagem) {}
 }

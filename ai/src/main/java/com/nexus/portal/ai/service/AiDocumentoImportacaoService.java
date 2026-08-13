@@ -6,13 +6,21 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.identityaccess.service.AuditoriaService;
 import com.nexus.portal.ai.audit.AiAuditoriaAcoes;
 import com.nexus.portal.ai.dto.request.AiConfirmarEstruturaDocumentoRequest;
+import com.nexus.portal.ai.dto.request.AiGerarLoteDocumentoRequest;
+import com.nexus.portal.ai.dto.request.CriarAiSessaoRequest;
+import com.nexus.portal.ai.dto.response.AiEstimativaLoteDocumentoResponse;
 import com.nexus.portal.ai.dto.response.AiImportacaoDocumentoResponse;
+import com.nexus.portal.ai.config.AiProperties;
 import com.nexus.portal.ai.entity.AiDocumentoImportacao;
 import com.nexus.portal.ai.entity.AiDocumentoClienteModo;
 import com.nexus.portal.ai.entity.AiDocumentoProjetoModo;
+import com.nexus.portal.ai.entity.AiImportacaoStatus;
 import com.nexus.portal.ai.entity.AiPaginaPlanoStatus;
+import com.nexus.portal.ai.entity.AiObjetivo;
+import com.nexus.portal.ai.entity.AiSessaoStatus;
 import com.nexus.portal.ai.integration.docflow.DocFlowAiBridge;
 import com.nexus.portal.ai.repository.AiDocumentoImportacaoRepository;
+import com.nexus.portal.ai.repository.AiSessaoRepository;
 import com.nexus.portal.ai.service.AiDocumentoExtratorService.DocumentoExtraido;
 import com.nexus.portal.shared.exception.BusinessException;
 import com.nexus.portal.shared.exception.NotFoundException;
@@ -25,9 +33,12 @@ import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -40,6 +51,11 @@ public class AiDocumentoImportacaoService {
   private final ObjectMapper objectMapper;
   private final AuditoriaService auditoriaService;
   private final DocFlowAiBridge docFlowAiBridge;
+  private final AiDocumentoAnaliseWorkerService analiseWorkerService;
+  private final AiSessaoService sessaoService;
+  private final AiPropostaService propostaService;
+  private final AiSessaoRepository sessaoRepository;
+  private final AiProperties aiProperties;
 
   public AiDocumentoImportacaoService(
       AiDocumentoImportacaoRepository repository,
@@ -47,13 +63,23 @@ public class AiDocumentoImportacaoService {
       AiDocumentoPlanejadorService planejadorService,
       ObjectMapper objectMapper,
       AuditoriaService auditoriaService,
-      DocFlowAiBridge docFlowAiBridge) {
+      DocFlowAiBridge docFlowAiBridge,
+      AiDocumentoAnaliseWorkerService analiseWorkerService,
+      AiSessaoService sessaoService,
+      AiPropostaService propostaService,
+      AiSessaoRepository sessaoRepository,
+      AiProperties aiProperties) {
     this.repository = repository;
     this.extratorService = extratorService;
     this.planejadorService = planejadorService;
     this.objectMapper = objectMapper;
     this.auditoriaService = auditoriaService;
     this.docFlowAiBridge = docFlowAiBridge;
+    this.analiseWorkerService = analiseWorkerService;
+    this.sessaoService = sessaoService;
+    this.propostaService = propostaService;
+    this.sessaoRepository = sessaoRepository;
+    this.aiProperties = aiProperties;
   }
 
   @Transactional
@@ -64,6 +90,18 @@ public class AiDocumentoImportacaoService {
       Principal principal) {
     DocumentoExtraido extraido = extratorService.extrair(arquivo);
     AiDocumentoPlano plano = planejadorService.planejar(extraido, projetoId, clienteId);
+    plano = new AiDocumentoPlano(
+        plano.projetoNome(),
+        plano.projetoDescricao(),
+        plano.projetoId(),
+        plano.clienteId(),
+        false,
+        plano.modulos(),
+        List.of(plano.projetoNome()),
+        com.nexus.portal.ai.entity.AiDocumentoAnaliseOrigem.ESTRUTURAL,
+        "Análise semântica em andamento.",
+        null,
+        null);
     var importacao = new AiDocumentoImportacao(
         extraido.nomeArquivo(),
         extraido.tipo(),
@@ -74,13 +112,20 @@ public class AiDocumentoImportacaoService {
         extraido.totalPaginasOrigem(),
         escrever(plano),
         escrever(extraido.avisos()));
-    repository.save(importacao);
+    repository.saveAndFlush(importacao);
     auditoriaService.registrar(
         AiAuditoriaAcoes.ENTIDADE_DOCUMENTO_IMPORTACAO,
         importacao.getId(),
         AiAuditoriaAcoes.DOCUMENTO_IMPORTADO,
         "Documento " + extraido.tipo() + " · " + extraido.texto().length() + " caracteres",
         principal);
+    UUID importacaoId = importacao.getId();
+    TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+      @Override
+      public void afterCommit() {
+        analiseWorkerService.analisar(importacaoId);
+      }
+    });
     return response(importacao, plano, extraido.avisos());
   }
 
@@ -97,6 +142,9 @@ public class AiDocumentoImportacaoService {
       Principal principal) {
     AiDocumentoImportacao importacao = carregar(id, principal);
     AiDocumentoPlano atual = lerPlano(importacao);
+    if (importacao.getStatus() == AiImportacaoStatus.ANALISANDO_ESTRUTURA) {
+      throw new BusinessException("Aguarde a conclusão da análise semântica do documento.");
+    }
     if (atual.estruturaConfirmada()) {
       return response(importacao, atual, lerAvisos(importacao));
     }
@@ -163,7 +211,12 @@ public class AiDocumentoImportacaoService {
         estrutura.projetoId(),
         estrutura.clienteId(),
         true,
-        modulos);
+        modulos,
+        atual.projetoNomesSugeridos(),
+        atual.analiseOrigem(),
+        atual.analiseMensagem(),
+        atual.tokensEntradaAnalise(),
+        atual.tokensSaidaAnalise());
     importacao.iniciarRevisao(escrever(atualizado));
     repository.flush();
     auditoriaService.registrar(
@@ -210,10 +263,222 @@ public class AiDocumentoImportacaoService {
         atual.projetoId(),
         atual.clienteId(),
         true,
-        modulos);
+        modulos,
+        atual.projetoNomesSugeridos(),
+        atual.analiseOrigem(),
+        atual.analiseMensagem(),
+        atual.tokensEntradaAnalise(),
+        atual.tokensSaidaAnalise());
     importacao.iniciarRevisao(escrever(atualizado));
     repository.flush();
     return response(importacao, atualizado, lerAvisos(importacao));
+  }
+
+  @Transactional
+  public AiImportacaoDocumentoResponse vincularPagina(
+      UUID id, UUID paginaPlanoId, UUID paginaId, Principal principal) {
+    AiDocumentoImportacao importacao = carregar(id, principal);
+    AiDocumentoPlano atual = lerPlano(importacao);
+    if (!atual.estruturaConfirmada()) {
+      throw new BusinessException("Confirme a estrutura antes de vincular páginas geradas.");
+    }
+    AiDocumentoPlano.Modulo moduloPlano = atual.modulos().stream()
+        .filter(modulo -> modulo.paginas().stream().anyMatch(pagina -> pagina.id().equals(paginaPlanoId)))
+        .findFirst()
+        .orElseThrow(() -> new NotFoundException("Página não encontrada no plano importado."));
+    var paginaDocFlow = docFlowAiBridge.buscarPaginaDocumento(paginaId);
+    if (!atual.projetoId().equals(paginaDocFlow.projetoId())
+        || !moduloPlano.moduloId().equals(paginaDocFlow.moduloId())) {
+      throw new BusinessException("A página salva não pertence ao projeto e módulo planejados.");
+    }
+
+    AiPaginaPlanoStatus status = statusPaginaDocFlow(paginaDocFlow.status());
+    AiDocumentoPlano atualizado = atualizarPagina(
+        atual,
+        paginaPlanoId,
+        pagina -> pagina.comVinculo(paginaDocFlow.id(), status));
+    persistirPlano(importacao, atualizado);
+    return response(importacao, atualizado, lerAvisos(importacao));
+  }
+
+  @Transactional
+  public AiImportacaoDocumentoResponse sincronizar(UUID id, Principal principal) {
+    AiDocumentoImportacao importacao = carregar(id, principal);
+    AiDocumentoPlano atual = lerPlano(importacao);
+    AiDocumentoPlano atualizado = atual;
+    for (AiDocumentoPlano.Pagina pagina : atual.modulos().stream()
+        .flatMap(modulo -> modulo.paginas().stream())
+        .filter(pagina -> pagina.sessaoId() != null && pagina.paginaId() == null)
+        .toList()) {
+      var sessao = sessaoRepository.findById(pagina.sessaoId()).orElse(null);
+      if (sessao == null) {
+        atualizado = atualizarPagina(
+            atualizado,
+            pagina.id(),
+            item -> item.comSessao(null, AiPaginaPlanoStatus.ERRO, "Sessão de geração não encontrada."));
+        continue;
+      }
+      AiPaginaPlanoStatus status = switch (sessao.getStatus()) {
+        case PRONTA, APLICADA -> AiPaginaPlanoStatus.GERADA;
+        case ERRO, CANCELADA -> AiPaginaPlanoStatus.ERRO;
+        default -> AiPaginaPlanoStatus.EM_GERACAO;
+      };
+      String erro = status == AiPaginaPlanoStatus.ERRO
+          ? "A geração não foi concluída. Abra a sessão para revisar ou tentar novamente."
+          : null;
+      atualizado = atualizarPagina(
+          atualizado,
+          pagina.id(),
+          item -> item.comSessao(item.sessaoId(), status, erro));
+    }
+    for (AiDocumentoPlano.Pagina pagina : atual.modulos().stream()
+        .flatMap(modulo -> modulo.paginas().stream())
+        .filter(pagina -> pagina.paginaId() != null)
+        .toList()) {
+      try {
+        var paginaDocFlow = docFlowAiBridge.buscarPaginaDocumento(pagina.paginaId());
+        AiPaginaPlanoStatus status = statusPaginaDocFlow(paginaDocFlow.status());
+        atualizado = atualizarPagina(
+            atualizado,
+            pagina.id(),
+            item -> item.comVinculo(paginaDocFlow.id(), status));
+      } catch (NotFoundException ex) {
+        atualizado = atualizarPagina(
+            atualizado,
+            pagina.id(),
+            item -> item.comVinculo(null, AiPaginaPlanoStatus.PENDENTE));
+      }
+    }
+    persistirPlano(importacao, atualizado);
+    return response(importacao, atualizado, lerAvisos(importacao));
+  }
+
+  @Transactional(readOnly = true)
+  public AiEstimativaLoteDocumentoResponse estimarLote(
+      UUID id, AiGerarLoteDocumentoRequest request, Principal principal) {
+    AiDocumentoPlano plano = lerPlano(carregar(id, principal));
+    List<AiDocumentoPlano.Pagina> paginas = paginasSelecionadas(plano, request.paginas());
+    int caracteres = paginas.stream().mapToInt(pagina -> pagina.briefing().length()).sum();
+    int tokensEntrada = (int) Math.ceil(caracteres / 3.6d) + paginas.size() * 650;
+    int tokensSaida = paginas.size() * Math.min(3_000, aiProperties.maxTokensSaida());
+    return new AiEstimativaLoteDocumentoResponse(
+        paginas.size(),
+        caracteres,
+        tokensEntrada,
+        tokensSaida,
+        aiProperties.model(),
+        "Estimativa técnica; o consumo real depende do conteúdo e dos componentes escolhidos.");
+  }
+
+  @Transactional
+  public AiImportacaoDocumentoResponse gerarLote(
+      UUID id, AiGerarLoteDocumentoRequest request, Principal principal) {
+    AiDocumentoImportacao importacao = carregar(id, principal);
+    AiDocumentoPlano atual = lerPlano(importacao);
+    if (!atual.estruturaConfirmada()) {
+      throw new BusinessException("Confirme o projeto e os módulos antes de gerar em lote.");
+    }
+    List<AiDocumentoPlano.Pagina> selecionadas = paginasSelecionadas(atual, request.paginas());
+    AiDocumentoPlano atualizado = atual;
+    for (AiDocumentoPlano.Pagina pagina : selecionadas) {
+      AiDocumentoPlano.Modulo modulo = atual.modulos().stream()
+          .filter(item -> item.paginas().stream().anyMatch(p -> p.id().equals(pagina.id())))
+          .findFirst()
+          .orElseThrow();
+      if (pagina.paginaId() != null || pagina.status() == AiPaginaPlanoStatus.REVISADA) {
+        throw new BusinessException("Uma das páginas selecionadas já foi salva no manual.");
+      }
+      if (pagina.status() == AiPaginaPlanoStatus.EM_GERACAO) {
+        throw new BusinessException("Uma das páginas selecionadas já está em geração.");
+      }
+      String codigoTela = "DOC-M%02d-P%02d".formatted(modulo.ordem(), pagina.ordem());
+      String briefing = "titulo: " + pagina.titulo() + "\n"
+          + "codigoTela: " + codigoTela + "\n"
+          + "publico: Ambos\n\n"
+          + pagina.briefing();
+      var sessao = sessaoService.criar(
+          new CriarAiSessaoRequest(
+              AiObjetivo.CRIAR_PAGINA,
+              briefing,
+              atual.projetoId(),
+              modulo.moduloId(),
+              atual.clienteId(),
+              pagina.templateId(),
+              null),
+          principal);
+      if (sessao.status() != AiSessaoStatus.PRONTA_PARA_GERAR) {
+        throw new BusinessException(
+            "A página '" + pagina.titulo() + "' ainda precisa de informações antes da geração em lote.");
+      }
+      propostaService.gerar(sessao.id(), principal);
+      atualizado = atualizarPagina(
+          atualizado,
+          pagina.id(),
+          item -> item.comSessao(sessao.id(), AiPaginaPlanoStatus.EM_GERACAO, null));
+    }
+    importacao.atualizarAnalise(escrever(atualizado), AiImportacaoStatus.EM_REVISAO);
+    repository.flush();
+    return response(importacao, atualizado, lerAvisos(importacao));
+  }
+
+  private List<AiDocumentoPlano.Pagina> paginasSelecionadas(
+      AiDocumentoPlano plano, List<UUID> ids) {
+    Set<UUID> solicitadas = new HashSet<>(ids);
+    if (solicitadas.size() != ids.size()) {
+      throw new BusinessException("A seleção do lote contém páginas repetidas.");
+    }
+    List<AiDocumentoPlano.Pagina> paginas = plano.modulos().stream()
+        .flatMap(modulo -> modulo.paginas().stream())
+        .filter(pagina -> solicitadas.contains(pagina.id()))
+        .toList();
+    if (paginas.size() != solicitadas.size()) {
+      throw new NotFoundException("Uma das páginas selecionadas não pertence a esta importação.");
+    }
+    return paginas;
+  }
+
+  private void persistirPlano(AiDocumentoImportacao importacao, AiDocumentoPlano plano) {
+    boolean concluida = plano.modulos().stream()
+        .flatMap(modulo -> modulo.paginas().stream())
+        .allMatch(pagina -> pagina.status() == AiPaginaPlanoStatus.REVISADA);
+    importacao.atualizarAnalise(
+        escrever(plano), concluida ? AiImportacaoStatus.CONCLUIDA : AiImportacaoStatus.EM_REVISAO);
+    repository.flush();
+  }
+
+  private AiDocumentoPlano atualizarPagina(
+      AiDocumentoPlano atual,
+      UUID paginaPlanoId,
+      java.util.function.UnaryOperator<AiDocumentoPlano.Pagina> atualizador) {
+    List<AiDocumentoPlano.Modulo> modulos = atual.modulos().stream()
+        .map(modulo -> new AiDocumentoPlano.Modulo(
+            modulo.id(),
+            modulo.moduloId(),
+            modulo.nome(),
+            modulo.ordem(),
+            modulo.paginas().stream()
+                .map(pagina -> pagina.id().equals(paginaPlanoId) ? atualizador.apply(pagina) : pagina)
+                .toList()))
+        .toList();
+    return new AiDocumentoPlano(
+        atual.projetoNome(),
+        atual.projetoDescricao(),
+        atual.projetoId(),
+        atual.clienteId(),
+        atual.estruturaConfirmada(),
+        modulos,
+        atual.projetoNomesSugeridos(),
+        atual.analiseOrigem(),
+        atual.analiseMensagem(),
+        atual.tokensEntradaAnalise(),
+        atual.tokensSaidaAnalise());
+  }
+
+  private AiPaginaPlanoStatus statusPaginaDocFlow(String status) {
+    return switch (status) {
+      case "APROVADO", "PUBLICADO" -> AiPaginaPlanoStatus.REVISADA;
+      default -> AiPaginaPlanoStatus.GERADA;
+    };
   }
 
   private AiDocumentoImportacao carregar(UUID id, Principal principal) {
@@ -243,7 +508,10 @@ public class AiDocumentoImportacaoService {
                     pagina.templateNome(),
                     pagina.confiancaTemplate(),
                     pagina.motivoTemplate(),
-                    pagina.status()))
+                    pagina.status(),
+                    pagina.paginaId(),
+                    pagina.sessaoId(),
+                    pagina.erroMensagem()))
                 .toList()))
         .toList();
     return AiImportacaoDocumentoResponse.from(
@@ -253,6 +521,11 @@ public class AiDocumentoImportacaoService {
         plano.projetoId(),
         plano.clienteId(),
         plano.estruturaConfirmada(),
+        plano.projetoNomesSugeridos() == null ? List.of(plano.projetoNome()) : plano.projetoNomesSugeridos(),
+        plano.analiseOrigem(),
+        plano.analiseMensagem(),
+        plano.tokensEntradaAnalise(),
+        plano.tokensSaidaAnalise(),
         modulos,
         avisos);
   }
@@ -274,7 +547,10 @@ public class AiDocumentoImportacaoService {
         pagina.templateNome(),
         pagina.confiancaTemplate(),
         pagina.motivoTemplate(),
-        pagina.status());
+        pagina.status(),
+        pagina.paginaId(),
+        pagina.sessaoId(),
+        pagina.erroMensagem());
   }
 
   private String normalizar(String valor) {

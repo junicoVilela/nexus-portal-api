@@ -1,6 +1,8 @@
 package com.nexus.portal.ai.controller;
 
 import com.nexus.portal.ai.dto.request.AiConfirmarEstruturaDocumentoRequest;
+import com.nexus.portal.ai.dto.request.AiGerarLoteDocumentoRequest;
+import com.nexus.portal.ai.dto.response.AiEstimativaLoteDocumentoResponse;
 import com.nexus.portal.ai.dto.response.AiImportacaoDocumentoResponse;
 import com.nexus.portal.ai.service.AiDocumentoImportacaoService;
 import com.nexus.portal.shared.security.Permissoes;
@@ -72,5 +74,40 @@ public class AiDocumentoImportacaoController {
       @PathVariable UUID paginaPlanoId,
       Principal principal) {
     return service.selecionarPagina(id, paginaPlanoId, principal);
+  }
+
+  @PostMapping("/{id}/paginas/{paginaPlanoId}/vincular/{paginaId}")
+  @PreAuthorize(Permissoes.PAGINA_CRIAR)
+  public AiImportacaoDocumentoResponse vincularPaginaImportada(
+      @PathVariable UUID id,
+      @PathVariable UUID paginaPlanoId,
+      @PathVariable UUID paginaId,
+      Principal principal) {
+    return service.vincularPagina(id, paginaPlanoId, paginaId, principal);
+  }
+
+  @PostMapping("/{id}/sincronizar")
+  @PreAuthorize(Permissoes.PAGINA_LER)
+  public AiImportacaoDocumentoResponse sincronizarImportacaoDocumento(
+      @PathVariable UUID id, Principal principal) {
+    return service.sincronizar(id, principal);
+  }
+
+  @PostMapping("/{id}/lote/estimar")
+  @PreAuthorize(Permissoes.PAGINA_CRIAR)
+  public AiEstimativaLoteDocumentoResponse estimarLoteDocumento(
+      @PathVariable UUID id,
+      @Valid @RequestBody AiGerarLoteDocumentoRequest request,
+      Principal principal) {
+    return service.estimarLote(id, request, principal);
+  }
+
+  @PostMapping("/{id}/lote/gerar")
+  @PreAuthorize(Permissoes.PAGINA_CRIAR)
+  public AiImportacaoDocumentoResponse gerarLoteDocumento(
+      @PathVariable UUID id,
+      @Valid @RequestBody AiGerarLoteDocumentoRequest request,
+      Principal principal) {
+    return service.gerarLote(id, request, principal);
   }
 }
