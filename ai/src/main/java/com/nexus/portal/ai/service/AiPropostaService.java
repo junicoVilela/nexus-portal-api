@@ -140,7 +140,7 @@ public class AiPropostaService {
         proposta.getCodigoTela(),
         proposta.getResumo(),
         proposta.getConteudoHtml(),
-        0,
+        request.ordem() == null ? 0 : request.ordem(),
         true,
         moduloId,
         request.parentId(),

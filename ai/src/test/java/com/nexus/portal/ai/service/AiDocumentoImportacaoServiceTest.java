@@ -11,6 +11,9 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.identityaccess.service.AuditoriaService;
 import com.nexus.portal.ai.dto.request.AiConfirmarEstruturaDocumentoRequest;
+import com.nexus.portal.ai.dto.request.AplicarAiPropostaRequest;
+import com.nexus.portal.ai.dto.response.AiAplicacaoResponse;
+import com.nexus.portal.ai.dto.response.AiPropostaResponse;
 import com.nexus.portal.ai.entity.AiDocumentoClienteModo;
 import com.nexus.portal.ai.entity.AiDocumentoImportacao;
 import com.nexus.portal.ai.entity.AiDocumentoProjetoModo;
@@ -25,12 +28,14 @@ import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 class AiDocumentoImportacaoServiceTest {
 
   private final AiDocumentoImportacaoRepository repository = mock(AiDocumentoImportacaoRepository.class);
   private final AuditoriaService auditoriaService = mock(AuditoriaService.class);
   private final DocFlowAiBridge bridge = mock(DocFlowAiBridge.class);
+  private final AiPropostaService propostaService = mock(AiPropostaService.class);
   private final ObjectMapper objectMapper = new ObjectMapper();
   private AiDocumentoImportacaoService service;
 
@@ -45,7 +50,7 @@ class AiDocumentoImportacaoServiceTest {
         bridge,
         mock(AiDocumentoAnaliseWorkerService.class),
         mock(AiSessaoService.class),
-        mock(AiPropostaService.class),
+        propostaService,
         mock(com.nexus.portal.ai.repository.AiSessaoRepository.class),
         mock(com.nexus.portal.ai.config.AiProperties.class));
   }
@@ -140,6 +145,68 @@ class AiDocumentoImportacaoServiceTest {
     assertThatThrownBy(() -> service.selecionarPagina(importacaoId, paginaPlanoId, principal()))
         .isInstanceOf(BusinessException.class)
         .hasMessageContaining("Confirme o projeto e os módulos");
+  }
+
+  @Test
+  void aceitarPagina_criaRascunhoEVinculaPlanoNaMesmaOperacao() throws Exception {
+    UUID importacaoId = UUID.randomUUID();
+    UUID moduloPlanoId = UUID.randomUUID();
+    UUID paginaPlanoId = UUID.randomUUID();
+    UUID projetoId = UUID.randomUUID();
+    UUID moduloId = UUID.randomUUID();
+    UUID sessaoId = UUID.randomUUID();
+    UUID paginaId = UUID.randomUUID();
+    var pagina = new AiDocumentoPlano.Pagina(
+        paginaPlanoId,
+        "Consultar usuários",
+        1,
+        "Briefing completo da página.",
+        null,
+        "FUNCIONALIDADE",
+        "Funcionalidade",
+        0.9,
+        "Fluxo identificado.",
+        AiPaginaPlanoStatus.GERADA,
+        null,
+        sessaoId,
+        null);
+    var plano = new AiDocumentoPlano(
+        "Portal",
+        "Manual do portal.",
+        projetoId,
+        null,
+        true,
+        List.of(new AiDocumentoPlano.Modulo(
+            moduloPlanoId, moduloId, "Usuários", 1, List.of(pagina))));
+    AiDocumentoImportacao importacao = importacao(importacaoId, plano);
+    when(repository.findByIdAndCreatedBy(importacaoId, "editor")).thenReturn(Optional.of(importacao));
+    AiPropostaResponse proposta = mock(AiPropostaResponse.class);
+    when(proposta.paginaId()).thenReturn(null);
+    when(propostaService.propostaAtual(sessaoId)).thenReturn(proposta);
+    when(propostaService.aplicar(any(), any(), any())).thenReturn(new AiAplicacaoResponse(
+        "PERSISTIR",
+        UUID.randomUUID(),
+        paginaId,
+        "Consultar usuários",
+        "consultar-usuarios",
+        "DOC-M01-P01",
+        null,
+        "<p>Conteúdo</p>",
+        null,
+        null,
+        moduloId));
+    when(bridge.buscarPaginaDocumento(paginaId)).thenReturn(
+        new DocFlowAiBridge.PaginaDocumento(paginaId, projetoId, moduloId, "RASCUNHO"));
+
+    var response = service.aceitarPagina(importacaoId, paginaPlanoId, principal());
+
+    assertThat(response.modulos().getFirst().paginas().getFirst().paginaId()).isEqualTo(paginaId);
+    assertThat(response.modulos().getFirst().paginas().getFirst().status())
+        .isEqualTo(AiPaginaPlanoStatus.GERADA);
+    var requestCaptor = ArgumentCaptor.forClass(AplicarAiPropostaRequest.class);
+    verify(propostaService).aplicar(any(), requestCaptor.capture(), any());
+    assertThat(requestCaptor.getValue().ordem()).isEqualTo(1);
+    verify(repository).flush();
   }
 
   private AiDocumentoPlano plano(UUID moduloPlanoId, UUID paginaPlanoId, boolean confirmada) {

@@ -7,6 +7,7 @@ import com.nexus.identityaccess.service.AuditoriaService;
 import com.nexus.portal.ai.audit.AiAuditoriaAcoes;
 import com.nexus.portal.ai.dto.request.AiConfirmarEstruturaDocumentoRequest;
 import com.nexus.portal.ai.dto.request.AiGerarLoteDocumentoRequest;
+import com.nexus.portal.ai.dto.request.AplicarAiPropostaRequest;
 import com.nexus.portal.ai.dto.request.CriarAiSessaoRequest;
 import com.nexus.portal.ai.dto.response.AiEstimativaLoteDocumentoResponse;
 import com.nexus.portal.ai.dto.response.AiImportacaoDocumentoResponse;
@@ -297,6 +298,66 @@ public class AiDocumentoImportacaoService {
         atual,
         paginaPlanoId,
         pagina -> pagina.comVinculo(paginaDocFlow.id(), status));
+    persistirPlano(importacao, atualizado);
+    return response(importacao, atualizado, lerAvisos(importacao));
+  }
+
+  /**
+   * Aceita a proposta da página e cria o rascunho DocFlow na mesma transação do vínculo com o
+   * plano importado. Também recupera com segurança uma proposta já aplicada caso uma tentativa
+   * anterior tenha criado a página antes de atualizar o plano.
+   */
+  @Transactional
+  public AiImportacaoDocumentoResponse aceitarPagina(
+      UUID id, UUID paginaPlanoId, Principal principal) {
+    AiDocumentoImportacao importacao = carregar(id, principal);
+    AiDocumentoPlano atual = lerPlano(importacao);
+    if (!atual.estruturaConfirmada()) {
+      throw new BusinessException("Confirme a estrutura antes de aceitar páginas geradas.");
+    }
+
+    AiDocumentoPlano.Modulo moduloPlano = atual.modulos().stream()
+        .filter(modulo -> modulo.paginas().stream().anyMatch(pagina -> pagina.id().equals(paginaPlanoId)))
+        .findFirst()
+        .orElseThrow(() -> new NotFoundException("Página não encontrada no plano importado."));
+    AiDocumentoPlano.Pagina paginaPlano = moduloPlano.paginas().stream()
+        .filter(pagina -> pagina.id().equals(paginaPlanoId))
+        .findFirst()
+        .orElseThrow();
+    if (paginaPlano.paginaId() != null) {
+      return response(importacao, atual, lerAvisos(importacao));
+    }
+    if (paginaPlano.sessaoId() == null) {
+      throw new BusinessException("Gere uma proposta para esta página antes de aceitá-la.");
+    }
+
+    var proposta = propostaService.propostaAtual(paginaPlano.sessaoId());
+    UUID paginaId = proposta.paginaId();
+    if (paginaId == null) {
+      var aplicacao = propostaService.aplicar(
+          paginaPlano.sessaoId(),
+          new AplicarAiPropostaRequest(
+              AplicarAiPropostaRequest.ModoAplicacao.PERSISTIR,
+              moduloPlano.moduloId(),
+              null,
+              paginaPlano.ordem()),
+          principal);
+      paginaId = aplicacao.paginaId();
+    }
+    if (paginaId == null) {
+      throw new IllegalStateException("A proposta foi aceita sem criar a página do manual.");
+    }
+
+    var paginaDocFlow = docFlowAiBridge.buscarPaginaDocumento(paginaId);
+    if (!atual.projetoId().equals(paginaDocFlow.projetoId())
+        || !moduloPlano.moduloId().equals(paginaDocFlow.moduloId())) {
+      throw new BusinessException("A página criada não pertence ao projeto e módulo planejados.");
+    }
+    AiDocumentoPlano atualizado = atualizarPagina(
+        atual,
+        paginaPlanoId,
+        pagina -> pagina.comVinculo(
+            paginaDocFlow.id(), statusPaginaDocFlow(paginaDocFlow.status())));
     persistirPlano(importacao, atualizado);
     return response(importacao, atualizado, lerAvisos(importacao));
   }

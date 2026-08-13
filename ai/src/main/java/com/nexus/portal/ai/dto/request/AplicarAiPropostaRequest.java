@@ -6,7 +6,8 @@ import java.util.UUID;
 public record AplicarAiPropostaRequest(
     @NotNull ModoAplicacao modo,
     UUID moduloId,
-    UUID parentId) {
+    UUID parentId,
+    Integer ordem) {
 
   public enum ModoAplicacao {
     FORM,

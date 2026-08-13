@@ -86,6 +86,15 @@ public class AiDocumentoImportacaoController {
     return service.vincularPagina(id, paginaPlanoId, paginaId, principal);
   }
 
+  @PostMapping("/{id}/paginas/{paginaPlanoId}/aceitar")
+  @PreAuthorize(Permissoes.PAGINA_CRIAR)
+  public AiImportacaoDocumentoResponse aceitarPaginaImportada(
+      @PathVariable UUID id,
+      @PathVariable UUID paginaPlanoId,
+      Principal principal) {
+    return service.aceitarPagina(id, paginaPlanoId, principal);
+  }
+
   @PostMapping("/{id}/sincronizar")
   @PreAuthorize(Permissoes.PAGINA_LER)
   public AiImportacaoDocumentoResponse sincronizarImportacaoDocumento(
