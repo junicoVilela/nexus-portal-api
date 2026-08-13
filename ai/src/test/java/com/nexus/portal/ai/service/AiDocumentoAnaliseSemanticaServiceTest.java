@@ -30,9 +30,21 @@ class AiDocumentoAnaliseSemanticaServiceTest {
             {"nome":"Administração","paginas":[
               {"paginaId":"%s","titulo":"Cadastrar usuário"}
             ]}
-          ]
+          ],
+          "sugestoes":[{
+            "tipo":"RENOMEAR_PAGINA",
+            "titulo":"Tornar o título mais específico",
+            "justificativa":"O título atual não informa o objeto consultado.",
+            "confianca":0.91,
+            "paginaOrigemId":"%s",
+            "paginaDestinoId":null,
+            "moduloOrigemNome":"Primeiros passos",
+            "moduloDestinoNome":null,
+            "valorSugerido":"Pesquisar usuários",
+            "conteudoSugerido":null
+          }]
         }
-        """.formatted(paginaConsultarId, paginaCadastrarId);
+        """.formatted(paginaConsultarId, paginaCadastrarId, paginaConsultarId);
     var service = new AiDocumentoAnaliseSemanticaService(provider(json), new ObjectMapper());
 
     AiDocumentoPlano resultado = service.analisar(base, "manual.docx");
@@ -48,6 +60,12 @@ class AiDocumentoAnaliseSemanticaServiceTest {
         .contains("Texto original exclusivo da consulta.");
     assertThat(resultado.modulos().get(1).paginas().getFirst().briefing())
         .contains("Texto original exclusivo do cadastro.");
+    assertThat(resultado.sugestoes()).singleElement().satisfies(sugestao -> {
+      assertThat(sugestao.tipo().name()).isEqualTo("RENOMEAR_PAGINA");
+      assertThat(sugestao.paginaOrigemId()).isEqualTo(paginaConsultarId);
+      assertThat(sugestao.valorSugerido()).isEqualTo("Pesquisar usuários");
+      assertThat(sugestao.aplicacaoSegura()).isTrue();
+    });
   }
 
   @Test

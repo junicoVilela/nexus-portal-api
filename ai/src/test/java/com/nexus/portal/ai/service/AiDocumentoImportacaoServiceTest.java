@@ -17,6 +17,8 @@ import com.nexus.portal.ai.dto.response.AiPropostaResponse;
 import com.nexus.portal.ai.entity.AiDocumentoClienteModo;
 import com.nexus.portal.ai.entity.AiDocumentoImportacao;
 import com.nexus.portal.ai.entity.AiDocumentoProjetoModo;
+import com.nexus.portal.ai.entity.AiDocumentoSugestaoStatus;
+import com.nexus.portal.ai.entity.AiDocumentoSugestaoTipo;
 import com.nexus.portal.ai.entity.AiPaginaPlanoStatus;
 import com.nexus.portal.ai.entity.AiTipoDocumento;
 import com.nexus.portal.ai.integration.docflow.DocFlowAiBridge;
@@ -209,6 +211,100 @@ class AiDocumentoImportacaoServiceTest {
     verify(repository).flush();
   }
 
+  @Test
+  void aplicarSugestoesSeguras_renomeiaSemAdicionarPaginaAutomaticamente() throws Exception {
+    UUID importacaoId = UUID.randomUUID();
+    UUID moduloPlanoId = UUID.randomUUID();
+    UUID paginaPlanoId = UUID.randomUUID();
+    UUID renomearId = UUID.randomUUID();
+    UUID adicionarId = UUID.randomUUID();
+    AiDocumentoPlano base = plano(moduloPlanoId, paginaPlanoId, false);
+    AiDocumentoPlano plano = new AiDocumentoPlano(
+        base.projetoNome(),
+        base.projetoDescricao(),
+        null,
+        null,
+        false,
+        base.modulos(),
+        base.projetoNomesSugeridos(),
+        base.analiseOrigem(),
+        base.analiseMensagem(),
+        null,
+        null,
+        List.of(
+            sugestao(
+                renomearId,
+                AiDocumentoSugestaoTipo.RENOMEAR_PAGINA,
+                paginaPlanoId,
+                null,
+                moduloPlanoId,
+                null,
+                "Pesquisar usuários"),
+            sugestao(
+                adicionarId,
+                AiDocumentoSugestaoTipo.ADICIONAR_PAGINA,
+                null,
+                null,
+                null,
+                moduloPlanoId,
+                "Recuperar senha")));
+    AiDocumentoImportacao importacao = importacao(importacaoId, plano);
+    when(repository.findByIdAndCreatedBy(importacaoId, "editor")).thenReturn(Optional.of(importacao));
+
+    var response = service.aplicarSugestoesSeguras(importacaoId, principal());
+
+    assertThat(response.modulos().getFirst().paginas()).singleElement()
+        .satisfies(pagina -> assertThat(pagina.titulo()).isEqualTo("Pesquisar usuários"));
+    assertThat(response.sugestoes()).extracting(item -> item.status())
+        .containsExactly(AiDocumentoSugestaoStatus.APLICADA, AiDocumentoSugestaoStatus.PENDENTE);
+  }
+
+  @Test
+  void aceitarSugestao_mesclaPaginasSemPerderConteudoOriginal() throws Exception {
+    UUID importacaoId = UUID.randomUUID();
+    UUID moduloPlanoId = UUID.randomUUID();
+    UUID origemId = UUID.randomUUID();
+    UUID destinoId = UUID.randomUUID();
+    UUID sugestaoId = UUID.randomUUID();
+    AiDocumentoPlano.Pagina destino = pagina(
+        destinoId, 1, "Consultar usuários", "Texto exclusivo da consulta.");
+    AiDocumentoPlano.Pagina origem = pagina(
+        origemId, 2, "Filtros da consulta", "Texto exclusivo dos filtros.");
+    AiDocumentoPlano plano = new AiDocumentoPlano(
+        "Portal",
+        "Manual.",
+        null,
+        null,
+        false,
+        List.of(new AiDocumentoPlano.Modulo(
+            moduloPlanoId, null, "Usuários", 1, List.of(destino, origem))),
+        List.of("Portal"),
+        com.nexus.portal.ai.entity.AiDocumentoAnaliseOrigem.LLM,
+        "Estrutura refinada.",
+        100,
+        50,
+        List.of(sugestao(
+            sugestaoId,
+            AiDocumentoSugestaoTipo.MESCLAR_PAGINAS,
+            origemId,
+            destinoId,
+            moduloPlanoId,
+            moduloPlanoId,
+            "Consultar usuários e filtros")));
+    AiDocumentoImportacao importacao = importacao(importacaoId, plano);
+    when(repository.findByIdAndCreatedBy(importacaoId, "editor")).thenReturn(Optional.of(importacao));
+
+    var response = service.aceitarSugestao(importacaoId, sugestaoId, principal());
+
+    assertThat(response.modulos().getFirst().paginas()).singleElement().satisfies(resultado -> {
+      assertThat(resultado.titulo()).isEqualTo("Consultar usuários e filtros");
+      assertThat(resultado.briefing())
+          .contains("Texto exclusivo da consulta.", "Texto exclusivo dos filtros.");
+    });
+    assertThat(response.sugestoes().getFirst().status())
+        .isEqualTo(AiDocumentoSugestaoStatus.APLICADA);
+  }
+
   private AiDocumentoPlano plano(UUID moduloPlanoId, UUID paginaPlanoId, boolean confirmada) {
     var pagina = new AiDocumentoPlano.Pagina(
         paginaPlanoId,
@@ -230,6 +326,43 @@ class AiDocumentoImportacaoServiceTest {
         confirmada,
         List.of(new AiDocumentoPlano.Modulo(
             moduloPlanoId, null, "Cadastros provisórios", 1, List.of(pagina))));
+  }
+
+  private AiDocumentoPlano.Pagina pagina(UUID id, int ordem, String titulo, String conteudo) {
+    return new AiDocumentoPlano.Pagina(
+        id,
+        titulo,
+        ordem,
+        "# Projeto: Portal\n\n## Módulo: Usuários\n\n### Página: " + titulo + "\n\n" + conteudo,
+        null,
+        "FUNCIONALIDADE",
+        "Funcionalidade",
+        0.8,
+        "Fluxo identificado.",
+        AiPaginaPlanoStatus.PENDENTE);
+  }
+
+  private AiDocumentoPlano.Sugestao sugestao(
+      UUID id,
+      AiDocumentoSugestaoTipo tipo,
+      UUID paginaOrigemId,
+      UUID paginaDestinoId,
+      UUID moduloOrigemId,
+      UUID moduloDestinoId,
+      String valorSugerido) {
+    return new AiDocumentoPlano.Sugestao(
+        id,
+        tipo,
+        "Melhoria sugerida",
+        "A organização do manual fica mais clara.",
+        0.9,
+        AiDocumentoSugestaoStatus.PENDENTE,
+        paginaOrigemId,
+        paginaDestinoId,
+        moduloOrigemId,
+        moduloDestinoId,
+        valorSugerido,
+        "Revise o conteúdo sugerido.");
   }
 
   private AiDocumentoImportacao importacao(UUID id, AiDocumentoPlano plano) throws Exception {

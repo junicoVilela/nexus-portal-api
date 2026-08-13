@@ -47,6 +47,31 @@ public class AiDocumentoImportacaoController {
     return service.buscar(id, principal);
   }
 
+  @PostMapping("/{id}/sugestoes/{sugestaoId}/aceitar")
+  @PreAuthorize(Permissoes.PAGINA_CRIAR)
+  public AiImportacaoDocumentoResponse aceitarSugestaoDocumento(
+      @PathVariable UUID id,
+      @PathVariable UUID sugestaoId,
+      Principal principal) {
+    return service.aceitarSugestao(id, sugestaoId, principal);
+  }
+
+  @PostMapping("/{id}/sugestoes/{sugestaoId}/ignorar")
+  @PreAuthorize(Permissoes.PAGINA_CRIAR)
+  public AiImportacaoDocumentoResponse ignorarSugestaoDocumento(
+      @PathVariable UUID id,
+      @PathVariable UUID sugestaoId,
+      Principal principal) {
+    return service.ignorarSugestao(id, sugestaoId, principal);
+  }
+
+  @PostMapping("/{id}/sugestoes/aplicar-seguras")
+  @PreAuthorize(Permissoes.PAGINA_CRIAR)
+  public AiImportacaoDocumentoResponse aplicarSugestoesSegurasDocumento(
+      @PathVariable UUID id, Principal principal) {
+    return service.aplicarSugestoesSeguras(id, principal);
+  }
+
   @PostMapping("/{id}/estrutura/confirmar")
   @PreAuthorize(
       Permissoes.PAGINA_CRIAR + " and "

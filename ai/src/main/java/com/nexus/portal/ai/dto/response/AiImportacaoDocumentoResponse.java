@@ -2,6 +2,8 @@ package com.nexus.portal.ai.dto.response;
 
 import com.nexus.portal.ai.entity.AiDocumentoImportacao;
 import com.nexus.portal.ai.entity.AiDocumentoAnaliseOrigem;
+import com.nexus.portal.ai.entity.AiDocumentoSugestaoStatus;
+import com.nexus.portal.ai.entity.AiDocumentoSugestaoTipo;
 import com.nexus.portal.ai.entity.AiImportacaoStatus;
 import com.nexus.portal.ai.entity.AiPaginaPlanoStatus;
 import com.nexus.portal.ai.entity.AiTipoDocumento;
@@ -29,6 +31,7 @@ public record AiImportacaoDocumentoResponse(
     String analiseMensagem,
     Integer tokensEntradaAnalise,
     Integer tokensSaidaAnalise,
+    List<Sugestao> sugestoes,
     List<Modulo> modulos,
     List<String> avisos,
     OffsetDateTime createdAt,
@@ -46,6 +49,7 @@ public record AiImportacaoDocumentoResponse(
       String analiseMensagem,
       Integer tokensEntradaAnalise,
       Integer tokensSaidaAnalise,
+      List<Sugestao> sugestoes,
       List<Modulo> modulos,
       List<String> avisos) {
     return new AiImportacaoDocumentoResponse(
@@ -68,6 +72,7 @@ public record AiImportacaoDocumentoResponse(
         analiseMensagem,
         tokensEntradaAnalise,
         tokensSaidaAnalise,
+        sugestoes,
         modulos,
         avisos,
         importacao.getCreatedAt(),
@@ -75,6 +80,21 @@ public record AiImportacaoDocumentoResponse(
   }
 
   public record Modulo(UUID id, UUID moduloId, String nome, int ordem, List<Pagina> paginas) {}
+
+  public record Sugestao(
+      UUID id,
+      AiDocumentoSugestaoTipo tipo,
+      String titulo,
+      String justificativa,
+      double confianca,
+      AiDocumentoSugestaoStatus status,
+      boolean aplicacaoSegura,
+      UUID paginaOrigemId,
+      UUID paginaDestinoId,
+      UUID moduloOrigemId,
+      UUID moduloDestinoId,
+      String valorSugerido,
+      String conteudoSugerido) {}
 
   public record Pagina(
       UUID id,

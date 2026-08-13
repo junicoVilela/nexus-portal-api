@@ -15,6 +15,8 @@ import com.nexus.portal.ai.config.AiProperties;
 import com.nexus.portal.ai.entity.AiDocumentoImportacao;
 import com.nexus.portal.ai.entity.AiDocumentoClienteModo;
 import com.nexus.portal.ai.entity.AiDocumentoProjetoModo;
+import com.nexus.portal.ai.entity.AiDocumentoSugestaoStatus;
+import com.nexus.portal.ai.entity.AiDocumentoSugestaoTipo;
 import com.nexus.portal.ai.entity.AiImportacaoStatus;
 import com.nexus.portal.ai.entity.AiPaginaPlanoStatus;
 import com.nexus.portal.ai.entity.AiObjetivo;
@@ -29,6 +31,7 @@ import com.nexus.portal.shared.util.SlugUtils;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.Principal;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
@@ -102,7 +105,8 @@ public class AiDocumentoImportacaoService {
         com.nexus.portal.ai.entity.AiDocumentoAnaliseOrigem.ESTRUTURAL,
         "Análise semântica em andamento.",
         null,
-        null);
+        null,
+        List.of());
     var importacao = new AiDocumentoImportacao(
         extraido.nomeArquivo(),
         extraido.tipo(),
@@ -134,6 +138,91 @@ public class AiDocumentoImportacaoService {
   public AiImportacaoDocumentoResponse buscar(UUID id, Principal principal) {
     AiDocumentoImportacao importacao = carregar(id, principal);
     return response(importacao, lerPlano(importacao), lerAvisos(importacao));
+  }
+
+  @Transactional
+  public AiImportacaoDocumentoResponse aceitarSugestao(
+      UUID id, UUID sugestaoId, Principal principal) {
+    AiDocumentoImportacao importacao = carregar(id, principal);
+    AiDocumentoPlano atual = exigirPlanoEditavel(importacao);
+    AiDocumentoPlano.Sugestao sugestao = encontrarSugestao(atual, sugestaoId);
+    if (sugestao.status() == AiDocumentoSugestaoStatus.APLICADA) {
+      return response(importacao, atual, lerAvisos(importacao));
+    }
+    if (sugestao.status() == AiDocumentoSugestaoStatus.IGNORADA) {
+      throw new BusinessException("A sugestão já foi ignorada e não pode mais ser aplicada.");
+    }
+
+    List<AiDocumentoPlano.Modulo> modulos = aplicarSugestao(atual, sugestao);
+    List<AiDocumentoPlano.Sugestao> sugestoes = atualizarStatusSugestoes(
+        atual.sugestoes(), sugestao, AiDocumentoSugestaoStatus.APLICADA);
+    AiDocumentoPlano atualizado = copiarPlano(atual, modulos, sugestoes);
+    persistirPlanoEditavel(importacao, atualizado);
+    auditoriaService.registrar(
+        AiAuditoriaAcoes.ENTIDADE_DOCUMENTO_IMPORTACAO,
+        importacao.getId(),
+        AiAuditoriaAcoes.DOCUMENTO_SUGESTAO_APLICADA,
+        sugestao.tipo() + " · " + sugestao.titulo(),
+        principal);
+    return response(importacao, atualizado, lerAvisos(importacao));
+  }
+
+  @Transactional
+  public AiImportacaoDocumentoResponse ignorarSugestao(
+      UUID id, UUID sugestaoId, Principal principal) {
+    AiDocumentoImportacao importacao = carregar(id, principal);
+    AiDocumentoPlano atual = exigirPlanoEditavel(importacao);
+    AiDocumentoPlano.Sugestao sugestao = encontrarSugestao(atual, sugestaoId);
+    if (sugestao.status() == AiDocumentoSugestaoStatus.IGNORADA) {
+      return response(importacao, atual, lerAvisos(importacao));
+    }
+    if (sugestao.status() == AiDocumentoSugestaoStatus.APLICADA) {
+      throw new BusinessException("A sugestão já foi aplicada e não pode mais ser ignorada.");
+    }
+
+    List<AiDocumentoPlano.Sugestao> sugestoes = atual.sugestoes().stream()
+        .map(item -> item.id().equals(sugestaoId)
+            ? item.comStatus(AiDocumentoSugestaoStatus.IGNORADA)
+            : item)
+        .toList();
+    AiDocumentoPlano atualizado = copiarPlano(atual, atual.modulos(), sugestoes);
+    persistirPlanoEditavel(importacao, atualizado);
+    auditoriaService.registrar(
+        AiAuditoriaAcoes.ENTIDADE_DOCUMENTO_IMPORTACAO,
+        importacao.getId(),
+        AiAuditoriaAcoes.DOCUMENTO_SUGESTAO_IGNORADA,
+        sugestao.tipo() + " · " + sugestao.titulo(),
+        principal);
+    return response(importacao, atualizado, lerAvisos(importacao));
+  }
+
+  @Transactional
+  public AiImportacaoDocumentoResponse aplicarSugestoesSeguras(UUID id, Principal principal) {
+    AiDocumentoImportacao importacao = carregar(id, principal);
+    AiDocumentoPlano atualizado = exigirPlanoEditavel(importacao);
+    int aplicadas = 0;
+    for (AiDocumentoPlano.Sugestao sugestao : List.copyOf(atualizado.sugestoes())) {
+      if (sugestao.status() != AiDocumentoSugestaoStatus.PENDENTE
+          || !sugestao.aplicacaoSegura()) {
+        continue;
+      }
+      List<AiDocumentoPlano.Modulo> modulos = aplicarSugestao(atualizado, sugestao);
+      List<AiDocumentoPlano.Sugestao> sugestoes = atualizarStatusSugestoes(
+          atualizado.sugestoes(), sugestao, AiDocumentoSugestaoStatus.APLICADA);
+      atualizado = copiarPlano(atualizado, modulos, sugestoes);
+      aplicadas++;
+    }
+    if (aplicadas == 0) {
+      return response(importacao, atualizado, lerAvisos(importacao));
+    }
+    persistirPlanoEditavel(importacao, atualizado);
+    auditoriaService.registrar(
+        AiAuditoriaAcoes.ENTIDADE_DOCUMENTO_IMPORTACAO,
+        importacao.getId(),
+        AiAuditoriaAcoes.DOCUMENTO_SUGESTOES_SEGURAS_APLICADAS,
+        aplicadas + " sugestões aplicadas",
+        principal);
+    return response(importacao, atualizado, lerAvisos(importacao));
   }
 
   @Transactional
@@ -217,7 +306,8 @@ public class AiDocumentoImportacaoService {
         atual.analiseOrigem(),
         atual.analiseMensagem(),
         atual.tokensEntradaAnalise(),
-        atual.tokensSaidaAnalise());
+        atual.tokensSaidaAnalise(),
+        atual.sugestoes());
     importacao.iniciarRevisao(escrever(atualizado));
     repository.flush();
     auditoriaService.registrar(
@@ -269,7 +359,8 @@ public class AiDocumentoImportacaoService {
         atual.analiseOrigem(),
         atual.analiseMensagem(),
         atual.tokensEntradaAnalise(),
-        atual.tokensSaidaAnalise());
+        atual.tokensSaidaAnalise(),
+        atual.sugestoes());
     importacao.iniciarRevisao(escrever(atualizado));
     repository.flush();
     return response(importacao, atualizado, lerAvisos(importacao));
@@ -507,6 +598,312 @@ public class AiDocumentoImportacaoService {
     repository.flush();
   }
 
+  private AiDocumentoPlano exigirPlanoEditavel(AiDocumentoImportacao importacao) {
+    if (importacao.getStatus() == AiImportacaoStatus.ANALISANDO_ESTRUTURA) {
+      throw new BusinessException("Aguarde a conclusão da análise semântica do documento.");
+    }
+    AiDocumentoPlano plano = lerPlano(importacao);
+    if (plano.estruturaConfirmada()) {
+      throw new BusinessException(
+          "As sugestões estruturais devem ser revisadas antes de confirmar projeto e módulos.");
+    }
+    return plano;
+  }
+
+  private AiDocumentoPlano.Sugestao encontrarSugestao(
+      AiDocumentoPlano plano, UUID sugestaoId) {
+    return plano.sugestoes().stream()
+        .filter(item -> item.id().equals(sugestaoId))
+        .findFirst()
+        .orElseThrow(() -> new NotFoundException("Sugestão não encontrada nesta importação."));
+  }
+
+  private void persistirPlanoEditavel(
+      AiDocumentoImportacao importacao, AiDocumentoPlano plano) {
+    importacao.atualizarAnalise(escrever(plano), importacao.getStatus());
+    repository.flush();
+  }
+
+  private AiDocumentoPlano copiarPlano(
+      AiDocumentoPlano atual,
+      List<AiDocumentoPlano.Modulo> modulos,
+      List<AiDocumentoPlano.Sugestao> sugestoes) {
+    return new AiDocumentoPlano(
+        atual.projetoNome(),
+        atual.projetoDescricao(),
+        atual.projetoId(),
+        atual.clienteId(),
+        atual.estruturaConfirmada(),
+        modulos,
+        atual.projetoNomesSugeridos(),
+        atual.analiseOrigem(),
+        atual.analiseMensagem(),
+        atual.tokensEntradaAnalise(),
+        atual.tokensSaidaAnalise(),
+        sugestoes);
+  }
+
+  private List<AiDocumentoPlano.Sugestao> atualizarStatusSugestoes(
+      List<AiDocumentoPlano.Sugestao> atuais,
+      AiDocumentoPlano.Sugestao selecionada,
+      AiDocumentoSugestaoStatus status) {
+    return atuais.stream()
+        .map(item -> {
+          if (item.id().equals(selecionada.id())) return item.comStatus(status);
+          if (status == AiDocumentoSugestaoStatus.APLICADA
+              && selecionada.tipo() == AiDocumentoSugestaoTipo.MESCLAR_PAGINAS
+              && item.status() == AiDocumentoSugestaoStatus.PENDENTE
+              && (selecionada.paginaOrigemId().equals(item.paginaOrigemId())
+                  || selecionada.paginaOrigemId().equals(item.paginaDestinoId()))) {
+            return item.comStatus(AiDocumentoSugestaoStatus.IGNORADA);
+          }
+          return item;
+        })
+        .toList();
+  }
+
+  private List<AiDocumentoPlano.Modulo> aplicarSugestao(
+      AiDocumentoPlano plano, AiDocumentoPlano.Sugestao sugestao) {
+    return switch (sugestao.tipo()) {
+      case ADICIONAR_PAGINA -> adicionarPagina(plano, sugestao);
+      case RENOMEAR_PAGINA -> renomearPagina(plano, sugestao);
+      case MOVER_PAGINA -> moverPagina(plano, sugestao);
+      case MESCLAR_PAGINAS -> mesclarPaginas(plano, sugestao);
+      case RENOMEAR_MODULO -> renomearModulo(plano, sugestao);
+    };
+  }
+
+  private List<AiDocumentoPlano.Modulo> adicionarPagina(
+      AiDocumentoPlano plano, AiDocumentoPlano.Sugestao sugestao) {
+    long totalPaginas = plano.modulos().stream().mapToLong(item -> item.paginas().size()).sum();
+    if (totalPaginas >= 80) {
+      throw new BusinessException("O plano já atingiu o limite de 80 páginas.");
+    }
+    UUID moduloId = sugestao.moduloDestinoId() != null
+        ? sugestao.moduloDestinoId()
+        : sugestao.moduloOrigemId();
+    AiDocumentoPlano.Modulo destino = encontrarModulo(plano.modulos(), moduloId);
+    String titulo = textoObrigatorio(sugestao.valorSugerido(), "Informe o título da página sugerida.");
+    String conteudo = sugestao.conteudoSugerido() == null || sugestao.conteudoSugerido().isBlank()
+        ? "> Página proposta pela análise de completude. Revise e complemente antes de gerar.\n\n"
+            + sugestao.justificativa()
+        : sugestao.conteudoSugerido().trim();
+    AiDocumentoPlano.Pagina pagina = new AiDocumentoPlano.Pagina(
+        UUID.randomUUID(),
+        titulo,
+        destino.paginas().size() + 1,
+        montarBriefing(plano.projetoNome(), destino.nome(), titulo, conteudo),
+        null,
+        null,
+        null,
+        0,
+        "Página adicionada pela análise de completude; o modelo será escolhido na geração.",
+        AiPaginaPlanoStatus.PENDENTE);
+    return plano.modulos().stream()
+        .map(modulo -> modulo.id().equals(destino.id())
+            ? new AiDocumentoPlano.Modulo(
+                modulo.id(),
+                modulo.moduloId(),
+                modulo.nome(),
+                modulo.ordem(),
+                append(modulo.paginas(), pagina))
+            : modulo)
+        .toList();
+  }
+
+  private List<AiDocumentoPlano.Modulo> renomearPagina(
+      AiDocumentoPlano plano, AiDocumentoPlano.Sugestao sugestao) {
+    String titulo = textoObrigatorio(sugestao.valorSugerido(), "Informe o novo título da página.");
+    localizarPagina(plano.modulos(), sugestao.paginaOrigemId());
+    return plano.modulos().stream()
+        .map(modulo -> new AiDocumentoPlano.Modulo(
+            modulo.id(),
+            modulo.moduloId(),
+            modulo.nome(),
+            modulo.ordem(),
+            modulo.paginas().stream()
+                .map(pagina -> pagina.id().equals(sugestao.paginaOrigemId())
+                    ? copiarPagina(
+                        pagina,
+                        titulo,
+                        atualizarCabecalhoPagina(pagina.briefing(), titulo),
+                        pagina.ordem())
+                    : pagina)
+                .toList()))
+        .toList();
+  }
+
+  private List<AiDocumentoPlano.Modulo> renomearModulo(
+      AiDocumentoPlano plano, AiDocumentoPlano.Sugestao sugestao) {
+    UUID moduloId = sugestao.moduloOrigemId() != null
+        ? sugestao.moduloOrigemId()
+        : sugestao.moduloDestinoId();
+    encontrarModulo(plano.modulos(), moduloId);
+    String nome = textoObrigatorio(sugestao.valorSugerido(), "Informe o novo nome do módulo.");
+    if (plano.modulos().stream()
+        .anyMatch(item -> !item.id().equals(moduloId) && item.nome().equalsIgnoreCase(nome))) {
+      throw new BusinessException("Já existe outro módulo com o nome sugerido.");
+    }
+    return plano.modulos().stream()
+        .map(modulo -> modulo.id().equals(moduloId)
+            ? new AiDocumentoPlano.Modulo(
+                modulo.id(),
+                modulo.moduloId(),
+                nome,
+                modulo.ordem(),
+                modulo.paginas().stream()
+                    .map(pagina -> atualizarContexto(pagina, plano.projetoNome(), nome))
+                    .toList())
+            : modulo)
+        .toList();
+  }
+
+  private List<AiDocumentoPlano.Modulo> moverPagina(
+      AiDocumentoPlano plano, AiDocumentoPlano.Sugestao sugestao) {
+    PaginaLocalizada localizada = localizarPagina(plano.modulos(), sugestao.paginaOrigemId());
+    AiDocumentoPlano.Modulo destino = encontrarModulo(plano.modulos(), sugestao.moduloDestinoId());
+    if (localizada.modulo().id().equals(destino.id())) {
+      throw new BusinessException("A página sugerida já pertence ao módulo de destino.");
+    }
+    AiDocumentoPlano.Pagina movida = atualizarContexto(
+        localizada.pagina(), plano.projetoNome(), destino.nome());
+    List<AiDocumentoPlano.Modulo> modulos = plano.modulos().stream()
+        .map(modulo -> {
+          List<AiDocumentoPlano.Pagina> paginas = new ArrayList<>(modulo.paginas());
+          if (modulo.id().equals(localizada.modulo().id())) {
+            paginas.removeIf(item -> item.id().equals(movida.id()));
+          }
+          if (modulo.id().equals(destino.id())) paginas.add(movida);
+          return new AiDocumentoPlano.Modulo(
+              modulo.id(), modulo.moduloId(), modulo.nome(), modulo.ordem(), List.copyOf(paginas));
+        })
+        .toList();
+    return normalizarOrdens(modulos);
+  }
+
+  private List<AiDocumentoPlano.Modulo> mesclarPaginas(
+      AiDocumentoPlano plano, AiDocumentoPlano.Sugestao sugestao) {
+    if (sugestao.paginaOrigemId().equals(sugestao.paginaDestinoId())) {
+      throw new BusinessException("As páginas de origem e destino da mesclagem devem ser diferentes.");
+    }
+    PaginaLocalizada origem = localizarPagina(plano.modulos(), sugestao.paginaOrigemId());
+    PaginaLocalizada destino = localizarPagina(plano.modulos(), sugestao.paginaDestinoId());
+    String titulo = sugestao.valorSugerido() == null || sugestao.valorSugerido().isBlank()
+        ? destino.pagina().titulo()
+        : sugestao.valorSugerido().trim();
+    String orientacao = sugestao.conteudoSugerido() == null || sugestao.conteudoSugerido().isBlank()
+        ? ""
+        : "> Orientação da análise: " + sugestao.conteudoSugerido().trim() + "\n\n";
+    String conteudo = orientacao
+        + removerCabecalho(destino.pagina().briefing())
+        + "\n\n## Conteúdo consolidado de " + origem.pagina().titulo() + "\n\n"
+        + removerCabecalho(origem.pagina().briefing());
+    AiDocumentoPlano.Pagina mesclada = copiarPagina(
+        destino.pagina(),
+        titulo,
+        montarBriefing(plano.projetoNome(), destino.modulo().nome(), titulo, conteudo),
+        destino.pagina().ordem());
+    List<AiDocumentoPlano.Modulo> modulos = plano.modulos().stream()
+        .map(modulo -> new AiDocumentoPlano.Modulo(
+            modulo.id(),
+            modulo.moduloId(),
+            modulo.nome(),
+            modulo.ordem(),
+            modulo.paginas().stream()
+                .filter(pagina -> !pagina.id().equals(origem.pagina().id()))
+                .map(pagina -> pagina.id().equals(destino.pagina().id()) ? mesclada : pagina)
+                .toList()))
+        .toList();
+    return normalizarOrdens(modulos);
+  }
+
+  private AiDocumentoPlano.Modulo encontrarModulo(
+      List<AiDocumentoPlano.Modulo> modulos, UUID moduloId) {
+    if (moduloId == null) throw new BusinessException("A sugestão não informa o módulo de destino.");
+    return modulos.stream()
+        .filter(item -> item.id().equals(moduloId))
+        .findFirst()
+        .orElseThrow(() -> new NotFoundException("Módulo da sugestão não encontrado no plano."));
+  }
+
+  private PaginaLocalizada localizarPagina(
+      List<AiDocumentoPlano.Modulo> modulos, UUID paginaId) {
+    if (paginaId == null) throw new BusinessException("A sugestão não informa a página de origem.");
+    for (AiDocumentoPlano.Modulo modulo : modulos) {
+      for (AiDocumentoPlano.Pagina pagina : modulo.paginas()) {
+        if (pagina.id().equals(paginaId)) return new PaginaLocalizada(modulo, pagina);
+      }
+    }
+    throw new NotFoundException("Página da sugestão não encontrada no plano.");
+  }
+
+  private List<AiDocumentoPlano.Modulo> normalizarOrdens(
+      List<AiDocumentoPlano.Modulo> modulos) {
+    return modulos.stream()
+        .map(modulo -> {
+          List<AiDocumentoPlano.Pagina> paginas = new ArrayList<>();
+          for (int indice = 0; indice < modulo.paginas().size(); indice++) {
+            AiDocumentoPlano.Pagina pagina = modulo.paginas().get(indice);
+            paginas.add(copiarPagina(pagina, pagina.titulo(), pagina.briefing(), indice + 1));
+          }
+          return new AiDocumentoPlano.Modulo(
+              modulo.id(), modulo.moduloId(), modulo.nome(), modulo.ordem(), List.copyOf(paginas));
+        })
+        .toList();
+  }
+
+  private AiDocumentoPlano.Pagina copiarPagina(
+      AiDocumentoPlano.Pagina pagina, String titulo, String briefing, int ordem) {
+    return new AiDocumentoPlano.Pagina(
+        pagina.id(),
+        titulo,
+        ordem,
+        briefing,
+        pagina.templateId(),
+        pagina.templateCodigo(),
+        pagina.templateNome(),
+        pagina.confiancaTemplate(),
+        pagina.motivoTemplate(),
+        pagina.status(),
+        pagina.paginaId(),
+        pagina.sessaoId(),
+        pagina.erroMensagem());
+  }
+
+  private String atualizarCabecalhoPagina(String briefing, String titulo) {
+    return briefing.replaceFirst(
+        "(?m)^### Página:.*$", Matcher.quoteReplacement("### Página: " + titulo));
+  }
+
+  private String montarBriefing(
+      String projetoNome, String moduloNome, String paginaTitulo, String conteudo) {
+    return "# Projeto: " + projetoNome + "\n\n"
+        + "## Módulo: " + moduloNome + "\n\n"
+        + "### Página: " + paginaTitulo + "\n\n"
+        + conteudo.trim();
+  }
+
+  private String removerCabecalho(String briefing) {
+    return briefing.replaceFirst(
+        "(?s)^# Projeto:[^\\r\\n]*(?:\\R)+## Módulo:[^\\r\\n]*(?:\\R)+"
+            + "### Página:[^\\r\\n]*(?:\\R)+",
+        "").trim();
+  }
+
+  private String textoObrigatorio(String valor, String mensagem) {
+    if (valor == null || valor.isBlank()) throw new BusinessException(mensagem);
+    return valor.trim();
+  }
+
+  private <T> List<T> append(List<T> itens, T novoItem) {
+    List<T> resultado = new ArrayList<>(itens);
+    resultado.add(novoItem);
+    return List.copyOf(resultado);
+  }
+
+  private record PaginaLocalizada(
+      AiDocumentoPlano.Modulo modulo, AiDocumentoPlano.Pagina pagina) {}
+
   private AiDocumentoPlano atualizarPagina(
       AiDocumentoPlano atual,
       UUID paginaPlanoId,
@@ -532,7 +929,8 @@ public class AiDocumentoImportacaoService {
         atual.analiseOrigem(),
         atual.analiseMensagem(),
         atual.tokensEntradaAnalise(),
-        atual.tokensSaidaAnalise());
+        atual.tokensSaidaAnalise(),
+        atual.sugestoes());
   }
 
   private AiPaginaPlanoStatus statusPaginaDocFlow(String status) {
@@ -552,6 +950,22 @@ public class AiDocumentoImportacaoService {
       AiDocumentoImportacao importacao,
       AiDocumentoPlano plano,
       List<String> avisos) {
+    List<AiImportacaoDocumentoResponse.Sugestao> sugestoes = plano.sugestoes().stream()
+        .map(sugestao -> new AiImportacaoDocumentoResponse.Sugestao(
+            sugestao.id(),
+            sugestao.tipo(),
+            sugestao.titulo(),
+            sugestao.justificativa(),
+            sugestao.confianca(),
+            sugestao.status(),
+            sugestao.aplicacaoSegura(),
+            sugestao.paginaOrigemId(),
+            sugestao.paginaDestinoId(),
+            sugestao.moduloOrigemId(),
+            sugestao.moduloDestinoId(),
+            sugestao.valorSugerido(),
+            sugestao.conteudoSugerido()))
+        .toList();
     List<AiImportacaoDocumentoResponse.Modulo> modulos = plano.modulos().stream()
         .map(modulo -> new AiImportacaoDocumentoResponse.Modulo(
             modulo.id(),
@@ -587,6 +1001,7 @@ public class AiDocumentoImportacaoService {
         plano.analiseMensagem(),
         plano.tokensEntradaAnalise(),
         plano.tokensSaidaAnalise(),
+        sugestoes,
         modulos,
         avisos);
   }

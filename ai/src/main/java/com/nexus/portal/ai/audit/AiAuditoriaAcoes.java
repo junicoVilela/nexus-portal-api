@@ -15,6 +15,10 @@ public final class AiAuditoriaAcoes {
   public static final String PROPOSTA_APLICADA_FORM = "AI_PROPOSTA_APLICADA_FORM";
   public static final String DOCUMENTO_IMPORTADO = "AI_DOCUMENTO_IMPORTADO";
   public static final String DOCUMENTO_ESTRUTURA_CONFIRMADA = "AI_DOCUMENTO_ESTRUTURA_CONFIRMADA";
+  public static final String DOCUMENTO_SUGESTAO_APLICADA = "AI_DOCUMENTO_SUGESTAO_APLICADA";
+  public static final String DOCUMENTO_SUGESTAO_IGNORADA = "AI_DOCUMENTO_SUGESTAO_IGNORADA";
+  public static final String DOCUMENTO_SUGESTOES_SEGURAS_APLICADAS =
+      "AI_DOCUMENTO_SUGESTOES_SEGURAS_APLICADAS";
 
   private AiAuditoriaAcoes() {}
 }

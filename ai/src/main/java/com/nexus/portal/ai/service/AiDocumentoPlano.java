@@ -1,6 +1,8 @@
 package com.nexus.portal.ai.service;
 
 import com.nexus.portal.ai.entity.AiDocumentoAnaliseOrigem;
+import com.nexus.portal.ai.entity.AiDocumentoSugestaoStatus;
+import com.nexus.portal.ai.entity.AiDocumentoSugestaoTipo;
 import com.nexus.portal.ai.entity.AiPaginaPlanoStatus;
 import java.util.List;
 import java.util.UUID;
@@ -16,7 +18,16 @@ record AiDocumentoPlano(
     AiDocumentoAnaliseOrigem analiseOrigem,
     String analiseMensagem,
     Integer tokensEntradaAnalise,
-    Integer tokensSaidaAnalise) {
+    Integer tokensSaidaAnalise,
+    List<Sugestao> sugestoes) {
+
+  AiDocumentoPlano {
+    modulos = modulos == null ? List.of() : List.copyOf(modulos);
+    projetoNomesSugeridos = projetoNomesSugeridos == null
+        ? List.of()
+        : List.copyOf(projetoNomesSugeridos);
+    sugestoes = sugestoes == null ? List.of() : List.copyOf(sugestoes);
+  }
 
   AiDocumentoPlano(
       String projetoNome,
@@ -36,7 +47,50 @@ record AiDocumentoPlano(
         AiDocumentoAnaliseOrigem.ESTRUTURAL,
         null,
         null,
-        null);
+        null,
+        List.of());
+  }
+
+  record Sugestao(
+      UUID id,
+      AiDocumentoSugestaoTipo tipo,
+      String titulo,
+      String justificativa,
+      double confianca,
+      AiDocumentoSugestaoStatus status,
+      UUID paginaOrigemId,
+      UUID paginaDestinoId,
+      UUID moduloOrigemId,
+      UUID moduloDestinoId,
+      String valorSugerido,
+      String conteudoSugerido) {
+
+    Sugestao {
+      status = status == null ? AiDocumentoSugestaoStatus.PENDENTE : status;
+      confianca = Math.max(0, Math.min(1, confianca));
+    }
+
+    boolean aplicacaoSegura() {
+      return tipo == AiDocumentoSugestaoTipo.RENOMEAR_PAGINA
+          || tipo == AiDocumentoSugestaoTipo.MOVER_PAGINA
+          || tipo == AiDocumentoSugestaoTipo.RENOMEAR_MODULO;
+    }
+
+    Sugestao comStatus(AiDocumentoSugestaoStatus novoStatus) {
+      return new Sugestao(
+          id,
+          tipo,
+          titulo,
+          justificativa,
+          confianca,
+          novoStatus,
+          paginaOrigemId,
+          paginaDestinoId,
+          moduloOrigemId,
+          moduloDestinoId,
+          valorSugerido,
+          conteudoSugerido);
+    }
   }
 
   record Modulo(UUID id, UUID moduloId, String nome, int ordem, List<Pagina> paginas) {}

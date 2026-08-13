@@ -72,7 +72,8 @@ public class AiDocumentoAnaliseWorkerService {
         AiDocumentoAnaliseOrigem.ESTRUTURAL,
         mensagem,
         null,
-        null);
+        null,
+        base.sugestoes());
   }
 
   private AiDocumentoPlano lerPlano(AiDocumentoImportacao importacao) {
