@@ -137,6 +137,50 @@ class AiDocumentoImportacaoServiceTest {
   }
 
   @Test
+  void confirmarEstrutura_comModuloVazioSolicitaOrganizacao() throws Exception {
+    UUID importacaoId = UUID.randomUUID();
+    UUID moduloPlanoId = UUID.randomUUID();
+    UUID moduloVazioId = UUID.randomUUID();
+    UUID paginaPlanoId = UUID.randomUUID();
+    AiDocumentoPlano base = plano(moduloPlanoId, paginaPlanoId, false);
+    AiDocumentoPlano comModuloVazio = new AiDocumentoPlano(
+        base.projetoNome(),
+        base.projetoDescricao(),
+        base.projetoId(),
+        base.clienteId(),
+        false,
+        List.of(
+            base.modulos().getFirst(),
+            new AiDocumentoPlano.Modulo(
+                moduloVazioId, null, "Relatórios", 2, List.of())),
+        base.projetoNomesSugeridos(),
+        base.analiseOrigem(),
+        base.analiseMensagem(),
+        base.tokensEntradaAnalise(),
+        base.tokensSaidaAnalise(),
+        base.sugestoes());
+    AiDocumentoImportacao importacao = importacao(importacaoId, comModuloVazio);
+    when(repository.findByIdAndCreatedBy(importacaoId, "editor")).thenReturn(Optional.of(importacao));
+    var request = new AiConfirmarEstruturaDocumentoRequest(
+        AiDocumentoProjetoModo.NOVO_PROJETO,
+        AiDocumentoClienteModo.SEM_CLIENTE,
+        null,
+        null,
+        null,
+        "Portal",
+        null,
+        List.of(
+            new AiConfirmarEstruturaDocumentoRequest.Modulo(
+                moduloPlanoId, "Cadastros provisórios"),
+            new AiConfirmarEstruturaDocumentoRequest.Modulo(
+                moduloVazioId, "Relatórios")));
+
+    assertThatThrownBy(() -> service.confirmarEstrutura(importacaoId, request, principal()))
+        .isInstanceOf(BusinessException.class)
+        .hasMessageContaining("módulos vazios");
+  }
+
+  @Test
   void selecionarPagina_semEstruturaConfirmadaRecusaGeracao() throws Exception {
     UUID importacaoId = UUID.randomUUID();
     UUID moduloPlanoId = UUID.randomUUID();
@@ -356,9 +400,9 @@ class AiDocumentoImportacaoServiceTest {
         0L,
         List.of(
             new AiReordenarEstruturaDocumentoRequest.Modulo(
-                moduloSegurancaId, List.of(senhaId, permissoesId)),
+                moduloSegurancaId, "Segurança", List.of(senhaId, permissoesId)),
             new AiReordenarEstruturaDocumentoRequest.Modulo(
-                moduloUsuariosId, List.of(consultaId))));
+                moduloUsuariosId, "Usuários", List.of(consultaId))));
 
     var response = service.reordenarEstrutura(importacaoId, request, principal());
 
@@ -376,9 +420,9 @@ class AiDocumentoImportacaoServiceTest {
             0L,
             List.of(
                 new AiReordenarEstruturaDocumentoRequest.Modulo(
-                    moduloUsuariosId, List.of(consultaId, permissoesId)),
+                    moduloUsuariosId, "Usuários", List.of(consultaId, permissoesId)),
                 new AiReordenarEstruturaDocumentoRequest.Modulo(
-                    moduloSegurancaId, List.of(senhaId)))),
+                    moduloSegurancaId, "Segurança", List.of(senhaId)))),
         principal());
     assertThat(restaurada.sugestoes().getFirst().status())
         .isEqualTo(AiDocumentoSugestaoStatus.PENDENTE);
@@ -395,7 +439,8 @@ class AiDocumentoImportacaoServiceTest {
     when(repository.findByIdAndCreatedBy(importacaoId, "editor")).thenReturn(Optional.of(importacao));
     var request = new AiReordenarEstruturaDocumentoRequest(
         1L,
-        List.of(new AiReordenarEstruturaDocumentoRequest.Modulo(moduloId, List.of(paginaId))));
+        List.of(new AiReordenarEstruturaDocumentoRequest.Modulo(
+            moduloId, "Cadastros", List.of(paginaId))));
 
     assertThatThrownBy(() -> service.reordenarEstrutura(importacaoId, request, principal()))
         .isInstanceOf(ConflictException.class)
@@ -403,20 +448,38 @@ class AiDocumentoImportacaoServiceTest {
   }
 
   @Test
-  void reordenarEstrutura_naoPermiteModuloVazio() throws Exception {
+  void reordenarEstrutura_permiteCriarERemoverModuloVazio() throws Exception {
     UUID importacaoId = UUID.randomUUID();
     UUID moduloId = UUID.randomUUID();
+    UUID novoModuloId = UUID.randomUUID();
     UUID paginaId = UUID.randomUUID();
     AiDocumentoImportacao importacao = importacao(
         importacaoId, plano(moduloId, paginaId, false));
     when(repository.findByIdAndCreatedBy(importacaoId, "editor")).thenReturn(Optional.of(importacao));
     var request = new AiReordenarEstruturaDocumentoRequest(
         0L,
-        List.of(new AiReordenarEstruturaDocumentoRequest.Modulo(moduloId, List.of())));
+        List.of(
+            new AiReordenarEstruturaDocumentoRequest.Modulo(
+                moduloId, "Cadastros provisórios", List.of(paginaId)),
+            new AiReordenarEstruturaDocumentoRequest.Modulo(
+                novoModuloId, "Relatórios", List.of())));
 
-    assertThatThrownBy(() -> service.reordenarEstrutura(importacaoId, request, principal()))
-        .isInstanceOf(BusinessException.class)
-        .hasMessageContaining("pelo menos uma página");
+    var criada = service.reordenarEstrutura(importacaoId, request, principal());
+    assertThat(criada.modulos()).extracting(item -> item.nome())
+        .containsExactly("Cadastros provisórios", "Relatórios");
+    assertThat(criada.modulos().get(1).paginas()).isEmpty();
+
+    var removida = service.reordenarEstrutura(
+        importacaoId,
+        new AiReordenarEstruturaDocumentoRequest(
+            0L,
+            List.of(new AiReordenarEstruturaDocumentoRequest.Modulo(
+                moduloId, "Cadastros provisórios", List.of(paginaId)))),
+        principal());
+
+    assertThat(removida.modulos()).extracting(item -> item.nome())
+        .containsExactly("Cadastros provisórios");
+    verify(repository, times(2)).flush();
   }
 
   private AiDocumentoPlano plano(UUID moduloPlanoId, UUID paginaPlanoId, boolean confirmada) {

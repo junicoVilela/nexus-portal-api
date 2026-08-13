@@ -246,16 +246,21 @@ public class AiDocumentoImportacaoService {
         .collect(LinkedHashMap::new, (map, pagina) -> map.put(pagina.id(), pagina), Map::putAll);
     Set<UUID> modulosRecebidos = new HashSet<>();
     Set<UUID> paginasRecebidas = new HashSet<>();
+    Set<String> nomesRecebidos = new HashSet<>();
     List<AiDocumentoPlano.Modulo> modulos = new ArrayList<>();
 
     for (int indiceModulo = 0; indiceModulo < request.modulos().size(); indiceModulo++) {
       AiReordenarEstruturaDocumentoRequest.Modulo recebido = request.modulos().get(indiceModulo);
-      AiDocumentoPlano.Modulo modulo = modulosAtuais.get(recebido.planoId());
-      if (modulo == null || !modulosRecebidos.add(recebido.planoId())) {
-        throw new BusinessException("A reorganização contém um módulo inválido ou repetido.");
+      if (!modulosRecebidos.add(recebido.planoId())) {
+        throw new BusinessException("A organização contém um módulo repetido.");
       }
-      if (recebido.paginas().isEmpty()) {
-        throw new BusinessException("Cada módulo deve manter pelo menos uma página.");
+      AiDocumentoPlano.Modulo moduloAtual = modulosAtuais.get(recebido.planoId());
+      String nomeModulo = moduloAtual == null ? normalizar(recebido.nome()) : moduloAtual.nome();
+      if (nomeModulo == null || nomeModulo.isBlank()) {
+        throw new BusinessException("Informe um nome para todos os módulos.");
+      }
+      if (!nomesRecebidos.add(SlugUtils.normalize(nomeModulo))) {
+        throw new BusinessException("Use nomes diferentes para os módulos do documento.");
       }
       List<AiDocumentoPlano.Pagina> paginas = new ArrayList<>();
       for (int indicePagina = 0; indicePagina < recebido.paginas().size(); indicePagina++) {
@@ -265,7 +270,7 @@ public class AiDocumentoImportacaoService {
           throw new BusinessException("A reorganização contém uma página inválida ou repetida.");
         }
         AiDocumentoPlano.Pagina contextualizada = atualizarContexto(
-            pagina, atual.projetoNome(), modulo.nome());
+            pagina, atual.projetoNome(), nomeModulo);
         paginas.add(copiarPagina(
             contextualizada,
             contextualizada.titulo(),
@@ -273,15 +278,14 @@ public class AiDocumentoImportacaoService {
             indicePagina + 1));
       }
       modulos.add(new AiDocumentoPlano.Modulo(
-          modulo.id(),
-          modulo.moduloId(),
-          modulo.nome(),
+          recebido.planoId(),
+          moduloAtual == null ? null : moduloAtual.moduloId(),
+          nomeModulo,
           indiceModulo + 1,
           List.copyOf(paginas)));
     }
-    if (!modulosRecebidos.equals(modulosAtuais.keySet())
-        || !paginasRecebidas.equals(paginasAtuais.keySet())) {
-      throw new BusinessException("A reorganização deve preservar todos os módulos e páginas do plano.");
+    if (!paginasRecebidas.equals(paginasAtuais.keySet())) {
+      throw new BusinessException("A organização deve preservar todas as páginas do plano.");
     }
 
     List<AiDocumentoPlano.Sugestao> sugestoes = resolverSugestoesDeMovimento(
@@ -309,6 +313,10 @@ public class AiDocumentoImportacaoService {
     }
     if (atual.estruturaConfirmada()) {
       return response(importacao, atual, lerAvisos(importacao));
+    }
+    if (atual.modulos().stream().anyMatch(modulo -> modulo.paginas().isEmpty())) {
+      throw new BusinessException(
+          "Mova ao menos uma página para cada módulo ou remova os módulos vazios antes de continuar.");
     }
 
     boolean novoProjeto = request.modoProjeto() == AiDocumentoProjetoModo.NOVO_PROJETO;
@@ -738,11 +746,21 @@ public class AiDocumentoImportacaoService {
       List<AiDocumentoPlano.Sugestao> sugestoes,
       List<AiDocumentoPlano.Modulo> modulos) {
     Map<UUID, UUID> moduloPorPagina = new LinkedHashMap<>();
+    Set<UUID> modulosAtivos = new HashSet<>();
     for (AiDocumentoPlano.Modulo modulo : modulos) {
+      modulosAtivos.add(modulo.id());
       modulo.paginas().forEach(pagina -> moduloPorPagina.put(pagina.id(), modulo.id()));
     }
     return sugestoes.stream()
         .map(sugestao -> {
+          boolean referenciaModuloRemovido =
+              sugestao.moduloOrigemId() != null
+                  && !modulosAtivos.contains(sugestao.moduloOrigemId())
+              || sugestao.moduloDestinoId() != null
+                  && !modulosAtivos.contains(sugestao.moduloDestinoId());
+          if (referenciaModuloRemovido) {
+            return sugestao.comStatus(AiDocumentoSugestaoStatus.IGNORADA);
+          }
           if (sugestao.tipo() != AiDocumentoSugestaoTipo.MOVER_PAGINA
               || sugestao.status() == AiDocumentoSugestaoStatus.IGNORADA) {
             return sugestao;
