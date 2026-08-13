@@ -2,6 +2,7 @@ package com.nexus.portal.ai.controller;
 
 import com.nexus.portal.ai.dto.request.AiConfirmarEstruturaDocumentoRequest;
 import com.nexus.portal.ai.dto.request.AiGerarLoteDocumentoRequest;
+import com.nexus.portal.ai.dto.request.AiReordenarEstruturaDocumentoRequest;
 import com.nexus.portal.ai.dto.response.AiEstimativaLoteDocumentoResponse;
 import com.nexus.portal.ai.dto.response.AiImportacaoDocumentoResponse;
 import com.nexus.portal.ai.service.AiDocumentoImportacaoService;
@@ -16,6 +17,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -70,6 +72,15 @@ public class AiDocumentoImportacaoController {
   public AiImportacaoDocumentoResponse aplicarSugestoesSegurasDocumento(
       @PathVariable UUID id, Principal principal) {
     return service.aplicarSugestoesSeguras(id, principal);
+  }
+
+  @PutMapping("/{id}/estrutura/rascunho")
+  @PreAuthorize(Permissoes.PAGINA_CRIAR)
+  public AiImportacaoDocumentoResponse reordenarEstruturaDocumento(
+      @PathVariable UUID id,
+      @Valid @RequestBody AiReordenarEstruturaDocumentoRequest request,
+      Principal principal) {
+    return service.reordenarEstrutura(id, request, principal);
   }
 
   @PostMapping("/{id}/estrutura/confirmar")

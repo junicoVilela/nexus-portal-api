@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.identityaccess.service.AuditoriaService;
 import com.nexus.portal.ai.dto.request.AiConfirmarEstruturaDocumentoRequest;
+import com.nexus.portal.ai.dto.request.AiReordenarEstruturaDocumentoRequest;
 import com.nexus.portal.ai.dto.request.AplicarAiPropostaRequest;
 import com.nexus.portal.ai.dto.response.AiAplicacaoResponse;
 import com.nexus.portal.ai.dto.response.AiPropostaResponse;
@@ -24,6 +25,7 @@ import com.nexus.portal.ai.entity.AiTipoDocumento;
 import com.nexus.portal.ai.integration.docflow.DocFlowAiBridge;
 import com.nexus.portal.ai.repository.AiDocumentoImportacaoRepository;
 import com.nexus.portal.shared.exception.BusinessException;
+import com.nexus.portal.shared.exception.ConflictException;
 import java.security.Principal;
 import java.util.List;
 import java.util.Optional;
@@ -303,6 +305,118 @@ class AiDocumentoImportacaoServiceTest {
     });
     assertThat(response.sugestoes().getFirst().status())
         .isEqualTo(AiDocumentoSugestaoStatus.APLICADA);
+  }
+
+  @Test
+  void reordenarEstrutura_movePaginaEntreModulosEPreservaConteudo() throws Exception {
+    UUID importacaoId = UUID.randomUUID();
+    UUID moduloUsuariosId = UUID.randomUUID();
+    UUID moduloSegurancaId = UUID.randomUUID();
+    UUID consultaId = UUID.randomUUID();
+    UUID permissoesId = UUID.randomUUID();
+    UUID senhaId = UUID.randomUUID();
+    UUID sugestaoId = UUID.randomUUID();
+    AiDocumentoPlano plano = new AiDocumentoPlano(
+        "Portal",
+        "Manual.",
+        null,
+        null,
+        false,
+        List.of(
+            new AiDocumentoPlano.Modulo(
+                moduloUsuariosId,
+                null,
+                "Usuários",
+                1,
+                List.of(
+                    pagina(consultaId, 1, "Consultar usuários", "Texto exclusivo da consulta."),
+                    pagina(permissoesId, 2, "Permissões", "Texto exclusivo das permissões."))),
+            new AiDocumentoPlano.Modulo(
+                moduloSegurancaId,
+                null,
+                "Segurança",
+                2,
+                List.of(pagina(senhaId, 1, "Alterar senha", "Texto exclusivo da senha.")))),
+        List.of("Portal"),
+        com.nexus.portal.ai.entity.AiDocumentoAnaliseOrigem.LLM,
+        "Estrutura refinada.",
+        100,
+        50,
+        List.of(sugestao(
+            sugestaoId,
+            AiDocumentoSugestaoTipo.MOVER_PAGINA,
+            permissoesId,
+            null,
+            moduloUsuariosId,
+            moduloSegurancaId,
+            null)));
+    AiDocumentoImportacao importacao = importacao(importacaoId, plano);
+    when(repository.findByIdAndCreatedBy(importacaoId, "editor")).thenReturn(Optional.of(importacao));
+    var request = new AiReordenarEstruturaDocumentoRequest(
+        0L,
+        List.of(
+            new AiReordenarEstruturaDocumentoRequest.Modulo(
+                moduloSegurancaId, List.of(senhaId, permissoesId)),
+            new AiReordenarEstruturaDocumentoRequest.Modulo(
+                moduloUsuariosId, List.of(consultaId))));
+
+    var response = service.reordenarEstrutura(importacaoId, request, principal());
+
+    assertThat(response.modulos()).extracting(item -> item.nome())
+        .containsExactly("Segurança", "Usuários");
+    assertThat(response.modulos().getFirst().paginas()).extracting(item -> item.titulo())
+        .containsExactly("Alterar senha", "Permissões");
+    assertThat(response.modulos().getFirst().paginas().get(1).briefing())
+        .contains("## Módulo: Segurança", "Texto exclusivo das permissões.");
+    assertThat(response.sugestoes().getFirst().status())
+        .isEqualTo(AiDocumentoSugestaoStatus.APLICADA);
+    var restaurada = service.reordenarEstrutura(
+        importacaoId,
+        new AiReordenarEstruturaDocumentoRequest(
+            0L,
+            List.of(
+                new AiReordenarEstruturaDocumentoRequest.Modulo(
+                    moduloUsuariosId, List.of(consultaId, permissoesId)),
+                new AiReordenarEstruturaDocumentoRequest.Modulo(
+                    moduloSegurancaId, List.of(senhaId)))),
+        principal());
+    assertThat(restaurada.sugestoes().getFirst().status())
+        .isEqualTo(AiDocumentoSugestaoStatus.PENDENTE);
+    verify(repository, times(2)).flush();
+  }
+
+  @Test
+  void reordenarEstrutura_comVersaoDesatualizadaRecusaSobrescrita() throws Exception {
+    UUID importacaoId = UUID.randomUUID();
+    UUID moduloId = UUID.randomUUID();
+    UUID paginaId = UUID.randomUUID();
+    AiDocumentoImportacao importacao = importacao(
+        importacaoId, plano(moduloId, paginaId, false));
+    when(repository.findByIdAndCreatedBy(importacaoId, "editor")).thenReturn(Optional.of(importacao));
+    var request = new AiReordenarEstruturaDocumentoRequest(
+        1L,
+        List.of(new AiReordenarEstruturaDocumentoRequest.Modulo(moduloId, List.of(paginaId))));
+
+    assertThatThrownBy(() -> service.reordenarEstrutura(importacaoId, request, principal()))
+        .isInstanceOf(ConflictException.class)
+        .hasMessageContaining("alterada em outra tela");
+  }
+
+  @Test
+  void reordenarEstrutura_naoPermiteModuloVazio() throws Exception {
+    UUID importacaoId = UUID.randomUUID();
+    UUID moduloId = UUID.randomUUID();
+    UUID paginaId = UUID.randomUUID();
+    AiDocumentoImportacao importacao = importacao(
+        importacaoId, plano(moduloId, paginaId, false));
+    when(repository.findByIdAndCreatedBy(importacaoId, "editor")).thenReturn(Optional.of(importacao));
+    var request = new AiReordenarEstruturaDocumentoRequest(
+        0L,
+        List.of(new AiReordenarEstruturaDocumentoRequest.Modulo(moduloId, List.of())));
+
+    assertThatThrownBy(() -> service.reordenarEstrutura(importacaoId, request, principal()))
+        .isInstanceOf(BusinessException.class)
+        .hasMessageContaining("pelo menos uma página");
   }
 
   private AiDocumentoPlano plano(UUID moduloPlanoId, UUID paginaPlanoId, boolean confirmada) {

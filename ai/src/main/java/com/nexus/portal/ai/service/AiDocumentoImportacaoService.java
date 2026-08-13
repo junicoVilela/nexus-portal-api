@@ -7,6 +7,7 @@ import com.nexus.identityaccess.service.AuditoriaService;
 import com.nexus.portal.ai.audit.AiAuditoriaAcoes;
 import com.nexus.portal.ai.dto.request.AiConfirmarEstruturaDocumentoRequest;
 import com.nexus.portal.ai.dto.request.AiGerarLoteDocumentoRequest;
+import com.nexus.portal.ai.dto.request.AiReordenarEstruturaDocumentoRequest;
 import com.nexus.portal.ai.dto.request.AplicarAiPropostaRequest;
 import com.nexus.portal.ai.dto.request.CriarAiSessaoRequest;
 import com.nexus.portal.ai.dto.response.AiEstimativaLoteDocumentoResponse;
@@ -26,6 +27,7 @@ import com.nexus.portal.ai.repository.AiDocumentoImportacaoRepository;
 import com.nexus.portal.ai.repository.AiSessaoRepository;
 import com.nexus.portal.ai.service.AiDocumentoExtratorService.DocumentoExtraido;
 import com.nexus.portal.shared.exception.BusinessException;
+import com.nexus.portal.shared.exception.ConflictException;
 import com.nexus.portal.shared.exception.NotFoundException;
 import com.nexus.portal.shared.util.SlugUtils;
 import java.security.MessageDigest;
@@ -221,6 +223,76 @@ public class AiDocumentoImportacaoService {
         importacao.getId(),
         AiAuditoriaAcoes.DOCUMENTO_SUGESTOES_SEGURAS_APLICADAS,
         aplicadas + " sugestões aplicadas",
+        principal);
+    return response(importacao, atualizado, lerAvisos(importacao));
+  }
+
+  @Transactional
+  public AiImportacaoDocumentoResponse reordenarEstrutura(
+      UUID id,
+      AiReordenarEstruturaDocumentoRequest request,
+      Principal principal) {
+    AiDocumentoImportacao importacao = carregar(id, principal);
+    AiDocumentoPlano atual = exigirPlanoEditavel(importacao);
+    if (importacao.getVersion() != request.version()) {
+      throw new ConflictException(
+          "A estrutura foi alterada em outra tela. Recarregue o plano antes de reorganizar.");
+    }
+
+    Map<UUID, AiDocumentoPlano.Modulo> modulosAtuais = atual.modulos().stream()
+        .collect(LinkedHashMap::new, (map, modulo) -> map.put(modulo.id(), modulo), Map::putAll);
+    Map<UUID, AiDocumentoPlano.Pagina> paginasAtuais = atual.modulos().stream()
+        .flatMap(modulo -> modulo.paginas().stream())
+        .collect(LinkedHashMap::new, (map, pagina) -> map.put(pagina.id(), pagina), Map::putAll);
+    Set<UUID> modulosRecebidos = new HashSet<>();
+    Set<UUID> paginasRecebidas = new HashSet<>();
+    List<AiDocumentoPlano.Modulo> modulos = new ArrayList<>();
+
+    for (int indiceModulo = 0; indiceModulo < request.modulos().size(); indiceModulo++) {
+      AiReordenarEstruturaDocumentoRequest.Modulo recebido = request.modulos().get(indiceModulo);
+      AiDocumentoPlano.Modulo modulo = modulosAtuais.get(recebido.planoId());
+      if (modulo == null || !modulosRecebidos.add(recebido.planoId())) {
+        throw new BusinessException("A reorganização contém um módulo inválido ou repetido.");
+      }
+      if (recebido.paginas().isEmpty()) {
+        throw new BusinessException("Cada módulo deve manter pelo menos uma página.");
+      }
+      List<AiDocumentoPlano.Pagina> paginas = new ArrayList<>();
+      for (int indicePagina = 0; indicePagina < recebido.paginas().size(); indicePagina++) {
+        UUID paginaId = recebido.paginas().get(indicePagina);
+        AiDocumentoPlano.Pagina pagina = paginasAtuais.get(paginaId);
+        if (pagina == null || !paginasRecebidas.add(paginaId)) {
+          throw new BusinessException("A reorganização contém uma página inválida ou repetida.");
+        }
+        AiDocumentoPlano.Pagina contextualizada = atualizarContexto(
+            pagina, atual.projetoNome(), modulo.nome());
+        paginas.add(copiarPagina(
+            contextualizada,
+            contextualizada.titulo(),
+            contextualizada.briefing(),
+            indicePagina + 1));
+      }
+      modulos.add(new AiDocumentoPlano.Modulo(
+          modulo.id(),
+          modulo.moduloId(),
+          modulo.nome(),
+          indiceModulo + 1,
+          List.copyOf(paginas)));
+    }
+    if (!modulosRecebidos.equals(modulosAtuais.keySet())
+        || !paginasRecebidas.equals(paginasAtuais.keySet())) {
+      throw new BusinessException("A reorganização deve preservar todos os módulos e páginas do plano.");
+    }
+
+    List<AiDocumentoPlano.Sugestao> sugestoes = resolverSugestoesDeMovimento(
+        atual.sugestoes(), modulos);
+    AiDocumentoPlano atualizado = copiarPlano(atual, List.copyOf(modulos), sugestoes);
+    persistirPlanoEditavel(importacao, atualizado);
+    auditoriaService.registrar(
+        AiAuditoriaAcoes.ENTIDADE_DOCUMENTO_IMPORTACAO,
+        importacao.getId(),
+        AiAuditoriaAcoes.DOCUMENTO_ESTRUTURA_REORDENADA,
+        modulos.size() + " módulos · " + paginasRecebidas.size() + " páginas",
         principal);
     return response(importacao, atualizado, lerAvisos(importacao));
   }
@@ -658,6 +730,28 @@ public class AiDocumentoImportacaoService {
             return item.comStatus(AiDocumentoSugestaoStatus.IGNORADA);
           }
           return item;
+        })
+        .toList();
+  }
+
+  private List<AiDocumentoPlano.Sugestao> resolverSugestoesDeMovimento(
+      List<AiDocumentoPlano.Sugestao> sugestoes,
+      List<AiDocumentoPlano.Modulo> modulos) {
+    Map<UUID, UUID> moduloPorPagina = new LinkedHashMap<>();
+    for (AiDocumentoPlano.Modulo modulo : modulos) {
+      modulo.paginas().forEach(pagina -> moduloPorPagina.put(pagina.id(), modulo.id()));
+    }
+    return sugestoes.stream()
+        .map(sugestao -> {
+          if (sugestao.tipo() != AiDocumentoSugestaoTipo.MOVER_PAGINA
+              || sugestao.status() == AiDocumentoSugestaoStatus.IGNORADA) {
+            return sugestao;
+          }
+          boolean atendida = sugestao.moduloDestinoId() != null
+              && sugestao.moduloDestinoId().equals(moduloPorPagina.get(sugestao.paginaOrigemId()));
+          return sugestao.comStatus(atendida
+              ? AiDocumentoSugestaoStatus.APLICADA
+              : AiDocumentoSugestaoStatus.PENDENTE);
         })
         .toList();
   }
