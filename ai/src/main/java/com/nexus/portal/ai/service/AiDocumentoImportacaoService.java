@@ -19,6 +19,7 @@ import com.nexus.portal.ai.entity.AiDocumentoProjetoModo;
 import com.nexus.portal.ai.entity.AiDocumentoSugestaoStatus;
 import com.nexus.portal.ai.entity.AiDocumentoSugestaoTipo;
 import com.nexus.portal.ai.entity.AiImportacaoStatus;
+import com.nexus.portal.ai.entity.AiPaginaPlanoOrigem;
 import com.nexus.portal.ai.entity.AiPaginaPlanoStatus;
 import com.nexus.portal.ai.entity.AiObjetivo;
 import com.nexus.portal.ai.entity.AiSessaoStatus;
@@ -248,6 +249,9 @@ public class AiDocumentoImportacaoService {
     Set<UUID> paginasRecebidas = new HashSet<>();
     Set<String> nomesRecebidos = new HashSet<>();
     List<AiDocumentoPlano.Modulo> modulos = new ArrayList<>();
+    int totalPaginas = 0;
+    int paginasCriadas = 0;
+    int paginasAlteradas = 0;
 
     for (int indiceModulo = 0; indiceModulo < request.modulos().size(); indiceModulo++) {
       AiReordenarEstruturaDocumentoRequest.Modulo recebido = request.modulos().get(indiceModulo);
@@ -263,14 +267,56 @@ public class AiDocumentoImportacaoService {
         throw new BusinessException("Use nomes diferentes para os módulos do documento.");
       }
       List<AiDocumentoPlano.Pagina> paginas = new ArrayList<>();
+      Set<String> titulosRecebidos = new HashSet<>();
       for (int indicePagina = 0; indicePagina < recebido.paginas().size(); indicePagina++) {
-        UUID paginaId = recebido.paginas().get(indicePagina);
-        AiDocumentoPlano.Pagina pagina = paginasAtuais.get(paginaId);
-        if (pagina == null || !paginasRecebidas.add(paginaId)) {
-          throw new BusinessException("A reorganização contém uma página inválida ou repetida.");
+        AiReordenarEstruturaDocumentoRequest.Pagina paginaRecebida =
+            recebido.paginas().get(indicePagina);
+        UUID paginaId = paginaRecebida.planoId();
+        if (!paginasRecebidas.add(paginaId)) {
+          throw new BusinessException("A organização contém uma página repetida.");
+        }
+        String titulo = normalizar(paginaRecebida.titulo());
+        String conteudo = normalizarConteudo(paginaRecebida.conteudo());
+        if (!titulosRecebidos.add(SlugUtils.normalize(titulo))) {
+          throw new BusinessException("Use títulos diferentes para as páginas de cada módulo.");
+        }
+        if (++totalPaginas > 80) {
+          throw new BusinessException("O plano pode ter no máximo 80 páginas.");
+        }
+
+        AiDocumentoPlano.Pagina paginaAtual = paginasAtuais.get(paginaId);
+        if (paginaAtual == null) {
+          paginasCriadas++;
+          paginas.add(novaPaginaRascunho(
+              paginaId,
+              titulo,
+              indicePagina + 1,
+              atual.projetoNome(),
+              nomeModulo,
+              conteudo,
+              paginaRecebida.origem()));
+          continue;
+        }
+        boolean conteudoAlterado = !paginaAtual.titulo().equals(titulo)
+            || !normalizarConteudo(removerCabecalho(paginaAtual.briefing())).equals(conteudo);
+        if (conteudoAlterado && !paginaEditavel(paginaAtual)) {
+          throw new BusinessException(
+              "A página '" + paginaAtual.titulo() + "' já foi gerada e não pode mais ser alterada.");
+        }
+        if (conteudoAlterado) {
+          paginasAlteradas++;
+          paginas.add(paginaAjustada(
+              paginaAtual,
+              titulo,
+              indicePagina + 1,
+              atual.projetoNome(),
+              nomeModulo,
+              conteudo,
+              paginaRecebida.origem()));
+          continue;
         }
         AiDocumentoPlano.Pagina contextualizada = atualizarContexto(
-            pagina, atual.projetoNome(), nomeModulo);
+            paginaAtual, atual.projetoNome(), nomeModulo);
         paginas.add(copiarPagina(
             contextualizada,
             contextualizada.titulo(),
@@ -284,11 +330,20 @@ public class AiDocumentoImportacaoService {
           indiceModulo + 1,
           List.copyOf(paginas)));
     }
-    if (!paginasRecebidas.equals(paginasAtuais.keySet())) {
-      throw new BusinessException("A organização deve preservar todas as páginas do plano.");
+    if (totalPaginas == 0) {
+      throw new BusinessException("O documento precisa manter pelo menos uma página.");
+    }
+    Set<UUID> paginasRemovidas = new HashSet<>(paginasAtuais.keySet());
+    paginasRemovidas.removeAll(paginasRecebidas);
+    for (UUID paginaId : paginasRemovidas) {
+      AiDocumentoPlano.Pagina pagina = paginasAtuais.get(paginaId);
+      if (!paginaEditavel(pagina)) {
+        throw new BusinessException(
+            "A página '" + pagina.titulo() + "' já foi gerada e não pode ser removida.");
+      }
     }
 
-    List<AiDocumentoPlano.Sugestao> sugestoes = resolverSugestoesDeMovimento(
+    List<AiDocumentoPlano.Sugestao> sugestoes = resolverSugestoesDaEstrutura(
         atual.sugestoes(), modulos);
     AiDocumentoPlano atualizado = copiarPlano(atual, List.copyOf(modulos), sugestoes);
     persistirPlanoEditavel(importacao, atualizado);
@@ -296,7 +351,9 @@ public class AiDocumentoImportacaoService {
         AiAuditoriaAcoes.ENTIDADE_DOCUMENTO_IMPORTACAO,
         importacao.getId(),
         AiAuditoriaAcoes.DOCUMENTO_ESTRUTURA_REORDENADA,
-        modulos.size() + " módulos · " + paginasRecebidas.size() + " páginas",
+        modulos.size() + " módulos · " + totalPaginas + " páginas · "
+            + paginasCriadas + " criadas · " + paginasAlteradas + " alteradas · "
+            + paginasRemovidas.size() + " removidas",
         principal);
     return response(importacao, atualizado, lerAvisos(importacao));
   }
@@ -742,14 +799,18 @@ public class AiDocumentoImportacaoService {
         .toList();
   }
 
-  private List<AiDocumentoPlano.Sugestao> resolverSugestoesDeMovimento(
+  private List<AiDocumentoPlano.Sugestao> resolverSugestoesDaEstrutura(
       List<AiDocumentoPlano.Sugestao> sugestoes,
       List<AiDocumentoPlano.Modulo> modulos) {
     Map<UUID, UUID> moduloPorPagina = new LinkedHashMap<>();
+    Map<UUID, AiDocumentoPlano.Pagina> paginasAtivas = new LinkedHashMap<>();
     Set<UUID> modulosAtivos = new HashSet<>();
     for (AiDocumentoPlano.Modulo modulo : modulos) {
       modulosAtivos.add(modulo.id());
-      modulo.paginas().forEach(pagina -> moduloPorPagina.put(pagina.id(), modulo.id()));
+      modulo.paginas().forEach(pagina -> {
+        moduloPorPagina.put(pagina.id(), modulo.id());
+        paginasAtivas.put(pagina.id(), pagina);
+      });
     }
     return sugestoes.stream()
         .map(sugestao -> {
@@ -758,8 +819,23 @@ public class AiDocumentoImportacaoService {
                   && !modulosAtivos.contains(sugestao.moduloOrigemId())
               || sugestao.moduloDestinoId() != null
                   && !modulosAtivos.contains(sugestao.moduloDestinoId());
-          if (referenciaModuloRemovido) {
+          boolean referenciaPaginaRemovida =
+              sugestao.paginaOrigemId() != null
+                  && !paginasAtivas.containsKey(sugestao.paginaOrigemId())
+              || sugestao.paginaDestinoId() != null
+                  && !paginasAtivas.containsKey(sugestao.paginaDestinoId());
+          if (referenciaModuloRemovido || referenciaPaginaRemovida) {
             return sugestao.comStatus(AiDocumentoSugestaoStatus.IGNORADA);
+          }
+          if (sugestao.tipo() == AiDocumentoSugestaoTipo.RENOMEAR_PAGINA
+              && sugestao.status() != AiDocumentoSugestaoStatus.IGNORADA) {
+            AiDocumentoPlano.Pagina pagina = paginasAtivas.get(sugestao.paginaOrigemId());
+            boolean atendida = pagina != null
+                && sugestao.valorSugerido() != null
+                && pagina.titulo().equalsIgnoreCase(sugestao.valorSugerido().trim());
+            return sugestao.comStatus(atendida
+                ? AiDocumentoSugestaoStatus.APLICADA
+                : AiDocumentoSugestaoStatus.PENDENTE);
           }
           if (sugestao.tipo() != AiDocumentoSugestaoTipo.MOVER_PAGINA
               || sugestao.status() == AiDocumentoSugestaoStatus.IGNORADA) {
@@ -772,6 +848,71 @@ public class AiDocumentoImportacaoService {
               : AiDocumentoSugestaoStatus.PENDENTE);
         })
         .toList();
+  }
+
+  private AiDocumentoPlano.Pagina novaPaginaRascunho(
+      UUID paginaId,
+      String titulo,
+      int ordem,
+      String projetoNome,
+      String moduloNome,
+      String conteudo,
+      AiPaginaPlanoOrigem origem) {
+    AiPaginaPlanoOrigem origemSegura = origem == AiPaginaPlanoOrigem.DOCUMENTO
+        || origem == AiPaginaPlanoOrigem.IA
+        ? AiPaginaPlanoOrigem.MANUAL
+        : origem;
+    return new AiDocumentoPlano.Pagina(
+        paginaId,
+        titulo,
+        ordem,
+        montarBriefing(projetoNome, moduloNome, titulo, conteudo),
+        null,
+        null,
+        null,
+        0,
+        "Conteúdo criado durante a revisão; o modelo será escolhido na geração.",
+        AiPaginaPlanoStatus.PENDENTE,
+        null,
+        null,
+        null,
+        origemSegura,
+        true);
+  }
+
+  private AiDocumentoPlano.Pagina paginaAjustada(
+      AiDocumentoPlano.Pagina pagina,
+      String titulo,
+      int ordem,
+      String projetoNome,
+      String moduloNome,
+      String conteudo,
+      AiPaginaPlanoOrigem origemInformada) {
+    AiPaginaPlanoOrigem origem = origemInformada == AiPaginaPlanoOrigem.MESCLAGEM
+        ? AiPaginaPlanoOrigem.MESCLAGEM
+        : pagina.origem();
+    return new AiDocumentoPlano.Pagina(
+        pagina.id(),
+        titulo,
+        ordem,
+        montarBriefing(projetoNome, moduloNome, titulo, conteudo),
+        null,
+        null,
+        null,
+        0,
+        "Conteúdo ajustado manualmente; o modelo será reavaliado na geração.",
+        AiPaginaPlanoStatus.PENDENTE,
+        null,
+        null,
+        null,
+        origem,
+        true);
+  }
+
+  private boolean paginaEditavel(AiDocumentoPlano.Pagina pagina) {
+    return pagina.status() == AiPaginaPlanoStatus.PENDENTE
+        && pagina.paginaId() == null
+        && pagina.sessaoId() == null;
   }
 
   private List<AiDocumentoPlano.Modulo> aplicarSugestao(
@@ -810,7 +951,12 @@ public class AiDocumentoImportacaoService {
         null,
         0,
         "Página adicionada pela análise de completude; o modelo será escolhido na geração.",
-        AiPaginaPlanoStatus.PENDENTE);
+        AiPaginaPlanoStatus.PENDENTE,
+        null,
+        null,
+        null,
+        AiPaginaPlanoOrigem.IA,
+        false);
     return plano.modulos().stream()
         .map(modulo -> modulo.id().equals(destino.id())
             ? new AiDocumentoPlano.Modulo(
@@ -979,7 +1125,9 @@ public class AiDocumentoImportacaoService {
         pagina.status(),
         pagina.paginaId(),
         pagina.sessaoId(),
-        pagina.erroMensagem());
+        pagina.erroMensagem(),
+        pagina.origem(),
+        pagina.ajustadaManualmente());
   }
 
   private String atualizarCabecalhoPagina(String briefing, String titulo) {
@@ -1098,7 +1246,9 @@ public class AiDocumentoImportacaoService {
                     pagina.status(),
                     pagina.paginaId(),
                     pagina.sessaoId(),
-                    pagina.erroMensagem()))
+                    pagina.erroMensagem(),
+                    pagina.origem(),
+                    pagina.ajustadaManualmente()))
                 .toList()))
         .toList();
     return AiImportacaoDocumentoResponse.from(
@@ -1138,11 +1288,17 @@ public class AiDocumentoImportacaoService {
         pagina.status(),
         pagina.paginaId(),
         pagina.sessaoId(),
-        pagina.erroMensagem());
+        pagina.erroMensagem(),
+        pagina.origem(),
+        pagina.ajustadaManualmente());
   }
 
   private String normalizar(String valor) {
     return valor == null ? null : valor.trim();
+  }
+
+  private String normalizarConteudo(String valor) {
+    return valor == null ? "" : valor.replace("\r\n", "\n").replace('\r', '\n').trim();
   }
 
   private String normalizarDescricao(String descricao, String padrao) {

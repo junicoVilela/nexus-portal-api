@@ -1,5 +1,6 @@
 package com.nexus.portal.ai.dto.request;
 
+import com.nexus.portal.ai.entity.AiPaginaPlanoOrigem;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -16,5 +17,12 @@ public record AiReordenarEstruturaDocumentoRequest(
   public record Modulo(
       @NotNull UUID planoId,
       @NotBlank @Size(max = 150) String nome,
-      @NotNull @Size(max = 80) List<@NotNull UUID> paginas) {}
+      @NotNull @Size(max = 80) List<@Valid Pagina> paginas) {}
+
+  public record Pagina(
+      @NotNull UUID planoId,
+      @NotBlank @Size(max = 180) String titulo,
+      @NotBlank @Size(max = 200_000) String conteudo,
+      @NotNull AiPaginaPlanoOrigem origem,
+      boolean ajustadaManualmente) {}
 }

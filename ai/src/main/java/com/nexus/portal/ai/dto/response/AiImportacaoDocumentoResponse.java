@@ -6,6 +6,7 @@ import com.nexus.portal.ai.entity.AiDocumentoSugestaoStatus;
 import com.nexus.portal.ai.entity.AiDocumentoSugestaoTipo;
 import com.nexus.portal.ai.entity.AiImportacaoStatus;
 import com.nexus.portal.ai.entity.AiPaginaPlanoStatus;
+import com.nexus.portal.ai.entity.AiPaginaPlanoOrigem;
 import com.nexus.portal.ai.entity.AiTipoDocumento;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -109,5 +110,7 @@ public record AiImportacaoDocumentoResponse(
       AiPaginaPlanoStatus status,
       UUID paginaId,
       UUID sessaoId,
-      String erroMensagem) {}
+      String erroMensagem,
+      AiPaginaPlanoOrigem origem,
+      boolean ajustadaManualmente) {}
 }

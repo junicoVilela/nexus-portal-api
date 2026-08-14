@@ -20,6 +20,7 @@ import com.nexus.portal.ai.entity.AiDocumentoImportacao;
 import com.nexus.portal.ai.entity.AiDocumentoProjetoModo;
 import com.nexus.portal.ai.entity.AiDocumentoSugestaoStatus;
 import com.nexus.portal.ai.entity.AiDocumentoSugestaoTipo;
+import com.nexus.portal.ai.entity.AiPaginaPlanoOrigem;
 import com.nexus.portal.ai.entity.AiPaginaPlanoStatus;
 import com.nexus.portal.ai.entity.AiTipoDocumento;
 import com.nexus.portal.ai.integration.docflow.DocFlowAiBridge;
@@ -400,9 +401,16 @@ class AiDocumentoImportacaoServiceTest {
         0L,
         List.of(
             new AiReordenarEstruturaDocumentoRequest.Modulo(
-                moduloSegurancaId, "Segurança", List.of(senhaId, permissoesId)),
+                moduloSegurancaId,
+                "Segurança",
+                List.of(
+                    paginaRequest(senhaId, "Alterar senha", "Texto exclusivo da senha."),
+                    paginaRequest(permissoesId, "Permissões", "Texto exclusivo das permissões."))),
             new AiReordenarEstruturaDocumentoRequest.Modulo(
-                moduloUsuariosId, "Usuários", List.of(consultaId))));
+                moduloUsuariosId,
+                "Usuários",
+                List.of(paginaRequest(
+                    consultaId, "Consultar usuários", "Texto exclusivo da consulta.")))));
 
     var response = service.reordenarEstrutura(importacaoId, request, principal());
 
@@ -420,9 +428,16 @@ class AiDocumentoImportacaoServiceTest {
             0L,
             List.of(
                 new AiReordenarEstruturaDocumentoRequest.Modulo(
-                    moduloUsuariosId, "Usuários", List.of(consultaId, permissoesId)),
+                    moduloUsuariosId,
+                    "Usuários",
+                    List.of(
+                        paginaRequest(consultaId, "Consultar usuários", "Texto exclusivo da consulta."),
+                        paginaRequest(permissoesId, "Permissões", "Texto exclusivo das permissões."))),
                 new AiReordenarEstruturaDocumentoRequest.Modulo(
-                    moduloSegurancaId, "Segurança", List.of(senhaId)))),
+                    moduloSegurancaId,
+                    "Segurança",
+                    List.of(paginaRequest(
+                        senhaId, "Alterar senha", "Texto exclusivo da senha."))))),
         principal());
     assertThat(restaurada.sugestoes().getFirst().status())
         .isEqualTo(AiDocumentoSugestaoStatus.PENDENTE);
@@ -440,7 +455,10 @@ class AiDocumentoImportacaoServiceTest {
     var request = new AiReordenarEstruturaDocumentoRequest(
         1L,
         List.of(new AiReordenarEstruturaDocumentoRequest.Modulo(
-            moduloId, "Cadastros", List.of(paginaId))));
+            moduloId,
+            "Cadastros",
+            List.of(paginaRequest(
+                paginaId, "Consultar usuários", "Use filtros para localizar os usuários.")))));
 
     assertThatThrownBy(() -> service.reordenarEstrutura(importacaoId, request, principal()))
         .isInstanceOf(ConflictException.class)
@@ -460,7 +478,10 @@ class AiDocumentoImportacaoServiceTest {
         0L,
         List.of(
             new AiReordenarEstruturaDocumentoRequest.Modulo(
-                moduloId, "Cadastros provisórios", List.of(paginaId)),
+                moduloId,
+                "Cadastros provisórios",
+                List.of(paginaRequest(
+                    paginaId, "Consultar usuários", "Use filtros para localizar os usuários."))),
             new AiReordenarEstruturaDocumentoRequest.Modulo(
                 novoModuloId, "Relatórios", List.of())));
 
@@ -474,12 +495,128 @@ class AiDocumentoImportacaoServiceTest {
         new AiReordenarEstruturaDocumentoRequest(
             0L,
             List.of(new AiReordenarEstruturaDocumentoRequest.Modulo(
-                moduloId, "Cadastros provisórios", List.of(paginaId)))),
+                moduloId,
+                "Cadastros provisórios",
+                List.of(paginaRequest(
+                    paginaId, "Consultar usuários", "Use filtros para localizar os usuários."))))),
         principal());
 
     assertThat(removida.modulos()).extracting(item -> item.nome())
         .containsExactly("Cadastros provisórios");
     verify(repository, times(2)).flush();
+  }
+
+  @Test
+  void reordenarEstrutura_editaCriaERemovePaginasMantendoOrigem() throws Exception {
+    UUID importacaoId = UUID.randomUUID();
+    UUID moduloId = UUID.randomUUID();
+    UUID paginaOriginalId = UUID.randomUUID();
+    UUID paginaManualId = UUID.randomUUID();
+    AiDocumentoImportacao importacao = importacao(
+        importacaoId, plano(moduloId, paginaOriginalId, false));
+    when(repository.findByIdAndCreatedBy(importacaoId, "editor")).thenReturn(Optional.of(importacao));
+
+    var atualizada = service.reordenarEstrutura(
+        importacaoId,
+        new AiReordenarEstruturaDocumentoRequest(
+            0L,
+            List.of(new AiReordenarEstruturaDocumentoRequest.Modulo(
+                moduloId,
+                "Cadastros provisórios",
+                List.of(
+                    new AiReordenarEstruturaDocumentoRequest.Pagina(
+                        paginaOriginalId,
+                        "Pesquisar usuários",
+                        "Use filtros avançados para localizar os usuários.",
+                        AiPaginaPlanoOrigem.DOCUMENTO,
+                        true),
+                    new AiReordenarEstruturaDocumentoRequest.Pagina(
+                        paginaManualId,
+                        "Exportar usuários",
+                        "Clique em Exportar para baixar o resultado da consulta.",
+                        AiPaginaPlanoOrigem.MANUAL,
+                        true))))),
+        principal());
+
+    assertThat(atualizada.modulos().getFirst().paginas())
+        .extracting(item -> item.titulo())
+        .containsExactly("Pesquisar usuários", "Exportar usuários");
+    assertThat(atualizada.modulos().getFirst().paginas().getFirst().briefing())
+        .contains("### Página: Pesquisar usuários", "filtros avançados");
+    assertThat(atualizada.modulos().getFirst().paginas().getFirst().origem())
+        .isEqualTo(AiPaginaPlanoOrigem.DOCUMENTO);
+    assertThat(atualizada.modulos().getFirst().paginas().getFirst().ajustadaManualmente()).isTrue();
+    assertThat(atualizada.modulos().getFirst().paginas().get(1).origem())
+        .isEqualTo(AiPaginaPlanoOrigem.MANUAL);
+    assertThat(atualizada.modulos().getFirst().paginas().get(1).templateId()).isNull();
+
+    var removida = service.reordenarEstrutura(
+        importacaoId,
+        new AiReordenarEstruturaDocumentoRequest(
+            0L,
+            List.of(new AiReordenarEstruturaDocumentoRequest.Modulo(
+                moduloId,
+                "Cadastros provisórios",
+                List.of(new AiReordenarEstruturaDocumentoRequest.Pagina(
+                    paginaOriginalId,
+                    "Pesquisar usuários",
+                    "Use filtros avançados para localizar os usuários.",
+                    AiPaginaPlanoOrigem.DOCUMENTO,
+                    true))))),
+        principal());
+
+    assertThat(removida.modulos().getFirst().paginas()).singleElement()
+        .satisfies(item -> assertThat(item.titulo()).isEqualTo("Pesquisar usuários"));
+  }
+
+  @Test
+  void reordenarEstrutura_naoAlteraPaginaJaGerada() throws Exception {
+    UUID importacaoId = UUID.randomUUID();
+    UUID moduloId = UUID.randomUUID();
+    UUID paginaId = UUID.randomUUID();
+    AiDocumentoPlano base = plano(moduloId, paginaId, false);
+    AiDocumentoPlano.Pagina original = base.modulos().getFirst().paginas().getFirst();
+    AiDocumentoPlano.Pagina gerada = new AiDocumentoPlano.Pagina(
+        original.id(),
+        original.titulo(),
+        original.ordem(),
+        original.briefing(),
+        original.templateId(),
+        original.templateCodigo(),
+        original.templateNome(),
+        original.confiancaTemplate(),
+        original.motivoTemplate(),
+        AiPaginaPlanoStatus.GERADA,
+        UUID.randomUUID(),
+        null,
+        null,
+        AiPaginaPlanoOrigem.DOCUMENTO,
+        false);
+    AiDocumentoPlano plano = new AiDocumentoPlano(
+        base.projetoNome(),
+        base.projetoDescricao(),
+        null,
+        null,
+        false,
+        List.of(new AiDocumentoPlano.Modulo(moduloId, null, "Cadastros provisórios", 1, List.of(gerada))));
+    AiDocumentoImportacao importacao = importacao(importacaoId, plano);
+    when(repository.findByIdAndCreatedBy(importacaoId, "editor")).thenReturn(Optional.of(importacao));
+
+    var request = new AiReordenarEstruturaDocumentoRequest(
+        0L,
+        List.of(new AiReordenarEstruturaDocumentoRequest.Modulo(
+            moduloId,
+            "Cadastros provisórios",
+            List.of(new AiReordenarEstruturaDocumentoRequest.Pagina(
+                paginaId,
+                "Título alterado",
+                "Conteúdo que não deve substituir a página gerada.",
+                AiPaginaPlanoOrigem.DOCUMENTO,
+                true)))));
+
+    assertThatThrownBy(() -> service.reordenarEstrutura(importacaoId, request, principal()))
+        .isInstanceOf(BusinessException.class)
+        .hasMessageContaining("já foi gerada");
   }
 
   private AiDocumentoPlano plano(UUID moduloPlanoId, UUID paginaPlanoId, boolean confirmada) {
@@ -517,6 +654,12 @@ class AiDocumentoImportacaoServiceTest {
         0.8,
         "Fluxo identificado.",
         AiPaginaPlanoStatus.PENDENTE);
+  }
+
+  private AiReordenarEstruturaDocumentoRequest.Pagina paginaRequest(
+      UUID id, String titulo, String conteudo) {
+    return new AiReordenarEstruturaDocumentoRequest.Pagina(
+        id, titulo, conteudo, AiPaginaPlanoOrigem.DOCUMENTO, false);
   }
 
   private AiDocumentoPlano.Sugestao sugestao(

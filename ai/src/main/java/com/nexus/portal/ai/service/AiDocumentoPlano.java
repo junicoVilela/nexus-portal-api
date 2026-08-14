@@ -4,6 +4,7 @@ import com.nexus.portal.ai.entity.AiDocumentoAnaliseOrigem;
 import com.nexus.portal.ai.entity.AiDocumentoSugestaoStatus;
 import com.nexus.portal.ai.entity.AiDocumentoSugestaoTipo;
 import com.nexus.portal.ai.entity.AiPaginaPlanoStatus;
+import com.nexus.portal.ai.entity.AiPaginaPlanoOrigem;
 import java.util.List;
 import java.util.UUID;
 
@@ -108,7 +109,45 @@ record AiDocumentoPlano(
       AiPaginaPlanoStatus status,
       UUID paginaId,
       UUID sessaoId,
-      String erroMensagem) {
+      String erroMensagem,
+      AiPaginaPlanoOrigem origem,
+      boolean ajustadaManualmente) {
+
+    Pagina {
+      origem = origem == null ? AiPaginaPlanoOrigem.DOCUMENTO : origem;
+    }
+
+    Pagina(
+        UUID id,
+        String titulo,
+        int ordem,
+        String briefing,
+        UUID templateId,
+        String templateCodigo,
+        String templateNome,
+        double confiancaTemplate,
+        String motivoTemplate,
+        AiPaginaPlanoStatus status,
+        UUID paginaId,
+        UUID sessaoId,
+        String erroMensagem) {
+      this(
+          id,
+          titulo,
+          ordem,
+          briefing,
+          templateId,
+          templateCodigo,
+          templateNome,
+          confiancaTemplate,
+          motivoTemplate,
+          status,
+          paginaId,
+          sessaoId,
+          erroMensagem,
+          AiPaginaPlanoOrigem.DOCUMENTO,
+          false);
+    }
 
     Pagina(
         UUID id,
@@ -134,7 +173,9 @@ record AiDocumentoPlano(
           status,
           null,
           null,
-          null);
+          null,
+          AiPaginaPlanoOrigem.DOCUMENTO,
+          false);
     }
 
     Pagina comStatus(AiPaginaPlanoStatus novoStatus) {
@@ -151,7 +192,9 @@ record AiDocumentoPlano(
           novoStatus,
           paginaId,
           sessaoId,
-          erroMensagem);
+          erroMensagem,
+          origem,
+          ajustadaManualmente);
     }
 
     Pagina comVinculo(UUID novoPaginaId, AiPaginaPlanoStatus novoStatus) {
@@ -168,7 +211,9 @@ record AiDocumentoPlano(
           novoStatus,
           novoPaginaId,
           sessaoId,
-          null);
+          null,
+          origem,
+          ajustadaManualmente);
     }
 
     Pagina comSessao(UUID novaSessaoId, AiPaginaPlanoStatus novoStatus, String novoErro) {
@@ -185,7 +230,9 @@ record AiDocumentoPlano(
           novoStatus,
           paginaId,
           novaSessaoId,
-          novoErro);
+          novoErro,
+          origem,
+          ajustadaManualmente);
     }
   }
 }
