@@ -112,5 +112,10 @@ public record AiImportacaoDocumentoResponse(
       UUID sessaoId,
       String erroMensagem,
       AiPaginaPlanoOrigem origem,
-      boolean ajustadaManualmente) {}
+      boolean ajustadaManualmente,
+      String blueprintId,
+      String blueprintNome,
+      List<String> componentesSelecionados,
+      List<String> componentesObrigatorios,
+      boolean composicaoAjustadaManualmente) {}
 }

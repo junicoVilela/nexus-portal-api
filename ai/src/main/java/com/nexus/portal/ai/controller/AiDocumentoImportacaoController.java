@@ -1,5 +1,6 @@
 package com.nexus.portal.ai.controller;
 
+import com.nexus.portal.ai.dto.request.AiAtualizarComposicaoDocumentoRequest;
 import com.nexus.portal.ai.dto.request.AiConfirmarEstruturaDocumentoRequest;
 import com.nexus.portal.ai.dto.request.AiGerarLoteDocumentoRequest;
 import com.nexus.portal.ai.dto.request.AiReordenarEstruturaDocumentoRequest;
@@ -110,6 +111,16 @@ public class AiDocumentoImportacaoController {
       @PathVariable UUID paginaPlanoId,
       Principal principal) {
     return service.selecionarPagina(id, paginaPlanoId, principal);
+  }
+
+  @PutMapping("/{id}/paginas/{paginaPlanoId}/composicao")
+  @PreAuthorize(Permissoes.PAGINA_CRIAR)
+  public AiImportacaoDocumentoResponse atualizarComposicaoPaginaImportada(
+      @PathVariable UUID id,
+      @PathVariable UUID paginaPlanoId,
+      @Valid @RequestBody AiAtualizarComposicaoDocumentoRequest request,
+      Principal principal) {
+    return service.atualizarComposicao(id, paginaPlanoId, request, principal);
   }
 
   @PostMapping("/{id}/paginas/{paginaPlanoId}/vincular/{paginaId}")

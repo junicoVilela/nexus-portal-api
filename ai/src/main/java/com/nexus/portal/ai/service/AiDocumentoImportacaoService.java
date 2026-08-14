@@ -5,13 +5,16 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.identityaccess.service.AuditoriaService;
 import com.nexus.portal.ai.audit.AiAuditoriaAcoes;
+import com.nexus.portal.ai.dto.request.AiAtualizarComposicaoDocumentoRequest;
 import com.nexus.portal.ai.dto.request.AiConfirmarEstruturaDocumentoRequest;
 import com.nexus.portal.ai.dto.request.AiGerarLoteDocumentoRequest;
 import com.nexus.portal.ai.dto.request.AiReordenarEstruturaDocumentoRequest;
+import com.nexus.portal.ai.dto.request.AiTemplateRecomendacaoRequest;
 import com.nexus.portal.ai.dto.request.AplicarAiPropostaRequest;
 import com.nexus.portal.ai.dto.request.CriarAiSessaoRequest;
 import com.nexus.portal.ai.dto.response.AiEstimativaLoteDocumentoResponse;
 import com.nexus.portal.ai.dto.response.AiImportacaoDocumentoResponse;
+import com.nexus.portal.ai.dto.response.AiTemplateRecomendacaoResponse;
 import com.nexus.portal.ai.config.AiProperties;
 import com.nexus.portal.ai.entity.AiDocumentoImportacao;
 import com.nexus.portal.ai.entity.AiDocumentoClienteModo;
@@ -63,6 +66,7 @@ public class AiDocumentoImportacaoService {
   private final AiPropostaService propostaService;
   private final AiSessaoRepository sessaoRepository;
   private final AiProperties aiProperties;
+  private final AiTemplateRecomendacaoService templateRecomendacaoService;
 
   public AiDocumentoImportacaoService(
       AiDocumentoImportacaoRepository repository,
@@ -75,7 +79,8 @@ public class AiDocumentoImportacaoService {
       AiSessaoService sessaoService,
       AiPropostaService propostaService,
       AiSessaoRepository sessaoRepository,
-      AiProperties aiProperties) {
+      AiProperties aiProperties,
+      AiTemplateRecomendacaoService templateRecomendacaoService) {
     this.repository = repository;
     this.extratorService = extratorService;
     this.planejadorService = planejadorService;
@@ -87,6 +92,7 @@ public class AiDocumentoImportacaoService {
     this.propostaService = propostaService;
     this.sessaoRepository = sessaoRepository;
     this.aiProperties = aiProperties;
+    this.templateRecomendacaoService = templateRecomendacaoService;
   }
 
   @Transactional
@@ -359,15 +365,73 @@ public class AiDocumentoImportacaoService {
   }
 
   @Transactional
+  public AiImportacaoDocumentoResponse atualizarComposicao(
+      UUID id,
+      UUID paginaPlanoId,
+      AiAtualizarComposicaoDocumentoRequest request,
+      Principal principal) {
+    AiDocumentoImportacao importacao = carregar(id, principal);
+    if (importacao.getStatus() == AiImportacaoStatus.ANALISANDO_ESTRUTURA) {
+      throw new BusinessException("Aguarde a conclusão da análise semântica do documento.");
+    }
+    if (importacao.getVersion() != request.version()) {
+      throw new ConflictException(
+          "A composição foi alterada em outra tela. Recarregue o plano antes de continuar.");
+    }
+    AiDocumentoPlano atual = lerPlano(importacao);
+    AiDocumentoPlano.Pagina pagina = atual.modulos().stream()
+        .flatMap(modulo -> modulo.paginas().stream())
+        .filter(item -> item.id().equals(paginaPlanoId))
+        .findFirst()
+        .orElseThrow(() -> new NotFoundException("Página não encontrada no plano importado."));
+    if (!paginaEditavel(pagina)) {
+      throw new BusinessException(
+          "A composição da página não pode ser alterada depois que a geração foi iniciada.");
+    }
+    List<String> selecionados = templateRecomendacaoService.validarComponentes(
+        pagina.briefing(),
+        atual.projetoId(),
+        atual.clienteId(),
+        pagina.templateId(),
+        request.componentesSelecionados());
+    AiTemplateRecomendacaoResponse recomendacao = templateRecomendacaoService.recomendar(
+        new AiTemplateRecomendacaoRequest(
+            pagina.briefing(), atual.projetoId(), atual.clienteId(), pagina.templateId()));
+    List<String> obrigatorios = recomendacao.componentes().stream()
+        .filter(item -> item.obrigatorio())
+        .map(item -> item.id())
+        .toList();
+    AiDocumentoPlano atualizado = atualizarPagina(
+        atual,
+        paginaPlanoId,
+        item -> item.comComposicao(
+            recomendacao.blueprintId(),
+            recomendacao.blueprintNome(),
+            selecionados,
+            obrigatorios,
+            true));
+    if (atual.estruturaConfirmada()) persistirPlano(importacao, atualizado);
+    else persistirPlanoEditavel(importacao, atualizado);
+    auditoriaService.registrar(
+        AiAuditoriaAcoes.ENTIDADE_DOCUMENTO_IMPORTACAO,
+        importacao.getId(),
+        AiAuditoriaAcoes.DOCUMENTO_COMPOSICAO_ATUALIZADA,
+        pagina.titulo() + " · " + selecionados.size() + " componentes",
+        principal);
+    return response(importacao, atualizado, lerAvisos(importacao));
+  }
+
+  @Transactional
   public AiImportacaoDocumentoResponse confirmarEstrutura(
       UUID id,
       AiConfirmarEstruturaDocumentoRequest request,
       Principal principal) {
     AiDocumentoImportacao importacao = carregar(id, principal);
-    AiDocumentoPlano atual = lerPlano(importacao);
+    AiDocumentoPlano planoLido = lerPlano(importacao);
     if (importacao.getStatus() == AiImportacaoStatus.ANALISANDO_ESTRUTURA) {
       throw new BusinessException("Aguarde a conclusão da análise semântica do documento.");
     }
+    AiDocumentoPlano atual = assegurarComposicoes(planoLido);
     if (atual.estruturaConfirmada()) {
       return response(importacao, atual, lerAvisos(importacao));
     }
@@ -694,7 +758,8 @@ public class AiDocumentoImportacaoService {
               atual.clienteId(),
               pagina.templateId(),
               null,
-              null),
+              assegurarComposicao(pagina, atual.projetoId(), atual.clienteId())
+                  .componentesSelecionados()),
           principal);
       if (sessao.status() != AiSessaoStatus.PRONTA_PARA_GERAR) {
         throw new BusinessException(
@@ -1128,7 +1193,12 @@ public class AiDocumentoImportacaoService {
         pagina.sessaoId(),
         pagina.erroMensagem(),
         pagina.origem(),
-        pagina.ajustadaManualmente());
+        pagina.ajustadaManualmente(),
+        pagina.blueprintId(),
+        pagina.blueprintNome(),
+        pagina.componentesSelecionados(),
+        pagina.componentesObrigatorios(),
+        pagina.composicaoAjustadaManualmente());
   }
 
   private String atualizarCabecalhoPagina(String briefing, String titulo) {
@@ -1234,22 +1304,31 @@ public class AiDocumentoImportacaoService {
             modulo.nome(),
             modulo.ordem(),
             modulo.paginas().stream()
-                .map(pagina -> new AiImportacaoDocumentoResponse.Pagina(
-                    pagina.id(),
-                    pagina.titulo(),
-                    pagina.ordem(),
-                    pagina.briefing(),
-                    pagina.templateId(),
-                    pagina.templateCodigo(),
-                    pagina.templateNome(),
-                    pagina.confiancaTemplate(),
-                    pagina.motivoTemplate(),
-                    pagina.status(),
-                    pagina.paginaId(),
-                    pagina.sessaoId(),
-                    pagina.erroMensagem(),
-                    pagina.origem(),
-                    pagina.ajustadaManualmente()))
+                .map(pagina -> {
+                  AiDocumentoPlano.Pagina efetiva =
+                      composicaoEfetiva(pagina, plano.projetoId(), plano.clienteId());
+                  return new AiImportacaoDocumentoResponse.Pagina(
+                      pagina.id(),
+                      pagina.titulo(),
+                      pagina.ordem(),
+                      pagina.briefing(),
+                      pagina.templateId(),
+                      pagina.templateCodigo(),
+                      pagina.templateNome(),
+                      pagina.confiancaTemplate(),
+                      pagina.motivoTemplate(),
+                      pagina.status(),
+                      pagina.paginaId(),
+                      pagina.sessaoId(),
+                      pagina.erroMensagem(),
+                      pagina.origem(),
+                      pagina.ajustadaManualmente(),
+                      efetiva.blueprintId(),
+                      efetiva.blueprintNome(),
+                      efetiva.componentesSelecionados(),
+                      efetiva.componentesObrigatorios(),
+                      pagina.composicaoAjustadaManualmente());
+                })
                 .toList()))
         .toList();
     return AiImportacaoDocumentoResponse.from(
@@ -1291,7 +1370,57 @@ public class AiDocumentoImportacaoService {
         pagina.sessaoId(),
         pagina.erroMensagem(),
         pagina.origem(),
-        pagina.ajustadaManualmente());
+        pagina.ajustadaManualmente(),
+        pagina.blueprintId(),
+        pagina.blueprintNome(),
+        pagina.componentesSelecionados(),
+        pagina.componentesObrigatorios(),
+        pagina.composicaoAjustadaManualmente());
+  }
+
+  private AiDocumentoPlano assegurarComposicoes(AiDocumentoPlano plano) {
+    List<AiDocumentoPlano.Modulo> modulos = plano.modulos().stream()
+        .map(modulo -> new AiDocumentoPlano.Modulo(
+            modulo.id(),
+            modulo.moduloId(),
+            modulo.nome(),
+            modulo.ordem(),
+            modulo.paginas().stream()
+                .map(pagina -> assegurarComposicao(pagina, plano.projetoId(), plano.clienteId()))
+                .toList()))
+        .toList();
+    return copiarPlano(plano, modulos, plano.sugestoes());
+  }
+
+  private AiDocumentoPlano.Pagina composicaoEfetiva(
+      AiDocumentoPlano.Pagina pagina, UUID projetoId, UUID clienteId) {
+    return pagina.componentesSelecionados().isEmpty()
+        ? assegurarComposicao(pagina, projetoId, clienteId)
+        : pagina;
+  }
+
+  private AiDocumentoPlano.Pagina assegurarComposicao(
+      AiDocumentoPlano.Pagina pagina, UUID projetoId, UUID clienteId) {
+    if (!pagina.componentesSelecionados().isEmpty()) return pagina;
+    try {
+      AiTemplateRecomendacaoResponse recomendacao = templateRecomendacaoService.recomendar(
+          new AiTemplateRecomendacaoRequest(
+              pagina.briefing(), projetoId, clienteId, pagina.templateId()));
+      List<String> selecionados = recomendacao.componentes().stream().map(item -> item.id()).toList();
+      if (selecionados.isEmpty()) return pagina;
+      List<String> obrigatorios = recomendacao.componentes().stream()
+          .filter(item -> item.obrigatorio())
+          .map(item -> item.id())
+          .toList();
+      return pagina.comComposicao(
+          recomendacao.blueprintId(),
+          recomendacao.blueprintNome(),
+          selecionados,
+          obrigatorios,
+          false);
+    } catch (RuntimeException ex) {
+      return pagina;
+    }
   }
 
   private String normalizar(String valor) {

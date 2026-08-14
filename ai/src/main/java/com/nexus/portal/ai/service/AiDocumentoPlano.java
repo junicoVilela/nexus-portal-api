@@ -111,10 +111,60 @@ record AiDocumentoPlano(
       UUID sessaoId,
       String erroMensagem,
       AiPaginaPlanoOrigem origem,
-      boolean ajustadaManualmente) {
+      boolean ajustadaManualmente,
+      String blueprintId,
+      String blueprintNome,
+      List<String> componentesSelecionados,
+      List<String> componentesObrigatorios,
+      boolean composicaoAjustadaManualmente) {
 
     Pagina {
       origem = origem == null ? AiPaginaPlanoOrigem.DOCUMENTO : origem;
+      componentesSelecionados = componentesSelecionados == null
+          ? List.of()
+          : List.copyOf(componentesSelecionados);
+      componentesObrigatorios = componentesObrigatorios == null
+          ? List.of()
+          : List.copyOf(componentesObrigatorios);
+    }
+
+    Pagina(
+        UUID id,
+        String titulo,
+        int ordem,
+        String briefing,
+        UUID templateId,
+        String templateCodigo,
+        String templateNome,
+        double confiancaTemplate,
+        String motivoTemplate,
+        AiPaginaPlanoStatus status,
+        UUID paginaId,
+        UUID sessaoId,
+        String erroMensagem,
+        AiPaginaPlanoOrigem origem,
+        boolean ajustadaManualmente) {
+      this(
+          id,
+          titulo,
+          ordem,
+          briefing,
+          templateId,
+          templateCodigo,
+          templateNome,
+          confiancaTemplate,
+          motivoTemplate,
+          status,
+          paginaId,
+          sessaoId,
+          erroMensagem,
+          origem,
+          ajustadaManualmente,
+          null,
+          null,
+          List.of(),
+          List.of(),
+          false);
     }
 
     Pagina(
@@ -194,7 +244,12 @@ record AiDocumentoPlano(
           sessaoId,
           erroMensagem,
           origem,
-          ajustadaManualmente);
+          ajustadaManualmente,
+          blueprintId,
+          blueprintNome,
+          componentesSelecionados,
+          componentesObrigatorios,
+          composicaoAjustadaManualmente);
     }
 
     Pagina comVinculo(UUID novoPaginaId, AiPaginaPlanoStatus novoStatus) {
@@ -213,7 +268,12 @@ record AiDocumentoPlano(
           sessaoId,
           null,
           origem,
-          ajustadaManualmente);
+          ajustadaManualmente,
+          blueprintId,
+          blueprintNome,
+          componentesSelecionados,
+          componentesObrigatorios,
+          composicaoAjustadaManualmente);
     }
 
     Pagina comSessao(UUID novaSessaoId, AiPaginaPlanoStatus novoStatus, String novoErro) {
@@ -232,7 +292,41 @@ record AiDocumentoPlano(
           novaSessaoId,
           novoErro,
           origem,
-          ajustadaManualmente);
+          ajustadaManualmente,
+          blueprintId,
+          blueprintNome,
+          componentesSelecionados,
+          componentesObrigatorios,
+          composicaoAjustadaManualmente);
+    }
+
+    Pagina comComposicao(
+        String novoBlueprintId,
+        String novoBlueprintNome,
+        List<String> novosComponentes,
+        List<String> novosObrigatorios,
+        boolean ajustada) {
+      return new Pagina(
+          id,
+          titulo,
+          ordem,
+          briefing,
+          templateId,
+          templateCodigo,
+          templateNome,
+          confiancaTemplate,
+          motivoTemplate,
+          status,
+          paginaId,
+          sessaoId,
+          erroMensagem,
+          origem,
+          ajustadaManualmente,
+          novoBlueprintId,
+          novoBlueprintNome,
+          novosComponentes,
+          novosObrigatorios,
+          ajustada);
     }
   }
 }

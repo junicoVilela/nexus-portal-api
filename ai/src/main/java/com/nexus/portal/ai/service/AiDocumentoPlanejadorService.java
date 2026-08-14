@@ -2,6 +2,8 @@ package com.nexus.portal.ai.service;
 
 import com.nexus.portal.ai.dto.request.AiTemplateRecomendacaoRequest;
 import com.nexus.portal.ai.dto.response.AiTemplateCandidatoResponse;
+import com.nexus.portal.ai.dto.response.AiTemplateRecomendacaoResponse;
+import com.nexus.portal.ai.entity.AiPaginaPlanoOrigem;
 import com.nexus.portal.ai.entity.AiPaginaPlanoStatus;
 import com.nexus.portal.ai.integration.docflow.AiTemplateSelector;
 import com.nexus.portal.ai.service.AiDocumentoExtratorService.DocumentoExtraido;
@@ -88,7 +90,8 @@ public class AiDocumentoPlanejadorService {
       String contextoTemplate,
       UUID projetoId,
       UUID clienteId) {
-    AiTemplateCandidatoResponse template = recomendarTemplate(contextoTemplate, projetoId, clienteId);
+    AiTemplateRecomendacaoResponse recomendacao = recomendar(contextoTemplate, projetoId, clienteId);
+    AiTemplateCandidatoResponse template = recomendacao == null ? null : recomendacao.recomendado();
     boolean selecaoAutomatica = template != null
         && template.confianca() >= AiTemplateSelector.CONFIANCA_AUTO_SELECAO;
     return new AiDocumentoPlano.Pagina(
@@ -101,14 +104,30 @@ public class AiDocumentoPlanejadorService {
         template == null ? null : template.nome(),
         template == null ? 0 : template.confianca(),
         template == null ? "Nenhum modelo apresentou correspondência suficiente." : template.motivo(),
-        AiPaginaPlanoStatus.PENDENTE);
+        AiPaginaPlanoStatus.PENDENTE,
+        null,
+        null,
+        null,
+        AiPaginaPlanoOrigem.DOCUMENTO,
+        false,
+        recomendacao == null ? null : recomendacao.blueprintId(),
+        recomendacao == null ? null : recomendacao.blueprintNome(),
+        recomendacao == null
+            ? List.of()
+            : recomendacao.componentes().stream().map(item -> item.id()).toList(),
+        recomendacao == null
+            ? List.of()
+            : recomendacao.componentes().stream()
+                .filter(item -> item.obrigatorio())
+                .map(item -> item.id())
+                .toList(),
+        false);
   }
 
-  private AiTemplateCandidatoResponse recomendarTemplate(String briefing, UUID projetoId, UUID clienteId) {
+  private AiTemplateRecomendacaoResponse recomendar(String briefing, UUID projetoId, UUID clienteId) {
     try {
       return templateService
-          .recomendar(new AiTemplateRecomendacaoRequest(briefing, projetoId, clienteId, null))
-          .recomendado();
+          .recomendar(new AiTemplateRecomendacaoRequest(briefing, projetoId, clienteId, null));
     } catch (RuntimeException ex) {
       return null;
     }

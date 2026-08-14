@@ -10,11 +10,14 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.identityaccess.service.AuditoriaService;
+import com.nexus.portal.ai.dto.request.AiAtualizarComposicaoDocumentoRequest;
 import com.nexus.portal.ai.dto.request.AiConfirmarEstruturaDocumentoRequest;
 import com.nexus.portal.ai.dto.request.AiReordenarEstruturaDocumentoRequest;
 import com.nexus.portal.ai.dto.request.AplicarAiPropostaRequest;
 import com.nexus.portal.ai.dto.response.AiAplicacaoResponse;
+import com.nexus.portal.ai.dto.response.AiComponenteCandidatoResponse;
 import com.nexus.portal.ai.dto.response.AiPropostaResponse;
+import com.nexus.portal.ai.dto.response.AiTemplateRecomendacaoResponse;
 import com.nexus.portal.ai.entity.AiDocumentoClienteModo;
 import com.nexus.portal.ai.entity.AiDocumentoImportacao;
 import com.nexus.portal.ai.entity.AiDocumentoProjetoModo;
@@ -41,6 +44,7 @@ class AiDocumentoImportacaoServiceTest {
   private final AuditoriaService auditoriaService = mock(AuditoriaService.class);
   private final DocFlowAiBridge bridge = mock(DocFlowAiBridge.class);
   private final AiPropostaService propostaService = mock(AiPropostaService.class);
+  private final AiTemplateRecomendacaoService templateService = mock(AiTemplateRecomendacaoService.class);
   private final ObjectMapper objectMapper = new ObjectMapper();
   private AiDocumentoImportacaoService service;
 
@@ -57,7 +61,41 @@ class AiDocumentoImportacaoServiceTest {
         mock(AiSessaoService.class),
         propostaService,
         mock(com.nexus.portal.ai.repository.AiSessaoRepository.class),
-        mock(com.nexus.portal.ai.config.AiProperties.class));
+        mock(com.nexus.portal.ai.config.AiProperties.class),
+        templateService);
+  }
+
+  @Test
+  void atualizarComposicao_persisteOrdemAprovadaEBloqueiaEssenciais() throws Exception {
+    UUID importacaoId = UUID.randomUUID();
+    UUID moduloPlanoId = UUID.randomUUID();
+    UUID paginaPlanoId = UUID.randomUUID();
+    AiDocumentoImportacao importacao = importacao(
+        importacaoId,
+        plano(moduloPlanoId, paginaPlanoId, false));
+    List<String> selecionados = List.of("introducao", "passo-a-passo", "resultado-esperado");
+    when(repository.findByIdAndCreatedBy(importacaoId, "editor")).thenReturn(Optional.of(importacao));
+    when(templateService.validarComponentes(any(), any(), any(), any(), any()))
+        .thenReturn(selecionados);
+    var essencial = new AiComponenteCandidatoResponse(
+        "introducao", "Introdução", "Contexto", "Estrutura", "intro",
+        "OBRIGATORIA", true, "Essencial.");
+    var recomendacao = new AiTemplateRecomendacaoResponse(
+        null, List.of(), false, "fluxo-guiado", "Fluxo guiado", 45, List.of(essencial));
+    when(templateService.recomendar(any())).thenReturn(recomendacao);
+
+    var response = service.atualizarComposicao(
+        importacaoId,
+        paginaPlanoId,
+        new AiAtualizarComposicaoDocumentoRequest(importacao.getVersion(), selecionados),
+        principal());
+
+    var pagina = response.modulos().getFirst().paginas().getFirst();
+    assertThat(pagina.componentesSelecionados()).containsExactlyElementsOf(selecionados);
+    assertThat(pagina.componentesObrigatorios()).containsExactly("introducao");
+    assertThat(pagina.blueprintNome()).isEqualTo("Fluxo guiado");
+    assertThat(pagina.composicaoAjustadaManualmente()).isTrue();
+    verify(repository).flush();
   }
 
   @Test

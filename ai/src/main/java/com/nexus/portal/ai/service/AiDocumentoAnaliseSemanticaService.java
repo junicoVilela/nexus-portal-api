@@ -120,7 +120,14 @@ public class AiDocumentoAnaliseSemanticaService {
             original.status(),
             original.paginaId(),
             original.sessaoId(),
-            original.erroMensagem()));
+            original.erroMensagem(),
+            original.origem(),
+            original.ajustadaManualmente(),
+            original.blueprintId(),
+            original.blueprintNome(),
+            original.componentesSelecionados(),
+            original.componentesObrigatorios(),
+            original.composicaoAjustadaManualmente()));
       }
       if (!paginas.isEmpty()) {
         modulos.add(new AiDocumentoPlano.Modulo(
@@ -153,7 +160,14 @@ public class AiDocumentoAnaliseSemanticaService {
                     pagina.status(),
                     pagina.paginaId(),
                     pagina.sessaoId(),
-                    pagina.erroMensagem()))
+                    pagina.erroMensagem(),
+                    pagina.origem(),
+                    pagina.ajustadaManualmente(),
+                    pagina.blueprintId(),
+                    pagina.blueprintNome(),
+                    pagina.componentesSelecionados(),
+                    pagina.componentesObrigatorios(),
+                    pagina.composicaoAjustadaManualmente()))
                 .toList()))
         .toList();
     List<AiDocumentoPlano.Sugestao> sugestoes = lerSugestoes(

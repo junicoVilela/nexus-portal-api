@@ -6,6 +6,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.nexus.portal.ai.dto.response.AiTemplateCandidatoResponse;
+import com.nexus.portal.ai.dto.response.AiComponenteCandidatoResponse;
 import com.nexus.portal.ai.dto.response.AiTemplateRecomendacaoResponse;
 import com.nexus.portal.ai.entity.AiPaginaPlanoStatus;
 import com.nexus.portal.ai.entity.AiTipoDocumento;
@@ -30,7 +31,17 @@ class AiDocumentoPlanejadorServiceTest {
         0.87,
         "Operações e regras identificadas.");
     when(templateService.recomendar(any()))
-        .thenReturn(new AiTemplateRecomendacaoResponse(candidato, List.of(candidato), false));
+        .thenReturn(new AiTemplateRecomendacaoResponse(
+            candidato,
+            List.of(candidato),
+            false,
+            "funcionalidade-operacional",
+            "Funcionalidade operacional",
+            45,
+            List.of(
+                componente("introducao", true),
+                componente("passo-a-passo", false),
+                componente("resultado-esperado", false))));
     service = new AiDocumentoPlanejadorService(templateService);
   }
 
@@ -81,7 +92,23 @@ class AiDocumentoPlanejadorServiceTest {
       assertThat(pagina.templateId()).isNotNull();
       assertThat(pagina.status()).isEqualTo(AiPaginaPlanoStatus.PENDENTE);
       assertThat(pagina.briefing()).contains("# Projeto: Manual financeiro");
+      assertThat(pagina.blueprintNome()).isEqualTo("Funcionalidade operacional");
+      assertThat(pagina.componentesSelecionados())
+          .containsExactly("introducao", "passo-a-passo", "resultado-esperado");
+      assertThat(pagina.componentesObrigatorios()).containsExactly("introducao");
     });
+  }
+
+  private static AiComponenteCandidatoResponse componente(String id, boolean obrigatorio) {
+    return new AiComponenteCandidatoResponse(
+        id,
+        id,
+        "Descrição",
+        "Estrutura",
+        "intro",
+        obrigatorio ? "OBRIGATORIA" : "RECOMENDADA",
+        obrigatorio,
+        "Componente indicado para a página.");
   }
 
   @Test
