@@ -7,5 +7,10 @@ import java.util.UUID;
 public record AiTemplateRecomendacaoRequest(
     @NotBlank @Size(min = 20, max = 50_000) String briefing,
     UUID projetoId,
-    UUID clienteId) {
+    UUID clienteId,
+    UUID templateId) {
+
+  public AiTemplateRecomendacaoRequest(String briefing, UUID projetoId, UUID clienteId) {
+    this(briefing, projetoId, clienteId, null);
+  }
 }

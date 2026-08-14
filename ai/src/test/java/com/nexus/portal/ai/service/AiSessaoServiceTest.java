@@ -66,6 +66,8 @@ class AiSessaoServiceTest {
     lenient().when(jobLifecycleService.atual(any())).thenReturn(Optional.empty());
     lenient().when(templateRecomendacaoService.recomendar(any()))
         .thenReturn(new AiTemplateRecomendacaoResponse(null, List.of(), true));
+    lenient().when(templateRecomendacaoService.validarComponentes(
+        any(), any(), any(), any(), any())).thenReturn(List.of());
 
     lenient().when(sessaoRepository.save(any(AiSessao.class))).thenAnswer(inv -> {
       AiSessao s = inv.getArgument(0);

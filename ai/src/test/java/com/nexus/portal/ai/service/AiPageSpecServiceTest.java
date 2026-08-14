@@ -77,6 +77,41 @@ class AiPageSpecServiceTest {
         .contains("\"additionalProperties\":false");
   }
 
+  @Test
+  void mantemExatamenteOsComponentesAprovadosNaOrdemEscolhida() {
+    AiPageSpecService service = new AiPageSpecService(objectMapper, bridge);
+    var introducao = componente();
+    var mensagens = new PaginaBlocoResponse(
+        "mensagens-sistema",
+        "Mensagens do sistema",
+        "Mensagens",
+        "Referência",
+        "alert",
+        "<section><p>Mensagem</p></section>",
+        null,
+        1,
+        List.of(new PaginaBlocoSlotResponse("m1", "p", "", "Mensagem")));
+    AiPageSpec gerado = new AiPageSpec(
+        1,
+        "consulta-operacional",
+        "Consulta",
+        "consulta",
+        "PED-001",
+        "Consulte pedidos.",
+        List.of(new AiPageSpec.Bloco(
+            "introducao",
+            List.of(new AiPageSpec.Texto("t2", "Consulta de pedidos")))));
+
+    AiPageSpec aprovado = service.garantirComponentes(gerado, List.of(mensagens, introducao));
+
+    assertThat(aprovado.blocos()).extracting(AiPageSpec.Bloco::componenteId)
+        .containsExactly("mensagens-sistema", "introducao");
+    assertThat(aprovado.blocos().get(0).textos()).isEmpty();
+    assertThat(aprovado.blocos().get(1).textos())
+        .extracting(AiPageSpec.Texto::valor)
+        .containsExactly("Consulta de pedidos");
+  }
+
   private static PaginaBlocoResponse componente() {
     return new PaginaBlocoResponse(
         "introducao",

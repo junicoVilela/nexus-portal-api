@@ -32,6 +32,7 @@ class AiComponenteRetrieverTest {
         .containsSubsequence("introducao", "objetivo", "visao-tela", "filtros-resultado")
         .contains("mensagens-sistema")
         .doesNotContain("kit-lista");
+    assertThat(resultado).hasSizeLessThanOrEqualTo(blueprintConsulta().maximoComponentes());
   }
 
   private static PaginaBlocoResponse bloco(String id, String nome, String categoria) {

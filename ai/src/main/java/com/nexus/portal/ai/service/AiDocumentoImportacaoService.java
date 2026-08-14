@@ -693,6 +693,7 @@ public class AiDocumentoImportacaoService {
               modulo.moduloId(),
               atual.clienteId(),
               pagina.templateId(),
+              null,
               null),
           principal);
       if (sessao.status() != AiSessaoStatus.PRONTA_PARA_GERAR) {

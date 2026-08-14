@@ -106,7 +106,9 @@ public class AiDocumentoPlanejadorService {
 
   private AiTemplateCandidatoResponse recomendarTemplate(String briefing, UUID projetoId, UUID clienteId) {
     try {
-      return templateService.recomendar(new AiTemplateRecomendacaoRequest(briefing, projetoId, clienteId)).recomendado();
+      return templateService
+          .recomendar(new AiTemplateRecomendacaoRequest(briefing, projetoId, clienteId, null))
+          .recomendado();
     } catch (RuntimeException ex) {
       return null;
     }

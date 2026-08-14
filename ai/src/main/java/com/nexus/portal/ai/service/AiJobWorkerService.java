@@ -103,8 +103,10 @@ public class AiJobWorkerService {
       }
 
       PaginaBlueprintResponse blueprint = docFlowAiBridge.buscarBlueprint(templateCodigo).orElse(null);
-      List<PaginaBlocoResponse> candidatos = componenteRetriever.recuperar(
-          templateCodigo, sessao.briefing(), docFlowAiBridge.listarBlocos(), blueprint);
+      List<PaginaBlocoResponse> catalogo = docFlowAiBridge.listarBlocos();
+      List<PaginaBlocoResponse> candidatos = sessao.componentesSelecionados().isEmpty()
+          ? componenteRetriever.recuperar(templateCodigo, sessao.briefing(), catalogo, blueprint)
+          : componentesSelecionados(sessao.componentesSelecionados(), catalogo);
       lifecycleService.avancar(jobId, AiJobEtapa.GERANDO_CONTEUDO, 50);
       LlmCompletion completion;
       JsonNode json;
@@ -152,6 +154,9 @@ public class AiJobWorkerService {
               text(json, "resumo", truncar(resumoHint, 280)),
               candidatos,
               blueprint);
+        }
+        if (!sessao.componentesSelecionados().isEmpty()) {
+          pageSpec = pageSpecService.garantirComponentes(pageSpec, candidatos);
         }
         pageSpec = briefingPageSpecEnricher.enriquecer(pageSpec, candidatos, sessao.briefing());
         htmlFinal = htmlSanitizer.sanitizar(pageSpecService.renderizar(pageSpec));
@@ -266,6 +271,22 @@ public class AiJobWorkerService {
       }
     }
     return acumulado;
+  }
+
+  private static List<PaginaBlocoResponse> componentesSelecionados(
+      List<String> ids,
+      List<PaginaBlocoResponse> catalogo) {
+    Map<String, PaginaBlocoResponse> porId = catalogo.stream()
+        .collect(java.util.stream.Collectors.toMap(PaginaBlocoResponse::id, bloco -> bloco));
+    List<PaginaBlocoResponse> selecionados = ids.stream()
+        .map(porId::get)
+        .filter(java.util.Objects::nonNull)
+        .toList();
+    if (selecionados.size() != ids.size()) {
+      throw new IllegalStateException(
+          "Um componente aprovado não está mais disponível no catálogo DocFlow.");
+    }
+    return selecionados;
   }
 
   /**

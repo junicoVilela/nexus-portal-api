@@ -66,6 +66,12 @@ public class AiSessaoService {
     validarObjetivo(request);
 
     UUID templateId = resolverTemplate(request);
+    List<String> componentesSelecionados = templateRecomendacaoService.validarComponentes(
+        request.briefing(),
+        request.projetoId(),
+        request.clienteId(),
+        templateId,
+        request.componentesSelecionados());
     AiSessao sessao = new AiSessao(
         request.objetivo(),
         request.briefing().trim(),
@@ -73,7 +79,8 @@ public class AiSessaoService {
         request.moduloId(),
         request.clienteId(),
         request.paginaId(),
-        templateId);
+        templateId,
+        componentesSelecionados);
     sessaoRepository.save(sessao);
 
     adicionarMensagem(
@@ -89,7 +96,8 @@ public class AiSessaoService {
         AiAuditoriaAcoes.ENTIDADE_SESSAO,
         sessao.getId(),
         AiAuditoriaAcoes.SESSAO_CRIADA,
-        "Objetivo " + sessao.getObjetivo() + " · briefing " + sessao.getBriefing().length() + " chars",
+        "Objetivo " + sessao.getObjetivo() + " · briefing " + sessao.getBriefing().length()
+            + " chars · " + componentesSelecionados.size() + " componentes selecionados",
         principal);
 
     return montarResponse(sessao);
@@ -220,7 +228,7 @@ public class AiSessaoService {
     }
     var recomendacao = templateRecomendacaoService.recomendar(
         new AiTemplateRecomendacaoRequest(
-            request.briefing(), request.projetoId(), request.clienteId()));
+            request.briefing(), request.projetoId(), request.clienteId(), null));
     return recomendacao.exigeConfirmacao() || recomendacao.recomendado() == null
         ? null
         : recomendacao.recomendado().templateId();

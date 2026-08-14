@@ -9,11 +9,14 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.util.List;
 import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Getter
 @Setter
@@ -49,6 +52,10 @@ public class AiSessao extends AuditableEntity {
   @Column(name = "template_id")
   private UUID templateId;
 
+  @JdbcTypeCode(SqlTypes.JSON)
+  @Column(name = "componentes_selecionados", nullable = false, columnDefinition = "jsonb")
+  private List<String> componentesSelecionados = List.of();
+
   @Column(nullable = false, columnDefinition = "text")
   private String briefing;
 
@@ -59,7 +66,8 @@ public class AiSessao extends AuditableEntity {
       UUID moduloId,
       UUID clienteId,
       UUID paginaId,
-      UUID templateId) {
+      UUID templateId,
+      List<String> componentesSelecionados) {
     this.objetivo = objetivo;
     this.briefing = briefing;
     this.projetoId = projetoId;
@@ -67,6 +75,20 @@ public class AiSessao extends AuditableEntity {
     this.clienteId = clienteId;
     this.paginaId = paginaId;
     this.templateId = templateId;
+    this.componentesSelecionados = componentesSelecionados == null
+        ? List.of()
+        : List.copyOf(componentesSelecionados);
+  }
+
+  public AiSessao(
+      AiObjetivo objetivo,
+      String briefing,
+      UUID projetoId,
+      UUID moduloId,
+      UUID clienteId,
+      UUID paginaId,
+      UUID templateId) {
+    this(objetivo, briefing, projetoId, moduloId, clienteId, paginaId, templateId, List.of());
   }
 
   public void aguardarUsuario() {

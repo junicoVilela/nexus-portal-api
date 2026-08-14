@@ -205,7 +205,8 @@ public class AiJobLifecycleService {
       UUID moduloId,
       UUID clienteId,
       UUID paginaId,
-      UUID templateId) {
+      UUID templateId,
+      List<String> componentesSelecionados) {
 
     static ContextoExecucao from(AiJob job) {
       AiSessao sessao = job.getSessao();
@@ -218,7 +219,8 @@ public class AiJobLifecycleService {
           sessao.getModuloId(),
           sessao.getClienteId(),
           sessao.getPaginaId(),
-          sessao.getTemplateId());
+          sessao.getTemplateId(),
+          sessao.getComponentesSelecionados());
     }
   }
 

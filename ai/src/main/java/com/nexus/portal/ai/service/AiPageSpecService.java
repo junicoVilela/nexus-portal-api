@@ -143,6 +143,28 @@ public class AiPageSpecService {
     return html.toString();
   }
 
+  /** Mantém exatamente o kit aprovado pelo usuário e na ordem sugerida pelo catálogo. */
+  public AiPageSpec garantirComponentes(
+      AiPageSpec spec,
+      List<PaginaBlocoResponse> componentesSelecionados) {
+    Map<String, AiPageSpec.Bloco> gerados = spec.blocos().stream()
+        .collect(java.util.stream.Collectors.toMap(
+            AiPageSpec.Bloco::componenteId, bloco -> bloco, (primeiro, ignorado) -> primeiro));
+    List<AiPageSpec.Bloco> blocos = componentesSelecionados.stream()
+        .map(componente -> gerados.getOrDefault(
+            componente.id(),
+            new AiPageSpec.Bloco(componente.id(), List.of())))
+        .toList();
+    return new AiPageSpec(
+        spec.schemaVersion(),
+        spec.blueprintId(),
+        spec.titulo(),
+        spec.slug(),
+        spec.codigoTela(),
+        spec.resumo(),
+        blocos);
+  }
+
   public AiPageSpec fallback(
       String titulo,
       String slug,

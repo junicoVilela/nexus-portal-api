@@ -4,6 +4,7 @@ import com.nexus.portal.ai.entity.AiObjetivo;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import java.util.List;
 import java.util.UUID;
 
 public record CriarAiSessaoRequest(
@@ -13,5 +14,17 @@ public record CriarAiSessaoRequest(
     UUID moduloId,
     UUID clienteId,
     UUID templateId,
-    UUID paginaId) {
+    UUID paginaId,
+    @Size(max = 12) List<@NotBlank @Size(max = 80) String> componentesSelecionados) {
+
+  public CriarAiSessaoRequest(
+      AiObjetivo objetivo,
+      String briefing,
+      UUID projetoId,
+      UUID moduloId,
+      UUID clienteId,
+      UUID templateId,
+      UUID paginaId) {
+    this(objetivo, briefing, projetoId, moduloId, clienteId, templateId, paginaId, null);
+  }
 }

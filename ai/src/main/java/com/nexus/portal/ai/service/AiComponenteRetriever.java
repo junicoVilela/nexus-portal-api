@@ -23,7 +23,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class AiComponenteRetriever {
 
-  private static final int LIMITE = 12;
+  private static final int LIMITE_SEM_BLUEPRINT = 7;
+  private static final int LIMITE_ABSOLUTO = 12;
   private static final Set<String> TERMOS_GENERICOS = Set.of(
       "pagina",
       "tela",
@@ -78,18 +79,19 @@ public class AiComponenteRetriever {
         .map(Pontuado::bloco)
         .map(PaginaBlocoResponse::id)
         .forEach(id -> {
-          if (selecionados.size() < LIMITE) {
+          if (selecionados.size() < LIMITE_SEM_BLUEPRINT) {
             selecionados.add(id);
           }
         });
 
-    return selecionados.stream().limit(LIMITE).map(porId::get).toList();
+    return selecionados.stream().limit(LIMITE_SEM_BLUEPRINT).map(porId::get).toList();
   }
 
   private static List<PaginaBlocoResponse> recuperarPeloBlueprint(
       String briefing,
       Map<String, PaginaBlocoResponse> catalogo,
       PaginaBlueprintResponse blueprint) {
+    int limite = Math.min(LIMITE_ABSOLUTO, blueprint.maximoComponentes());
     Set<String> selecionados = new LinkedHashSet<>();
     List<PaginaBlueprintSecaoResponse> opcionais = new ArrayList<>();
 
@@ -98,8 +100,10 @@ public class AiComponenteRetriever {
         opcionais.add(secao);
         continue;
       }
-      melhorComponente(secao, briefing, catalogo)
-          .ifPresent(bloco -> selecionados.add(bloco.id()));
+      if (selecionados.size() < limite) {
+        melhorComponente(secao, briefing, catalogo)
+            .ifPresent(bloco -> selecionados.add(bloco.id()));
+      }
     }
 
     opcionais.stream()
@@ -109,7 +113,11 @@ public class AiComponenteRetriever {
         .filter(item -> item.pontos() > 0)
         .sorted(Comparator.comparingInt(Pontuado::pontos).reversed()
             .thenComparing(item -> item.bloco().id()))
-        .forEach(item -> selecionados.add(item.bloco().id()));
+        .forEach(item -> {
+          if (selecionados.size() < limite) {
+            selecionados.add(item.bloco().id());
+          }
+        });
 
     if (selecionados.size() < blueprint.minimoComponentes()) {
       opcionais.stream()
@@ -117,7 +125,8 @@ public class AiComponenteRetriever {
           .filter(java.util.Objects::nonNull)
           .map(PaginaBlocoResponse::id)
           .forEach(id -> {
-            if (selecionados.size() < blueprint.minimoComponentes()) {
+            if (selecionados.size() < blueprint.minimoComponentes()
+                && selecionados.size() < limite) {
               selecionados.add(id);
             }
           });
@@ -130,12 +139,12 @@ public class AiComponenteRetriever {
         .sorted(Comparator.comparingInt(Pontuado::pontos).reversed()
             .thenComparing(item -> item.bloco().id()))
         .forEach(item -> {
-          if (selecionados.size() < LIMITE) {
+          if (selecionados.size() < limite) {
             selecionados.add(item.bloco().id());
           }
         });
 
-    return selecionados.stream().limit(LIMITE).map(catalogo::get).toList();
+    return selecionados.stream().limit(limite).map(catalogo::get).toList();
   }
 
   private static java.util.Optional<PaginaBlocoResponse> melhorComponente(
