@@ -9,9 +9,12 @@ import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
+import java.text.Normalizer;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -35,6 +38,7 @@ public class AiDocumentoExtratorService {
   static final int CARACTERES_MAXIMOS = 500_000;
   private static final int PAGINAS_PDF_MAXIMAS = 300;
   private static final int DOCX_XML_MAXIMO_BYTES = 20 * 1024 * 1024;
+  private static final int DOCX_XML_TOTAL_MAXIMO_BYTES = 25 * 1024 * 1024;
   private static final String WORD_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
   private static final Set<String> EXTENSOES = Set.of("doc", "docx", "pdf", "txt");
 
@@ -75,39 +79,43 @@ public class AiDocumentoExtratorService {
   }
 
   private DocumentoExtraido extrairDocx(String nome, byte[] bytes) throws Exception {
-    byte[] documentoXml = lerDocumentoXml(bytes);
-    var factory = DocumentBuilderFactory.newInstance();
-    factory.setNamespaceAware(true);
-    factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-    factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
-    factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
-    factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
-    factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
-    var document = factory.newDocumentBuilder().parse(new ByteArrayInputStream(documentoXml));
+    DocxPartes partes = lerPartesDocx(bytes);
+    var document = lerXmlSeguro(partes.documentoXml());
+    Map<String, EstiloParagrafo> estilos = lerEstilos(partes.estilosXml());
     NodeList bodies = document.getElementsByTagNameNS(WORD_NS, "body");
     if (bodies.getLength() == 0) {
       throw new BusinessException("O DOCX não possui conteúdo reconhecível.");
     }
 
     var markdown = new StringBuilder();
+    int numeroImagem = 0;
     NodeList filhos = bodies.item(0).getChildNodes();
     for (int i = 0; i < filhos.getLength(); i++) {
       Node filho = filhos.item(i);
       if (filho.getNodeType() != Node.ELEMENT_NODE) continue;
       if ("p".equals(filho.getLocalName())) {
-        adicionarParagrafo(markdown, (Element) filho);
+        numeroImagem = adicionarParagrafo(markdown, (Element) filho, estilos, numeroImagem);
       } else if ("tbl".equals(filho.getLocalName())) {
         adicionarTabela(markdown, (Element) filho);
+        numeroImagem = adicionarMarcadoresImagem(markdown, (Element) filho, numeroImagem);
       }
     }
     String texto = normalizar(markdown.toString());
     validarTextoExtraido(texto, "O DOCX não possui texto suficiente para montar páginas.");
+    int totalPaginas = lerTotalPaginas(partes.aplicacaoXml(), document);
+    List<String> avisos = new ArrayList<>();
+    avisos.add("Títulos, listas e tabelas do DOCX foram preservados conforme os estilos do Word.");
+    if (numeroImagem > 0) {
+      avisos.add(numeroImagem
+          + " referência(s) visual(is) foram identificadas e marcadas na posição original; "
+          + "revise as referências visuais antes de publicar.");
+    }
     return new DocumentoExtraido(
         nome,
         AiTipoDocumento.DOCX,
         texto,
-        1,
-        List.of("Títulos e tabelas do DOCX foram preservados quando identificados pelo documento."));
+        totalPaginas,
+        List.copyOf(avisos));
   }
 
   private DocumentoExtraido extrairPdf(String nome, byte[] bytes) throws IOException {
@@ -184,7 +192,11 @@ public class AiDocumentoExtratorService {
     }
   }
 
-  private byte[] lerDocumentoXml(byte[] bytes) throws IOException {
+  private DocxPartes lerPartesDocx(byte[] bytes) throws IOException {
+    byte[] documentoXml = null;
+    byte[] estilosXml = null;
+    byte[] aplicacaoXml = null;
+    int totalXml = 0;
     try (var zip = new ZipInputStream(new ByteArrayInputStream(bytes))) {
       ZipEntry entry;
       int entradas = 0;
@@ -193,35 +205,115 @@ public class AiDocumentoExtratorService {
         if (entradas > 500) {
           throw new BusinessException("O DOCX possui uma estrutura interna acima do limite permitido.");
         }
-        if ("word/document.xml".equals(entry.getName())) {
-          var saida = new ByteArrayOutputStream();
-          byte[] buffer = new byte[8192];
-          int total = 0;
-          int lidos;
-          while ((lidos = zip.read(buffer)) != -1) {
-            total += lidos;
-            if (total > DOCX_XML_MAXIMO_BYTES) {
-              throw new BusinessException("O conteúdo interno do DOCX excede o limite permitido.");
-            }
-            saida.write(buffer, 0, lidos);
-          }
-          return saida.toByteArray();
+        String caminho = entry.getName();
+        if (!Set.of("word/document.xml", "word/styles.xml", "docProps/app.xml").contains(caminho)) continue;
+        byte[] conteudo = lerEntradaDocx(zip);
+        totalXml += conteudo.length;
+        if (totalXml > DOCX_XML_TOTAL_MAXIMO_BYTES) {
+          throw new BusinessException("O conteúdo interno do DOCX excede o limite permitido.");
         }
+        if ("word/document.xml".equals(caminho)) documentoXml = conteudo;
+        else if ("word/styles.xml".equals(caminho)) estilosXml = conteudo;
+        else aplicacaoXml = conteudo;
       }
     }
-    throw new BusinessException("O arquivo não é um DOCX válido.");
+    if (documentoXml == null) throw new BusinessException("O arquivo não é um DOCX válido.");
+    return new DocxPartes(documentoXml, estilosXml, aplicacaoXml);
   }
 
-  private void adicionarParagrafo(StringBuilder markdown, Element paragrafo) {
-    String texto = textoElemento(paragrafo).trim();
-    if (texto.isBlank()) return;
-    int nivel = nivelTitulo(paragrafo);
-    if (nivel > 0) {
-      markdown.append("\n").append("#".repeat(nivel)).append(' ').append(texto).append("\n");
-      return;
+  private byte[] lerEntradaDocx(ZipInputStream zip) throws IOException {
+    var saida = new ByteArrayOutputStream();
+    byte[] buffer = new byte[8192];
+    int total = 0;
+    int lidos;
+    while ((lidos = zip.read(buffer)) != -1) {
+      total += lidos;
+      if (total > DOCX_XML_MAXIMO_BYTES) {
+        throw new BusinessException("O conteúdo interno do DOCX excede o limite permitido.");
+      }
+      saida.write(buffer, 0, lidos);
     }
-    boolean lista = paragrafo.getElementsByTagNameNS(WORD_NS, "numPr").getLength() > 0;
-    markdown.append(lista ? "- " : "").append(texto).append("\n\n");
+    return saida.toByteArray();
+  }
+
+  private org.w3c.dom.Document lerXmlSeguro(byte[] xml) throws Exception {
+    var factory = DocumentBuilderFactory.newInstance();
+    factory.setNamespaceAware(true);
+    factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+    factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+    factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+    factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
+    factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
+    return factory.newDocumentBuilder().parse(new ByteArrayInputStream(xml));
+  }
+
+  private Map<String, EstiloParagrafo> lerEstilos(byte[] estilosXml) throws Exception {
+    if (estilosXml == null || estilosXml.length == 0) return Map.of();
+    var document = lerXmlSeguro(estilosXml);
+    NodeList estilos = document.getElementsByTagNameNS(WORD_NS, "style");
+    Map<String, EstiloParagrafo> resultado = new HashMap<>();
+    for (int i = 0; i < estilos.getLength(); i++) {
+      Element estilo = (Element) estilos.item(i);
+      String tipo = atributoWord(estilo, "type");
+      if (!tipo.isBlank() && !"paragraph".equalsIgnoreCase(tipo)) continue;
+      String id = atributoWord(estilo, "styleId");
+      if (id.isBlank()) continue;
+      String nome = valorPrimeiroFilho(estilo, "name");
+      String identificacao = normalizarIdentificador(id + " " + nome);
+      boolean sumario = identificacao.matches(".*(toc|sumario)[0-9]*.*");
+      int nivel = nivelPeloEstilo(estilo, identificacao);
+      resultado.put(id, new EstiloParagrafo(nivel, sumario));
+    }
+    return Map.copyOf(resultado);
+  }
+
+  private int nivelPeloEstilo(Element estilo, String identificacao) {
+    NodeList niveis = estilo.getElementsByTagNameNS(WORD_NS, "outlineLvl");
+    if (niveis.getLength() > 0) {
+      String valor = atributoWord((Element) niveis.item(0), "val");
+      try {
+        int nivel = Integer.parseInt(valor) + 1;
+        if (nivel >= 1 && nivel <= 6) return nivel;
+      } catch (NumberFormatException ignored) {
+        // Usa o nome do estilo como fallback.
+      }
+    }
+    var matcher = java.util.regex.Pattern
+        .compile(".*(?:heading|titulo|ttulo)\\s*([1-6]).*")
+        .matcher(identificacao);
+    return matcher.matches() ? Integer.parseInt(matcher.group(1)) : 0;
+  }
+
+  private int adicionarParagrafo(
+      StringBuilder markdown,
+      Element paragrafo,
+      Map<String, EstiloParagrafo> estilos,
+      int numeroImagem) {
+    EstiloParagrafo estilo = estiloParagrafo(paragrafo, estilos);
+    if (estilo.sumario()) return numeroImagem;
+    String texto = textoElemento(paragrafo).trim();
+    int nivel = ajustarNivelPelaNumeracao(estilo.nivelTitulo(), texto);
+    if (nivel > 0) {
+      if (!texto.isBlank()) {
+        markdown.append("\n").append("#".repeat(nivel)).append(' ').append(texto).append("\n");
+      }
+      return adicionarMarcadoresImagem(markdown, paragrafo, numeroImagem);
+    }
+    if (!texto.isBlank()) {
+      boolean lista = paragrafo.getElementsByTagNameNS(WORD_NS, "numPr").getLength() > 0;
+      markdown.append(lista ? "- " : "").append(texto).append("\n\n");
+    }
+    return adicionarMarcadoresImagem(markdown, paragrafo, numeroImagem);
+  }
+
+  private int ajustarNivelPelaNumeracao(int nivelEstilo, String texto) {
+    if (nivelEstilo <= 0 || texto == null || texto.isBlank()) return nivelEstilo;
+    var matcher = java.util.regex.Pattern
+        .compile("^(\\d+(?:\\.\\d+){0,5})[.)]?\\s+.*$")
+        .matcher(texto);
+    if (!matcher.matches()) return nivelEstilo;
+    int nivelNumeracao = matcher.group(1).split("\\.").length;
+    return Math.min(6, Math.max(nivelEstilo, nivelNumeracao));
   }
 
   private void adicionarTabela(StringBuilder markdown, Element tabela) {
@@ -241,26 +333,77 @@ public class AiDocumentoExtratorService {
     markdown.append("\n");
   }
 
-  private int nivelTitulo(Element paragrafo) {
+  private EstiloParagrafo estiloParagrafo(
+      Element paragrafo, Map<String, EstiloParagrafo> estilosConhecidos) {
     NodeList estilos = paragrafo.getElementsByTagNameNS(WORD_NS, "pStyle");
-    if (estilos.getLength() == 0) return 0;
+    if (estilos.getLength() == 0) return EstiloParagrafo.PADRAO;
     Element estilo = (Element) estilos.item(0);
-    String valor = estilo.getAttributeNS(WORD_NS, "val");
-    if (valor.isBlank()) valor = estilo.getAttribute("w:val");
-    String normalizado = valor.toLowerCase(Locale.ROOT).replaceAll("[^a-záéíóúãõç0-9]", "");
-    if (!normalizado.matches(".*(heading|titulo|título)[1-6].*")) return 0;
-    String digito = normalizado.replaceAll(".*([1-6]).*", "$1");
-    return Integer.parseInt(digito);
+    String valor = atributoWord(estilo, "val");
+    EstiloParagrafo conhecido = estilosConhecidos.get(valor);
+    if (conhecido != null) return conhecido;
+    String normalizado = normalizarIdentificador(valor);
+    boolean sumario = normalizado.matches(".*(toc|sumario)[0-9]*.*");
+    var matcher = java.util.regex.Pattern
+        .compile(".*(?:heading|titulo|ttulo)\\s*([1-6]).*")
+        .matcher(normalizado);
+    int nivel = matcher.matches() ? Integer.parseInt(matcher.group(1)) : 0;
+    return new EstiloParagrafo(nivel, sumario);
   }
 
   private String textoElemento(Element elemento) {
     NodeList textos = elemento.getElementsByTagNameNS(WORD_NS, "t");
     var resultado = new StringBuilder();
     for (int i = 0; i < textos.getLength(); i++) {
-      if (!resultado.isEmpty()) resultado.append(' ');
       resultado.append(textos.item(i).getTextContent());
     }
     return resultado.toString().replaceAll("[ \\t]+", " ");
+  }
+
+  private int adicionarMarcadoresImagem(
+      StringBuilder markdown, Element elemento, int numeroImagem) {
+    int imagens = elemento.getElementsByTagNameNS("*", "blip").getLength()
+        + elemento.getElementsByTagNameNS("*", "imagedata").getLength();
+    for (int i = 0; i < imagens; i++) {
+      markdown.append("> [Imagem ").append(++numeroImagem)
+          .append(" do documento original]\n\n");
+    }
+    return numeroImagem;
+  }
+
+  private int lerTotalPaginas(byte[] aplicacaoXml, org.w3c.dom.Document documento) {
+    if (aplicacaoXml != null && aplicacaoXml.length > 0) {
+      try {
+        NodeList paginas = lerXmlSeguro(aplicacaoXml).getElementsByTagName("Pages");
+        if (paginas.getLength() > 0) {
+          int total = Integer.parseInt(paginas.item(0).getTextContent().trim());
+          if (total > 0) return total;
+        }
+      } catch (Exception ignored) {
+        // Metadado opcional; usa as quebras renderizadas como fallback.
+      }
+    }
+    int quebrasRenderizadas = documento
+        .getElementsByTagNameNS(WORD_NS, "lastRenderedPageBreak")
+        .getLength();
+    return Math.max(1, quebrasRenderizadas + 1);
+  }
+
+  private String valorPrimeiroFilho(Element elemento, String nomeLocal) {
+    NodeList filhos = elemento.getElementsByTagNameNS(WORD_NS, nomeLocal);
+    if (filhos.getLength() == 0) return "";
+    return atributoWord((Element) filhos.item(0), "val");
+  }
+
+  private String atributoWord(Element elemento, String nome) {
+    String valor = elemento.getAttributeNS(WORD_NS, nome);
+    return valor.isBlank() ? elemento.getAttribute("w:" + nome) : valor;
+  }
+
+  private String normalizarIdentificador(String valor) {
+    return Normalizer.normalize(valor == null ? "" : valor, Normalizer.Form.NFD)
+        .replaceAll("\\p{M}", "")
+        .toLowerCase(Locale.ROOT)
+        .replaceAll("[^a-z0-9]", "");
   }
 
   private void validarAssinatura(AiTipoDocumento tipo, byte[] bytes) {
@@ -343,4 +486,10 @@ public class AiDocumentoExtratorService {
       String texto,
       int totalPaginasOrigem,
       List<String> avisos) {}
+
+  private record DocxPartes(byte[] documentoXml, byte[] estilosXml, byte[] aplicacaoXml) {}
+
+  private record EstiloParagrafo(int nivelTitulo, boolean sumario) {
+    private static final EstiloParagrafo PADRAO = new EstiloParagrafo(0, false);
+  }
 }

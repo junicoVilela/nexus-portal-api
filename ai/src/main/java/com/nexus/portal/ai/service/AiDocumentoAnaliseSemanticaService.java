@@ -26,6 +26,7 @@ public class AiDocumentoAnaliseSemanticaService {
   private static final int MAXIMO_TRECHO_PAGINA = 650;
   private static final int MAXIMO_MODULOS = 30;
   private static final int MAXIMO_SUGESTOES = 12;
+  private static final int MAXIMO_PAGINAS_ANALISE_DETALHADA = 80;
 
   private final LlmProvider llmProvider;
   private final ObjectMapper objectMapper;
@@ -40,6 +41,10 @@ public class AiDocumentoAnaliseSemanticaService {
   }
 
   AiDocumentoPlano analisar(AiDocumentoPlano base, String nomeArquivo) {
+    int totalPaginas = base.modulos().stream().mapToInt(modulo -> modulo.paginas().size()).sum();
+    if (totalPaginas > MAXIMO_PAGINAS_ANALISE_DETALHADA) {
+      return analisarDocumentoAmplo(base, nomeArquivo);
+    }
     Map<UUID, AiDocumentoPlano.Pagina> paginasOriginais = new LinkedHashMap<>();
     List<Map<String, Object>> manifesto = new ArrayList<>();
     for (AiDocumentoPlano.Modulo modulo : base.modulos()) {
@@ -185,6 +190,136 @@ public class AiDocumentoAnaliseSemanticaService {
         completion.tokensEntrada(),
         completion.tokensSaida(),
         sugestoes);
+  }
+
+  /**
+   * Em documentos amplos a LLM não deve reproduzir centenas de IDs de página em uma única
+   * resposta. Ela refina os nomes em nível de projeto/módulo e o backend preserva integralmente
+   * todas as páginas, sua ordem, conteúdo e composição.
+   */
+  private AiDocumentoPlano analisarDocumentoAmplo(AiDocumentoPlano base, String nomeArquivo) {
+    Map<UUID, AiDocumentoPlano.Modulo> modulosOriginais = new LinkedHashMap<>();
+    List<Map<String, Object>> manifesto = new ArrayList<>();
+    for (AiDocumentoPlano.Modulo modulo : base.modulos()) {
+      modulosOriginais.put(modulo.id(), modulo);
+      manifesto.add(Map.of(
+          "moduloId", modulo.id().toString(),
+          "nomeAtual", modulo.nome(),
+          "paginas", modulo.paginas().stream().map(AiDocumentoPlano.Pagina::titulo).toList()));
+    }
+    String userPrompt = """
+        Arquivo: %s
+        Nome estrutural atual: %s
+
+        Este é um manual amplo. Sugira até 3 nomes curtos para o projeto, uma descrição objetiva
+        e nomes profissionais para os módulos. Cada moduloId deve aparecer exatamente uma vez.
+        Não crie, remova, una ou divida módulos. Não devolva as páginas: o backend preservará
+        integralmente a ordem e o conteúdo de todas elas.
+
+        MANIFESTO_MODULOS_JSON:
+        %s
+        """.formatted(nomeArquivo, base.projetoNome(), escrever(manifesto));
+    String systemPrompt = """
+        Você é arquiteto de informação especializado em manuais de software extensos.
+        Responda somente o JSON solicitado e preserve todos os moduloId exatamente uma vez.
+        """;
+
+    LlmCompletion completion = llmProvider.completarEstruturado(
+        systemPrompt, userPrompt, schemaDocumentoAmplo());
+    JsonNode resposta = lerJson(completion.content());
+    List<String> nomesSugeridos = lerNomes(resposta.path("projetoNomes"), base.projetoNome());
+    String projetoNome = nomesSugeridos.getFirst();
+    String descricao = textoLimitado(
+        resposta.path("projetoDescricao").asText(base.projetoDescricao()),
+        1_000,
+        base.projetoDescricao());
+    JsonNode modulosNode = resposta.path("modulos");
+    if (!modulosNode.isArray()
+        || modulosNode.isEmpty()
+        || modulosNode.size() != modulosOriginais.size()) {
+      throw new IllegalStateException("A IA retornou uma estrutura de módulos inválida.");
+    }
+
+    Set<UUID> utilizados = new HashSet<>();
+    List<AiDocumentoPlano.Modulo> modulos = new ArrayList<>();
+    int ordem = 0;
+    for (JsonNode moduloNode : modulosNode) {
+      UUID moduloId = uuid(moduloNode.path("moduloId").asText());
+      AiDocumentoPlano.Modulo original = modulosOriginais.get(moduloId);
+      if (original == null || !utilizados.add(moduloId)) {
+        throw new IllegalStateException("A IA alterou ou repetiu identificadores de módulos.");
+      }
+      String nomeModulo = textoLimitado(
+          moduloNode.path("nome").asText(), 150, original.nome());
+      List<AiDocumentoPlano.Pagina> paginas = original.paginas().stream()
+          .map(pagina -> copiarPaginaContextualizada(pagina, projetoNome, nomeModulo))
+          .toList();
+      modulos.add(new AiDocumentoPlano.Modulo(
+          original.id(), original.moduloId(), nomeModulo, ++ordem, paginas));
+    }
+    if (!utilizados.equals(modulosOriginais.keySet())) {
+      throw new IllegalStateException("A IA não devolveu todos os módulos do documento.");
+    }
+    return new AiDocumentoPlano(
+        projetoNome,
+        descricao,
+        base.projetoId(),
+        base.clienteId(),
+        false,
+        List.copyOf(modulos),
+        nomesSugeridos,
+        AiDocumentoAnaliseOrigem.LLM,
+        "Documento amplo: projeto e módulos refinados pela IA; todas as páginas foram preservadas.",
+        completion.tokensEntrada(),
+        completion.tokensSaida(),
+        base.sugestoes());
+  }
+
+  private AiDocumentoPlano.Pagina copiarPaginaContextualizada(
+      AiDocumentoPlano.Pagina original, String projetoNome, String moduloNome) {
+    return new AiDocumentoPlano.Pagina(
+        original.id(),
+        original.titulo(),
+        original.ordem(),
+        atualizarCabecalho(original.briefing(), projetoNome, moduloNome, original.titulo()),
+        original.templateId(),
+        original.templateCodigo(),
+        original.templateNome(),
+        original.confiancaTemplate(),
+        original.motivoTemplate(),
+        original.status(),
+        original.paginaId(),
+        original.sessaoId(),
+        original.erroMensagem(),
+        original.origem(),
+        original.ajustadaManualmente(),
+        original.blueprintId(),
+        original.blueprintNome(),
+        original.componentesSelecionados(),
+        original.componentesObrigatorios(),
+        original.composicaoAjustadaManualmente());
+  }
+
+  private JsonNode schemaDocumentoAmplo() {
+    try {
+      return objectMapper.readTree("""
+          {
+            "type":"object",
+            "additionalProperties":false,
+            "required":["projetoNomes","projetoDescricao","modulos"],
+            "properties":{
+              "projetoNomes":{"type":"array","minItems":1,"maxItems":3,"items":{"type":"string"}},
+              "projetoDescricao":{"type":"string"},
+              "modulos":{"type":"array","minItems":1,"maxItems":30,"items":{
+                "type":"object","additionalProperties":false,"required":["moduloId","nome"],
+                "properties":{"moduloId":{"type":"string"},"nome":{"type":"string"}}
+              }}
+            }
+          }
+          """);
+    } catch (JsonProcessingException ex) {
+      throw new IllegalStateException("Schema interno da análise ampla inválido.", ex);
+    }
   }
 
   private JsonNode schema() {

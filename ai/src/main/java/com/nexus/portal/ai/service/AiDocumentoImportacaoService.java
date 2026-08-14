@@ -286,8 +286,10 @@ public class AiDocumentoImportacaoService {
         if (!titulosRecebidos.add(SlugUtils.normalize(titulo))) {
           throw new BusinessException("Use títulos diferentes para as páginas de cada módulo.");
         }
-        if (++totalPaginas > 80) {
-          throw new BusinessException("O plano pode ter no máximo 80 páginas.");
+        if (++totalPaginas > AiDocumentoPlanejadorService.MAXIMO_PAGINAS) {
+          throw new BusinessException(
+              "O plano pode ter no máximo "
+                  + AiDocumentoPlanejadorService.MAXIMO_PAGINAS + " páginas.");
         }
 
         AiDocumentoPlano.Pagina paginaAtual = paginasAtuais.get(paginaId);
@@ -995,8 +997,10 @@ public class AiDocumentoImportacaoService {
   private List<AiDocumentoPlano.Modulo> adicionarPagina(
       AiDocumentoPlano plano, AiDocumentoPlano.Sugestao sugestao) {
     long totalPaginas = plano.modulos().stream().mapToLong(item -> item.paginas().size()).sum();
-    if (totalPaginas >= 80) {
-      throw new BusinessException("O plano já atingiu o limite de 80 páginas.");
+    if (totalPaginas >= AiDocumentoPlanejadorService.MAXIMO_PAGINAS) {
+      throw new BusinessException(
+          "O plano já atingiu o limite de "
+              + AiDocumentoPlanejadorService.MAXIMO_PAGINAS + " páginas.");
     }
     UUID moduloId = sugestao.moduloDestinoId() != null
         ? sugestao.moduloDestinoId()

@@ -88,6 +88,52 @@ class AiDocumentoAnaliseSemanticaServiceTest {
         .hasMessageContaining("todas as páginas");
   }
 
+  @Test
+  void analisar_documentoAmploRefinaModulosSemPedirQueLlmReproduzaPaginas() {
+    UUID moduloAlertasId = UUID.randomUUID();
+    UUID moduloRelatoriosId = UUID.randomUUID();
+    List<AiDocumentoPlano.Pagina> alertas = java.util.stream.IntStream.rangeClosed(1, 50)
+        .mapToObj(indice -> pagina(
+            UUID.randomUUID(), indice, "Alerta " + indice, "Conteúdo integral do alerta " + indice + "."))
+        .toList();
+    List<AiDocumentoPlano.Pagina> relatorios = java.util.stream.IntStream.rangeClosed(1, 40)
+        .mapToObj(indice -> pagina(
+            UUID.randomUUID(), indice, "Relatório " + indice, "Conteúdo integral do relatório " + indice + "."))
+        .toList();
+    AiDocumentoPlano base = new AiDocumentoPlano(
+        "Manual extenso",
+        "Descrição original.",
+        null,
+        null,
+        false,
+        List.of(
+            new AiDocumentoPlano.Modulo(moduloAlertasId, null, "Alertas", 1, alertas),
+            new AiDocumentoPlano.Modulo(moduloRelatoriosId, null, "Relatórios", 2, relatorios)));
+    String json = """
+        {
+          "projetoNomes":["Prevenção à Lavagem de Dinheiro"],
+          "projetoDescricao":"Manual operacional completo.",
+          "modulos":[
+            {"moduloId":"%s","nome":"Gestão de alertas"},
+            {"moduloId":"%s","nome":"Relatórios operacionais"}
+          ]
+        }
+        """.formatted(moduloAlertasId, moduloRelatoriosId);
+    var service = new AiDocumentoAnaliseSemanticaService(provider(json), new ObjectMapper());
+
+    AiDocumentoPlano resultado = service.analisar(base, "manual-extenso.docx");
+
+    assertThat(resultado.modulos()).extracting(AiDocumentoPlano.Modulo::nome)
+        .containsExactly("Gestão de alertas", "Relatórios operacionais");
+    assertThat(resultado.modulos()).extracting(modulo -> modulo.paginas().size())
+        .containsExactly(50, 40);
+    assertThat(resultado.modulos().getFirst().paginas().get(49).briefing())
+        .contains("Conteúdo integral do alerta 50.")
+        .contains("# Projeto: Prevenção à Lavagem de Dinheiro")
+        .contains("## Módulo: Gestão de alertas");
+    assertThat(resultado.analiseMensagem()).contains("todas as páginas foram preservadas");
+  }
+
   private AiDocumentoPlano plano(UUID paginaConsultarId, UUID paginaCadastrarId) {
     return new AiDocumentoPlano(
         "Manual original",

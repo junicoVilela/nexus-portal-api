@@ -20,8 +20,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class AiDocumentoPlanejadorService {
 
-  private static final int MAXIMO_PAGINAS = 80;
-  private static final int MAXIMO_BRIEFING_PAGINA = 45_000;
+  static final int MAXIMO_PAGINAS = 300;
+  private static final int MAXIMO_BRIEFING_PAGINA = 18_000;
   private static final Pattern TITULO_MARKDOWN = Pattern.compile("^(#{1,6})\\s+(.+?)\\s*$");
   private static final Pattern TITULO_NUMERADO =
       Pattern.compile("^(\\d+(?:\\.\\d+){0,3})[.)]?\\s+(.{3,100})$");
@@ -33,9 +33,11 @@ public class AiDocumentoPlanejadorService {
   }
 
   AiDocumentoPlano planejar(DocumentoExtraido documento, UUID projetoId, UUID clienteId) {
+    boolean hierarquiaExplicita = documento.texto().lines()
+        .anyMatch(linha -> TITULO_MARKDOWN.matcher(linha.trim()).matches());
     String texto = inferirTitulos(documento.texto());
     String projetoNome = sugerirProjeto(documento.nomeArquivo(), texto);
-    List<ModuloRascunho> rascunhos = montarHierarquia(texto, projetoNome);
+    List<ModuloRascunho> rascunhos = montarHierarquia(texto, projetoNome, hierarquiaExplicita);
     List<AiDocumentoPlano.Modulo> modulos = new ArrayList<>();
     int totalPaginas = 0;
 
@@ -48,7 +50,8 @@ public class AiDocumentoPlanejadorService {
           totalPaginas++;
           if (totalPaginas > MAXIMO_PAGINAS) {
             throw new BusinessException(
-                "O documento resultou em mais de 80 páginas. Divida o manual em arquivos menores.");
+                "O documento resultou em mais de " + MAXIMO_PAGINAS
+                    + " páginas. Divida o manual em arquivos menores.");
           }
           String titulo = partes.size() == 1
               ? pagina.titulo()
@@ -133,10 +136,13 @@ public class AiDocumentoPlanejadorService {
     }
   }
 
-  private List<ModuloRascunho> montarHierarquia(String texto, String projetoNome) {
+  private List<ModuloRascunho> montarHierarquia(
+      String texto, String projetoNome, boolean hierarquiaExplicita) {
     List<Linha> linhas = texto.lines().map(this::interpretarLinha).toList();
     boolean possuiTitulo = linhas.stream().anyMatch(linha -> linha.nivel() > 0);
     if (!possuiTitulo) return montarPorBlocos(texto);
+    long titulosRaiz = linhas.stream().filter(linha -> linha.nivel() == 1).count();
+    if (hierarquiaExplicita && titulosRaiz > 1) return montarPorMultiplosTitulosRaiz(linhas);
     int maiorNivel = linhas.stream().mapToInt(Linha::nivel).max().orElse(0);
     int nivelPagina = maiorNivel >= 3 ? 3 : maiorNivel >= 2 ? 2 : 1;
     int nivelModulo = nivelPagina - 1;
@@ -189,6 +195,67 @@ public class AiDocumentoPlanejadorService {
         .filter(item -> !item.paginas.isEmpty())
         .map(ModuloRascunhoMutavel::finalizar)
         .toList();
+  }
+
+  /**
+   * Documentos corporativos extensos costumam usar cada Título 1 como módulo e os Títulos 2/3
+   * como funcionalidades. Nesse formato, escolher apenas o nível mais profundo como página
+   * esconderia seções inteiras em briefings muito grandes.
+   */
+  private List<ModuloRascunho> montarPorMultiplosTitulosRaiz(List<Linha> linhas) {
+    var modulos = new ArrayList<ModuloRascunhoMutavel>();
+    ModuloRascunhoMutavel modulo = null;
+    PaginaRascunhoMutavel pagina = null;
+    var introducao = new StringBuilder();
+
+    for (Linha linha : linhas) {
+      if (linha.nivel() == 1) {
+        if (pagina != null && modulo != null) modulo.adicionar(pagina.finalizar());
+        pagina = null;
+        if (modulo == null) adicionarPreambulo(modulos, introducao);
+        else adicionarIntroducao(modulo, introducao);
+        modulo = new ModuloRascunhoMutavel(linha.texto());
+        modulos.add(modulo);
+        continue;
+      }
+      if (linha.nivel() == 2 || linha.nivel() == 3) {
+        if (modulo == null) {
+          modulo = new ModuloRascunhoMutavel("Conteúdo importado");
+          modulos.add(modulo);
+        }
+        if (pagina != null) modulo.adicionar(pagina.finalizar());
+        pagina = null;
+        adicionarIntroducao(modulo, introducao);
+        pagina = new PaginaRascunhoMutavel(linha.texto());
+        continue;
+      }
+      if (linha.nivel() > 3) {
+        String titulo = "#".repeat(Math.min(linha.nivel(), 6)) + " " + linha.texto();
+        if (pagina != null) pagina.adicionar(titulo);
+        else introducao.append(titulo).append('\n');
+        continue;
+      }
+      if (pagina != null) pagina.adicionar(linha.texto());
+      else introducao.append(linha.texto()).append('\n');
+    }
+    if (pagina != null && modulo != null) modulo.adicionar(pagina.finalizar());
+    if (modulo == null) adicionarPreambulo(modulos, introducao);
+    else adicionarIntroducao(modulo, introducao);
+
+    return modulos.stream()
+        .filter(item -> !item.paginas.isEmpty())
+        .map(ModuloRascunhoMutavel::finalizar)
+        .toList();
+  }
+
+  private void adicionarPreambulo(
+      List<ModuloRascunhoMutavel> modulos, StringBuilder introducao) {
+    String conteudo = introducao.toString().trim();
+    introducao.setLength(0);
+    if (conteudo.replaceAll("\\s", "").length() < 20) return;
+    var apresentacao = new ModuloRascunhoMutavel("Apresentação");
+    apresentacao.adicionar(new PaginaRascunho("Informações iniciais", conteudo));
+    modulos.add(apresentacao);
   }
 
   private void adicionarIntroducao(ModuloRascunhoMutavel modulo, StringBuilder introducao) {

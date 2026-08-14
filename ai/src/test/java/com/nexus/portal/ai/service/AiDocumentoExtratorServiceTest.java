@@ -67,6 +67,60 @@ class AiDocumentoExtratorServiceTest {
   }
 
   @Test
+  void extrairDocx_resolveEstilosLocalizadosIgnoraSumarioEPreservaMetadados() throws Exception {
+    String documento = """
+        <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+            xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
+            xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+          <w:body>
+            <w:p><w:pPr><w:pStyle w:val="Sumrio1"/></w:pPr><w:r><w:t>1. Cadastro 10</w:t></w:r></w:p>
+            <w:p><w:pPr><w:pStyle w:val="Ttulo1"/></w:pPr><w:r><w:t>Cadast</w:t></w:r><w:r><w:t>ros</w:t></w:r></w:p>
+            <w:p><w:pPr><w:pStyle w:val="Ttulo1"/></w:pPr><w:r><w:t>4.1 Tela de alertas</w:t></w:r></w:p>
+            <w:p><w:pPr><w:pStyle w:val="Ttulo2"/></w:pPr><w:r><w:t>Usuários</w:t></w:r></w:p>
+            <w:p><w:r><w:t>Preencha os campos obrigatórios antes de salvar o registro.</w:t></w:r>
+              <w:r><w:drawing><a:blip r:embed="rId1"/></w:drawing></w:r></w:p>
+          </w:body>
+        </w:document>
+        """;
+    String estilos = """
+        <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        <w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+          <w:style w:type="paragraph" w:styleId="Ttulo1">
+            <w:name w:val="heading 1"/><w:pPr><w:outlineLvl w:val="0"/></w:pPr>
+          </w:style>
+          <w:style w:type="paragraph" w:styleId="Ttulo2">
+            <w:name w:val="heading 2"/><w:pPr><w:outlineLvl w:val="1"/></w:pPr>
+          </w:style>
+          <w:style w:type="paragraph" w:styleId="Sumrio1"><w:name w:val="toc 1"/></w:style>
+        </w:styles>
+        """;
+    String aplicacao = """
+        <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        <Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties">
+          <Pages>218</Pages>
+        </Properties>
+        """;
+    var arquivo = new MockMultipartFile(
+        "arquivo",
+        "manual.docx",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        docx(documento, estilos, aplicacao));
+
+    var extraido = service.extrair(arquivo);
+
+    assertThat(extraido.texto())
+        .contains(
+            "# Cadastros",
+            "## 4.1 Tela de alertas",
+            "## Usuários",
+            "[Imagem 1 do documento original]")
+        .doesNotContain("Cadast ros", "1. Cadastro 10");
+    assertThat(extraido.totalPaginasOrigem()).isEqualTo(218);
+    assertThat(extraido.avisos()).anyMatch(aviso -> aviso.contains("1 referência(s) visual(is)"));
+  }
+
+  @Test
   void extrairPdf_lêTextoSelecionavelEPreservaQuantidadeDePaginas() throws Exception {
     var arquivo = new MockMultipartFile("arquivo", "manual.pdf", "application/pdf", pdfComTexto());
 
@@ -106,6 +160,10 @@ class AiDocumentoExtratorServiceTest {
   }
 
   private byte[] docx(String documentXml) throws Exception {
+    return docx(documentXml, null, null);
+  }
+
+  private byte[] docx(String documentXml, String stylesXml, String appXml) throws Exception {
     var saida = new ByteArrayOutputStream();
     try (var zip = new ZipOutputStream(saida)) {
       zip.putNextEntry(new ZipEntry("[Content_Types].xml"));
@@ -114,6 +172,16 @@ class AiDocumentoExtratorServiceTest {
       zip.putNextEntry(new ZipEntry("word/document.xml"));
       zip.write(documentXml.getBytes(StandardCharsets.UTF_8));
       zip.closeEntry();
+      if (stylesXml != null) {
+        zip.putNextEntry(new ZipEntry("word/styles.xml"));
+        zip.write(stylesXml.getBytes(StandardCharsets.UTF_8));
+        zip.closeEntry();
+      }
+      if (appXml != null) {
+        zip.putNextEntry(new ZipEntry("docProps/app.xml"));
+        zip.write(appXml.getBytes(StandardCharsets.UTF_8));
+        zip.closeEntry();
+      }
     }
     return saida.toByteArray();
   }

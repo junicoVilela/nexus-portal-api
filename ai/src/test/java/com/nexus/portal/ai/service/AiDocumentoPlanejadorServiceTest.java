@@ -225,4 +225,40 @@ class AiDocumentoPlanejadorServiceTest {
     assertThat(plano.modulos().get(1).paginas()).extracting(AiDocumentoPlano.Pagina::titulo)
         .containsExactly("Vendas");
   }
+
+  @Test
+  void planejar_manualExtensoInterpretaCadaH1ComoModuloEH2H3ComoPaginas() {
+    String texto = """
+        Informações legais e orientações iniciais que precisam continuar disponíveis no plano.
+
+        # Alertas
+        ## Tela de alertas
+        A tela apresenta os alertas disponíveis para análise.
+        ### Filtros
+        Informe período e situação e clique em Pesquisar.
+        ### Filas
+        Selecione a fila responsável pelo tratamento.
+
+        # Administração
+        ## Usuários
+        Consulte, inclua e edite usuários autorizados.
+        ### Grupo de acesso
+        Defina as permissões e clique em Salvar.
+        """;
+    var documento = new DocumentoExtraido("manual.docx", AiTipoDocumento.DOCX, texto, 20, List.of());
+
+    AiDocumentoPlano plano = service.planejar(documento, null, null);
+
+    assertThat(plano.modulos()).extracting(AiDocumentoPlano.Modulo::nome)
+        .containsExactly("Apresentação", "Alertas", "Administração");
+    assertThat(plano.modulos().get(1).paginas()).extracting(AiDocumentoPlano.Pagina::titulo)
+        .containsExactly("Tela de alertas", "Filtros", "Filas");
+    assertThat(plano.modulos().get(2).paginas()).extracting(AiDocumentoPlano.Pagina::titulo)
+        .containsExactly("Usuários", "Grupo de acesso");
+    assertThat(plano.modulos().get(1).paginas().getFirst().briefing())
+        .contains("A tela apresenta os alertas")
+        .doesNotContain("Informe período");
+    assertThat(plano.modulos().get(1).paginas().get(1).briefing())
+        .contains("Informe período", "clique em Pesquisar");
+  }
 }
