@@ -4,6 +4,7 @@ Módulo Maven **`ai/`** (`nexus-ai`). Assistente de IA do portal: sessões, gera
 
 > Spec de desenho: [`../doc-flow/10-assistente-ia-paginas.md`](../doc-flow/10-assistente-ia-paginas.md)  
 > Checklist sprints: [`../doc-flow/11-assistente-ia-checklist-sprints.md`](../doc-flow/11-assistente-ia-checklist-sprints.md)  
+> Integrações (ondas A–F, inclui S5/S6): [`../doc-flow/12-proximos-passos-integracoes.md`](../doc-flow/12-proximos-passos-integracoes.md)  
 > Frontend: `nexus-portal-web/docs/ai/`
 
 ---

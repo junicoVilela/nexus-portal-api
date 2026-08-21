@@ -224,6 +224,7 @@ qualidade editorial, além das integrações de geração e download.
 | `nexus-portal-web/docs/docflow/`                                              | Specs frontend                   |
 | [`10-assistente-ia-paginas.md`](10-assistente-ia-paginas.md)                   | Proposta: assistente IA + PR→página |
 | [`11-assistente-ia-checklist-sprints.md`](11-assistente-ia-checklist-sprints.md) | Backlog executável S1–S7 (tickets AI-xxx) |
+| [`12-proximos-passos-integracoes.md`](12-proximos-passos-integracoes.md)         | Ondas A–F: llms.txt, deep link, S5/S6, widget, MCP |
 | [`../ai/README.md`](../ai/README.md)                                           | Módulo Maven `nexus-ai` (scaffold) |
 | [`../release-orchestrator/README.md`](../release-orchestrator/README.md)       | Módulo irmão (entregas técnicas) |
 | [`../ROADMAP.md`](../ROADMAP.md)                                               | Prioridades gerais do portal     |

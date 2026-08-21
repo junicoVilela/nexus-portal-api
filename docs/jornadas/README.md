@@ -33,6 +33,7 @@ Narrativas **end-to-end** que complementam as specs por tela. Use este índice q
 | Fluxo integrado (visão técnica) | [`../release-orchestrator/00-visao-geral-fluxo-integrado.md`](../release-orchestrator/00-visao-geral-fluxo-integrado.md) |
 | Roadmap (fases 0–4) | [`../ROADMAP.md`](../ROADMAP.md) |
 | DocFlow backend | [`../doc-flow/README.md`](../doc-flow/README.md) |
+| DocFlow — próximas integrações | [`../doc-flow/12-proximos-passos-integracoes.md`](../doc-flow/12-proximos-passos-integracoes.md) |
 | DocFlow frontend | `nexus-portal-web/docs/docflow/` |
 | Release Orchestrator frontend | `nexus-portal-web/docs/release-orchestrator/` |
 

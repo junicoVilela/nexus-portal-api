@@ -281,5 +281,6 @@ Plano executável a partir do desenho [`10-assistente-ia-paginas.md`](10-assiste
 | Doc | Papel |
 |---|---|
 | [`10-assistente-ia-paginas.md`](10-assistente-ia-paginas.md) | Desenho técnico |
+| [`12-proximos-passos-integracoes.md`](12-proximos-passos-integracoes.md) | Ondas A–F; S5 = onda B, S6 = onda C |
 | [`07-assistente-ia-paginas.md`](../../../nexus-portal-web/docs/docflow/07-assistente-ia-paginas.md) | UX front |
 | Este arquivo | Backlog executável por sprint |
