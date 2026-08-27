@@ -10,6 +10,8 @@ public interface ModuloProdutoRepository extends JpaRepository<ModuloProduto, UU
 
   List<ModuloProduto> findByProduto_IdOrderByOrdemAscNomeAsc(UUID produtoId);
 
+  List<ModuloProduto> findByProduto_IdAndAtivoTrueOrderByOrdemAscNomeAsc(UUID produtoId);
+
   Optional<ModuloProduto> findByProduto_IdAndId(UUID produtoId, UUID id);
 
   boolean existsByProduto_IdAndCodigoIgnoreCase(UUID produtoId, String codigo);

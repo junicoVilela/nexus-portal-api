@@ -3,6 +3,7 @@ package com.nexus.portal.releaseorchestrator.dto.request;
 import com.nexus.portal.releaseorchestrator.entity.AmbientePadrao;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -19,7 +20,9 @@ public record CriarEntregaRequest(
     UUID responsavelId,
     @Size(max = 4000) String observacoes,
     /** Para reentrega: id da entrega original (gera nova entrega ligada). */
-    UUID entregaOriginalId) {
+    UUID entregaOriginalId,
+    /** Instalações alvo (RF-008). Vazio mantém só o vínculo cliente/produto. */
+    List<UUID> instalacaoIds) {
 
   /** Quando vem de ProximaEntrega, exige só o id; senão, exige os 4 campos. */
   public boolean veioDeProximaEntrega() {

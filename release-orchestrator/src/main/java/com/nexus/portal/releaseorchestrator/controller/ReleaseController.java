@@ -2,12 +2,22 @@ package com.nexus.portal.releaseorchestrator.controller;
 
 import com.nexus.portal.releaseorchestrator.dto.request.AlterarStatusReleaseRequest;
 import com.nexus.portal.releaseorchestrator.dto.request.CancelarReleaseRequest;
+import com.nexus.portal.releaseorchestrator.dto.request.DispararBuildRequest;
+import com.nexus.portal.releaseorchestrator.dto.request.ManifestoImplantacaoRequest;
+import com.nexus.portal.releaseorchestrator.dto.request.OrigemBuild;
 import com.nexus.portal.releaseorchestrator.dto.request.ReleaseRequest;
+import com.nexus.portal.releaseorchestrator.dto.response.DispararBuildResponse;
+import com.nexus.portal.releaseorchestrator.dto.response.FontesBuildResponse;
+import com.nexus.portal.releaseorchestrator.dto.response.ManifestoImplantacaoResponse;
+import com.nexus.portal.releaseorchestrator.dto.response.ReleaseDisponivelDeployResponse;
 import com.nexus.portal.releaseorchestrator.dto.response.ReleaseHistoricoResponse;
 import com.nexus.portal.releaseorchestrator.dto.response.ReleaseResponse;
 import com.nexus.portal.releaseorchestrator.dto.response.RevisaoValidacaoResponse;
 import com.nexus.portal.releaseorchestrator.entity.Release;
 import com.nexus.portal.releaseorchestrator.entity.ReleaseStatus;
+import com.nexus.portal.releaseorchestrator.service.ManifestoImplantacaoService;
+import com.nexus.portal.releaseorchestrator.service.ReleaseDisponivelDeployService;
+import com.nexus.portal.releaseorchestrator.service.JenkinsBuildService;
 import com.nexus.portal.releaseorchestrator.service.ReleaseService;
 import com.nexus.portal.shared.api.PageResponse;
 import com.nexus.portal.shared.api.PageableUtils;
@@ -40,6 +50,9 @@ import lombok.RequiredArgsConstructor;
 public class ReleaseController {
 
     private final ReleaseService service;
+    private final ManifestoImplantacaoService manifestoService;
+    private final ReleaseDisponivelDeployService disponivelDeployService;
+    private final JenkinsBuildService jenkinsBuildService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -90,6 +103,36 @@ public class ReleaseController {
     }
 
     @PreAuthorize(Permissoes.RELEASE_LER)
+    @GetMapping("/{id}/manifestos")
+    public List<ManifestoImplantacaoResponse> listarManifestos(@PathVariable UUID id) {
+        return manifestoService.listarDaRelease(id);
+    }
+
+    @PutMapping("/{id}/manifestos")
+    @PreAuthorize(Permissoes.RELEASE_EDITAR)
+    public ManifestoImplantacaoResponse salvarManifesto(@PathVariable UUID id,
+            @Valid @RequestBody ManifestoImplantacaoRequest request) {
+        return manifestoService.salvar(id, request);
+    }
+
+    @PreAuthorize(Permissoes.RELEASE_LER)
+    @GetMapping("/{id}/fontes-build")
+    public FontesBuildResponse fontesBuild(@PathVariable UUID id) {
+        return jenkinsBuildService.listarFontes(id);
+    }
+
+    @PostMapping("/{id}/disparar-build")
+    @PreAuthorize(Permissoes.RELEASE_EDITAR)
+    public DispararBuildResponse dispararBuild(
+            @PathVariable UUID id,
+            @Valid @RequestBody(required = false) DispararBuildRequest request) {
+        var body = request != null
+            ? request
+            : new DispararBuildRequest(OrigemBuild.RELEASE_ATUAL, null);
+        return jenkinsBuildService.disparar(id, body);
+    }
+
+    @PreAuthorize(Permissoes.RELEASE_LER)
     @GetMapping("/{id}/historico")
     public List<ReleaseHistoricoResponse> historico(@PathVariable UUID id) {
         return service.buscarHistorico(id).stream()
@@ -101,6 +144,12 @@ public class ReleaseController {
     @GetMapping("/{id}/validar")
     public RevisaoValidacaoResponse validar(@PathVariable UUID id) {
         return service.validar(id);
+    }
+
+    @PreAuthorize(Permissoes.RELEASE_LER)
+    @GetMapping("/disponiveis-deploy")
+    public List<ReleaseDisponivelDeployResponse> disponiveisDeploy(@RequestParam UUID produtoId) {
+        return disponivelDeployService.listar(produtoId);
     }
 
     @PreAuthorize(Permissoes.RELEASE_LER)

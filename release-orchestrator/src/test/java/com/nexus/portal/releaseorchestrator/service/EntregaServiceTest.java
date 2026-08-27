@@ -10,18 +10,24 @@ import com.nexus.portal.releaseorchestrator.dto.request.CriarEntregaRequest;
 import com.nexus.portal.releaseorchestrator.entity.AmbientePadrao;
 import com.nexus.portal.releaseorchestrator.entity.Cliente;
 import com.nexus.portal.releaseorchestrator.entity.Entrega;
+import com.nexus.portal.releaseorchestrator.entity.Host;
+import com.nexus.portal.releaseorchestrator.entity.InstalacaoCliente;
 import com.nexus.portal.releaseorchestrator.entity.PrioridadeEntrega;
 import com.nexus.portal.releaseorchestrator.entity.ProdutoRh;
 import com.nexus.portal.releaseorchestrator.entity.ProximaEntrega;
 import com.nexus.portal.releaseorchestrator.entity.Release;
 import com.nexus.portal.releaseorchestrator.entity.ReleaseStatus;
+import com.nexus.portal.releaseorchestrator.entity.SistemaOperacionalHost;
 import com.nexus.portal.releaseorchestrator.entity.StatusEntrega;
 import com.nexus.portal.releaseorchestrator.entity.StatusProximaEntrega;
+import com.nexus.portal.releaseorchestrator.entity.TipoConexaoHost;
+import com.nexus.portal.releaseorchestrator.entity.TipoImplantacao;
 import com.nexus.portal.releaseorchestrator.entity.TipoRelease;
 import com.nexus.portal.releaseorchestrator.repository.OrchestratorClienteProdutoRepository;
 import com.nexus.portal.releaseorchestrator.repository.OrchestratorEntregaModuloArtefatoRepository;
 import com.nexus.portal.releaseorchestrator.repository.OrchestratorEntregaModuloRepository;
 import com.nexus.portal.releaseorchestrator.repository.OrchestratorEntregaRepository;
+import com.nexus.portal.releaseorchestrator.repository.OrchestratorInstalacaoClienteRepository;
 import com.nexus.portal.releaseorchestrator.repository.OrchestratorProximaEntregaRepository;
 import com.nexus.portal.releaseorchestrator.repository.ProdutoRhRepository;
 import com.nexus.portal.releaseorchestrator.repository.ReleaseRepository;
@@ -52,6 +58,7 @@ class EntregaServiceTest {
   @Mock ProdutoRhRepository produtoRepository;
   @Mock ReleaseRepository releaseRepository;
   @Mock OrchestratorClienteProdutoRepository clienteProdutoRepository;
+  @Mock OrchestratorInstalacaoClienteRepository instalacaoRepository;
   @Mock com.nexus.identityaccess.service.EscopoResolver escopoResolver;
   @InjectMocks EntregaService service;
 
@@ -88,7 +95,7 @@ class EntregaServiceTest {
 
     Entrega e = service.criar(new CriarEntregaRequest(
         null, clienteId, produtoId, releaseId, AmbientePadrao.PROD,
-        null, "Janela 22h", null));
+        null, "Janela 22h", null, null));
 
     assertThat(e.getStatus()).isEqualTo(StatusEntrega.RASCUNHO);
     assertThat(e.getCliente()).isEqualTo(cliente);
@@ -117,7 +124,7 @@ class EntregaServiceTest {
     });
 
     Entrega e = service.criar(new CriarEntregaRequest(
-        peId, null, null, null, null, null, null, null));
+        peId, null, null, null, null, null, null, null, null));
 
     assertThat(e.getStatus()).isEqualTo(StatusEntrega.RASCUNHO);
     assertThat(e.getAmbiente()).isEqualTo(AmbientePadrao.HOM);  // veio do PE
@@ -136,7 +143,7 @@ class EntregaServiceTest {
     when(proximaEntregaRepository.findById(peId)).thenReturn(Optional.of(pe));
 
     assertThatThrownBy(() -> service.criar(new CriarEntregaRequest(
-        peId, null, null, null, null, null, null, null)))
+        peId, null, null, null, null, null, null, null, null)))
         .isInstanceOf(BusinessException.class)
         .hasMessageContaining("convertida");
   }
@@ -150,7 +157,7 @@ class EntregaServiceTest {
     when(proximaEntregaRepository.findById(peId)).thenReturn(Optional.of(pe));
 
     assertThatThrownBy(() -> service.criar(new CriarEntregaRequest(
-        peId, null, null, null, null, null, null, null)))
+        peId, null, null, null, null, null, null, null, null)))
         .isInstanceOf(BusinessException.class)
         .hasMessageContaining("cancelada");
   }
@@ -163,7 +170,7 @@ class EntregaServiceTest {
     when(proximaEntregaRepository.findById(peId)).thenReturn(Optional.of(pe));
 
     assertThatThrownBy(() -> service.criar(new CriarEntregaRequest(
-        peId, null, null, null, null, null, null, null)))
+        peId, null, null, null, null, null, null, null, null)))
         .isInstanceOf(BusinessException.class)
         .hasMessageContaining("release");
   }
@@ -171,7 +178,7 @@ class EntregaServiceTest {
   @Test
   void criar_avulsoExigeCamposObrigatorios() {
     assertThatThrownBy(() -> service.criar(new CriarEntregaRequest(
-        null, null, null, null, null, null, null, null)))
+        null, null, null, null, null, null, null, null, null)))
         .isInstanceOf(IllegalArgumentException.class);
   }
 
@@ -182,7 +189,7 @@ class EntregaServiceTest {
 
     assertThatThrownBy(() -> service.criar(new CriarEntregaRequest(
         null, clienteId, produtoId, releaseId, AmbientePadrao.PROD,
-        null, null, null)))
+        null, null, null, null)))
         .isInstanceOf(BusinessException.class)
         .hasMessageContaining("contrata");
   }
@@ -195,7 +202,7 @@ class EntregaServiceTest {
 
     Entrega e = service.criar(new CriarEntregaRequest(
         null, clienteId, produtoId, releaseId, AmbientePadrao.PROD,
-        null, null, origemId));
+        null, null, origemId, null));
 
     assertThat(e.getEntregaOriginalId()).isEqualTo(origemId);
   }
@@ -207,7 +214,7 @@ class EntregaServiceTest {
 
     assertThatThrownBy(() -> service.criar(new CriarEntregaRequest(
         null, clienteId, produtoId, releaseId, AmbientePadrao.PROD,
-        null, null, origemId)))
+        null, null, origemId, null)))
         .isInstanceOf(NotFoundException.class);
   }
 
@@ -296,6 +303,48 @@ class EntregaServiceTest {
     assertThatThrownBy(() -> service.cancelar(id))
         .isInstanceOf(BusinessException.class)
         .hasMessageContaining("terminal");
+  }
+
+  @Test
+  void criar_vinculaInstalacoesDoMesmoClienteProdutoAmbiente() throws Exception {
+    UUID instId = UUID.randomUUID();
+    Host host = new Host("SRV-LIN-01", "Linux", "lin-01",
+        SistemaOperacionalHost.LINUX, TipoConexaoHost.SSH);
+    setId(host, UUID.randomUUID());
+    InstalacaoCliente inst = new InstalacaoCliente(
+        "ACME-RPA-01", "RPA", cliente, host, produto,
+        TipoImplantacao.DOCKER_PULL, AmbientePadrao.PROD);
+    setId(inst, instId);
+    when(instalacaoRepository.findById(instId)).thenReturn(Optional.of(inst));
+    when(repository.save(any(Entrega.class))).thenAnswer(inv -> inv.getArgument(0));
+
+    Entrega e = service.criar(new CriarEntregaRequest(
+        null, clienteId, produtoId, releaseId, AmbientePadrao.PROD,
+        null, null, null, java.util.List.of(instId)));
+
+    assertThat(e.getAlvos()).hasSize(1);
+    assertThat(e.getAlvos().get(0).getInstalacao()).isEqualTo(inst);
+  }
+
+  @Test
+  void criar_rejeitaInstalacaoDeOutroCliente() throws Exception {
+    UUID instId = UUID.randomUUID();
+    Cliente outro = new Cliente("OUTRO", "Outro", AmbientePadrao.PROD);
+    setId(outro, UUID.randomUUID());
+    Host host = new Host("SRV-LIN-01", "Linux", "lin-01",
+        SistemaOperacionalHost.LINUX, TipoConexaoHost.SSH);
+    setId(host, UUID.randomUUID());
+    InstalacaoCliente inst = new InstalacaoCliente(
+        "OUTRO-RPA", "RPA", outro, host, produto,
+        TipoImplantacao.DOCKER_PULL, AmbientePadrao.PROD);
+    setId(inst, instId);
+    when(instalacaoRepository.findById(instId)).thenReturn(Optional.of(inst));
+
+    assertThatThrownBy(() -> service.criar(new CriarEntregaRequest(
+        null, clienteId, produtoId, releaseId, AmbientePadrao.PROD,
+        null, null, null, java.util.List.of(instId))))
+        .isInstanceOf(BusinessException.class)
+        .hasMessageContaining("não pertence ao cliente");
   }
 
   private static void setId(Object entity, UUID id) throws Exception {

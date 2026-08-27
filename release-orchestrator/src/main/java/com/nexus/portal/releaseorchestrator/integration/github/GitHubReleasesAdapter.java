@@ -46,20 +46,52 @@ public class GitHubReleasesAdapter {
 
   /**
    * Retorna até {@code limite} releases do repositório, ordenadas pelo GitHub
-   * (mais recente primeiro). Não inclui drafts.
-   *
-   * @throws GitHubException se a credencial for inválida ou o repo não existir.
+   * (mais recente primeiro). Drafts só entram com {@code incluirRascunhos}.
    */
   public List<GitHubRelease> listarReleases(String repositorio, String token, int limite) {
+    return listarReleases(repositorio, token, limite, false);
+  }
+
+  public List<GitHubRelease> listarReleases(
+      String repositorio, String token, int limite, boolean incluirRascunhos) {
     int safe = Math.min(Math.max(1, limite), 100);
     String url = String.format("/repos/%s/releases?per_page=%d", repositorio, safe);
     GitHubReleaseDto[] dtos = executar(token, url, GitHubReleaseDto[].class);
     return Arrays.stream(dtos)
-        .filter(d -> !d.draft())
+        .filter(d -> incluirRascunhos || !d.draft())
         .map(GitHubReleaseDto::toDomain)
         .sorted(Comparator.comparing(
             GitHubRelease::publishedAt,
             Comparator.nullsLast(Comparator.reverseOrder())))
+        .toList();
+  }
+
+  /**
+   * Lista refs cujo nome começa com {@code prefixo} (ex.: {@code tags/v5},
+   * {@code heads/release/v5}).
+   */
+  public List<GitHubTag> listarMatchingRefs(String repositorio, String token, String prefixo) {
+    if (prefixo == null || prefixo.isBlank()) return List.of();
+    String url = String.format("/repos/%s/git/matching-refs/%s", repositorio, prefixo);
+    GitHubRefDto[] dtos = executar(token, url, GitHubRefDto[].class);
+    if (dtos == null) return List.of();
+    return Arrays.stream(dtos)
+        .map(GitHubRefDto::toTag)
+        .filter(t -> t.name() != null && !t.name().isBlank())
+        .toList();
+  }
+
+  /**
+   * Lista tags Git do repositório (mais recentes primeiro, até {@code limite}).
+   */
+  public List<GitHubTag> listarTags(String repositorio, String token, int limite) {
+    int safe = Math.min(Math.max(1, limite), 100);
+    String url = String.format("/repos/%s/tags?per_page=%d", repositorio, safe);
+    GitHubTagDto[] dtos = executar(token, url, GitHubTagDto[].class);
+    if (dtos == null) return List.of();
+    return Arrays.stream(dtos)
+        .filter(d -> d.name() != null && !d.name().isBlank())
+        .map(d -> new GitHubTag(d.name(), d.commit() == null ? null : d.commit().sha()))
         .toList();
   }
 
@@ -149,12 +181,14 @@ public class GitHubReleasesAdapter {
   }
 
   private RestClient clienteBase(String token) {
-    return RestClient.builder()
+    var builder = RestClient.builder()
         .baseUrl(BASE_URL)
         .defaultHeader(HttpHeaders.ACCEPT, ACCEPT)
-        .defaultHeader("X-GitHub-Api-Version", API_VERSION)
-        .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + token)
-        .build();
+        .defaultHeader("X-GitHub-Api-Version", API_VERSION);
+    if (token != null && !token.isBlank()) {
+      builder = builder.defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + token);
+    }
+    return builder.build();
   }
 
   private String mensagemAmigavel(HttpStatusCodeException e) {
@@ -184,6 +218,26 @@ public class GitHubReleasesAdapter {
       return new GitHubRelease(tagName, name, draft, prerelease, publishedAt, dominio);
     }
   }
+
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  record GitHubTagDto(String name, CommitDto commit) {}
+
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  record GitHubRefDto(String ref, CommitDto object) {
+    GitHubTag toTag() {
+      return new GitHubTag(nomeCurto(ref), object == null ? null : object.sha());
+    }
+
+    static String nomeCurto(String ref) {
+      if (ref == null) return "";
+      if (ref.startsWith("refs/heads/")) return ref.substring("refs/heads/".length());
+      if (ref.startsWith("refs/tags/")) return ref.substring("refs/tags/".length());
+      return ref;
+    }
+  }
+
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  record CommitDto(String sha) {}
 
   @JsonIgnoreProperties(ignoreUnknown = true)
   record CompareDto(FileDto[] files) {}

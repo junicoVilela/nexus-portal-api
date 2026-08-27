@@ -5,7 +5,9 @@ import com.nexus.portal.releaseorchestrator.entity.Entrega;
 import com.nexus.portal.releaseorchestrator.entity.StatusEntrega;
 import com.nexus.portal.releaseorchestrator.entity.StatusPublicacao;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.UUID;
+import org.hibernate.Hibernate;
 
 public record EntregaResponse(
     UUID id,
@@ -36,6 +38,7 @@ public record EntregaResponse(
     String ultimaFalhaPublicacao,
     OffsetDateTime dataPublicacao,
     String destinoPublicacao,
+    List<InstalacaoAlvoResponse> instalacoes,
     OffsetDateTime createdAt,
     OffsetDateTime updatedAt) {
 
@@ -68,6 +71,12 @@ public record EntregaResponse(
         e.getUltimaFalhaPublicacao(),
         e.getDataPublicacao(),
         e.getDestinoPublicacao(),
+        e.getAlvos() != null && Hibernate.isInitialized(e.getAlvos())
+            ? e.getAlvos().stream()
+                .filter(a -> a.getInstalacao() != null)
+                .map(a -> InstalacaoAlvoResponse.from(a.getInstalacao()))
+                .toList()
+            : List.of(),
         e.getCreatedAt(),
         e.getUpdatedAt());
   }

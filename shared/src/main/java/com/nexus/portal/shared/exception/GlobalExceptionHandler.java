@@ -3,6 +3,7 @@ package com.nexus.portal.shared.exception;
 import jakarta.validation.ConstraintViolationException;
 import java.time.OffsetDateTime;
 import java.util.List;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
@@ -43,6 +44,17 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(ConstraintViolationException.class)
   ResponseEntity<ApiError> validation(ConstraintViolationException ex) {
     return error(HttpStatus.BAD_REQUEST, ex.getMessage());
+  }
+
+  @ExceptionHandler(DataIntegrityViolationException.class)
+  ResponseEntity<ApiError> dataIntegrity(DataIntegrityViolationException ex) {
+    String raw = ex.getMostSpecificCause() == null ? ex.getMessage() : ex.getMostSpecificCause().getMessage();
+    String detalhe = raw == null ? "" : raw;
+    if (detalhe.contains("uq_tb_reserva_porta_ativa") || detalhe.contains("tb_reserva_porta")) {
+      return error(HttpStatus.CONFLICT,
+          "Esta porta já está reservada neste host. Clique em Sugerir livres ou escolha outra porta.");
+    }
+    return error(HttpStatus.CONFLICT, "Não foi possível salvar: registro duplicado.");
   }
 
   @ExceptionHandler(MaxUploadSizeExceededException.class)

@@ -26,6 +26,14 @@
 /orchestrator/clientes/:id/produtos                      → 06
 /orchestrator/clientes/:id/configuracao-entrega          → 07
 
+/release-orchestrator/hosts                              → RF-002 Listagem
+/release-orchestrator/hosts/novo                         → RF-002 Cadastro
+/release-orchestrator/hosts/:id/editar                   → RF-002 Cadastro (edit)
+
+/release-orchestrator/instalacoes                        → RF-003 Listagem
+/release-orchestrator/instalacoes/novo                   → RF-003 Cadastro
+/release-orchestrator/instalacoes/:id/editar             → RF-003 Cadastro (edit)
+
 /orchestrator/produtos                                   → 08 Listagem
 /orchestrator/produtos/novo                              → 09 Cadastro
 /orchestrator/produtos/:id                               → (detalhe → tabs)

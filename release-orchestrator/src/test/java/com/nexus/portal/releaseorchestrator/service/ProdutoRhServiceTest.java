@@ -94,4 +94,20 @@ class ProdutoRhServiceTest {
 
         assertThat(resultado.isAtivo()).isFalse();
     }
+
+    @Test
+    @DisplayName("Deve normalizar repositório GitHub com barra inicial")
+    void deveNormalizarRepositorioComBarraInicial() {
+        ProdutoRhRequest request = new ProdutoRhRequest(
+            "DTEC Risco", "CR", null, "#2563eb", null, true,
+            "/softonsi/dtec-risco", "main", "(?i)^(release/)?v?\\d+(\\.\\d+)+$",
+            null, null, null, null, null, null);
+        when(repository.existsBySiglaIgnoreCase("CR")).thenReturn(false);
+        when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        ProdutoRh resultado = service.criar(request);
+
+        assertThat(resultado.getRepositorioGithub()).isEqualTo("softonsi/dtec-risco");
+        assertThat(resultado.getPadraoTag()).contains("release/");
+    }
 }

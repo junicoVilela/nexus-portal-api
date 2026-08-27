@@ -84,6 +84,7 @@ public class ProdutoRhService {
    */
   private String normalizarRepositorio(String input) {
     String s = input.replaceFirst("(?i)^https?://github.com/", "");
+    s = s.replaceFirst("^/+", "");
     s = s.replaceFirst("\\.git$", "");
     s = s.replaceFirst("/$", "");
     return s;

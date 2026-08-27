@@ -12,5 +12,6 @@ public enum AcaoHistorico {
     CANCELADA,
     REABERTA,
     DUPLICADA,
-    PDF_GERADO
+    PDF_GERADO,
+    BUILD_DISPARADO
 }

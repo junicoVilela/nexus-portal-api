@@ -9,10 +9,14 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -115,6 +119,10 @@ public class Entrega extends AuditableEntity {
   @Column(name = "destino_publicacao", length = 700)
   private String destinoPublicacao;
 
+  /** Instalações alvo desta entrega (RF-008). Nunca aponta para host. */
+  @OneToMany(mappedBy = "entrega", cascade = CascadeType.ALL, orphanRemoval = true)
+  private List<EntregaInstalacao> alvos = new ArrayList<>();
+
   public Entrega(Cliente cliente, ProdutoRh produto, Release release,
       AmbientePadrao ambiente, UUID responsavelId, String observacoes) {
     this.cliente = cliente;
@@ -130,6 +138,16 @@ public class Entrega extends AuditableEntity {
     this.ambiente = ambiente;
     this.responsavelId = responsavelId;
     this.observacoes = observacoes;
+  }
+
+  public void substituirAlvos(List<InstalacaoCliente> instalacoes) {
+    this.alvos.clear();
+    if (instalacoes == null) {
+      return;
+    }
+    for (InstalacaoCliente instalacao : instalacoes) {
+      this.alvos.add(new EntregaInstalacao(this, instalacao));
+    }
   }
 
   public void alterarStatus(StatusEntrega novo) {

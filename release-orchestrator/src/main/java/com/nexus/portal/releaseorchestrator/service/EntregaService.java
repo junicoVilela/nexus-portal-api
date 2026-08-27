@@ -5,8 +5,10 @@ import com.nexus.portal.releaseorchestrator.dto.request.CriarEntregaRequest;
 import com.nexus.portal.releaseorchestrator.entity.AmbientePadrao;
 import com.nexus.portal.releaseorchestrator.entity.Cliente;
 import com.nexus.portal.releaseorchestrator.entity.Entrega;
+import com.nexus.portal.releaseorchestrator.entity.EntregaInstalacao;
 import com.nexus.portal.releaseorchestrator.entity.EntregaModulo;
 import com.nexus.portal.releaseorchestrator.entity.EntregaModuloArtefato;
+import com.nexus.portal.releaseorchestrator.entity.InstalacaoCliente;
 import com.nexus.portal.releaseorchestrator.entity.ProdutoRh;
 import com.nexus.portal.releaseorchestrator.entity.ProximaEntrega;
 import com.nexus.portal.releaseorchestrator.entity.Release;
@@ -16,6 +18,7 @@ import com.nexus.portal.releaseorchestrator.repository.OrchestratorClienteProdut
 import com.nexus.portal.releaseorchestrator.repository.OrchestratorEntregaModuloArtefatoRepository;
 import com.nexus.portal.releaseorchestrator.repository.OrchestratorEntregaModuloRepository;
 import com.nexus.portal.releaseorchestrator.repository.OrchestratorEntregaRepository;
+import com.nexus.portal.releaseorchestrator.repository.OrchestratorInstalacaoClienteRepository;
 import com.nexus.portal.releaseorchestrator.repository.OrchestratorProximaEntregaRepository;
 import com.nexus.portal.releaseorchestrator.repository.ProdutoRhRepository;
 import com.nexus.portal.releaseorchestrator.repository.ReleaseRepository;
@@ -26,6 +29,7 @@ import jakarta.persistence.criteria.Predicate;
 import jakarta.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -58,6 +62,7 @@ public class EntregaService {
   private final ProdutoRhRepository produtoRepository;
   private final ReleaseRepository releaseRepository;
   private final OrchestratorClienteProdutoRepository clienteProdutoRepository;
+  private final OrchestratorInstalacaoClienteRepository instalacaoRepository;
   private final EscopoResolver escopoResolver;
 
   public Entrega buscar(UUID id) {
@@ -143,6 +148,7 @@ public class EntregaService {
         request.responsavelId(), request.observacoes());
     entrega.setProximaEntregaId(proximaEntregaId);
     entrega.setEntregaOriginalId(request.entregaOriginalId());
+    vincularAlvos(entrega, request.instalacaoIds());
     entrega = repository.save(entrega);
 
     if (proximaEntrega != null) {
@@ -183,6 +189,12 @@ public class EntregaService {
     Entrega nova = new Entrega(origem.getCliente(), origem.getProduto(), origem.getRelease(),
         origem.getAmbiente(), origem.getResponsavelId(), origem.getObservacoes());
     nova.setEntregaOriginalId(origem.getId());
+    if (origem.getAlvos() != null && !origem.getAlvos().isEmpty()) {
+      List<InstalacaoCliente> alvos = origem.getAlvos().stream()
+          .map(EntregaInstalacao::getInstalacao)
+          .toList();
+      nova.substituirAlvos(alvos);
+    }
     nova = repository.save(nova);
 
     // Copia EntregaModulo
@@ -238,6 +250,31 @@ public class EntregaService {
       throw new BusinessException(
           "Cliente não contrata esse produto. Cadastre o contrato antes da entrega.");
     }
+  }
+
+  private void vincularAlvos(Entrega entrega, List<UUID> instalacaoIds) {
+    if (instalacaoIds == null || instalacaoIds.isEmpty()) {
+      return;
+    }
+    List<InstalacaoCliente> alvos = new ArrayList<>();
+    for (UUID id : new LinkedHashSet<>(instalacaoIds)) {
+      InstalacaoCliente inst = instalacaoRepository.findById(id)
+          .orElseThrow(() -> new NotFoundException("Instalação não encontrada."));
+      if (!inst.getCliente().getId().equals(entrega.getCliente().getId())) {
+        throw new BusinessException(
+            "Instalação " + inst.getCodigo() + " não pertence ao cliente da entrega.");
+      }
+      if (!inst.getProduto().getId().equals(entrega.getProduto().getId())) {
+        throw new BusinessException(
+            "Instalação " + inst.getCodigo() + " não é do produto da entrega.");
+      }
+      if (inst.getAmbiente() != entrega.getAmbiente()) {
+        throw new BusinessException(
+            "Instalação " + inst.getCodigo() + " está em outro ambiente.");
+      }
+      alvos.add(inst);
+    }
+    entrega.substituirAlvos(alvos);
   }
 
   private Release resolverRelease(UUID releaseId, ProdutoRh produto) {

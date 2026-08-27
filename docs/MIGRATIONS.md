@@ -27,14 +27,20 @@ Por **módulo** e **camada** (sem sequences SERIAL — IDs são UUID):
 | V15 | release-orchestrator | indexes |
 | V16 | ai | tables sessão + mensagem (`nexus-ai`) |
 | V17 | ai | jobs + propostas (`nexus-ai`) |
+| V18–V24 | ai | page spec, jobs, importação de documento, componentes |
+| V25 | release-orchestrator | hosts de execução (`tb_host_orchestrator`) + RBAC `HOST` |
+| V26 | release-orchestrator | instalações do cliente (`tb_instalacao_cliente`) + RBAC `INSTALACAO` |
+| V27 | release-orchestrator | config da instalação + reserva de portas (RF-004 / RF-005) |
+| V28 | release-orchestrator | health da instalação + alvos da entrega (`tb_entrega_instalacao`) |
+| V29 | release-orchestrator | manifesto de implantação + histórico de deploy (dry-run) |
 
 ## Recriar banco local
 
 Com o Postgres do compose (`infra/docker`):
 
 ```bash
-docker exec nexus-postgres psql -U nexus_platform -d postgres -c "DROP DATABASE IF EXISTS nexus_platform;"
-docker exec nexus-postgres psql -U nexus_platform -d postgres -c "CREATE DATABASE nexus_platform OWNER nexus_platform;"
+docker exec nexus-platform-postgres psql -U nexus_platform -d postgres -c "DROP DATABASE IF EXISTS nexus_platform;"
+docker exec nexus-platform-postgres psql -U nexus_platform -d postgres -c "CREATE DATABASE nexus_platform OWNER nexus_platform;"
 ./mvnw -pl application -am spring-boot:run -Dspring-boot.run.profiles=dev
 ```
 

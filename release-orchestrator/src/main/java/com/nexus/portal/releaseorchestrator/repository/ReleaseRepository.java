@@ -27,6 +27,8 @@ public interface ReleaseRepository extends JpaRepository<Release, UUID>,
     boolean existsByProdutoIdAndVersao(UUID produtoId, String versao);
     boolean existsByProdutoIdAndVersaoAndIdNot(UUID produtoId, String versao, UUID id);
 
+    Optional<Release> findFirstByProduto_IdAndVersao(UUID produtoId, String versao);
+
     long countByStatus(ReleaseStatus status);
 
     @Query("SELECT COUNT(r) FROM Release r WHERE r.status NOT IN ('PUBLICADA', 'CANCELADA')")

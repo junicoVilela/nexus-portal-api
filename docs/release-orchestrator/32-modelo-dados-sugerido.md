@@ -40,6 +40,41 @@ Apenas referenciadas. Estão prontas no backend:
 ### `ClienteContato`
 - clienteId, nome, email, telefone, papel
 
+### `Host` *(tabela `tb_host_orchestrator`, RF-002)*
+- codigo (único), nome, hostname (único case-insensitive), enderecoIp
+- sistemaOperacional (`WINDOWS` | `LINUX`)
+- dockerDisponivel, tipoConexao (`SSH` | `WINRM` | `DOCKER`)
+- portaConexao, usuarioConexao, credencialRef (referência a segredo — nunca senha em texto puro)
+- ativo, observacoes
+- Distinto do campo `host` de `ConfiguracaoEntrega` (destino FTP/SFTP)
+
+### `InstalacaoCliente` *(tabela `tb_instalacao_cliente`, RF-003)*
+- codigo (único), nome
+- clienteId, hostId, produtoId
+- tipoImplantacao (`DOCKER_PULL` | `DOCKER_TAR` | `LINUX_MANUAL` | `WINDOWS_MANUAL`)
+- status (`INEXISTENTE` | `ATIVA` | `INATIVA`) — `INEXISTENTE` cadastra o alvo antes do serviço existir (RF-007)
+- ambiente (`PROD` | `HOM` | `DEV` | `TEST`)
+- imagemRef (Docker pull: `registry/repo:tag`)
+- arquivoImagemRef (Docker: arquivo `.tar`)
+- diretorioInstalacao (Linux/Windows manual)
+- observacoes
+- Único por `(cliente, produto, host, ambiente)`
+- Alvo de `deploy(releaseId, instalacaoId)` — nunca `deploy(..., hostId)`
+
+### `ConfiguracaoInstalacao` *(tabela `tb_configuracao_instalacao`, RF-004)*
+- 1:1 com `InstalacaoCliente`
+- tipoBanco, bancoHost, bancoPorta, bancoNome, bancoUsuario
+- bancoCredencialRef (nunca senha em texto puro)
+- urlBackend, urlFrontend, parametros
+- Distinta de `ConfiguracaoEntrega` (destino do pacote)
+
+### `ReservaPorta` *(tabela `tb_reserva_porta`, RF-005)*
+- hostId, instalacaoId, tipo, papel (`BACKEND` | `FRONTEND` | `OUTRO`)
+- porta, protocolo (`TCP` | `UDP`)
+- status (`DISPONIVEL` | `RESERVADA` | `EM_USO` | `LIBERADA` | `BLOQUEADA`)
+- Unique ativo: `(host, porta, protocolo)` quando status é RESERVADA/EM_USO/BLOQUEADA
+- Frontend a partir da faixa 4000; sugestão: 3 backends (8081+) e 3 frontends (4000+)
+
 ### `ConfiguracaoEntrega`
 - clienteId, tipoDestino (`PASTA` | `FTP` | `SFTP` | `BUCKET`)
 - caminhoBase, usuario, credencialRef (referência cifrada)
@@ -198,6 +233,8 @@ CLIENTE | SUPORTE | INTERNO
 ## Relações principais (resumo)
 ```text
 Cliente 1—N ClienteProduto N—1 Produto
+Host 1—N InstalacaoCliente N—1 Cliente
+InstalacaoCliente N—1 Produto
 ClienteProduto 1—N ClienteProdutoModulo N—1 ModuloProduto
 Produto 1—N ModuloProduto
 Produto 1—N Release
