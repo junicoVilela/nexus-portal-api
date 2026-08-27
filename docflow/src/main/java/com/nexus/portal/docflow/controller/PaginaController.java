@@ -296,7 +296,7 @@ public class PaginaController {
   }
 
   @PostMapping("/{id}/salvar-rascunho")
-  @PreAuthorize(Permissoes.PAGINA_EDITAR)
+  @PreAuthorize(Permissoes.PAGINA_APROVAR)
   public PaginaResponse salvarRascunho(@PathVariable UUID id, Principal principal) {
     return PaginaResponse.from(paginaService.salvarRascunho(id, principal));
   }
@@ -308,7 +308,7 @@ public class PaginaController {
   }
 
   @PostMapping("/{id}/revisor")
-  @PreAuthorize(Permissoes.PAGINA_EDITAR)
+  @PreAuthorize(Permissoes.PAGINA_APROVAR)
   public PaginaResponse atribuirRevisor(@PathVariable UUID id,
       @Valid @RequestBody AtribuirRevisorRequest request, Principal principal) {
     return PaginaResponse.from(paginaService.atribuirRevisor(id, request.revisorUsername(),
@@ -330,7 +330,7 @@ public class PaginaController {
   }
 
   @PostMapping("/{id}/aprovar")
-  @PreAuthorize(Permissoes.PAGINA_EDITAR)
+  @PreAuthorize(Permissoes.PAGINA_APROVAR)
   public PaginaResponse aprovar(@PathVariable UUID id, Principal principal) {
     return PaginaResponse.from(paginaService.aprovar(id, principal));
   }
@@ -370,7 +370,7 @@ public class PaginaController {
   }
 
   @PostMapping("/{id}/revisoes/comentarios")
-  @PreAuthorize(Permissoes.PAGINA_EDITAR)
+  @PreAuthorize(Permissoes.PAGINA_APROVAR)
   public PaginaRevisaoResponse comentarRevisao(
       @PathVariable UUID id,
       @Valid @RequestBody ComentarioRevisaoRequest request,

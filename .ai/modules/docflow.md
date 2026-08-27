@@ -220,6 +220,10 @@ GET    /api/v1/auditoria
 - Reordenar respeita a ordem dos ids enviados e só grava `ordem`, sem incrementar a `version`
   de quem não mudou.
 - Revisão pode ter responsável e prazo. Com responsável definido, só ele aprova a página.
+- Decidir sobre a revisão (aprovar, devolver, assumir, comentar) exige `PAGINA:APROVAR`,
+  ação própria do catálogo RBAC concedida a ADMIN, EDITOR e REVISOR. Editar, criar, excluir
+  e publicar continuam sob `PAGINA:EDITAR`/`PAGINA:CRIAR`/`PAGINA:EXCLUIR` — o revisor decide
+  sem poder alterar o conteúdo.
 - Snippets (`{{snippet:CODIGO}}`) são resolvidos na geração do pacote, no preview e no PDF —
   nunca ficam no conteúdo salvo. Código inexistente vira aviso visível.
 - O diff entre publicações compara o hash do conteúdo por página gravado no snapshot

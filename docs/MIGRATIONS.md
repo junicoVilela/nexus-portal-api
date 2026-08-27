@@ -36,6 +36,7 @@ Por **módulo** e **camada** (sem sequences SERIAL — IDs são UUID):
 | V34 | docflow | robustez da publicação (relatório em `text`, cancelamento, índice do watchdog) |
 | V35 | docflow | `search_vector` como coluna gerada + índice GIN em uso pela busca |
 | V36 | docflow | revisor/prazo na página + `tb_pagina_snippet` |
+| V37 | docflow | ação RBAC `PAGINA:APROVAR` (ADMIN, EDITOR, REVISOR) |
 
 ## Recriar banco local
 

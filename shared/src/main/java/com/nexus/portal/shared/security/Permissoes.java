@@ -61,6 +61,12 @@ public final class Permissoes {
   public static final String PAGINA_CRIAR         = "hasAuthority('PAGINA:CRIAR')";
   public static final String PAGINA_EDITAR        = "hasAuthority('PAGINA:EDITAR')";
   public static final String PAGINA_EXCLUIR       = "hasAuthority('PAGINA:EXCLUIR')";
+  /**
+   * Decidir sobre a página em revisão (aprovar, devolver, assumir) sem poder
+   * alterar o conteúdo. Quem edita também revisa, por isso o OR com EDITAR.
+   */
+  public static final String PAGINA_APROVAR       =
+      "hasAnyAuthority('PAGINA:APROVAR','PAGINA:EDITAR')";
 
   public static final String PUBLICACAO_LER       = "hasAuthority('PUBLICACAO:LER')";
   public static final String PUBLICACAO_CRIAR     = "hasAuthority('PUBLICACAO:CRIAR')";

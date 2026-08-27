@@ -111,6 +111,44 @@ class PermissoesDosEndpointsTest {
     assertThat(suspeitos).as("endpoints de escrita exigindo apenas PAGINA:LER").isEmpty();
   }
 
+  /**
+   * Decidir sobre a revisão não pode exigir poder de edição: o grupo REVISOR
+   * tem PAGINA:APROVAR e nenhuma permissão de escrita de conteúdo.
+   */
+  @Test
+  void decisoesDaRevisaoUsamPaginaAprovar() {
+    List<String> endpointsDaRevisao = List.of("aprovar", "salvarRascunho", "atribuirRevisor",
+        "comentarRevisao");
+    List<String> divergentes = new ArrayList<>();
+
+    for (Method metodo : PaginaController.class.getDeclaredMethods()) {
+      if (!endpointsDaRevisao.contains(metodo.getName())) {
+        continue;
+      }
+      PreAuthorize preAuthorize = metodo.getAnnotation(PreAuthorize.class);
+      if (preAuthorize == null || !preAuthorize.value().equals(Permissoes.PAGINA_APROVAR)) {
+        divergentes.add(metodo.getName() + " -> "
+            + (preAuthorize == null ? "sem @PreAuthorize" : preAuthorize.value()));
+      }
+    }
+
+    assertThat(divergentes).as("endpoints de decisão editorial fora de PAGINA_APROVAR").isEmpty();
+  }
+
+  @Test
+  void publicarEArquivarContinuamExigindoEdicao() {
+    for (Method metodo : PaginaController.class.getDeclaredMethods()) {
+      if (!List.of("publicar", "arquivar", "enviarRevisao").contains(metodo.getName())) {
+        continue;
+      }
+      PreAuthorize preAuthorize = metodo.getAnnotation(PreAuthorize.class);
+      assertThat(preAuthorize).isNotNull();
+      assertThat(preAuthorize.value())
+          .as("%s deve continuar sob PAGINA:EDITAR", metodo.getName())
+          .isEqualTo(Permissoes.PAGINA_EDITAR);
+    }
+  }
+
   private static Set<String> catalogoDePermissoes() throws Exception {
     Set<String> valores = new java.util.HashSet<>();
     for (var campo : Permissoes.class.getDeclaredFields()) {

@@ -32,7 +32,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  *       RELEASE_ORCHESTRATOR (RELEASE/PRODUTO/TEMPLATE/CLIENTE_RO/ENTREGA/HOST/
  *       INSTALACAO/PROXIMA_ENTREGA).</li>
  *   <li><b>REVISOR</b>: :LER em todas as funcionalidades + VISUALIZAR de
- *       histórico/auditoria.</li>
+ *       histórico/auditoria + PAGINA:APROVAR (aprova/devolve sem editar).</li>
  *   <li><b>LEITOR</b>: somente :LER em todas as funcionalidades.</li>
  * </ul>
  */
@@ -108,6 +108,8 @@ class AuthSeedsIntegrationTest {
         "CONFIGURACAO:LER",
         "CLIENTE:LER", "PROJETO:LER", "PUBLICACAO:LER",
         "RELEASE:LER", "PRODUTO:LER", "ENTREGA:LER", "PROXIMA_ENTREGA:LER", "HOST:LER", "INSTALACAO:LER");
+    // Decide sobre a página em revisão sem poder editar o conteúdo
+    assertThat(permissoes(me)).contains("PAGINA:APROVAR");
     // Não cria/edita/exclui nada
     assertThat(permissoes(me))
         .noneMatch(p -> p.endsWith(":CRIAR")
