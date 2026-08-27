@@ -1,6 +1,6 @@
-# Stack Docker centralizada do Nexus Portal — desenvolvimento local.
-#
-# Sobe o que você precisa, na hora que precisar:
+# Stack Docker local deste workspace (nexus-platform).
+# Projeto, containers, volumes e a porta do Postgres são distintos do
+# outro clone `nexus-portal` (container nexus-postgres na 5432).
 #
 #   docker compose up -d                      # mínimo (Postgres)
 #   docker compose --profile ci up -d         # + Jenkins
@@ -10,7 +10,7 @@
 #
 # Spec: docs/jornadas/10-fluxo-local-completo-com-jenkins.md
 
-name: nexus-portal
+name: nexus-platform
 
 services:
   # =====================================================================
@@ -19,18 +19,18 @@ services:
   # =====================================================================
   postgres:
     image: postgres:18
-    container_name: nexus-postgres
+    container_name: nexus-platform-postgres
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-nexus_platform}
       POSTGRES_USER: ${POSTGRES_USER:-nexus_platform}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-nexus!@#}
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "${POSTGRES_PORT:-5433}:5432"
     volumes:
       # PostgreSQL 18 usa PGDATA versionado; o volume é montado no
       # diretório-pai, em vez do caminho legado /var/lib/postgresql/data.
-      - nexus-pgdata-18:/var/lib/postgresql
+      - nexus-platform-pgdata-18:/var/lib/postgresql
       - ./postgres/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-nexus_platform} -d ${POSTGRES_DB:-nexus_platform}"]
@@ -47,8 +47,8 @@ services:
     build:
       context: ./jenkins
       dockerfile: Dockerfile
-    image: nexus-portal/jenkins:latest
-    container_name: nexus-jenkins
+    image: nexus-platform/jenkins:latest
+    container_name: nexus-platform-jenkins
     restart: unless-stopped
     ports:
       # 8090 evita conflito com o portal API (8080) rodando no host.
@@ -62,7 +62,7 @@ services:
       GITHUB_PAT: ${GITHUB_PAT:-}
       PORTAL_WEBHOOK_SECRET: ${PORTAL_WEBHOOK_SECRET:-}
     volumes:
-      - nexus-jenkins-home:/var/jenkins_home
+      - nexus-platform-jenkins-home:/var/jenkins_home
       - /var/run/docker.sock:/var/run/docker.sock
     extra_hosts:
       # Permite Jenkinsfile chamar http://host.docker.internal:8080 (portal local).
@@ -81,7 +81,7 @@ services:
   minio:
     profiles: ["bucket", "all"]
     image: minio/minio:latest
-    container_name: nexus-minio
+    container_name: nexus-platform-minio
     restart: unless-stopped
     command: server /data --console-address ":9001"
     ports:
@@ -91,7 +91,7 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
     volumes:
-      - nexus-minio-data:/data
+      - nexus-platform-minio-data:/data
     healthcheck:
       test: ["CMD", "curl", "-fs", "http://localhost:9000/minio/health/live"]
       interval: 30s
@@ -105,22 +105,22 @@ services:
   sftp:
     profiles: ["sftp", "all"]
     image: atmoz/sftp:latest
-    container_name: nexus-sftp
+    container_name: nexus-platform-sftp
     restart: unless-stopped
     ports:
       - "${SFTP_PORT:-2222}:22"
     volumes:
-      - nexus-sftp-data:/home/${SFTP_USER:-foo}/upload
+      - nexus-platform-sftp-data:/home/${SFTP_USER:-foo}/upload
     command: "${SFTP_USER:-foo}:${SFTP_PASSWORD:-senha}:::upload"
 
 volumes:
-  nexus-pgdata:
-    name: nexus-pgdata
-  nexus-pgdata-18:
-    name: nexus-pgdata-18
-  nexus-jenkins-home:
-    name: nexus-jenkins-home
-  nexus-minio-data:
-    name: nexus-minio-data
-  nexus-sftp-data:
-    name: nexus-sftp-data
+  nexus-platform-pgdata:
+    name: nexus-platform-pgdata
+  nexus-platform-pgdata-18:
+    name: nexus-platform-pgdata-18
+  nexus-platform-jenkins-home:
+    name: nexus-platform-jenkins-home
+  nexus-platform-minio-data:
+    name: nexus-platform-minio-data
+  nexus-platform-sftp-data:
+    name: nexus-platform-sftp-data

@@ -12,13 +12,20 @@
 //   - Plugin Pipeline + GitHub Branch Source
 //
 // Trigger:
-//   - O job deve ter "Build when a change is pushed to GitHub" + filtro
-//     de tag `v*.*.*` (configurado no job, não aqui). Em monorepos, use
-//     `when { tag pattern: ... }`.
+//   - Tag Git v*.*.* (job filter) OU disparo pelo portal (buildWithParameters
+//     com RELEASE_VERSION, TAG_NAME, GIT_REF, PORTAL_PRODUCT_SIGLA).
 // =============================================================================
 
 pipeline {
   agent any
+
+  parameters {
+    string(name: 'RELEASE_VERSION', defaultValue: '', description: 'Versão sem prefixo v (ex.: 5.0.0)')
+    string(name: 'TAG_NAME', defaultValue: '', description: 'Tag git (ex.: v5.0.0). Vazio = tag que disparou o job.')
+    string(name: 'GIT_REF', defaultValue: '', description: 'Ref de checkout. Vazio = refs/tags/TAG_NAME')
+    string(name: 'PORTAL_PRODUCT_SIGLA', defaultValue: '', description: 'Sigla do produto no portal')
+    string(name: 'ORIGEM', defaultValue: '', description: 'RELEASE_ATUAL | TAG_ESPECIFICA | ULTIMA_GERADA')
+  }
 
   options {
     timestamps()
@@ -51,18 +58,31 @@ pipeline {
     stage('Checkout tag') {
       steps {
         script {
-          // TAG_NAME é exposto pelo Jenkins quando o build é disparado por tag
-          if (!env.TAG_NAME) {
-            error 'Este pipeline só dispara em tag. Configure o job filter v*.*.*'
+          // Portal (buildWithParameters) envia TAG_NAME/GIT_REF; trigger git preenche env.TAG_NAME.
+          def tag = (params.TAG_NAME ?: '').toString().trim() ?: env.TAG_NAME
+          def gitRef = (params.GIT_REF ?: '').toString().trim()
+          if (!tag && !gitRef) {
+            error 'Informe TAG_NAME ou GIT_REF (portal), ou dispare o job numa tag v*.*.*.'
           }
-          if (!env.TAG_NAME ==~ /^v\d+\.\d+\.\d+$/) {
-            error "Tag '${env.TAG_NAME}' não corresponde ao padrão vMAJOR.MINOR.PATCH."
+          if (!tag && gitRef.startsWith('refs/tags/')) {
+            tag = gitRef.replaceFirst(/^refs\/tags\//, '')
           }
-          echo "Build da tag ${env.TAG_NAME}"
+          if (!gitRef) {
+            gitRef = "refs/tags/${tag}"
+          }
+          env.TAG_NAME = tag
+          env.GIT_REF = gitRef
+          if (params.PORTAL_PRODUCT_SIGLA) {
+            env.PRODUTO_SIGLA = params.PORTAL_PRODUCT_SIGLA
+          }
+          if (params.RELEASE_VERSION) {
+            env.VERSAO = params.RELEASE_VERSION
+          }
+          echo "Build origem=${params.ORIGEM ?: 'TAG'} tag=${env.TAG_NAME} ref=${env.GIT_REF}"
         }
         checkout([
           $class: 'GitSCM',
-          branches: [[name: "refs/tags/${env.TAG_NAME}"]],
+          branches: [[name: "${env.GIT_REF}"]],
           userRemoteConfigs: scm.userRemoteConfigs,
         ])
       }
@@ -86,7 +106,9 @@ pipeline {
           }
           env.ARTIFACT_PATH = found
           // Versão sem prefixo 'v' (1.5.0 em vez de v1.5.0)
-          env.VERSAO = env.TAG_NAME.replaceFirst(/^v/, '')
+          if (!env.VERSAO) {
+            env.VERSAO = env.TAG_NAME.replaceFirst(/^v/, '')
+          }
           env.ASSET_NAME = "${env.PRODUTO_SIGLA}-${env.MODULO_CODIGO}-${env.VERSAO}.${env.ARTIFACT_EXT}"
           echo "Artefato: ${env.ARTIFACT_PATH} → ${env.ASSET_NAME}"
         }

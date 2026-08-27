@@ -5,6 +5,9 @@ Postgres, Jenkins (com plugins + JCasC), MinIO e SFTP. Cada serviço
 opcional fica atrás de um **profile** do Docker Compose — você sobe só
 o que precisa.
 
+O projeto Compose chama-se `nexus-platform` (containers `nexus-platform-*`,
+Postgres na **5433**) para não colidir com o outro clone `nexus-portal`.
+
 ```
 infra/docker/
 ├── docker-compose.yml      # orquestra tudo
@@ -57,7 +60,7 @@ docker compose --profile all up -d        # tudo de uma vez
 
 | Serviço | Porta host | Para que |
 |---|---|---|
-| Postgres | `5432` | Banco do portal API |
+| Postgres | `5433` | Banco deste workspace (5432 fica com o outro clone `nexus-portal`) |
 | Jenkins UI | `8090` | Acesso à interface (evita conflito com portal 8080) |
 | Jenkins agentes | `50000` | Comunicação com agentes (não exponha em rede) |
 | MinIO API | `9000` | Endpoint S3 — configure como `endpoint` no destino BUCKET |
@@ -155,7 +158,7 @@ docker compose --profile ci up -d
 > https://plugins.jenkins.io/{plugin-id}/ ou rode dentro do container:
 >
 > ```bash
-> docker exec nexus-jenkins jenkins-plugin-cli --list \
+> docker exec nexus-platform-jenkins jenkins-plugin-cli --list \
 >   | grep workflow-aggregator
 > ```
 
@@ -218,7 +221,7 @@ npm start
 
 | Componente | Onde roda | Aponta para |
 |---|---|---|
-| Backend Spring Boot | host (`./mvnw`) | `localhost:5432` (Postgres do Compose) |
+| Backend Spring Boot | host (`./mvnw`) | `localhost:5433` (Postgres do Compose deste workspace) |
 | Frontend Angular | host (`npm start`) | proxy reverso `/api/*` → `localhost:8080` |
 | Jenkins | Compose | `host.docker.internal:8080` (portal API no host) |
 
@@ -237,7 +240,7 @@ npm start
 | Build no Jenkins não acha o portal | `PORTAL_WEBHOOK_URL` no Jenkinsfile precisa ser `http://host.docker.internal:8080/...` |
 | Plugin não instala | Versão pinada em `plugins.txt` ficou indisponível — atualize pra outra LTS |
 | Porta 8090 já em uso | Mude `JENKINS_PORT` no `.env` |
-| Porta 5432 já em uso | Mude `POSTGRES_PORT` no `.env` (lembre de exportar `DB_URL` pro backend) |
+| Porta 5433 já em uso | Mude `POSTGRES_PORT` no `.env` (lembre de exportar `DB_URL` pro backend) |
 
 ---
 
@@ -252,12 +255,13 @@ npm start
 
 ## Migração nexus → Nexus (DB local)
 
-Os defaults locais passaram a `nexus_platform` (DB/usuário) e volumes `nexus-*`.
-Se você já tinha stack antiga (`nexus_*` / volumes `nexus-*`), recrie o banco local:
+Os defaults locais passaram a `nexus_platform` (DB/usuário) e volumes `nexus-platform-*`.
+Se você já tinha stack antiga deste workspace, recrie o banco local (não apague
+os volumes `nexus-pgdata*` do outro clone):
 
 ```bash
 docker compose down
-docker volume rm nexus-pgdata-18 nexus-pgdata 2>/dev/null || true
+docker volume rm nexus-platform-pgdata-18 nexus-platform-pgdata 2>/dev/null || true
 docker compose up -d
 ```
 

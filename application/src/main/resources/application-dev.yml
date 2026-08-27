@@ -2,7 +2,7 @@
 
 spring:
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/nexus_platform}
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/nexus_platform}
     username: ${DB_USERNAME:nexus_platform}
     password: '${DB_PASSWORD:nexus!@#}'
   jpa:
@@ -53,6 +53,10 @@ release-orchestrator:
   storage:
     artefatos-dir: ${ARTEFATOS_DIR:./storage/artefatos}
     entregas-dir: ${ENTREGAS_DIR:./storage/entregas}
+  linux-manual:
+    # Lab: CRIAR copia scripts/templates/artifacts (sem JDK/Tomcat) e roda install.sh.
+    template-dir: ${LINUX_MANUAL_TEMPLATE_DIR:/home/junico-home/Documentos/Softon/V5/instalador/instalador}
+    allow-local-fs: true
 
 nexus:
   ai:
