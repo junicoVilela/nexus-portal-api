@@ -29,8 +29,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  *   <li><b>EDITOR</b>: CRUD operacional em SEGURANCA (USUARIO/GRUPO_ACESSO/
  *       ACESSO_TEMPORARIO) + ações especiais, CRUD nas funcionalidades de
  *       DOC_FLOW (CLIENTE/PROJETO/MODULO/PAGINA/PUBLICACAO/EMPRESA) e
- *       RELEASE_ORCHESTRATOR (RELEASE/PRODUTO/TEMPLATE/CLIENTE_RO/ENTREGA/
- *       PROXIMA_ENTREGA).</li>
+ *       RELEASE_ORCHESTRATOR (RELEASE/PRODUTO/TEMPLATE/CLIENTE_RO/ENTREGA/HOST/
+ *       INSTALACAO/PROXIMA_ENTREGA).</li>
  *   <li><b>REVISOR</b>: :LER em todas as funcionalidades + VISUALIZAR de
  *       histórico/auditoria.</li>
  *   <li><b>LEITOR</b>: somente :LER em todas as funcionalidades.</li>
@@ -62,7 +62,7 @@ class AuthSeedsIntegrationTest {
         "USUARIO:LER", "GRUPO_ACESSO:LER",
         "CLIENTE:LER", "PROJETO:LER", "PUBLICACAO:CRIAR",
         "RELEASE:LER", "PRODUTO:LER", "TEMPLATE:LER",
-        "EMPRESA:EDITAR", "CLIENTE_RO:LER", "ENTREGA:CRIAR", "PROXIMA_ENTREGA:LER");
+        "EMPRESA:EDITAR", "CLIENTE_RO:LER", "ENTREGA:CRIAR", "PROXIMA_ENTREGA:LER", "HOST:LER", "INSTALACAO:LER");
   }
 
   @Test
@@ -86,7 +86,7 @@ class AuthSeedsIntegrationTest {
         "CLIENTE:CRIAR", "PROJETO:CRIAR", "MODULO:CRIAR",
         "PAGINA:CRIAR", "PUBLICACAO:CRIAR",
         "RELEASE:CRIAR", "PRODUTO:CRIAR", "TEMPLATE:CRIAR",
-        "ENTREGA:CRIAR", "PROXIMA_ENTREGA:CRIAR", "CLIENTE_RO:CRIAR");
+        "ENTREGA:CRIAR", "PROXIMA_ENTREGA:CRIAR", "CLIENTE_RO:CRIAR", "HOST:CRIAR", "INSTALACAO:CRIAR");
     // Mas NÃO mexe no catálogo RBAC nem visualiza auditoria/histórico
     assertThat(permissoes(me))
         .doesNotContain("DOMINIO:CRIAR", "FUNCIONALIDADE:CRIAR", "PERMISSAO:CRIAR")
@@ -107,7 +107,7 @@ class AuthSeedsIntegrationTest {
         "POLITICA_SENHA:LER", "SESSAO:LER", "ACESSO_TEMPORARIO:LER",
         "CONFIGURACAO:LER",
         "CLIENTE:LER", "PROJETO:LER", "PUBLICACAO:LER",
-        "RELEASE:LER", "PRODUTO:LER", "ENTREGA:LER", "PROXIMA_ENTREGA:LER");
+        "RELEASE:LER", "PRODUTO:LER", "ENTREGA:LER", "PROXIMA_ENTREGA:LER", "HOST:LER", "INSTALACAO:LER");
     // Não cria/edita/exclui nada
     assertThat(permissoes(me))
         .noneMatch(p -> p.endsWith(":CRIAR")

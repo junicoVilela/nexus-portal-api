@@ -1,5 +1,6 @@
 package com.nexus.portal.shared.config;
 
+import com.nexus.portal.shared.security.AutoridadeResolver;
 import com.nexus.portal.shared.security.SessaoValidator;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
@@ -21,10 +22,13 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
   private final JwtService jwtService;
   private final ObjectProvider<SessaoValidator> sessaoValidator;
+  private final ObjectProvider<AutoridadeResolver> autoridadeResolver;
 
-  public JwtAuthFilter(JwtService jwtService, ObjectProvider<SessaoValidator> sessaoValidator) {
+  public JwtAuthFilter(JwtService jwtService, ObjectProvider<SessaoValidator> sessaoValidator,
+      ObjectProvider<AutoridadeResolver> autoridadeResolver) {
     this.jwtService = jwtService;
     this.sessaoValidator = sessaoValidator;
+    this.autoridadeResolver = autoridadeResolver;
   }
 
   @Override
@@ -49,6 +53,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
           String username = claims.getSubject();
           @SuppressWarnings("unchecked")
           List<String> permissoes = claims.get("permissoes", List.class);
+          permissoes = autoridadesAtuais(username, permissoes);
           List<SimpleGrantedAuthority> authorities = new ArrayList<>();
           if (permissoes != null) {
             permissoes.forEach(p -> authorities.add(new SimpleGrantedAuthority(p)));
@@ -60,5 +65,22 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     }
 
     filterChain.doFilter(request, response);
+  }
+
+  /**
+   * Prefere o catálogo RBAC ao claim {@code permissoes} do JWT, para novas
+   * funcionalidades (ex.: HOST) valerem na sessão já aberta.
+   */
+  private List<String> autoridadesAtuais(String username, List<String> claimsDoJwt) {
+    AutoridadeResolver resolver = autoridadeResolver.getIfAvailable();
+    if (resolver == null || username == null || username.isBlank()) {
+      return claimsDoJwt;
+    }
+    try {
+      List<String> atuais = resolver.permissoesDoUsername(username);
+      return atuais != null ? atuais : claimsDoJwt;
+    } catch (RuntimeException ignored) {
+      return claimsDoJwt;
+    }
   }
 }

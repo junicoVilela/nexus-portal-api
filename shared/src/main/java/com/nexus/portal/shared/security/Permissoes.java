@@ -107,4 +107,14 @@ public final class Permissoes {
   public static final String PROXIMA_ENTREGA_CRIAR   = "hasAuthority('PROXIMA_ENTREGA:CRIAR')";
   public static final String PROXIMA_ENTREGA_EDITAR  = "hasAuthority('PROXIMA_ENTREGA:EDITAR')";
   public static final String PROXIMA_ENTREGA_EXCLUIR = "hasAuthority('PROXIMA_ENTREGA:EXCLUIR')";
+
+  public static final String HOST_LER     = "hasAuthority('HOST:LER')";
+  public static final String HOST_CRIAR   = "hasAuthority('HOST:CRIAR')";
+  public static final String HOST_EDITAR  = "hasAuthority('HOST:EDITAR')";
+  public static final String HOST_EXCLUIR = "hasAuthority('HOST:EXCLUIR')";
+
+  public static final String INSTALACAO_LER     = "hasAuthority('INSTALACAO:LER')";
+  public static final String INSTALACAO_CRIAR   = "hasAuthority('INSTALACAO:CRIAR')";
+  public static final String INSTALACAO_EDITAR  = "hasAuthority('INSTALACAO:EDITAR')";
+  public static final String INSTALACAO_EXCLUIR = "hasAuthority('INSTALACAO:EXCLUIR')";
 }
