@@ -33,6 +33,9 @@ Por **módulo** e **camada** (sem sequences SERIAL — IDs são UUID):
 | V27 | release-orchestrator | config da instalação + reserva de portas (RF-004 / RF-005) |
 | V28 | release-orchestrator | health da instalação + alvos da entrega (`tb_entrega_instalacao`) |
 | V29 | release-orchestrator | manifesto de implantação + histórico de deploy (dry-run) |
+| V34 | docflow | robustez da publicação (relatório em `text`, cancelamento, índice do watchdog) |
+| V35 | docflow | `search_vector` como coluna gerada + índice GIN em uso pela busca |
+| V36 | docflow | revisor/prazo na página + `tb_pagina_snippet` |
 
 ## Recriar banco local
 

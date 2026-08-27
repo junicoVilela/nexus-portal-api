@@ -38,11 +38,17 @@ class GeradorManualPdfServiceTest {
   Modulo moduloA;
   Modulo moduloB;
 
+  @Mock PaginaSnippetService paginaSnippetService;
+
   @TempDir Path tempDir;
 
   @BeforeEach
   void setUp() throws Exception {
-    service = new GeradorManualPdfService(geradorPacoteService, paginaAnexoRepository);
+    service = new GeradorManualPdfService(geradorPacoteService, paginaAnexoRepository,
+        paginaSnippetService);
+    // Sem snippets nestes cenários: o resolvedor devolve o HTML como veio.
+    org.mockito.Mockito.lenient().when(paginaSnippetService.resolver(org.mockito.ArgumentMatchers.any()))
+        .thenAnswer(inv -> inv.getArgument(0));
     clienteId = UUID.randomUUID();
     cliente = new Cliente("ACME", "acme", true);
     setId(cliente, clienteId);

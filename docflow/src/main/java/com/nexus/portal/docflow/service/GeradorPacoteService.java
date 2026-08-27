@@ -54,6 +54,7 @@ public class GeradorPacoteService {
   private final PaginaAnexoRepository paginaAnexoRepository;
   private final StorageProperties storageProperties;
   private final EmpresaLogoService empresaLogoService;
+  private final PaginaSnippetService paginaSnippetService;
   private final ObjectMapper objectMapper;
 
   public GeradorPacoteService(ClienteModuloRepository clienteModuloRepository,
@@ -62,6 +63,7 @@ public class GeradorPacoteService {
       PaginaAnexoRepository paginaAnexoRepository,
       StorageProperties storageProperties,
       EmpresaLogoService empresaLogoService,
+      PaginaSnippetService paginaSnippetService,
       ObjectMapper objectMapper) {
     this.clienteModuloRepository = clienteModuloRepository;
     this.clientePaginaRepository = clientePaginaRepository;
@@ -70,6 +72,7 @@ public class GeradorPacoteService {
     this.paginaAnexoRepository = paginaAnexoRepository;
     this.storageProperties = storageProperties;
     this.empresaLogoService = empresaLogoService;
+    this.paginaSnippetService = paginaSnippetService;
     this.objectMapper = objectMapper.copy().enable(SerializationFeature.INDENT_OUTPUT);
   }
 
@@ -282,7 +285,7 @@ public class GeradorPacoteService {
               : "<p>" + HtmlUtils.htmlEscape(pagina.getResumo()) + "</p>",
           pagina.getConteudoHtml() == null || pagina.getConteudoHtml().isBlank()
               ? "<p>Sem conteúdo HTML cadastrado.</p>"
-              : pagina.getConteudoHtml()));
+              : paginaSnippetService.resolver(pagina.getConteudoHtml())));
     }
     return previewTemplate(cliente, versao, paginas.size(), menu, content.toString());
   }
@@ -293,7 +296,7 @@ public class GeradorPacoteService {
         : "<p>" + HtmlUtils.htmlEscape(pagina.getResumo()) + "</p>";
     String conteudo = pagina.getConteudoHtml() == null || pagina.getConteudoHtml().isBlank()
         ? "<p>Sem conteúdo HTML cadastrado.</p>"
-        : pagina.getConteudoHtml();
+        : paginaSnippetService.resolver(pagina.getConteudoHtml());
     return """
         <!doctype html>
         <html lang="pt-BR">
@@ -352,7 +355,10 @@ public class GeradorPacoteService {
   }
 
   private String prepararConteudoComAnexos(Pagina pagina, Path assetsDir, String assetBase) throws IOException {
-    String conteudo = pagina.getConteudoHtml() == null ? "" : pagina.getConteudoHtml();
+    // Os trechos reutilizáveis viram HTML aqui: o pacote é estático e não tem
+    // como resolver {{snippet:...}} depois de gerado.
+    String conteudo = paginaSnippetService.resolver(
+        pagina.getConteudoHtml() == null ? "" : pagina.getConteudoHtml());
     List<PaginaAnexo> anexos = paginaAnexoRepository.findByPagina_Id(pagina.getId());
     if (anexos.isEmpty() || conteudo.isBlank()) {
       return conteudo;

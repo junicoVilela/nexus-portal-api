@@ -67,6 +67,27 @@ public class PaginaTemplateService {
     return paginaRepository.countByTemplateOrigemIdAndTemplateOrigemVersao(templateId, versao);
   }
 
+  /** Contagem de páginas originadas para uma lista de modelos, em uma consulta só. */
+  public Map<UUID, Long> paginasOriginadasPorTemplate(List<UUID> templateIds) {
+    if (templateIds.isEmpty()) {
+      return Map.of();
+    }
+    Map<UUID, Long> contagens = new LinkedHashMap<>();
+    for (Object[] linha : paginaRepository.contarPorTemplateOrigem(templateIds)) {
+      contagens.put((UUID) linha[0], ((Number) linha[1]).longValue());
+    }
+    return contagens;
+  }
+
+  /** Contagem por versão de um modelo, em uma consulta só. */
+  public Map<Integer, Long> paginasOriginadasPorVersao(UUID templateId) {
+    Map<Integer, Long> contagens = new LinkedHashMap<>();
+    for (Object[] linha : paginaRepository.contarPorVersaoDoTemplate(templateId)) {
+      contagens.put(((Number) linha[0]).intValue(), ((Number) linha[1]).longValue());
+    }
+    return contagens;
+  }
+
   @Transactional
   public PaginaTemplate criar(PaginaTemplateRequest request, Principal principal) {
     Escopo escopo = escopo(request.projetoId(), request.clienteId());

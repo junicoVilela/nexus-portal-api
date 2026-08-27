@@ -136,6 +136,30 @@ class PublicacaoServiceTest {
   }
 
   @Test
+  void cancelar_marcaPedidoQuandoEstaGerando() {
+    Publicacao p = new Publicacao(cliente, "1.0.0", null);
+    when(publicacaoRepository.findById(publicacaoId)).thenReturn(Optional.of(p));
+
+    Publicacao out = service.cancelar(publicacaoId, principal);
+
+    assertThat(out.isCancelamentoSolicitado()).isTrue();
+    assertThat(out.getStatus()).isEqualTo(StatusPublicacao.GERANDO);
+    verify(escopoResolver).assertPodeEscreverEmCliente(clienteId);
+  }
+
+  @Test
+  void cancelar_bloqueiaPublicacaoJaFinalizada() {
+    Publicacao p = new Publicacao(cliente, "1.0.0", null);
+    p.registrarSucesso(1, 1, "manual.zip", "/tmp/manual.zip", "sha", "{}");
+    when(publicacaoRepository.findById(publicacaoId)).thenReturn(Optional.of(p));
+
+    assertThatThrownBy(() -> service.cancelar(publicacaoId, principal))
+        .isInstanceOf(BusinessException.class)
+        .hasMessageContaining("em geração");
+    assertThat(p.isCancelamentoSolicitado()).isFalse();
+  }
+
+  @Test
   void reprocessar_falhaSeInexistente() {
     when(publicacaoRepository.findById(publicacaoId)).thenReturn(Optional.empty());
 
@@ -329,7 +353,7 @@ class PublicacaoServiceTest {
     UUID paginaId = UUID.randomUUID();
     String json = new ObjectMapper().writeValueAsString(List.of(
         new com.nexus.portal.docflow.dto.response.PublicacaoPaginaSnapshotItem(
-            paginaId, null, "Página", "TELA", "pagina", 0, 0)));
+            paginaId, null, "Página", "TELA", "pagina", 0, 0, "hash")));
     Publicacao p = new Publicacao(cliente, "1.0.0", null);
     p.definirArvorePaginas(json);
     when(publicacaoRepository.findById(publicacaoId)).thenReturn(Optional.of(p));

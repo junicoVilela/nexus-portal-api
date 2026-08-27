@@ -14,6 +14,7 @@ import java.security.Principal;
 import java.time.OffsetDateTime;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -90,6 +91,20 @@ public class UsuarioService {
         usuario.getEmail(),
         rbacService.gruposDoUsuario(usuario.getId()),
         rbacService.permissoesDoUsuario(usuario.getId()));
+  }
+
+  /**
+   * E-mail de um usuário ativo, para outros módulos notificarem sem precisar do
+   * repositório. Vazio quando o usuário não existe, está inativo ou não tem
+   * e-mail cadastrado.
+   */
+  public Optional<String> emailDoUsername(String username) {
+    if (username == null || username.isBlank()) {
+      return Optional.empty();
+    }
+    return usuarioRepository.findByUsernameAndAtivoTrue(username.trim())
+        .map(Usuario::getEmail)
+        .filter(email -> email != null && !email.isBlank());
   }
 
   public List<Usuario> listar() {

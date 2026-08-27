@@ -1,27 +1,36 @@
 package com.nexus.portal.docflow.service;
 
-import com.nexus.portal.docflow.service.GeradorPacoteService;
 import com.nexus.portal.docflow.service.GeradorPacoteService.ResultadoGeracao;
-import com.nexus.portal.docflow.service.NotificacaoEmailService;
 import com.nexus.portal.docflow.dto.response.PaginaResponse;
+import com.nexus.portal.docflow.entity.Cliente;
 import com.nexus.portal.docflow.entity.Publicacao;
 import com.nexus.portal.docflow.entity.PublicacaoChangelog;
+import com.nexus.portal.docflow.entity.StatusPublicacao;
 import com.nexus.portal.docflow.repository.PublicacaoChangelogRepository;
 import com.nexus.portal.docflow.repository.PublicacaoRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.transaction.Transactional;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionTemplate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Gera o pacote da publicação fora de transação: a escrita em disco leva
+ * dezenas de segundos e não pode segurar uma conexão do pool. O banco só é
+ * tocado em transações curtas — carregar o contexto no início e registrar o
+ * desfecho no fim.
+ */
 @Slf4j
 @RequiredArgsConstructor
 @Service
@@ -34,43 +43,98 @@ public class PublicacaoWorkerService {
   private final PublicacaoEventService publicacaoEventService;
   private final MeterRegistry meterRegistry;
   private final ObjectMapper objectMapper;
+  private final TransactionTemplate transactionTemplate;
 
   @Async
-  @Transactional
   public void processar(UUID publicacaoId, String username) {
     Timer.Sample tempoGeracao = Timer.start(meterRegistry);
-    Publicacao publicacao = publicacaoRepository.findById(publicacaoId).orElse(null);
-    if (publicacao == null) {
-      meterRegistry.counter("docflow.publicacao.resultado", "status", "cancelada").increment();
-      tempoGeracao.stop(meterRegistry.timer("docflow.publicacao.duracao"));
+    Contexto contexto = transactionTemplate.execute(status -> carregarContexto(publicacaoId));
+    if (contexto == null) {
+      finalizarMetricas(tempoGeracao, "cancelada");
       log.warn("Publicação {} não encontrada antes do processamento assíncrono", publicacaoId);
       return;
     }
-    List<PaginaResponse> paginasAtuais = geradorPacoteService
-        .selecionarPaginas(publicacao.getCliente().getId())
-        .stream().map(PaginaResponse::from).toList();
+
     try {
-      ResultadoGeracao resultado = geradorPacoteService.gerar(publicacao.getCliente(),
-          publicacao.getVersao(), publicacao.getId());
-      publicacao.registrarSucesso(resultado.quantidadePaginas(), resultado.quantidadeModulos(),
-          resultado.arquivoZipNome(), resultado.arquivoZipCaminho(), resultado.hashPacote(),
-          resultado.relatorioValidacaoJson());
-      publicacao.definirArvorePaginas(serializarArvorePaginas(paginasAtuais));
-      gerarChangelog(publicacao, paginasAtuais);
-      notificacaoEmailService.notificarPublicacaoGerada(publicacao);
-      meterRegistry.counter("docflow.publicacao.resultado", "status", "sucesso").increment();
+      ResultadoGeracao resultado =
+          geradorPacoteService.gerar(contexto.cliente(), contexto.versao(), publicacaoId);
+      if (cancelamentoSolicitado(publicacaoId)) {
+        descartarPacote(resultado);
+        concluir(publicacaoId, tempoGeracao, "cancelada", Publicacao::registrarCancelamento);
+        log.info("Publicação {} cancelada a pedido do usuário {}", publicacaoId, username);
+        return;
+      }
+      concluir(publicacaoId, tempoGeracao, "sucesso", publicacao -> {
+        publicacao.registrarSucesso(resultado.quantidadePaginas(), resultado.quantidadeModulos(),
+            resultado.arquivoZipNome(), resultado.arquivoZipCaminho(), resultado.hashPacote(),
+            resultado.relatorioValidacaoJson());
+        publicacao.definirArvorePaginas(serializarArvorePaginas(contexto.paginas()));
+        gerarChangelog(publicacao, contexto.paginas());
+      });
       log.info("Publicação {} concluída: cliente={}, versao={}, paginas={}, modulos={}",
-          publicacaoId, publicacao.getCliente().getId(), publicacao.getVersao(),
+          publicacaoId, contexto.clienteId(), contexto.versao(),
           resultado.quantidadePaginas(), resultado.quantidadeModulos());
     } catch (RuntimeException | java.io.IOException ex) {
-      publicacao.registrarErro(ex.getMessage());
-      notificacaoEmailService.notificarPublicacaoGerada(publicacao);
-      meterRegistry.counter("docflow.publicacao.resultado", "status", "erro").increment();
+      concluir(publicacaoId, tempoGeracao, "erro", publicacao -> publicacao.registrarErro(ex.getMessage()));
       log.error("Falha ao gerar publicação {}: cliente={}, versao={}", publicacaoId,
-          publicacao.getCliente().getId(), publicacao.getVersao(), ex);
-    } finally {
-      tempoGeracao.stop(meterRegistry.timer("docflow.publicacao.duracao"));
-      publicacaoEventService.publicar(publicacao);
+          contexto.clienteId(), contexto.versao(), ex);
+    }
+  }
+
+  /**
+   * Carrega numa transação curta tudo o que a geração precisa, incluindo as
+   * páginas elegíveis — depois disso o worker não toca mais no banco até o fim.
+   */
+  private Contexto carregarContexto(UUID publicacaoId) {
+    Publicacao publicacao = publicacaoRepository.findById(publicacaoId).orElse(null);
+    if (publicacao == null) {
+      return null;
+    }
+    Cliente cliente = publicacao.getCliente();
+    List<PaginaResponse> paginas = geradorPacoteService.selecionarPaginas(cliente.getId())
+        .stream().map(PaginaResponse::from).toList();
+    return new Contexto(cliente, cliente.getId(), publicacao.getVersao(), paginas);
+  }
+
+  private boolean cancelamentoSolicitado(UUID publicacaoId) {
+    return Boolean.TRUE.equals(transactionTemplate.execute(status ->
+        publicacaoRepository.findById(publicacaoId)
+            .map(Publicacao::isCancelamentoSolicitado)
+            .orElse(false)));
+  }
+
+  /** Aplica o desfecho numa transação curta e publica evento/notificação depois. */
+  private void concluir(UUID publicacaoId, Timer.Sample tempoGeracao, String resultado,
+      Consumer<Publicacao> desfecho) {
+    Publicacao publicacao = transactionTemplate.execute(status -> {
+      Publicacao atual = publicacaoRepository.findById(publicacaoId).orElse(null);
+      if (atual != null) {
+        desfecho.accept(atual);
+      }
+      return atual;
+    });
+    finalizarMetricas(tempoGeracao, resultado);
+    if (publicacao == null) {
+      return;
+    }
+    notificacaoEmailService.notificarPublicacaoGerada(publicacao);
+    publicacaoEventService.publicar(publicacao);
+  }
+
+  private void finalizarMetricas(Timer.Sample tempoGeracao, String resultado) {
+    meterRegistry.counter("docflow.publicacao.resultado", "status", resultado).increment();
+    tempoGeracao.stop(meterRegistry.timer("docflow.publicacao.duracao"));
+  }
+
+  /** O ZIP já foi escrito quando o cancelamento chegou; não deixa lixo em disco. */
+  private void descartarPacote(ResultadoGeracao resultado) {
+    if (resultado.arquivoZipCaminho() == null || resultado.arquivoZipCaminho().isBlank()) {
+      return;
+    }
+    try {
+      Files.deleteIfExists(Path.of(resultado.arquivoZipCaminho()));
+    } catch (java.io.IOException | SecurityException ex) {
+      log.warn("Pacote da publicação cancelada não pôde ser removido: {}", ex.getMessage());
     }
   }
 
@@ -88,7 +152,7 @@ public class PublicacaoWorkerService {
         .findByCliente_IdOrderByCreatedAtDesc(publicacao.getCliente().getId())
         .stream()
         .filter(p -> !p.getId().equals(publicacao.getId())
-            && p.getStatus() == com.nexus.portal.docflow.entity.StatusPublicacao.SUCESSO)
+            && p.getStatus() == StatusPublicacao.SUCESSO)
         .limit(1)
         .toList();
 
@@ -120,5 +184,8 @@ public class PublicacaoWorkerService {
               .findFirst().orElse("Página removida");
           changelogRepository.save(new PublicacaoChangelog(publicacao.getId(), id, titulo, "REMOVIDO"));
         });
+  }
+
+  private record Contexto(Cliente cliente, UUID clienteId, String versao, List<PaginaResponse> paginas) {
   }
 }

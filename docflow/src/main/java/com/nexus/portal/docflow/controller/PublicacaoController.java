@@ -6,11 +6,13 @@ import com.nexus.portal.docflow.dto.response.ChangelogItemResponse;
 import com.nexus.portal.docflow.dto.response.DownloadTokenResponse;
 import com.nexus.portal.docflow.dto.response.PaginaResponse;
 import com.nexus.portal.docflow.dto.response.PublicacaoPaginaSnapshotItem;
+import com.nexus.portal.docflow.dto.response.PublicacaoDiffResponse;
 import com.nexus.portal.docflow.dto.response.PublicacaoResponse;
 import com.nexus.portal.docflow.dto.response.ReprocessamentoPublicacoesResponse;
 import com.nexus.portal.docflow.entity.Publicacao;
 import com.nexus.portal.docflow.entity.StatusPublicacao;
 import com.nexus.portal.docflow.service.GeradorPdfService;
+import com.nexus.portal.docflow.service.PublicacaoDiffService;
 import com.nexus.portal.docflow.service.PublicacaoService;
 import com.nexus.portal.docflow.service.PublicacaoEventService;
 import com.nexus.portal.docflow.service.PublicacaoService.DiagnosticoPublicacao;
@@ -51,6 +53,7 @@ public class PublicacaoController {
 
   private final PublicacaoService publicacaoService;
   private final PublicacaoEventService publicacaoEventService;
+  private final PublicacaoDiffService publicacaoDiffService;
   private final GeradorPdfService geradorPdfService;
   private final JwtService jwtService;
 
@@ -102,6 +105,12 @@ public class PublicacaoController {
   @PreAuthorize(Permissoes.PUBLICACAO_EDITAR)
   public PublicacaoResponse reprocessar(@PathVariable UUID id, Principal principal) {
     return PublicacaoResponse.from(publicacaoService.reprocessar(id, principal));
+  }
+
+  @PostMapping("/{id}/cancelar")
+  @PreAuthorize(Permissoes.PUBLICACAO_EDITAR)
+  public PublicacaoResponse cancelar(@PathVariable UUID id, Principal principal) {
+    return PublicacaoResponse.from(publicacaoService.cancelar(id, principal));
   }
 
   @PostMapping("/reprocessar-lote")
@@ -170,6 +179,17 @@ public class PublicacaoController {
   @GetMapping("/{id}/paginas")
   public List<PublicacaoPaginaSnapshotItem> arvorePaginas(@PathVariable UUID id) {
     return publicacaoService.arvorePaginas(id);
+  }
+
+  /**
+   * @param comparadaCom publicação de referência; sem ela, compara com a
+   *     publicação concluída imediatamente anterior do mesmo cliente.
+   */
+  @PreAuthorize(Permissoes.PUBLICACAO_LER)
+  @GetMapping("/{id}/diff")
+  public PublicacaoDiffResponse diff(@PathVariable UUID id,
+      @RequestParam(required = false) UUID comparadaCom) {
+    return publicacaoDiffService.comparar(id, comparadaCom);
   }
 
   @PreAuthorize(Permissoes.PUBLICACAO_LER)

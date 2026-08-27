@@ -31,10 +31,11 @@ import org.springframework.mail.javamail.JavaMailSender;
 class NotificacaoEmailServiceTest {
 
   @Mock JavaMailSender mailSender;
+  @Mock com.nexus.identityaccess.service.UsuarioService usuarioService;
 
   @Test
   void naoEnviaQuandoDesabilitado() {
-    NotificacaoEmailService service = new NotificacaoEmailService(mailSender, "admin@x.com", false);
+    NotificacaoEmailService service = new NotificacaoEmailService(mailSender, usuarioService, "admin@x.com", false);
 
     service.notificarPaginaEmRevisao(paginaComTitulo("X"));
     service.notificarPublicacaoGerada(publicacaoBasica());
@@ -44,7 +45,7 @@ class NotificacaoEmailServiceTest {
 
   @Test
   void naoEnviaAdminQuandoAdminEmailVazio() {
-    NotificacaoEmailService service = new NotificacaoEmailService(mailSender, "", true);
+    NotificacaoEmailService service = new NotificacaoEmailService(mailSender, usuarioService, "", true);
 
     service.notificarPaginaEmRevisao(paginaComTitulo("X"));
 
@@ -53,7 +54,7 @@ class NotificacaoEmailServiceTest {
 
   @Test
   void revisao_enviaEmailParaAdminComTituloECodigo() {
-    NotificacaoEmailService service = new NotificacaoEmailService(mailSender, "admin@x.com", true);
+    NotificacaoEmailService service = new NotificacaoEmailService(mailSender, usuarioService, "admin@x.com", true);
 
     service.notificarPaginaEmRevisao(paginaComTitulo("Login"));
 
@@ -67,9 +68,10 @@ class NotificacaoEmailServiceTest {
 
   @Test
   void aprovada_enviaEmailParaEditor() {
-    NotificacaoEmailService service = new NotificacaoEmailService(mailSender, "admin@x.com", true);
+    NotificacaoEmailService service = new NotificacaoEmailService(mailSender, usuarioService, "admin@x.com", true);
+    when(usuarioService.emailDoUsername("editor")).thenReturn(java.util.Optional.of("editor@x.com"));
 
-    service.notificarPaginaAprovada(paginaComTitulo("Home"), "editor@x.com");
+    service.notificarPaginaAprovada(paginaComTitulo("Home"), "editor");
 
     ArgumentCaptor<SimpleMailMessage> captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
     verify(mailSender).send(captor.capture());
@@ -78,17 +80,18 @@ class NotificacaoEmailServiceTest {
   }
 
   @Test
-  void aprovada_pulaSeEmailEditorVazio() {
-    NotificacaoEmailService service = new NotificacaoEmailService(mailSender, "admin@x.com", true);
+  void aprovada_pulaSeEditorNaoTemEmailCadastrado() {
+    NotificacaoEmailService service = new NotificacaoEmailService(mailSender, usuarioService, "admin@x.com", true);
+    when(usuarioService.emailDoUsername(any())).thenReturn(java.util.Optional.empty());
 
-    service.notificarPaginaAprovada(paginaComTitulo("Home"), "");
+    service.notificarPaginaAprovada(paginaComTitulo("Home"), "editor-sem-email");
 
     verifyNoInteractions(mailSender);
   }
 
   @Test
   void falhaAoEnviarNaoQuebra() {
-    NotificacaoEmailService service = new NotificacaoEmailService(mailSender, "admin@x.com", true);
+    NotificacaoEmailService service = new NotificacaoEmailService(mailSender, usuarioService, "admin@x.com", true);
     doThrow(new MailSendException("SMTP down")).when(mailSender).send(any(SimpleMailMessage.class));
 
     // Não deve propagar

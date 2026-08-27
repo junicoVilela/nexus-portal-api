@@ -5,6 +5,7 @@ import com.nexus.portal.docflow.service.PaginaBlocoCatalogoService;
 import com.nexus.portal.docflow.service.PaginaBlueprintCatalogoService;
 import com.nexus.portal.docflow.service.PaginaEventService;
 import com.nexus.portal.docflow.service.PaginaService;
+import com.nexus.portal.docflow.service.PaginaSnippetService;
 import com.nexus.portal.docflow.service.PaginaTemplateService;
 import com.nexus.portal.docflow.service.GeradorPacoteService;
 import com.nexus.portal.docflow.entity.StatusPagina;
@@ -39,7 +40,9 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.multipart.MultipartFile;
+import com.nexus.portal.docflow.dto.request.AtribuirRevisorRequest;
 import com.nexus.portal.docflow.dto.request.PaginaRequest;
+import com.nexus.portal.docflow.dto.request.PaginaSnippetRequest;
 import com.nexus.portal.docflow.dto.request.ComentarioRevisaoRequest;
 import com.nexus.portal.docflow.dto.request.PaginaTemplateRequest;
 import com.nexus.portal.docflow.dto.request.PaginaTemplateAplicacaoRequest;
@@ -50,6 +53,7 @@ import com.nexus.portal.docflow.dto.response.PaginaBibliotecaResponse;
 import com.nexus.portal.docflow.dto.response.PaginaBlocoResponse;
 import com.nexus.portal.docflow.dto.response.PaginaBlueprintResponse;
 import com.nexus.portal.docflow.dto.response.PaginaResponse;
+import com.nexus.portal.docflow.dto.response.PaginaSnippetResponse;
 import com.nexus.portal.docflow.dto.response.PaginaRevisaoResponse;
 import com.nexus.portal.docflow.dto.response.PaginaTemplateResponse;
 import com.nexus.portal.docflow.dto.response.PaginaTemplateAplicacaoResponse;
@@ -68,11 +72,43 @@ public class PaginaController {
   private final PaginaTemplateService paginaTemplateService;
   private final GeradorPacoteService geradorPacoteService;
   private final PaginaEventService paginaEventService;
+  private final PaginaSnippetService paginaSnippetService;
 
   @GetMapping("/blocos")
   @PreAuthorize(Permissoes.PAGINA_LER)
   public List<PaginaBlocoResponse> blocos() {
     return paginaBlocoCatalogoService.listar();
+  }
+
+  @GetMapping("/snippets")
+  @PreAuthorize(Permissoes.PAGINA_LER)
+  public List<PaginaSnippetResponse> snippets(
+      @RequestParam(defaultValue = "false") boolean incluirInativos) {
+    return paginaSnippetService.listar(incluirInativos).stream()
+        .map(PaginaSnippetResponse::from)
+        .toList();
+  }
+
+  @PostMapping("/snippets")
+  @ResponseStatus(HttpStatus.CREATED)
+  @PreAuthorize(Permissoes.PAGINA_CRIAR)
+  public PaginaSnippetResponse criarSnippet(@Valid @RequestBody PaginaSnippetRequest request,
+      Principal principal) {
+    return PaginaSnippetResponse.from(paginaSnippetService.criar(request, principal));
+  }
+
+  @PutMapping("/snippets/{snippetId}")
+  @PreAuthorize(Permissoes.PAGINA_EDITAR)
+  public PaginaSnippetResponse atualizarSnippet(@PathVariable UUID snippetId,
+      @Valid @RequestBody PaginaSnippetRequest request, Principal principal) {
+    return PaginaSnippetResponse.from(paginaSnippetService.atualizar(snippetId, request, principal));
+  }
+
+  @DeleteMapping("/snippets/{snippetId}")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  @PreAuthorize(Permissoes.PAGINA_EXCLUIR)
+  public void excluirSnippet(@PathVariable UUID snippetId, Principal principal) {
+    paginaSnippetService.excluir(snippetId, principal);
   }
 
   @GetMapping("/blueprints")
@@ -98,9 +134,13 @@ public class PaginaController {
       @RequestParam(required = false) UUID clienteId,
       @RequestParam(defaultValue = "false") boolean somenteContexto,
       @RequestParam(defaultValue = "false") boolean incluirArquivados) {
-    return paginaTemplateService.listar(projetoId, clienteId, somenteContexto, incluirArquivados).stream()
+    var templates =
+        paginaTemplateService.listar(projetoId, clienteId, somenteContexto, incluirArquivados);
+    Map<UUID, Long> originadas = paginaTemplateService.paginasOriginadasPorTemplate(
+        templates.stream().map(t -> t.getId()).toList());
+    return templates.stream()
         .map(template -> PaginaTemplateResponse.from(template,
-            paginaTemplateService.paginasOriginadas(template.getId())))
+            originadas.getOrDefault(template.getId(), 0L)))
         .toList();
   }
 
@@ -149,9 +189,10 @@ public class PaginaController {
   @GetMapping("/templates/{templateId}/versoes")
   @PreAuthorize(Permissoes.PAGINA_LER)
   public List<PaginaTemplateVersaoResponse> versoesTemplate(@PathVariable UUID templateId) {
+    Map<Integer, Long> originadas = paginaTemplateService.paginasOriginadasPorVersao(templateId);
     return paginaTemplateService.listarVersoes(templateId).stream()
         .map(versao -> PaginaTemplateVersaoResponse.from(versao,
-            paginaTemplateService.paginasOriginadas(templateId, versao.getNumero())))
+            originadas.getOrDefault(versao.getNumero(), 0L)))
         .toList();
   }
 
@@ -266,6 +307,28 @@ public class PaginaController {
     return PaginaResponse.from(paginaService.enviarRevisao(id, principal));
   }
 
+  @PostMapping("/{id}/revisor")
+  @PreAuthorize(Permissoes.PAGINA_EDITAR)
+  public PaginaResponse atribuirRevisor(@PathVariable UUID id,
+      @Valid @RequestBody AtribuirRevisorRequest request, Principal principal) {
+    return PaginaResponse.from(paginaService.atribuirRevisor(id, request.revisorUsername(),
+        request.prazoRevisao(), principal));
+  }
+
+  /** Fila de revisão do usuário autenticado. */
+  @PreAuthorize(Permissoes.PAGINA_LER)
+  @GetMapping("/minhas-revisoes")
+  public PageResponse<PaginaResponse> minhasRevisoes(
+      Principal principal,
+      @RequestParam(defaultValue = "1") Integer page,
+      @RequestParam(defaultValue = "10") Integer size) {
+    Sort ordem = Sort.by(Sort.Order.asc("prazoRevisao").nullsLast(), Sort.Order.asc("titulo"));
+    return PageResponse.from(
+        paginaService.filaDoRevisor(principal == null ? "" : principal.getName(),
+            PageableUtils.of(page, size, ordem)),
+        PaginaResponse::from);
+  }
+
   @PostMapping("/{id}/aprovar")
   @PreAuthorize(Permissoes.PAGINA_EDITAR)
   public PaginaResponse aprovar(@PathVariable UUID id, Principal principal) {
@@ -367,7 +430,8 @@ public class PaginaController {
   @DeleteMapping("/{paginaId}/anexos/{anexoId}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   @PreAuthorize(Permissoes.PAGINA_EDITAR)
-  public void excluirAnexo(@PathVariable UUID paginaId, @PathVariable UUID anexoId) {
-    paginaAnexoService.excluir(paginaId, anexoId);
+  public void excluirAnexo(@PathVariable UUID paginaId, @PathVariable UUID anexoId,
+      Principal principal) {
+    paginaAnexoService.excluir(paginaId, anexoId, principal);
   }
 }

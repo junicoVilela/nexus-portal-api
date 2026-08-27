@@ -161,7 +161,16 @@ DELETE /api/v1/paginas/{id}
 POST   /api/v1/publicacoes
 GET    /api/v1/publicacoes/{id}
 DELETE /api/v1/publicacoes/{id}
-GET    /api/v1/docflow/publicacoes/eventos (SSE autenticado)
+POST   /api/v1/docflow/publicacoes/{id}/cancelar
+GET    /api/v1/docflow/publicacoes/{id}/diff?comparadaCom={id}
+GET    /api/v1/docflow/publicacoes/eventos (SSE autenticado, filtrado por escopo de cliente)
+
+POST   /api/v1/docflow/paginas/{id}/revisor
+GET    /api/v1/docflow/paginas/minhas-revisoes
+GET    /api/v1/docflow/paginas/snippets
+POST   /api/v1/docflow/paginas/snippets
+PUT    /api/v1/docflow/paginas/snippets/{id}
+DELETE /api/v1/docflow/paginas/snippets/{id}
 
 POST   /api/v1/auth/login
 GET    /api/v1/usuarios
@@ -195,6 +204,26 @@ GET    /api/v1/auditoria
 - Exclusões removem vínculos e registros técnicos em cascata, limpam arquivos após o commit e registram evento de auditoria.
 - A geração publica eventos SSE ao concluir e registra `docflow.publicacao.duracao` e
   `docflow.publicacao.resultado{status=sucesso|erro|cancelada}` no Micrometer/Prometheus.
+- A geração do pacote roda **fora de transação**: o banco só é tocado em transações curtas
+  no início (carregar contexto) e no fim (registrar desfecho).
+- `PublicacaoWatchdogJob` reconcilia publicações presas em `GERANDO` além de
+  `docflow.publicacao.timeout-minutos` (padrão 30), marcando-as como ERRO.
+- Cancelamento é cooperativo: `cancelamento_solicitado` é verificado antes de persistir o
+  resultado; o ZIP já escrito é descartado e o status vira `CANCELADA`.
+- O stream SSE de publicação respeita o escopo de cliente do assinante, fotografado na
+  inscrição. O stream de página não é de cliente e vai para todos os assinantes.
+- Anexos: o `Content-Type` do cliente não basta — o arquivo precisa decodificar como imagem
+  (SVG é recusado). A remoção do arquivo acontece após o commit.
+- A busca de páginas usa a coluna gerada `search_vector` (índice GIN) combinada com LIKE,
+  que cobre termos parciais.
+- Duplicar página copia subpáginas, anexos (arquivo em disco) e reaponta os links do HTML.
+- Reordenar respeita a ordem dos ids enviados e só grava `ordem`, sem incrementar a `version`
+  de quem não mudou.
+- Revisão pode ter responsável e prazo. Com responsável definido, só ele aprova a página.
+- Snippets (`{{snippet:CODIGO}}`) são resolvidos na geração do pacote, no preview e no PDF —
+  nunca ficam no conteúdo salvo. Código inexistente vira aviso visível.
+- O diff entre publicações compara o hash do conteúdo por página gravado no snapshot
+  (ADICIONADA / REMOVIDA / ALTERADA / MOVIDA / INALTERADA / INDETERMINADA).
 - O PDF normaliza HTML5 para XHTML com Jsoup antes do OpenHTMLtoPDF. O teste integrado
   `PublicacaoDownloadIntegrationTest` sobe PostgreSQL real, gera a publicação e valida ZIP e PDF.
 

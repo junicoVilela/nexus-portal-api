@@ -37,6 +37,7 @@ public class GeradorManualPdfService {
 
   private final GeradorPacoteService geradorPacoteService;
   private final PaginaAnexoRepository paginaAnexoRepository;
+  private final PaginaSnippetService paginaSnippetService;
 
   public String montarHtmlManual(Cliente cliente, String versao) {
     List<Pagina> paginas = geradorPacoteService.selecionarPaginas(cliente.getId());
@@ -161,7 +162,8 @@ public class GeradorManualPdfService {
   }
 
   private String prepararConteudoComAnexosInline(Pagina pagina) {
-    String html = pagina.getConteudoHtml() == null ? "" : pagina.getConteudoHtml();
+    String html = paginaSnippetService.resolver(
+        pagina.getConteudoHtml() == null ? "" : pagina.getConteudoHtml());
     if (html.isBlank()) {
       return "";
     }

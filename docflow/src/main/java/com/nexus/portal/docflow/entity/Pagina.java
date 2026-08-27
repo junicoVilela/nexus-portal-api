@@ -76,6 +76,12 @@ public class Pagina extends AuditableEntity {
   @Column(name = "template_origem_versao")
   private Integer templateOrigemVersao;
 
+  @Column(name = "revisor_username", length = 120)
+  private String revisorUsername;
+
+  @Column(name = "prazo_revisao")
+  private OffsetDateTime prazoRevisao;
+
   public Pagina(String titulo, String slug, String codigoTela, String resumo, String conteudoHtml,
       int ordem, boolean ativo, Modulo modulo, Pagina parent) {
     this.titulo = titulo;
@@ -102,11 +108,43 @@ public class Pagina extends AuditableEntity {
     this.parent = parent;
   }
 
+  /**
+   * Só mexe na ordem. Reescrever a página inteira para reordenar sujava todos
+   * os campos e incrementava a {@code version}, derrubando editores abertos.
+   */
+  public void definirOrdem(int ordem) {
+    if (this.ordem != ordem) {
+      this.ordem = ordem;
+    }
+  }
+
+  /** Ajuste pontual do HTML, sem tocar nos demais campos (usado na duplicação). */
+  public void atualizarConteudo(String conteudoHtml) {
+    this.conteudoHtml = conteudoHtml;
+  }
+
   public void definirOrigemTemplate(UUID templateId, Integer versao) {
     if (templateId != null && versao != null) {
       this.templateOrigemId = templateId;
       this.templateOrigemVersao = versao;
     }
+  }
+
+  public void atribuirRevisor(String revisorUsername, OffsetDateTime prazoRevisao) {
+    this.revisorUsername = revisorUsername;
+    this.prazoRevisao = prazoRevisao;
+  }
+
+  /** Publicada ou devolvida, a atribuição de revisão deixa de valer. */
+  public void limparRevisor() {
+    this.revisorUsername = null;
+    this.prazoRevisao = null;
+  }
+
+  public boolean revisaoAtrasada() {
+    return prazoRevisao != null
+        && status == StatusPagina.EM_REVISAO
+        && OffsetDateTime.now().isAfter(prazoRevisao);
   }
 
   public void publicar() {

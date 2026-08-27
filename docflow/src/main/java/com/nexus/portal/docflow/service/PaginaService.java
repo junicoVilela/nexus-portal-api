@@ -4,6 +4,7 @@ import com.nexus.portal.docflow.service.ModuloService;
 import com.nexus.portal.docflow.entity.Modulo;
 import com.nexus.portal.docflow.dto.request.PaginaRequest;
 import com.nexus.portal.docflow.entity.Pagina;
+import com.nexus.portal.docflow.entity.PaginaAnexo;
 import com.nexus.portal.docflow.entity.PaginaRevisao;
 import com.nexus.portal.docflow.entity.StatusPagina;
 import com.nexus.portal.docflow.entity.TipoRevisaoPagina;
@@ -19,7 +20,9 @@ import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.transaction.Transactional;
 import java.security.Principal;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumMap;
@@ -53,6 +56,8 @@ public class PaginaService {
   private final PaginaAnexoRepository paginaAnexoRepository;
   private final ArquivoRemocaoService arquivoRemocaoService;
   private final PaginaEventService paginaEventService;
+  private final NotificacaoEmailService notificacaoEmailService;
+  private final AnexoStorage anexoStorage;
 
   @Transactional
   public Pagina criar(PaginaRequest request, Principal principal) {
@@ -187,7 +192,40 @@ public class PaginaService {
         "Página enviada para revisão editorial.");
     auditoriaService.registrar("PAGINA", pagina.getId(), "ENVIAR_REVISAO", pagina.getTitulo(), principal);
     paginaEventService.publicar(pagina, "ENVIAR_REVISAO", username(principal));
+    notificacaoEmailService.notificarPaginaEmRevisao(pagina);
     return pagina;
+  }
+
+  /**
+   * Atribui a revisão a alguém, com prazo opcional. Só faz sentido enquanto a
+   * página não foi publicada.
+   */
+  @Transactional
+  public Pagina atribuirRevisor(UUID id, String revisorUsername, OffsetDateTime prazo,
+      Principal principal) {
+    Pagina pagina = buscar(id);
+    if (pagina.getStatus() == StatusPagina.PUBLICADO || pagina.getStatus() == StatusPagina.ARQUIVADO) {
+      throw new BusinessException("Páginas publicadas ou arquivadas não entram na fila de revisão.");
+    }
+    if (revisorUsername == null || revisorUsername.isBlank()) {
+      throw new BusinessException("Informe o responsável pela revisão.");
+    }
+    if (prazo != null && prazo.isBefore(OffsetDateTime.now())) {
+      throw new BusinessException("O prazo de revisão não pode estar no passado.");
+    }
+    pagina.atribuirRevisor(revisorUsername.trim(), prazo);
+    registrarRevisao(pagina, username(principal), TipoRevisaoPagina.ATRIBUICAO_REVISOR,
+        "Revisão atribuída a " + revisorUsername.trim() + ".");
+    auditoriaService.registrar("PAGINA", pagina.getId(), "ATRIBUIR_REVISOR",
+        pagina.getTitulo() + " -> " + revisorUsername.trim(), principal);
+    paginaEventService.publicar(pagina, "ATRIBUIR_REVISOR", username(principal));
+    return pagina;
+  }
+
+  /** Fila do revisor: o que está em revisão sob a responsabilidade dele. */
+  public Page<Pagina> filaDoRevisor(String revisorUsername, Pageable pageable) {
+    return paginaRepository.findByRevisorUsernameAndStatus(
+        revisorUsername, StatusPagina.EM_REVISAO, pageable);
   }
 
   @Transactional
@@ -196,11 +234,14 @@ public class PaginaService {
     if (pagina.getStatus() != StatusPagina.EM_REVISAO) {
       throw new BusinessException("Somente páginas em revisão podem ser aprovadas.");
     }
+    validarDonoDaRevisao(pagina, principal);
     pagina.aprovar();
+    pagina.limparRevisor();
     registrarRevisao(pagina, username(principal), TipoRevisaoPagina.APROVACAO,
         "Página aprovada para publicação.");
     auditoriaService.registrar("PAGINA", pagina.getId(), "APROVAR", pagina.getTitulo(), principal);
     paginaEventService.publicar(pagina, "APROVAR", username(principal));
+    notificarAutorDoEnvio(pagina);
     return pagina;
   }
 
@@ -265,20 +306,85 @@ public class PaginaService {
     return paginaQualidadeService.avaliar(buscar(id));
   }
 
+  /**
+   * Duplica a página inteira: anexos (arquivo e referência no HTML), origem de
+   * modelo e subpáginas. Copiar só o HTML deixava a cópia apontando para os
+   * anexos do original — apagar a original quebrava as duas.
+   */
   @Transactional
   public Pagina duplicar(UUID id, Principal principal) {
     Pagina origem = buscar(id);
-    String usuario = username(principal);
-    String titulo = origem.getTitulo() + " (cópia)";
-    String slug = slugUnico(origem.getSlug() + "-copia");
-    String codigoTela = codigoTelaUnico(origem.getCodigoTela() + "-COPIA");
-    Pagina copia = paginaRepository.save(new Pagina(titulo, slug, codigoTela, origem.getResumo(),
-        origem.getConteudoHtml(), origem.getOrdem() + 1, origem.isAtivo(), origem.getModulo(), origem.getParent()));
+    Pagina copia = duplicarRecursivo(origem, origem.getParent(), username(principal));
+    auditoriaService.registrar("PAGINA", copia.getId(), "DUPLICAR",
+        origem.getTitulo() + " -> " + copia.getTitulo(), principal);
+    return copia;
+  }
+
+  private Pagina duplicarRecursivo(Pagina origem, Pagina novoParent, String usuario) {
+    Pagina copia = paginaRepository.save(new Pagina(
+        origem.getTitulo() + " (cópia)",
+        slugUnico(origem.getSlug() + "-copia"),
+        codigoTelaUnico(origem.getCodigoTela() + "-COPIA"),
+        origem.getResumo(),
+        origem.getConteudoHtml(),
+        origem.getOrdem() + 1,
+        origem.isAtivo(),
+        origem.getModulo(),
+        novoParent));
+    copia.definirOrigemTemplate(origem.getTemplateOrigemId(), origem.getTemplateOrigemVersao());
+    copia.atualizarConteudo(duplicarAnexos(origem, copia));
     registrarRevisao(copia, usuario, TipoRevisaoPagina.DUPLICACAO,
         "Página criada a partir de uma duplicação.");
-    auditoriaService.registrar("PAGINA", copia.getId(), "DUPLICAR", origem.getTitulo() + " -> " + copia.getTitulo(),
-        principal);
+    for (Pagina filho : paginaRepository.findByParent_Id(origem.getId())) {
+      duplicarRecursivo(filho, copia, usuario);
+    }
     return copia;
+  }
+
+  /**
+   * Copia os arquivos anexos para a nova página e devolve o HTML com os links
+   * de download reapontados para os anexos recém-criados.
+   */
+  private String duplicarAnexos(Pagina origem, Pagina copia) {
+    String html = origem.getConteudoHtml();
+    for (PaginaAnexo anexo : paginaAnexoRepository.findByPagina_Id(origem.getId())) {
+      PaginaAnexo novo = copiarAnexo(copia, anexo);
+      if (novo == null) {
+        continue;
+      }
+      html = reapontarAnexo(html, origem.getId(), anexo.getId(), copia.getId(), novo.getId());
+    }
+    return html;
+  }
+
+  /** Devolve {@code null} quando o arquivo da origem sumiu do disco — a cópia da página continua. */
+  private PaginaAnexo copiarAnexo(Pagina copia, PaginaAnexo origem) {
+    Path arquivoOrigem = Path.of(origem.getCaminho());
+    if (!Files.exists(arquivoOrigem)) {
+      log.warn("Anexo {} não encontrado em disco; não foi copiado para a página {}.",
+          origem.getId(), copia.getId());
+      return null;
+    }
+    Path destino = anexoStorage.novoArquivo(copia.getId(), origem.getNomeOriginal(),
+        origem.getContentType());
+    try {
+      Files.createDirectories(destino.getParent());
+      Files.copy(arquivoOrigem, destino);
+    } catch (java.io.IOException ex) {
+      throw new BusinessException("Falha ao copiar anexo da página: " + ex.getMessage());
+    }
+    return paginaAnexoRepository.save(new PaginaAnexo(copia, origem.getNomeOriginal(),
+        origem.getContentType(), origem.getTamanhoBytes(), destino.toString()));
+  }
+
+  private String reapontarAnexo(String html, UUID origemPaginaId, UUID origemAnexoId,
+      UUID copiaPaginaId, UUID copiaAnexoId) {
+    if (html == null || html.isBlank()) {
+      return html;
+    }
+    return html.replace(
+        "/paginas/" + origemPaginaId + "/anexos/" + origemAnexoId + "/download",
+        "/paginas/" + copiaPaginaId + "/anexos/" + copiaAnexoId + "/download");
   }
 
   @Transactional
@@ -286,7 +392,11 @@ public class PaginaService {
     if (paginaIds.isEmpty() || paginaIds.size() != paginaIds.stream().distinct().count()) {
       throw new BusinessException("A ordenação deve conter páginas distintas.");
     }
-    List<Pagina> paginas = buscarTodos(paginaIds);
+    // findAllById não devolve na ordem pedida; a ordenação é justamente o dado
+    // que o cliente enviou, então reindexa pela posição do id na requisição.
+    Map<UUID, Pagina> porId = buscarTodos(paginaIds).stream()
+        .collect(java.util.stream.Collectors.toMap(Pagina::getId, pagina -> pagina));
+    List<Pagina> paginas = paginaIds.stream().map(porId::get).toList();
     UUID moduloId = paginas.getFirst().getModulo().getId();
     UUID parentId = paginas.getFirst().getParent() == null ? null : paginas.getFirst().getParent().getId();
     if (paginas.stream().anyMatch(p -> !p.getModulo().getId().equals(moduloId)
@@ -294,24 +404,32 @@ public class PaginaService {
       throw new BusinessException("Só é possível reordenar páginas do mesmo módulo e nível.");
     }
     for (int i = 0; i < paginas.size(); i++) {
-      Pagina pagina = paginas.get(i);
-      int novaOrdem = i;
-        pagina.atualizar(pagina.getTitulo(), pagina.getSlug(), pagina.getCodigoTela(),
-            pagina.getResumo(), pagina.getConteudoHtml(), novaOrdem, pagina.isAtivo(),
-            pagina.getModulo(), pagina.getParent());
+      paginas.get(i).definirOrdem(i);
     }
     auditoriaService.registrar("PAGINA", null, "REORDENAR", "Páginas reordenadas.", principal);
   }
 
-  public String preview(UUID id) {
-    Pagina pagina = buscar(id);
-    return """
-        <!doctype html>
-        <html lang="pt-BR">
-        <head><meta charset="utf-8"><title>%s</title></head>
-        <body><main>%s</main></body>
-        </html>
-        """.formatted(pagina.getTitulo(), pagina.getConteudoHtml() == null ? "" : pagina.getConteudoHtml());
+  /**
+   * Quando a revisão tem dono, é ele quem aprova. Sem responsável definido, o
+   * fluxo antigo continua valendo e qualquer editor aprova.
+   */
+  private void validarDonoDaRevisao(Pagina pagina, Principal principal) {
+    String revisor = pagina.getRevisorUsername();
+    if (revisor == null || revisor.isBlank()) {
+      return;
+    }
+    if (!revisor.equalsIgnoreCase(username(principal))) {
+      throw new BusinessException(
+          "Esta revisão está atribuída a " + revisor + " e só pode ser aprovada por essa pessoa.");
+    }
+  }
+
+  /** Avisa quem enviou a página para revisão — não quem aprovou. */
+  private void notificarAutorDoEnvio(Pagina pagina) {
+    paginaRevisaoRepository
+        .findFirstByPagina_IdAndTipoOrderByNumeroDesc(pagina.getId(), TipoRevisaoPagina.ENVIO_REVISAO)
+        .map(PaginaRevisao::getCreatedBy)
+        .ifPresent(autor -> notificacaoEmailService.notificarPaginaAprovada(pagina, autor));
   }
 
   private void sincronizarIndicePaiSeAplicavel(Pagina pagina, Principal principal) {
@@ -549,14 +667,30 @@ public class PaginaService {
             "%" + codigoTelaFiltro + "%"));
       }
       if (buscaFiltro != null) {
-        predicates.add(criteriaBuilder.or(
-            criteriaBuilder.like(criteriaBuilder.lower(root.get("titulo")), "%" + buscaFiltro + "%"),
-            criteriaBuilder.like(criteriaBuilder.lower(root.get("slug")), "%" + buscaFiltro + "%"),
-            criteriaBuilder.like(criteriaBuilder.lower(root.get("codigoTela")), "%" + buscaFiltro + "%"),
-            criteriaBuilder.like(criteriaBuilder.lower(root.get("resumo")), "%" + buscaFiltro + "%")));
+        predicates.add(predicadoDeBusca(root, criteriaBuilder, buscaFiltro));
       }
       return predicates.isEmpty() ? criteriaBuilder.conjunction() : criteriaBuilder.and(predicates.toArray(Predicate[]::new));
     };
+  }
+
+  /**
+   * Busca livre: o índice de texto resolve palavras inteiras (com radical), e o
+   * LIKE cobre o que o editor digita parcialmente — "cad" ainda encontra
+   * "cadastro". Os dois combinados evitam a busca vazia que o tsquery sozinho
+   * devolveria.
+   */
+  private Predicate predicadoDeBusca(jakarta.persistence.criteria.Root<Pagina> root,
+      jakarta.persistence.criteria.CriteriaBuilder criteriaBuilder, String termo) {
+    List<Predicate> alternativas = new ArrayList<>();
+    List<UUID> idsPorTexto = paginaRepository.buscarIdsPorTexto(termo);
+    if (!idsPorTexto.isEmpty()) {
+      alternativas.add(root.get("id").in(idsPorTexto));
+    }
+    alternativas.add(criteriaBuilder.like(criteriaBuilder.lower(root.get("titulo")), "%" + termo + "%"));
+    alternativas.add(criteriaBuilder.like(criteriaBuilder.lower(root.get("slug")), "%" + termo + "%"));
+    alternativas.add(criteriaBuilder.like(criteriaBuilder.lower(root.get("codigoTela")), "%" + termo + "%"));
+    alternativas.add(criteriaBuilder.like(criteriaBuilder.lower(root.get("resumo")), "%" + termo + "%"));
+    return criteriaBuilder.or(alternativas.toArray(Predicate[]::new));
   }
 
   public Map<StatusPagina, Long> resumoContagemPorStatusGlobal() {

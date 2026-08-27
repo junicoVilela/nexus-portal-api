@@ -2,6 +2,7 @@ package com.nexus.portal.docflow.repository;
 
 import com.nexus.portal.docflow.entity.Publicacao;
 import com.nexus.portal.docflow.entity.StatusPublicacao;
+import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -24,6 +25,9 @@ public interface PublicacaoRepository extends JpaRepository<Publicacao, UUID> {
         )
       """)
   long countClientesAtivosSemPublicacaoSucesso();
+
+  @EntityGraph(attributePaths = "cliente")
+  List<Publicacao> findByStatusAndUpdatedAtBefore(StatusPublicacao status, OffsetDateTime limite);
 
   boolean existsByCliente_Id(UUID clienteId);
 

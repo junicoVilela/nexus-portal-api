@@ -1,5 +1,6 @@
 package com.nexus.portal.docflow.service;
 
+import com.nexus.identityaccess.service.UsuarioService;
 import com.nexus.portal.docflow.entity.Pagina;
 import com.nexus.portal.docflow.entity.Publicacao;
 import org.slf4j.Logger;
@@ -16,14 +17,17 @@ public class NotificacaoEmailService {
   private static final Logger log = LoggerFactory.getLogger(NotificacaoEmailService.class);
 
   private final JavaMailSender mailSender;
+  private final UsuarioService usuarioService;
   private final String adminEmail;
   private final boolean emailHabilitado;
 
   public NotificacaoEmailService(
       JavaMailSender mailSender,
+      UsuarioService usuarioService,
       @Value("${docflow.notificacoes.admin-email:}") String adminEmail,
       @Value("${docflow.notificacoes.habilitado:false}") boolean emailHabilitado) {
     this.mailSender = mailSender;
+    this.usuarioService = usuarioService;
     this.adminEmail = adminEmail;
     this.emailHabilitado = emailHabilitado;
   }
@@ -37,14 +41,16 @@ public class NotificacaoEmailService {
             + ") foi enviada para revisão por " + pagina.getUpdatedBy() + ".");
   }
 
+  /**
+   * @param usernameEditor quem enviou a página para revisão; o e-mail é
+   *     resolvido no catálogo de usuários.
+   */
   @Async
-  public void notificarPaginaAprovada(Pagina pagina, String emailEditor) {
+  public void notificarPaginaAprovada(Pagina pagina, String usernameEditor) {
     if (!emailHabilitado) return;
-    if (emailEditor != null && !emailEditor.isBlank()) {
-      enviar(emailEditor,
-          "[Manual] Sua página foi aprovada: " + pagina.getTitulo(),
-          "A página '" + pagina.getTitulo() + "' foi aprovada e está pronta para publicação.");
-    }
+    usuarioService.emailDoUsername(usernameEditor).ifPresent(email -> enviar(email,
+        "[Manual] Sua página foi aprovada: " + pagina.getTitulo(),
+        "A página '" + pagina.getTitulo() + "' foi aprovada e está pronta para publicação."));
   }
 
   @Async

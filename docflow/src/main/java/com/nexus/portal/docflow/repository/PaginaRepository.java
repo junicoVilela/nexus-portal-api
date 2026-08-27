@@ -3,6 +3,7 @@ package com.nexus.portal.docflow.repository;
 import com.nexus.portal.docflow.entity.Pagina;
 import com.nexus.portal.docflow.entity.StatusPagina;
 import java.time.OffsetDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -33,6 +34,21 @@ public interface PaginaRepository extends JpaRepository<Pagina, UUID>, JpaSpecif
 
   long countByTemplateOrigemIdAndTemplateOrigemVersao(UUID templateId, Integer versao);
 
+  /** Uma consulta para a listagem inteira de modelos, em vez de um count por linha. */
+  @Query("""
+      select p.templateOrigemId, count(p) from Pagina p
+      where p.templateOrigemId in :templateIds
+      group by p.templateOrigemId
+      """)
+  List<Object[]> contarPorTemplateOrigem(@Param("templateIds") Collection<UUID> templateIds);
+
+  @Query("""
+      select p.templateOrigemVersao, count(p) from Pagina p
+      where p.templateOrigemId = :templateId and p.templateOrigemVersao is not null
+      group by p.templateOrigemVersao
+      """)
+  List<Object[]> contarPorVersaoDoTemplate(@Param("templateId") UUID templateId);
+
   long countByAtivoTrue();
 
   long countByStatusAndAtivoTrueAndPublishedAtBefore(StatusPagina status, OffsetDateTime limite);
@@ -40,13 +56,16 @@ public interface PaginaRepository extends JpaRepository<Pagina, UUID>, JpaSpecif
   @Query("select count(p) from Pagina p where p.ativo = true and (p.resumo is null or length(trim(p.resumo)) < 30)")
   long countSemResumoEditorial();
 
+  /**
+   * Ids que casam com o termo no índice GIN. A listagem continua sendo montada
+   * pela Specification (filtros, ordenação e paginação); daqui sai só o
+   * conjunto de ids que o índice resolveu.
+   */
   @Query(value = """
-      SELECT p.* FROM tb_pagina p
+      SELECT p.id FROM tb_pagina p
       WHERE p.search_vector @@ plainto_tsquery('portuguese', :termo)
-        AND p.ativo = true
-      ORDER BY p.titulo ASC
       """, nativeQuery = true)
-  List<Pagina> buscaFullText(@Param("termo") String termo);
+  List<UUID> buscarIdsPorTexto(@Param("termo") String termo);
 
   @Query("""
       select p from Pagina p
@@ -66,4 +85,8 @@ public interface PaginaRepository extends JpaRepository<Pagina, UUID>, JpaSpecif
   List<Object[]> contarPorStatusAgrupado();
 
   List<Pagina> findByParent_Id(UUID parentId);
+
+  @EntityGraph(attributePaths = {"modulo", "modulo.projeto", "parent"})
+  org.springframework.data.domain.Page<Pagina> findByRevisorUsernameAndStatus(
+      String revisorUsername, StatusPagina status, org.springframework.data.domain.Pageable pageable);
 }

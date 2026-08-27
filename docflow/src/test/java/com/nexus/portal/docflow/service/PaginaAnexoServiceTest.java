@@ -3,6 +3,9 @@ package com.nexus.portal.docflow.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -36,6 +39,7 @@ class PaginaAnexoServiceTest {
 
   @Mock PaginaService paginaService;
   @Mock PaginaAnexoRepository paginaAnexoRepository;
+  @Mock com.nexus.identityaccess.service.AuditoriaService auditoriaService;
 
   PaginaAnexoService service;
 
@@ -47,7 +51,8 @@ class PaginaAnexoServiceTest {
   @BeforeEach
   void setUp() throws Exception {
     service = new PaginaAnexoService(paginaService, paginaAnexoRepository,
-        new StorageProperties(storage.resolve("publicacoes").toString()));
+        new AnexoStorage(new StorageProperties(storage.resolve("publicacoes").toString())),
+        new ArquivoRemocaoService(), auditoriaService);
     paginaId = UUID.randomUUID();
     Projeto proj = new Projeto("P", "p", null, true);
     Modulo mod = new Modulo("M", "m", null, 1, true, proj);
@@ -58,16 +63,38 @@ class PaginaAnexoServiceTest {
   }
 
   @Test
-  void anexar_persisteArquivoEMetadata() {
-    MultipartFile img = new MockMultipartFile("f", "print.png", "image/png", new byte[]{1, 2, 3});
+  void anexar_persisteArquivoEMetadata() throws Exception {
+    byte[] png = pngDeUmPixel();
+    MultipartFile img = new MockMultipartFile("f", "print.png", "image/png", png);
 
     PaginaAnexo anexo = service.anexar(paginaId, img);
 
     assertThat(anexo.getNomeOriginal()).isEqualTo("print.png");
     assertThat(anexo.getContentType()).isEqualTo("image/png");
-    assertThat(anexo.getTamanhoBytes()).isEqualTo(3);
+    assertThat(anexo.getTamanhoBytes()).isEqualTo(png.length);
     assertThat(Files.exists(Path.of(anexo.getCaminho()))).isTrue();
     assertThat(Path.of(anexo.getCaminho()).getFileName().toString()).endsWith(".png");
+  }
+
+  @Test
+  void anexar_falhaSeContentTypeMenteSobreOConteudo() {
+    MultipartFile falso = new MockMultipartFile("f", "print.png", "image/png",
+        "<?php system($_GET['c']); ?>".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+    assertThatThrownBy(() -> service.anexar(paginaId, falso))
+        .isInstanceOf(BusinessException.class)
+        .hasMessageContaining("não é uma imagem válida");
+  }
+
+  @Test
+  void anexar_recusaSvg() {
+    MultipartFile svg = new MockMultipartFile("f", "icone.svg", "image/svg+xml",
+        "<svg xmlns=\"http://www.w3.org/2000/svg\"><script>alert(1)</script></svg>"
+            .getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+    assertThatThrownBy(() -> service.anexar(paginaId, svg))
+        .isInstanceOf(BusinessException.class)
+        .hasMessageContaining("SVG");
   }
 
   @Test
@@ -123,10 +150,19 @@ class PaginaAnexoServiceTest {
     PaginaAnexo a = new PaginaAnexo(pagina, "a.png", "image/png", 3, file.toString());
     when(paginaAnexoRepository.findById(anexoId)).thenReturn(Optional.of(a));
 
-    service.excluir(paginaId, anexoId);
+    service.excluir(paginaId, anexoId, null);
 
     verify(paginaAnexoRepository).delete(a);
     assertThat(Files.exists(file)).isFalse();
+    verify(auditoriaService).registrar(eq("PAGINA_ANEXO"), eq(anexoId), eq("EXCLUIR"),
+        contains("a.png"), isNull());
+  }
+
+  private static byte[] pngDeUmPixel() throws Exception {
+    var imagem = new java.awt.image.BufferedImage(1, 1, java.awt.image.BufferedImage.TYPE_INT_RGB);
+    var saida = new java.io.ByteArrayOutputStream();
+    javax.imageio.ImageIO.write(imagem, "png", saida);
+    return saida.toByteArray();
   }
 
   private static void setId(Object entity, UUID id) throws Exception {

@@ -54,14 +54,19 @@ class GeradorPacoteServiceTest {
   Projeto projeto;
   Modulo modulo;
 
+  @Mock PaginaSnippetService paginaSnippetService;
+
   @TempDir Path storageDir;
 
   @BeforeEach
   void setUp() throws Exception {
     StorageProperties props = new StorageProperties(storageDir.toString());
+    // Sem snippets nestes cenários: o resolvedor devolve o HTML como veio.
+    org.mockito.Mockito.when(paginaSnippetService.resolver(org.mockito.ArgumentMatchers.any()))
+        .thenAnswer(inv -> inv.getArgument(0));
     service = new GeradorPacoteService(clienteModuloRepository, clientePaginaRepository,
         paginaRepository, clienteProjetoRepository, paginaAnexoRepository, props,
-        empresaLogoService, new ObjectMapper());
+        empresaLogoService, paginaSnippetService, new ObjectMapper());
 
     clienteId = UUID.randomUUID();
     cliente = new Cliente("ACME", "acme", true);

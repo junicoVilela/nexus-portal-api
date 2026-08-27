@@ -1,31 +1,26 @@
 package com.nexus.portal.docflow.service;
 
+import com.nexus.identityaccess.service.EscopoResolver;
 import com.nexus.portal.docflow.entity.Publicacao;
-import java.io.IOException;
 import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+/**
+ * Stream de eventos de publicação. Cada assinante recebe apenas os clientes do
+ * seu escopo — sem isso um usuário restrito a um cliente veria nome e versão
+ * das publicações de todos os outros.
+ */
 @Service
+@RequiredArgsConstructor
 public class PublicacaoEventService {
 
-  private static final long TIMEOUT_MILLIS = 30 * 60 * 1000L;
-  private final CopyOnWriteArrayList<SseEmitter> assinantes = new CopyOnWriteArrayList<>();
+  private final EscopoResolver escopoResolver;
+  private final SseBroadcaster broadcaster = new SseBroadcaster();
 
   public SseEmitter inscrever() {
-    SseEmitter emitter = new SseEmitter(TIMEOUT_MILLIS);
-    assinantes.add(emitter);
-    emitter.onCompletion(() -> assinantes.remove(emitter));
-    emitter.onTimeout(() -> assinantes.remove(emitter));
-    emitter.onError(error -> assinantes.remove(emitter));
-    try {
-      emitter.send(SseEmitter.event().name("conectado").data(Map.of("status", "OK")));
-    } catch (IOException ex) {
-      assinantes.remove(emitter);
-      emitter.completeWithError(ex);
-    }
-    return emitter;
+    return broadcaster.inscrever(escopoResolver.clientesPermitidosDoUsuarioAtual());
   }
 
   public void publicar(Publicacao publicacao) {
@@ -34,15 +29,6 @@ public class PublicacaoEventService {
         "clienteId", publicacao.getCliente().getId(),
         "status", publicacao.getStatus().name(),
         "versao", publicacao.getVersao());
-    assinantes.forEach(emitter -> enviar(emitter, evento));
-  }
-
-  private void enviar(SseEmitter emitter, Map<String, Object> evento) {
-    try {
-      emitter.send(SseEmitter.event().name("publicacao").data(evento));
-    } catch (IOException | IllegalStateException ex) {
-      assinantes.remove(emitter);
-      emitter.complete();
-    }
+    broadcaster.publicar("publicacao", evento, publicacao.getCliente().getId());
   }
 }

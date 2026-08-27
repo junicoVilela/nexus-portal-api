@@ -20,6 +20,7 @@ import com.nexus.portal.docflow.repository.PaginaAnexoRepository;
 import com.nexus.portal.docflow.repository.PaginaRevisaoRepository;
 import com.nexus.portal.docflow.entity.Projeto;
 import com.nexus.identityaccess.service.AuditoriaService;
+import com.nexus.portal.shared.config.StorageProperties;
 import com.nexus.portal.shared.exception.BusinessException;
 import com.nexus.portal.shared.exception.ConflictException;
 import java.lang.reflect.Field;
@@ -49,6 +50,7 @@ class PaginaServiceTest {
   @Mock AuditoriaService auditoriaService;
   @Mock PaginaAnexoRepository paginaAnexoRepository;
   @Mock PaginaEventService paginaEventService;
+  @Mock NotificacaoEmailService notificacaoEmailService;
 
   PaginaService service;
 
@@ -56,11 +58,14 @@ class PaginaServiceTest {
   Modulo moduloPadrao;
   Principal principal;
 
+  @org.junit.jupiter.api.io.TempDir java.nio.file.Path storageDir;
+
   @BeforeEach
   void setUp() {
     service = new PaginaService(paginaRepository, paginaRevisaoRepository,
         moduloService, auditoriaService, new PaginaQualidadeService(), paginaAnexoRepository,
-        new ArquivoRemocaoService(), paginaEventService);
+        new ArquivoRemocaoService(), paginaEventService, notificacaoEmailService,
+        new AnexoStorage(new StorageProperties(storageDir.toString())));
 
     projetoPadrao = new Projeto("Projeto Teste", "projeto-teste", null, true);
     moduloPadrao = new Modulo("Módulo Teste", "modulo-teste", null, 1, true, projetoPadrao);
@@ -360,6 +365,79 @@ class PaginaServiceTest {
 
     assertThat(paginaB.getOrdem()).isZero();
     assertThat(paginaA.getOrdem()).isEqualTo(1);
+  }
+
+  @Test
+  void reordenar_usaAOrdemDosIdsEnviadosEnaoADoBanco() throws Exception {
+    UUID parentId = UUID.randomUUID();
+    Pagina parent = pagina(parentId, StatusPagina.RASCUNHO);
+    UUID idA = UUID.randomUUID();
+    UUID idB = UUID.randomUUID();
+    UUID idC = UUID.randomUUID();
+    Pagina paginaA = pagina(idA, StatusPagina.RASCUNHO);
+    Pagina paginaB = pagina(idB, StatusPagina.RASCUNHO);
+    Pagina paginaC = pagina(idC, StatusPagina.RASCUNHO);
+    for (Pagina p : List.of(paginaA, paginaB, paginaC)) {
+      setField(p, "parent", parent);
+    }
+    // findAllById não promete a ordem do argumento: aqui devolve embaralhado.
+    when(paginaRepository.findAllById(List.of(idC, idA, idB)))
+        .thenReturn(List.of(paginaA, paginaB, paginaC));
+
+    service.reordenar(List.of(idC, idA, idB), principal);
+
+    assertThat(paginaC.getOrdem()).isZero();
+    assertThat(paginaA.getOrdem()).isEqualTo(1);
+    assertThat(paginaB.getOrdem()).isEqualTo(2);
+  }
+
+  @Test
+  void duplicar_copiaSubpaginasAnexosEReapontaOHtmlDaCopia() throws Exception {
+    UUID origemId = UUID.randomUUID();
+    UUID filhoId = UUID.randomUUID();
+    UUID anexoId = UUID.randomUUID();
+    Path arquivo = storageDir.resolve("captura.png");
+    Files.writeString(arquivo, "imagem");
+
+    String src = "/api/v1/docflow/paginas/" + origemId + "/anexos/" + anexoId + "/download";
+    Pagina origem = pagina(origemId, StatusPagina.PUBLICADO);
+    origem.atualizarConteudo("<figure><img src=\"" + src + "\" alt=\"Captura\"></figure>");
+    origem.definirOrigemTemplate(UUID.randomUUID(), 2);
+    Pagina filho = pagina(filhoId, StatusPagina.RASCUNHO);
+    setField(filho, "parent", origem);
+
+    PaginaAnexo anexo = new PaginaAnexo(origem, "captura.png", "image/png", 6, arquivo.toString());
+    setField(anexo, "id", anexoId);
+
+    when(paginaRepository.findById(origemId)).thenReturn(Optional.of(origem));
+    when(paginaRepository.findByParent_Id(origemId)).thenReturn(List.of(filho));
+    when(paginaRepository.findByParent_Id(filhoId)).thenReturn(List.of());
+    when(paginaAnexoRepository.findByPagina_Id(origemId)).thenReturn(List.of(anexo));
+    when(paginaAnexoRepository.findByPagina_Id(filhoId)).thenReturn(List.of());
+    when(paginaAnexoRepository.save(any())).thenAnswer(inv -> {
+      PaginaAnexo salvo = inv.getArgument(0);
+      setField(salvo, "id", UUID.randomUUID());
+      return salvo;
+    });
+    // O id da cópia só existe depois do save — é ele que nomeia a pasta do anexo.
+    when(paginaRepository.save(any())).thenAnswer(inv -> {
+      Pagina salva = inv.getArgument(0);
+      if (salva.getId() == null) {
+        setField(salva, "id", UUID.randomUUID());
+      }
+      return salva;
+    });
+
+    Pagina copia = service.duplicar(origemId, principal);
+
+    assertThat(copia.getTemplateOrigemId()).isEqualTo(origem.getTemplateOrigemId());
+    assertThat(copia.getTemplateOrigemVersao()).isEqualTo(2);
+    // O HTML da cópia não pode continuar apontando para o anexo da original.
+    assertThat(copia.getConteudoHtml()).doesNotContain(anexoId.toString());
+    assertThat(copia.getConteudoHtml()).contains("/anexos/");
+    verify(paginaAnexoRepository).save(any(PaginaAnexo.class));
+    // Subpágina duplicada: 1 original + 1 cópia da raiz + 1 cópia do filho.
+    verify(paginaRepository, times(2)).save(any(Pagina.class));
   }
 
   @Test

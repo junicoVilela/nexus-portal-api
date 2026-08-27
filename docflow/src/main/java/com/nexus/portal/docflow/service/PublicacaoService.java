@@ -76,6 +76,23 @@ public class PublicacaoService {
     return publicacao;
   }
 
+  /**
+   * Cancelamento cooperativo: marca o pedido e o worker descarta o pacote ao
+   * terminar. Publicações já finalizadas não são afetadas.
+   */
+  @Transactional
+  public Publicacao cancelar(UUID id, Principal principal) {
+    Publicacao publicacao = buscar(id);
+    escopoResolver.assertPodeEscreverEmCliente(publicacao.getCliente().getId());
+    if (publicacao.getStatus() != StatusPublicacao.GERANDO) {
+      throw new BusinessException("Somente publicações em geração podem ser canceladas.");
+    }
+    publicacao.solicitarCancelamento();
+    auditoriaService.registrar("PUBLICACAO", id, "CANCELAR",
+        "Publicação " + publicacao.getVersao() + " de " + publicacao.getCliente().getNome(), principal);
+    return publicacao;
+  }
+
   public Page<Publicacao> listar(UUID clienteId, StatusPublicacao status, Pageable pageable) {
     Optional<Set<UUID>> permitidos = escopoResolver.clientesPermitidosDoUsuarioAtual();
     if (clienteId != null) {

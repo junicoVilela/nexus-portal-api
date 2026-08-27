@@ -10,10 +10,14 @@ import com.nexus.identityaccess.service.EscopoResolver;
 import jakarta.transaction.Transactional;
 import java.security.Principal;
 import java.security.SecureRandom;
+import java.time.Duration;
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.Base64;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 
@@ -24,8 +28,11 @@ public class PreviewTokenService {
   private final PreviewTokenRepository previewTokenRepository;
   private final ClienteRepository clienteRepository;
   private final GeradorPacoteService geradorPacoteService;
+  private static final Duration CACHE_TTL = Duration.ofSeconds(60);
+
   private final EscopoResolver escopoResolver;
   private final SecureRandom secureRandom = new SecureRandom();
+  private final Map<UUID, HtmlEmCache> cachePorCliente = new ConcurrentHashMap<>();
 
   @Transactional
   public PreviewToken gerar(UUID clienteId, int horasValidade, Principal principal) {
@@ -62,9 +69,30 @@ public class PreviewTokenService {
     if (!escopoResolver.podeAcessarCliente(pt.getClienteId())) {
       throw new NotFoundException("Token inválido ou expirado.");
     }
-    var cliente = clienteRepository.findById(pt.getClienteId())
+    return htmlDoCliente(pt.getClienteId());
+  }
+
+  /**
+   * O endpoint do preview é público e remontar o manual inteiro a cada acesso
+   * sai caro. O HTML fica em cache por {@link #CACHE_TTL}, janela curta o
+   * bastante para o editor ver a alteração em seguida.
+   */
+  private String htmlDoCliente(UUID clienteId) {
+    HtmlEmCache emCache = cachePorCliente.get(clienteId);
+    if (emCache != null && emCache.valido()) {
+      return emCache.html();
+    }
+    var cliente = clienteRepository.findById(clienteId)
         .orElseThrow(() -> new NotFoundException("Cliente não encontrado."));
-    return geradorPacoteService.previewHtml(cliente, "preview");
+    String html = geradorPacoteService.previewHtml(cliente, "preview");
+    cachePorCliente.put(clienteId, new HtmlEmCache(html, Instant.now().plus(CACHE_TTL)));
+    return html;
+  }
+
+  private record HtmlEmCache(String html, Instant expiraEm) {
+    boolean valido() {
+      return Instant.now().isBefore(expiraEm);
+    }
   }
 
   private String gerarToken() {

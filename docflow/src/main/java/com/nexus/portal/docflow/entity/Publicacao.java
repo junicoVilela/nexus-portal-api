@@ -63,6 +63,9 @@ public class Publicacao extends AuditableEntity {
   @Column(name = "arvore_paginas")
   private String arvorePaginas;
 
+  @Column(name = "cancelamento_solicitado", nullable = false)
+  private boolean cancelamentoSolicitado;
+
   public Publicacao(Cliente cliente, String versao, String observacao) {
     this.cliente = cliente;
     this.versao = versao;
@@ -82,6 +85,7 @@ public class Publicacao extends AuditableEntity {
 
   public void prepararGeracao() {
     this.status = StatusPublicacao.GERANDO;
+    this.cancelamentoSolicitado = false;
     this.quantidadePaginas = 0;
     this.quantidadeModulos = 0;
     this.arquivoZipNome = null;
@@ -95,10 +99,29 @@ public class Publicacao extends AuditableEntity {
     this.arvorePaginas = json;
   }
 
+  /** Pedido de parada; o worker verifica antes de persistir o resultado da geração. */
+  public void solicitarCancelamento() {
+    this.cancelamentoSolicitado = true;
+  }
+
+  public void registrarCancelamento() {
+    this.status = StatusPublicacao.CANCELADA;
+    this.cancelamentoSolicitado = false;
+    anotarObservacao("", "Geração cancelada.");
+  }
+
   public void registrarErro(String mensagem) {
     this.status = StatusPublicacao.ERRO;
+    this.cancelamentoSolicitado = false;
+    anotarObservacao("Erro: ", mensagem);
+  }
+
+  private void anotarObservacao(String prefixo, String mensagem) {
+    if (mensagem == null || mensagem.isBlank()) {
+      return;
+    }
     this.observacao = this.observacao == null || this.observacao.isBlank()
         ? mensagem
-        : this.observacao + "\nErro: " + mensagem;
+        : this.observacao + "\n" + prefixo + mensagem;
   }
 }
