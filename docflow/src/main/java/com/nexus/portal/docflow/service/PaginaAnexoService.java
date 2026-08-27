@@ -68,7 +68,12 @@ public class PaginaAnexoService {
         destino.toString()));
   }
 
-  public Resource arquivo(UUID paginaId, UUID anexoId) {
+  /**
+   * O download é público ({@code permitAll}) porque o HTML do manual aponta para
+   * cá. Registra o acesso na auditoria: sem isso não há como saber que um anexo
+   * foi baixado, nem por quem quando há sessão.
+   */
+  public Resource arquivo(UUID paginaId, UUID anexoId, Principal principal) {
     PaginaAnexo anexo = buscar(anexoId);
     if (!anexo.getPagina().getId().equals(paginaId)) {
       throw new NotFoundException("Anexo não encontrado para a página.");
@@ -77,6 +82,7 @@ public class PaginaAnexoService {
     if (!Files.exists(path)) {
       throw new NotFoundException("Arquivo do anexo não encontrado em disco.");
     }
+    auditoriaService.registrar("PAGINA_ANEXO", anexoId, "BAIXAR", anexo.getNomeOriginal(), principal);
     return new PathResource(path);
   }
 

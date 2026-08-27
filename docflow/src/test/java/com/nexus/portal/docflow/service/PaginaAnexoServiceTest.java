@@ -126,7 +126,7 @@ class PaginaAnexoServiceTest {
     PaginaAnexo a = new PaginaAnexo(outra, "x.png", "image/png", 1, "/tmp/x.png");
     when(paginaAnexoRepository.findById(anexoId)).thenReturn(Optional.of(a));
 
-    assertThatThrownBy(() -> service.arquivo(paginaId, anexoId))
+    assertThatThrownBy(() -> service.arquivo(paginaId, anexoId, null))
         .isInstanceOf(NotFoundException.class);
   }
 
@@ -137,7 +137,7 @@ class PaginaAnexoServiceTest {
         storage.resolve("nao-existe.png").toString());
     when(paginaAnexoRepository.findById(anexoId)).thenReturn(Optional.of(a));
 
-    assertThatThrownBy(() -> service.arquivo(paginaId, anexoId))
+    assertThatThrownBy(() -> service.arquivo(paginaId, anexoId, null))
         .isInstanceOf(NotFoundException.class)
         .hasMessageContaining("disco");
   }

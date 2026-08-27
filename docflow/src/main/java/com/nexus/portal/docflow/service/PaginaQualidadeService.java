@@ -3,15 +3,20 @@ package com.nexus.portal.docflow.service;
 import com.nexus.portal.docflow.entity.Pagina;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class PaginaQualidadeService {
+
+  private final PaginaSnippetService paginaSnippetService;
 
   private static final Pattern PLACEHOLDER = Pattern.compile(
       "\\{\\{\\s*[a-zA-Z0-9_.-]+\\s*}}|\\b(explique|descreva|informe|liste|registre aqui|nome do campo|escreva uma resposta)\\b",
@@ -19,6 +24,7 @@ public class PaginaQualidadeService {
 
   public ResultadoQualidade avaliar(Pagina pagina) {
     String html = pagina.getConteudoHtml() == null ? "" : pagina.getConteudoHtml();
+    List<String> snippetsQuebrados = snippetsQuebrados(html);
     Document document = Jsoup.parseBodyFragment(html);
     String texto = extrairTexto(document);
     Matcher placeholderMatcher = PLACEHOLDER.matcher(texto);
@@ -62,6 +68,12 @@ public class PaginaQualidadeService {
     itens.add(item("LINKS", "Links válidos",
         "Links não podem estar vazios nem usar endereços JavaScript.",
         document.select("a").stream().allMatch(link -> linkValido(link.attr("href"))), Severidade.ERRO));
+    itens.add(item("SNIPPETS", "Trechos reutilizáveis disponíveis",
+        snippetsQuebrados.isEmpty()
+            ? "As referências de trecho apontam para trechos ativos."
+            : "Sem trecho ativo para " + String.join(", ", snippetsQuebrados)
+                + " — o manual sairia com um aviso no lugar do conteúdo.",
+        snippetsQuebrados.isEmpty(), Severidade.ERRO));
     itens.add(item("TITULOS", "Hierarquia de títulos consistente",
         "Organize as seções sem saltar níveis de título.", titulosConsistentes(document), Severidade.AVISO));
     itens.add(item("RESUMO", "Resumo preenchido", "Inclua uma descrição curta para buscas e navegação.",
@@ -92,6 +104,19 @@ public class PaginaQualidadeService {
 
     boolean apto = itens.stream().noneMatch(item -> item.severidade() == Severidade.ERRO && !item.ok());
     return new ResultadoQualidade(apto, List.copyOf(itens));
+  }
+
+  /**
+   * Referências que não têm trecho ativo por trás. Publicar assim entrega ao
+   * cliente um bloco "trecho indisponível" no meio do manual.
+   */
+  private List<String> snippetsQuebrados(String html) {
+    List<String> referencias = paginaSnippetService.referencias(html);
+    if (referencias.isEmpty()) {
+      return List.of();
+    }
+    Set<String> ativos = paginaSnippetService.codigosAtivos();
+    return referencias.stream().filter(codigo -> !ativos.contains(codigo)).toList();
   }
 
   private String extrairTexto(Document document) {

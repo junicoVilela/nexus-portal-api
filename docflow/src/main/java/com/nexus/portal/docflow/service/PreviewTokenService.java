@@ -31,6 +31,7 @@ public class PreviewTokenService {
   private static final Duration CACHE_TTL = Duration.ofSeconds(60);
 
   private final EscopoResolver escopoResolver;
+  private final PreviewRateLimiter rateLimiter;
   private final SecureRandom secureRandom = new SecureRandom();
   private final Map<UUID, HtmlEmCache> cachePorCliente = new ConcurrentHashMap<>();
 
@@ -61,6 +62,7 @@ public class PreviewTokenService {
   }
 
   public String renderizarPreview(String token) {
+    rateLimiter.registrarAcesso(token);
     PreviewToken pt = previewTokenRepository.findByTokenAndAtivoTrue(token)
         .orElseThrow(() -> new NotFoundException("Token inválido ou expirado."));
     if (!pt.estaValido()) {

@@ -55,8 +55,10 @@ release-orchestrator:
     entregas-dir: ${ENTREGAS_DIR:./storage/entregas}
   linux-manual:
     # Lab: CRIAR copia scripts/templates/artifacts (sem JDK/Tomcat) e roda install.sh.
-    template-dir: ${LINUX_MANUAL_TEMPLATE_DIR:/home/junico-home/Documentos/Softon/V5/instalador/instalador}
-    allow-local-fs: true
+    # Aponte LINUX_MANUAL_TEMPLATE_DIR para a sua cópia do instalador; vazio
+    # desabilita o adapter em vez de apontar para o caminho de outra pessoa.
+    template-dir: ${LINUX_MANUAL_TEMPLATE_DIR:}
+    allow-local-fs: ${LINUX_MANUAL_ALLOW_LOCAL_FS:false}
 
 nexus:
   ai:

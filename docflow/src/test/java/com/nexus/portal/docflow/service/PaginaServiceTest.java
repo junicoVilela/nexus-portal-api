@@ -51,6 +51,7 @@ class PaginaServiceTest {
   @Mock PaginaAnexoRepository paginaAnexoRepository;
   @Mock PaginaEventService paginaEventService;
   @Mock NotificacaoEmailService notificacaoEmailService;
+  @Mock PaginaSnippetService paginaSnippetService;
 
   PaginaService service;
 
@@ -63,7 +64,7 @@ class PaginaServiceTest {
   @BeforeEach
   void setUp() {
     service = new PaginaService(paginaRepository, paginaRevisaoRepository,
-        moduloService, auditoriaService, new PaginaQualidadeService(), paginaAnexoRepository,
+        moduloService, auditoriaService, new PaginaQualidadeService(paginaSnippetService), paginaAnexoRepository,
         new ArquivoRemocaoService(), paginaEventService, notificacaoEmailService,
         new AnexoStorage(new StorageProperties(storageDir.toString())));
 

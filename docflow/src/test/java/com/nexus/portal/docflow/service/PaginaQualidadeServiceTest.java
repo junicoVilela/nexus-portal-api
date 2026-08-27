@@ -9,7 +9,15 @@ import org.junit.jupiter.api.Test;
 
 class PaginaQualidadeServiceTest {
 
-  private final PaginaQualidadeService service = new PaginaQualidadeService();
+  private final PaginaSnippetService paginaSnippetService =
+      org.mockito.Mockito.mock(PaginaSnippetService.class);
+  private final PaginaQualidadeService service = new PaginaQualidadeService(paginaSnippetService);
+
+  @org.junit.jupiter.api.BeforeEach
+  void semSnippetsPorPadrao() {
+    org.mockito.Mockito.when(paginaSnippetService.referencias(org.mockito.ArgumentMatchers.any()))
+        .thenReturn(java.util.List.of());
+  }
 
   @Test
   void avaliar_comConteudoFinalizado_deveEstarAptoParaRevisao() {
@@ -92,5 +100,34 @@ class PaginaQualidadeServiceTest {
     Modulo modulo = new Modulo("Módulo", "modulo", null, 0, true, projeto);
     return new Pagina("Cadastro de clientes", "cadastro-clientes", "CLI-001", resumo,
         conteudo, 0, true, modulo, null);
+  }
+
+  @Test
+  void referenciaSemTrechoAtivo_bloqueiaOEnvioParaRevisao() {
+    org.mockito.Mockito.when(paginaSnippetService.referencias(org.mockito.ArgumentMatchers.any()))
+        .thenReturn(java.util.List.of("SUMIU"));
+    org.mockito.Mockito.when(paginaSnippetService.codigosAtivos())
+        .thenReturn(java.util.Set.of("OUTRO"));
+
+    var resultado = service.avaliar(pagina("<p>texto</p>{{snippet:SUMIU}}", "Resumo editorial suficiente para o checklist."));
+
+    var item = resultado.itens().stream()
+        .filter(i -> i.codigo().equals("SNIPPETS")).findFirst().orElseThrow();
+    assertThat(item.ok()).isFalse();
+    assertThat(item.descricao()).contains("SUMIU");
+    assertThat(resultado.aptoParaRevisao()).isFalse();
+  }
+
+  @Test
+  void referenciaComTrechoAtivo_naoBloqueia() {
+    org.mockito.Mockito.when(paginaSnippetService.referencias(org.mockito.ArgumentMatchers.any()))
+        .thenReturn(java.util.List.of("AVISO"));
+    org.mockito.Mockito.when(paginaSnippetService.codigosAtivos())
+        .thenReturn(java.util.Set.of("AVISO"));
+
+    var resultado = service.avaliar(pagina("<p>texto</p>{{snippet:AVISO}}", "Resumo editorial suficiente para o checklist."));
+
+    assertThat(resultado.itens().stream()
+        .filter(i -> i.codigo().equals("SNIPPETS")).findFirst().orElseThrow().ok()).isTrue();
   }
 }

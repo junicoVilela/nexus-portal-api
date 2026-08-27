@@ -12,6 +12,7 @@ import com.nexus.portal.docflow.dto.response.ReprocessamentoPublicacoesResponse;
 import com.nexus.portal.docflow.entity.Publicacao;
 import com.nexus.portal.docflow.entity.StatusPublicacao;
 import com.nexus.portal.docflow.service.GeradorPdfService;
+import com.nexus.portal.docflow.service.PublicacaoConteudoService;
 import com.nexus.portal.docflow.service.PublicacaoDiffService;
 import com.nexus.portal.docflow.service.PublicacaoService;
 import com.nexus.portal.docflow.service.PublicacaoEventService;
@@ -54,6 +55,7 @@ public class PublicacaoController {
   private final PublicacaoService publicacaoService;
   private final PublicacaoEventService publicacaoEventService;
   private final PublicacaoDiffService publicacaoDiffService;
+  private final PublicacaoConteudoService publicacaoConteudoService;
   private final GeradorPdfService geradorPdfService;
   private final JwtService jwtService;
 
@@ -190,6 +192,13 @@ public class PublicacaoController {
   public PublicacaoDiffResponse diff(@PathVariable UUID id,
       @RequestParam(required = false) UUID comparadaCom) {
     return publicacaoDiffService.comparar(id, comparadaCom);
+  }
+
+  /** HTML da página como saiu nesta publicação, para comparar duas versões. */
+  @PreAuthorize(Permissoes.PUBLICACAO_LER)
+  @GetMapping(value = "/{id}/paginas/{paginaId}/html", produces = MediaType.TEXT_HTML_VALUE)
+  public String htmlDaPagina(@PathVariable UUID id, @PathVariable UUID paginaId) {
+    return publicacaoConteudoService.htmlDaPagina(id, paginaId);
   }
 
   @PreAuthorize(Permissoes.PUBLICACAO_LER)

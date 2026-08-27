@@ -226,6 +226,13 @@ GET    /api/v1/auditoria
   sem poder alterar o conteúdo.
 - Snippets (`{{snippet:CODIGO}}`) são resolvidos na geração do pacote, no preview e no PDF —
   nunca ficam no conteúdo salvo. Código inexistente vira aviso visível.
+- O checklist de qualidade bloqueia o envio para revisão quando a página cita um trecho
+  inexistente ou inativo; a listagem de trechos informa quantas páginas citam cada um.
+- O watchdog também remove diretórios em `publicacoes/tmp` deixados por geração interrompida.
+- O preview público é limitado por token (`docflow.preview.limite-por-minuto`, padrão 30) e o
+  download de anexo é registrado na auditoria.
+- `GET /publicacoes/{id}/paginas/{paginaId}/html` devolve o HTML arquivado no pacote, usado
+  para comparar o conteúdo de duas publicações.
 - O diff entre publicações compara o hash do conteúdo por página gravado no snapshot
   (ADICIONADA / REMOVIDA / ALTERADA / MOVIDA / INALTERADA / INDETERMINADA).
 - O PDF normaliza HTML5 para XHTML com Jsoup antes do OpenHTMLtoPDF. O teste integrado

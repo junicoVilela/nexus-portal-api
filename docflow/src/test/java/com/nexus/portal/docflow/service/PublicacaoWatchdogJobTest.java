@@ -12,6 +12,7 @@ import com.nexus.portal.docflow.entity.Cliente;
 import com.nexus.portal.docflow.entity.Publicacao;
 import com.nexus.portal.docflow.entity.StatusPublicacao;
 import com.nexus.portal.docflow.repository.PublicacaoRepository;
+import com.nexus.portal.shared.config.StorageProperties;
 import java.time.OffsetDateTime;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,10 +30,12 @@ class PublicacaoWatchdogJobTest {
 
   PublicacaoWatchdogJob job;
 
+  @org.junit.jupiter.api.io.TempDir java.nio.file.Path storageDir;
+
   @BeforeEach
   void setUp() {
     job = new PublicacaoWatchdogJob(publicacaoRepository, publicacaoEventService,
-        new PublicacaoProperties(30));
+        new PublicacaoProperties(30), new StorageProperties(storageDir.toString()));
   }
 
   @Test
@@ -51,7 +54,7 @@ class PublicacaoWatchdogJobTest {
   @Test
   void reconciliar_usaOTimeoutConfigurado() {
     job = new PublicacaoWatchdogJob(publicacaoRepository, publicacaoEventService,
-        new PublicacaoProperties(90));
+        new PublicacaoProperties(90), new StorageProperties(storageDir.toString()));
     when(publicacaoRepository.findByStatusAndUpdatedAtBefore(any(), any())).thenReturn(List.of());
     OffsetDateTime antes = OffsetDateTime.now().minusMinutes(90);
 
@@ -70,5 +73,28 @@ class PublicacaoWatchdogJobTest {
     job.reconciliar();
 
     verifyNoInteractions(publicacaoEventService);
+  }
+
+  @Test
+  void reconciliar_removeDiretorioDeGeracaoAbandonado() throws Exception {
+    when(publicacaoRepository.findByStatusAndUpdatedAtBefore(any(), any())).thenReturn(List.of());
+    java.nio.file.Path tmp = java.nio.file.Files.createDirectories(storageDir.resolve("tmp"));
+    java.nio.file.Path abandonado = java.nio.file.Files.createDirectory(tmp.resolve("geracao-velha"));
+    java.nio.file.Files.writeString(abandonado.resolve("pagina.html"), "<p>parcial</p>");
+    java.nio.file.Files.setLastModifiedTime(abandonado,
+        java.nio.file.attribute.FileTime.from(java.time.Instant.now().minusSeconds(7200)));
+    java.nio.file.Path emAndamento = java.nio.file.Files.createDirectory(tmp.resolve("geracao-atual"));
+
+    job.reconciliar();
+
+    assertThat(abandonado).doesNotExist();
+    assertThat(emAndamento).as("geração recente não pode ser apagada no meio").exists();
+  }
+
+  @Test
+  void reconciliar_semDiretorioTmp_naoQuebra() {
+    when(publicacaoRepository.findByStatusAndUpdatedAtBefore(any(), any())).thenReturn(List.of());
+
+    job.reconciliar();
   }
 }

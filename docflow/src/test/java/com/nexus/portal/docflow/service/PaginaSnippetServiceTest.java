@@ -26,13 +26,14 @@ import org.mockito.quality.Strictness;
 class PaginaSnippetServiceTest {
 
   @Mock PaginaSnippetRepository repository;
+  @Mock com.nexus.portal.docflow.repository.PaginaRepository paginaRepository;
   @Mock AuditoriaService auditoriaService;
 
   PaginaSnippetService service;
 
   @BeforeEach
   void setUp() {
-    service = new PaginaSnippetService(repository, auditoriaService);
+    service = new PaginaSnippetService(repository, paginaRepository, auditoriaService);
     when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
   }
 
@@ -122,5 +123,24 @@ class PaginaSnippetServiceTest {
   void referencias_listaOsCodigosCitados() {
     assertThat(service.referencias("{{snippet:a}} texto {{snippet:B}} {{snippet:a}}"))
         .containsExactly("A", "B");
+  }
+
+  @Test
+  void codigosAtivos_devolveApenasOsAtivos() {
+    when(repository.findByAtivoTrueOrderByCodigoAsc()).thenReturn(
+        List.of(new PaginaSnippet("A", "a", null, "<p>a</p>", true),
+                new PaginaSnippet("B", "b", null, "<p>b</p>", true)));
+
+    assertThat(service.codigosAtivos()).containsExactlyInAnyOrder("A", "B");
+  }
+
+  @Test
+  void usoPorCodigo_contaPaginasQueCitamCadaTrecho() {
+    when(paginaRepository.contarPaginasQueCitam("{{snippet:AVISO}}")).thenReturn(3L);
+    when(paginaRepository.contarPaginasQueCitam("{{snippet:ORFAO}}")).thenReturn(0L);
+
+    assertThat(service.usoPorCodigo(List.of("AVISO", "ORFAO")))
+        .containsEntry("AVISO", 3L)
+        .containsEntry("ORFAO", 0L);
   }
 }

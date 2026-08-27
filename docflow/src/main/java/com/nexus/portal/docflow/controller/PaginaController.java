@@ -84,8 +84,11 @@ public class PaginaController {
   @PreAuthorize(Permissoes.PAGINA_LER)
   public List<PaginaSnippetResponse> snippets(
       @RequestParam(defaultValue = "false") boolean incluirInativos) {
-    return paginaSnippetService.listar(incluirInativos).stream()
-        .map(PaginaSnippetResponse::from)
+    var snippets = paginaSnippetService.listar(incluirInativos);
+    var uso = paginaSnippetService.usoPorCodigo(
+        snippets.stream().map(snippet -> snippet.getCodigo()).toList());
+    return snippets.stream()
+        .map(snippet -> PaginaSnippetResponse.from(snippet, uso.getOrDefault(snippet.getCodigo(), 0L)))
         .toList();
   }
 
@@ -418,9 +421,10 @@ public class PaginaController {
   }
 
   @GetMapping("/{paginaId}/anexos/{anexoId}/download")
-  public ResponseEntity<Resource> baixarAnexo(@PathVariable UUID paginaId, @PathVariable UUID anexoId) {
+  public ResponseEntity<Resource> baixarAnexo(@PathVariable UUID paginaId, @PathVariable UUID anexoId,
+      Principal principal) {
     var anexo = paginaAnexoService.buscar(anexoId);
-    Resource resource = paginaAnexoService.arquivo(paginaId, anexoId);
+    Resource resource = paginaAnexoService.arquivo(paginaId, anexoId, principal);
     return ResponseEntity.ok()
         .contentType(MediaType.parseMediaType(anexo.getContentType()))
         .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + anexo.getNomeOriginal() + "\"")

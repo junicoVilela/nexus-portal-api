@@ -49,6 +49,7 @@ class PublicacaoControllerTest {
   @Mock PublicacaoService publicacaoService;
   @Mock PublicacaoEventService publicacaoEventService;
   @Mock com.nexus.portal.docflow.service.PublicacaoDiffService publicacaoDiffService;
+  @Mock com.nexus.portal.docflow.service.PublicacaoConteudoService publicacaoConteudoService;
   @Mock GeradorPdfService geradorPdfService;
   @Mock JwtService jwtService;
 
@@ -58,7 +59,7 @@ class PublicacaoControllerTest {
   void setUp() {
     mockMvc = MockMvcBuilders
         .standaloneSetup(new PublicacaoController(publicacaoService, publicacaoEventService,
-            publicacaoDiffService, geradorPdfService, jwtService))
+            publicacaoDiffService, publicacaoConteudoService, geradorPdfService, jwtService))
         .setControllerAdvice(new GlobalExceptionHandler())
         .build();
   }

@@ -12,12 +12,18 @@ public record PaginaSnippetResponse(
     String descricao,
     String conteudoHtml,
     boolean ativo,
+    /** Quantas páginas ativas citam este trecho. */
+    long paginasQueUsam,
     OffsetDateTime createdAt,
     OffsetDateTime updatedAt,
     String createdBy,
     String updatedBy) {
 
   public static PaginaSnippetResponse from(PaginaSnippet snippet) {
+    return from(snippet, 0L);
+  }
+
+  public static PaginaSnippetResponse from(PaginaSnippet snippet, long paginasQueUsam) {
     return new PaginaSnippetResponse(
         snippet.getId(),
         snippet.getCodigo(),
@@ -26,6 +32,7 @@ public record PaginaSnippetResponse(
         snippet.getDescricao(),
         snippet.getConteudoHtml(),
         snippet.isAtivo(),
+        paginasQueUsam,
         snippet.getCreatedAt(),
         snippet.getUpdatedAt(),
         snippet.getCreatedBy(),

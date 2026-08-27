@@ -84,6 +84,10 @@ public interface PaginaRepository extends JpaRepository<Pagina, UUID>, JpaSpecif
   @Query("select p.status, count(p) from Pagina p where p.ativo = true group by p.status")
   List<Object[]> contarPorStatusAgrupado();
 
+  /** Páginas ativas cujo conteúdo cita o texto informado (referência de trecho). */
+  @Query("select count(p) from Pagina p where p.ativo = true and p.conteudoHtml like concat('%', :trecho, '%')")
+  long contarPaginasQueCitam(@Param("trecho") String trecho);
+
   List<Pagina> findByParent_Id(UUID parentId);
 
   @EntityGraph(attributePaths = {"modulo", "modulo.projeto", "parent"})

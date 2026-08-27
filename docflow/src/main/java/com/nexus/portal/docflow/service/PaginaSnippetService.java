@@ -3,14 +3,18 @@ package com.nexus.portal.docflow.service;
 import com.nexus.identityaccess.service.AuditoriaService;
 import com.nexus.portal.docflow.dto.request.PaginaSnippetRequest;
 import com.nexus.portal.docflow.entity.PaginaSnippet;
+import com.nexus.portal.docflow.repository.PaginaRepository;
 import com.nexus.portal.docflow.repository.PaginaSnippetRepository;
 import com.nexus.portal.shared.exception.BusinessException;
 import com.nexus.portal.shared.exception.NotFoundException;
 import jakarta.transaction.Transactional;
 import java.security.Principal;
+import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -32,6 +36,7 @@ public class PaginaSnippetService {
       Pattern.compile("\\{\\{\\s*snippet:\\s*([A-Za-z0-9_-]+)\\s*}}");
 
   private final PaginaSnippetRepository repository;
+  private final PaginaRepository paginaRepository;
   private final AuditoriaService auditoriaService;
 
   public List<PaginaSnippet> listar(boolean incluirInativos) {
@@ -104,6 +109,27 @@ public class PaginaSnippetService {
     }
     matcher.appendTail(resultado);
     return resultado.toString();
+  }
+
+  /** Códigos ativos, para o checklist validar as referências sem carregar o conteúdo. */
+  public Set<String> codigosAtivos() {
+    return repository.findByAtivoTrueOrderByCodigoAsc().stream()
+        .map(PaginaSnippet::getCodigo)
+        .collect(Collectors.toSet());
+  }
+
+  /**
+   * Quantas páginas citam cada trecho — para medir o impacto antes de desativar
+   * ou excluir. A referência mora dentro do HTML, então a contagem é uma busca
+   * por texto; o catálogo de trechos é pequeno o bastante para uma consulta por
+   * código.
+   */
+  public Map<String, Long> usoPorCodigo(Collection<String> codigos) {
+    Map<String, Long> uso = new LinkedHashMap<>();
+    for (String codigo : codigos) {
+      uso.put(codigo, paginaRepository.contarPaginasQueCitam("{{snippet:" + codigo + "}}"));
+    }
+    return uso;
   }
 
   /** Códigos referenciados em um HTML — usado pelo checklist de qualidade. */

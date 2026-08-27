@@ -45,7 +45,7 @@ class PreviewTokenServiceTest {
 
   @BeforeEach
   void setUp() {
-    service = new PreviewTokenService(previewTokenRepository, clienteRepository, geradorPacoteService, escopoResolver);
+    service = new PreviewTokenService(previewTokenRepository, clienteRepository, geradorPacoteService, escopoResolver, new PreviewRateLimiter());
     clienteId = UUID.randomUUID();
     cliente = new Cliente("ACME", "acme", true);
     principal = () -> "admin";
