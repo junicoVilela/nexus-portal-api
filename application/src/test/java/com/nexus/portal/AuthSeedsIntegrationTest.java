@@ -85,6 +85,7 @@ class AuthSeedsIntegrationTest {
     assertThat(permissoes(me)).contains(
         "CLIENTE:CRIAR", "PROJETO:CRIAR", "MODULO:CRIAR",
         "PAGINA:CRIAR", "PUBLICACAO:CRIAR",
+        "PAGINA:AI_GERAR", "PAGINA:AI_APLICAR", "PAGINA:AI_PROPOSTA",
         "RELEASE:CRIAR", "PRODUTO:CRIAR", "TEMPLATE:CRIAR",
         "ENTREGA:CRIAR", "PROXIMA_ENTREGA:CRIAR", "CLIENTE_RO:CRIAR", "HOST:CRIAR", "INSTALACAO:CRIAR");
     // Mas NÃO mexe no catálogo RBAC nem visualiza auditoria/histórico
@@ -110,6 +111,8 @@ class AuthSeedsIntegrationTest {
         "RELEASE:LER", "PRODUTO:LER", "ENTREGA:LER", "PROXIMA_ENTREGA:LER", "HOST:LER", "INSTALACAO:LER");
     // Decide sobre a página em revisão sem poder editar o conteúdo
     assertThat(permissoes(me)).contains("PAGINA:APROVAR");
+    // Assistente de IA (V42) só para quem já criava páginas
+    assertThat(permissoes(me)).noneMatch(p -> p.startsWith("PAGINA:AI_"));
     // Não cria/edita/exclui nada
     assertThat(permissoes(me))
         .noneMatch(p -> p.endsWith(":CRIAR")

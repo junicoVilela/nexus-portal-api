@@ -67,6 +67,15 @@ public final class Permissoes {
    */
   public static final String PAGINA_APROVAR       =
       "hasAnyAuthority('PAGINA:APROVAR','PAGINA:EDITAR')";
+  /**
+   * Usar o assistente de IA: sessões, geração de propostas e importação de documentos. Não grava
+   * páginas — aplicar o resultado exige {@link #PAGINA_AI_APLICAR} mais CRIAR/EDITAR.
+   */
+  public static final String PAGINA_AI_GERAR      = "hasAuthority('PAGINA:AI_GERAR')";
+  /** Levar uma proposta da IA para uma página do DocFlow (cria ou altera rascunho). */
+  public static final String PAGINA_AI_APLICAR    = "hasAuthority('PAGINA:AI_APLICAR')";
+  /** Triar a fila de propostas abertas pela IA a partir de PRs (aceitar/rejeitar). */
+  public static final String PAGINA_AI_PROPOSTA   = "hasAuthority('PAGINA:AI_PROPOSTA')";
 
   public static final String PUBLICACAO_LER       = "hasAuthority('PUBLICACAO:LER')";
   public static final String PUBLICACAO_CRIAR     = "hasAuthority('PUBLICACAO:CRIAR')";

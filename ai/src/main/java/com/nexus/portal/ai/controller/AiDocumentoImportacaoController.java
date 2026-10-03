@@ -37,7 +37,7 @@ public class AiDocumentoImportacaoController {
 
   /** 201 com importação nova; 200 quando o mesmo arquivo já estava em andamento ({@code retomada}). */
   @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-  @PreAuthorize(Permissoes.PAGINA_CRIAR)
+  @PreAuthorize(Permissoes.PAGINA_AI_GERAR)
   public ResponseEntity<AiImportacaoDocumentoResponse> importarDocumento(
       @RequestParam MultipartFile arquivo,
       @RequestParam(required = false) UUID projetoId,
@@ -63,7 +63,7 @@ public class AiDocumentoImportacaoController {
   }
 
   @PostMapping("/{id}/sugestoes/{sugestaoId}/aceitar")
-  @PreAuthorize(Permissoes.PAGINA_CRIAR)
+  @PreAuthorize(Permissoes.PAGINA_AI_GERAR)
   public AiImportacaoDocumentoResponse aceitarSugestaoDocumento(
       @PathVariable UUID id,
       @PathVariable UUID sugestaoId,
@@ -72,7 +72,7 @@ public class AiDocumentoImportacaoController {
   }
 
   @PostMapping("/{id}/sugestoes/{sugestaoId}/ignorar")
-  @PreAuthorize(Permissoes.PAGINA_CRIAR)
+  @PreAuthorize(Permissoes.PAGINA_AI_GERAR)
   public AiImportacaoDocumentoResponse ignorarSugestaoDocumento(
       @PathVariable UUID id,
       @PathVariable UUID sugestaoId,
@@ -81,14 +81,14 @@ public class AiDocumentoImportacaoController {
   }
 
   @PostMapping("/{id}/sugestoes/aplicar-seguras")
-  @PreAuthorize(Permissoes.PAGINA_CRIAR)
+  @PreAuthorize(Permissoes.PAGINA_AI_GERAR)
   public AiImportacaoDocumentoResponse aplicarSugestoesSegurasDocumento(
       @PathVariable UUID id, Principal principal) {
     return service.aplicarSugestoesSeguras(id, principal);
   }
 
   @PutMapping("/{id}/estrutura/rascunho")
-  @PreAuthorize(Permissoes.PAGINA_CRIAR)
+  @PreAuthorize(Permissoes.PAGINA_AI_GERAR)
   public AiImportacaoDocumentoResponse reordenarEstruturaDocumento(
       @PathVariable UUID id,
       @Valid @RequestBody AiReordenarEstruturaDocumentoRequest request,
@@ -98,7 +98,8 @@ public class AiDocumentoImportacaoController {
 
   @PostMapping("/{id}/estrutura/confirmar")
   @PreAuthorize(
-      Permissoes.PAGINA_CRIAR + " and "
+      Permissoes.PAGINA_AI_GERAR + " and "
+          + Permissoes.PAGINA_CRIAR + " and "
           + Permissoes.MODULO_CRIAR + " and "
           + "((#request.modoProjeto().name() == 'NOVO_PROJETO' and "
           + Permissoes.PROJETO_CRIAR
@@ -117,7 +118,7 @@ public class AiDocumentoImportacaoController {
   }
 
   @PostMapping("/{id}/paginas/{paginaPlanoId}/selecionar")
-  @PreAuthorize(Permissoes.PAGINA_CRIAR)
+  @PreAuthorize(Permissoes.PAGINA_AI_GERAR)
   public AiImportacaoDocumentoResponse selecionarPaginaImportada(
       @PathVariable UUID id,
       @PathVariable UUID paginaPlanoId,
@@ -126,7 +127,7 @@ public class AiDocumentoImportacaoController {
   }
 
   @PutMapping("/{id}/paginas/{paginaPlanoId}/composicao")
-  @PreAuthorize(Permissoes.PAGINA_CRIAR)
+  @PreAuthorize(Permissoes.PAGINA_AI_GERAR)
   public AiImportacaoDocumentoResponse atualizarComposicaoPaginaImportada(
       @PathVariable UUID id,
       @PathVariable UUID paginaPlanoId,
@@ -136,7 +137,7 @@ public class AiDocumentoImportacaoController {
   }
 
   @PostMapping("/{id}/paginas/{paginaPlanoId}/vincular/{paginaId}")
-  @PreAuthorize(Permissoes.PAGINA_CRIAR)
+  @PreAuthorize(Permissoes.PAGINA_AI_GERAR)
   public AiImportacaoDocumentoResponse vincularPaginaImportada(
       @PathVariable UUID id,
       @PathVariable UUID paginaPlanoId,
@@ -146,7 +147,7 @@ public class AiDocumentoImportacaoController {
   }
 
   @PostMapping("/{id}/paginas/{paginaPlanoId}/aceitar")
-  @PreAuthorize(Permissoes.PAGINA_CRIAR)
+  @PreAuthorize(Permissoes.PAGINA_AI_APLICAR + " and " + Permissoes.PAGINA_CRIAR)
   public AiImportacaoDocumentoResponse aceitarPaginaImportada(
       @PathVariable UUID id,
       @PathVariable UUID paginaPlanoId,
@@ -162,7 +163,7 @@ public class AiDocumentoImportacaoController {
   }
 
   @PostMapping("/{id}/lote/estimar")
-  @PreAuthorize(Permissoes.PAGINA_CRIAR)
+  @PreAuthorize(Permissoes.PAGINA_AI_GERAR)
   public AiEstimativaLoteDocumentoResponse estimarLoteDocumento(
       @PathVariable UUID id,
       @Valid @RequestBody AiGerarLoteDocumentoRequest request,
@@ -171,7 +172,7 @@ public class AiDocumentoImportacaoController {
   }
 
   @PostMapping("/{id}/lote/gerar")
-  @PreAuthorize(Permissoes.PAGINA_CRIAR)
+  @PreAuthorize(Permissoes.PAGINA_AI_GERAR)
   public AiImportacaoDocumentoResponse gerarLoteDocumento(
       @PathVariable UUID id,
       @Valid @RequestBody AiGerarLoteDocumentoRequest request,

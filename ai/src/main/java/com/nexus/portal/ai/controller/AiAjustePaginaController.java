@@ -27,7 +27,7 @@ public class AiAjustePaginaController {
   }
 
   @PostMapping("/{paginaId}/ajustes")
-  @PreAuthorize(Permissoes.PAGINA_EDITAR)
+  @PreAuthorize(Permissoes.PAGINA_AI_GERAR + " and " + Permissoes.PAGINA_EDITAR)
   public ResponseEntity<AiAjustePaginaResponse> pedir(
       @PathVariable UUID paginaId,
       @Valid @RequestBody AiAjustePaginaRequest request,

@@ -39,7 +39,7 @@ public class AiSessaoController {
   }
 
   @PostMapping
-  @PreAuthorize(Permissoes.PAGINA_CRIAR)
+  @PreAuthorize(Permissoes.PAGINA_AI_GERAR)
   public AiSessaoResponse criar(@Valid @RequestBody CriarAiSessaoRequest request, Principal principal) {
     return aiSessaoService.criar(request, principal);
   }
@@ -51,7 +51,7 @@ public class AiSessaoController {
   }
 
   @PostMapping("/{id}/mensagens")
-  @PreAuthorize("hasAuthority('PAGINA:CRIAR') or hasAuthority('PAGINA:EDITAR')")
+  @PreAuthorize(Permissoes.PAGINA_AI_GERAR)
   public AiSessaoResponse enviarMensagem(
       @PathVariable UUID id,
       @Valid @RequestBody AiMensagemRequest request,
@@ -60,13 +60,13 @@ public class AiSessaoController {
   }
 
   @PostMapping("/{id}/cancelar")
-  @PreAuthorize("hasAuthority('PAGINA:CRIAR') or hasAuthority('PAGINA:EDITAR')")
+  @PreAuthorize(Permissoes.PAGINA_AI_GERAR)
   public AiSessaoResponse cancelar(@PathVariable UUID id, Principal principal) {
     return aiSessaoService.cancelar(id, principal);
   }
 
   @PostMapping("/{id}/gerar")
-  @PreAuthorize(Permissoes.PAGINA_CRIAR)
+  @PreAuthorize(Permissoes.PAGINA_AI_GERAR)
   public ResponseEntity<AiJobResponse> gerar(
       @PathVariable UUID id,
       @Valid @RequestBody(required = false) GerarAiPropostaRequest request,
@@ -83,7 +83,7 @@ public class AiSessaoController {
   }
 
   @PostMapping("/{id}/proposta/rejeitar")
-  @PreAuthorize(Permissoes.PAGINA_CRIAR)
+  @PreAuthorize(Permissoes.PAGINA_AI_GERAR)
   public AiPropostaResponse rejeitar(
       @PathVariable UUID id,
       @Valid @RequestBody(required = false) RejeitarAiPropostaRequest request,
@@ -93,7 +93,7 @@ public class AiSessaoController {
 
   /** O editor salvou a página criada a partir da proposta (modo FORM). */
   @PostMapping("/{id}/pagina")
-  @PreAuthorize("hasAuthority('PAGINA:CRIAR') or hasAuthority('PAGINA:EDITAR')")
+  @PreAuthorize(Permissoes.PAGINA_AI_APLICAR)
   public AiPropostaResponse vincularPagina(
       @PathVariable UUID id,
       @Valid @RequestBody AiVincularPaginaRequest request,
@@ -102,7 +102,7 @@ public class AiSessaoController {
   }
 
   @PostMapping("/{id}/aplicar")
-  @PreAuthorize(Permissoes.PAGINA_CRIAR)
+  @PreAuthorize(Permissoes.PAGINA_AI_APLICAR + " and hasAnyAuthority('PAGINA:CRIAR','PAGINA:EDITAR')")
   public AiAplicacaoResponse aplicar(
       @PathVariable UUID id,
       @Valid @RequestBody AplicarAiPropostaRequest request,
