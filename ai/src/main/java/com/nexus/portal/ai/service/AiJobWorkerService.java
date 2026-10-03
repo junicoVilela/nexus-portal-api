@@ -64,6 +64,7 @@ public class AiJobWorkerService {
   private final AiComponenteRetriever componenteRetriever;
   private final AiPageSpecService pageSpecService;
   private final AiBriefingPageSpecEnricher briefingPageSpecEnricher;
+  private final AiPagePatchService pagePatchService;
   private final ObjectMapper objectMapper;
 
   @Async
@@ -74,6 +75,10 @@ public class AiJobWorkerService {
     }
     ContextoExecucao sessao = execucao.orElseThrow();
     try {
+      if (sessao.objetivo() == AiObjetivo.ATUALIZAR_PAGINA) {
+        processarAjuste(jobId, sessao);
+        return;
+      }
       Entrada entrada = prepararEntrada(sessao);
       lifecycleService.avancar(jobId, AiJobEtapa.SELECIONANDO_ESTRUTURA, 30);
       Estrutura estrutura = selecionarEstrutura(sessao);
@@ -94,6 +99,93 @@ public class AiJobWorkerService {
           sessao.sessaoId(),
           llmProvider.id());
     }
+  }
+
+  /**
+   * Ajuste de página existente (Fase B): esboço do HTML atual → patch pela IA → aplicação no
+   * servidor. Só roda sobre a versão em que o ajuste foi pedido.
+   */
+  private void processarAjuste(UUID jobId, ContextoExecucao sessao) throws Exception {
+    DocFlowAiBridge.PaginaAjuste pagina = docFlowAiBridge.buscarPaginaParaAjuste(sessao.paginaId());
+    if (sessao.versionBase() == null || pagina.version() != sessao.versionBase()) {
+      throw new AiAjusteInvalidoException(
+          "A página mudou desde o pedido de ajuste. Peça o ajuste de novo sobre a versão atual.");
+    }
+    AiPaginaEsboco esboco = AiPaginaEsboco.de(pagina.conteudoHtml());
+    lifecycleService.avancar(jobId, AiJobEtapa.SELECIONANDO_ESTRUTURA, 30);
+    List<PaginaBlocoResponse> catalogo = docFlowAiBridge.listarBlocos();
+    String escopo = sessao.secaoId() == null
+        ? "página inteira"
+        : "somente a seção " + sessao.secaoId() + " — não altere nada fora dela";
+    lifecycleService.avancar(jobId, AiJobEtapa.GERANDO_CONTEUDO, 50);
+
+    PromptMontado prompt = AiPromptBuilder.ajustarPagina(
+        pagina.titulo(),
+        pagina.resumo(),
+        escopo,
+        esboco.descrever(sessao.secaoId()),
+        catalogo,
+        coletarInstrucoes(sessao),
+        truncar(sessao.propostaAnterior(), 12_000));
+    LlmCompletion completion = llmProvider.completarEstruturado(
+        prompt.system(), prompt.user(), pagePatchService.schema(catalogo));
+    JsonNode json;
+    try {
+      json = extrairJson(completion.content());
+    } catch (Exception ex) {
+      log.warn("ai.job.patch_invalido jobId={} detalhe={}", jobId, ex.getMessage());
+      json = null;
+    }
+    AiPagePatchService.Interpretacao interpretacao = pagePatchService.interpretar(
+        json, esboco, pagina.titulo(), pagina.resumo(), sessao.secaoId(), catalogo);
+    AiPagePatchService.Resultado resultado = pagePatchService.aplicar(
+        pagina.conteudoHtml(), pagina.titulo(), pagina.resumo(), interpretacao.patch(), null);
+    List<String> avisos = new ArrayList<>();
+    if (FakeLlmProvider.ID.equals(llmProvider.id())) {
+      avisos.add("Gerado pelo provider de demonstração (sem API key): o texto não reflete o pedido.");
+    }
+    avisos.addAll(interpretacao.avisos());
+
+    lifecycleService.avancar(jobId, AiJobEtapa.VALIDANDO_QUALIDADE, 80);
+    Conteudo conteudo = new Conteudo(
+        null,
+        truncar(resultado.titulo(), 200),
+        pagina.slug(),
+        pagina.codigoTela(),
+        resultado.resumo(),
+        resultado.html(),
+        avisos,
+        completion,
+        prompt.versao());
+    String qualidadeJson = avaliarQualidade(conteudo);
+    lifecycleService.avancar(jobId, AiJobEtapa.FINALIZANDO, 95);
+    ResultadoConclusao conclusao = lifecycleService.concluir(jobId, new ResultadoGeracao(
+        AiPropostaTipo.ATUALIZACAO,
+        conteudo.titulo(),
+        conteudo.slug(),
+        conteudo.codigoTela(),
+        conteudo.resumo(),
+        conteudo.html(),
+        null,
+        null,
+        qualidadeJson,
+        null,
+        completion.tokensEntrada(),
+        completion.tokensSaida(),
+        avisos,
+        prompt.versao(),
+        pagePatchService.escrever(interpretacao.patch())));
+    log.info(
+        "ai.job.completed jobId={} sessaoId={} tipo=AJUSTE status=SUCESSO latencyMs={} tokensIn={} tokensOut={} provider={} prompt={} operacoes={} avisos={}",
+        jobId,
+        sessao.sessaoId(),
+        conclusao.latenciaMs(),
+        completion.tokensEntrada(),
+        completion.tokensSaida(),
+        llmProvider.id(),
+        prompt.versao(),
+        interpretacao.patch().operacoes().size(),
+        avisos.size());
   }
 
   /** Respostas do autor prevalecem sobre o que a triagem extrai do texto. */
@@ -153,7 +245,7 @@ public class AiJobWorkerService {
         estrutura.blueprint(),
         candidatos,
         coletarInstrucoes(sessao),
-        truncar(sessao.pageSpecAnterior(), 12_000));
+        truncar(sessao.propostaAnterior(), 12_000));
     LlmCompletion completion = llmProvider.completarEstruturado(
         prompt.system(), prompt.user(), pageSpecService.schema(candidatos));
 
@@ -247,7 +339,8 @@ public class AiJobWorkerService {
         completion.tokensEntrada(),
         completion.tokensSaida(),
         conteudo.avisos(),
-        conteudo.promptVersao()));
+        conteudo.promptVersao(),
+        null));
     log.info(
         "ai.job.completed jobId={} sessaoId={} status=SUCESSO latencyMs={} tokensIn={} tokensOut={} provider={} prompt={} template={} blueprint={} componentes={} avisos={}",
         jobId,
@@ -325,6 +418,9 @@ public class AiJobWorkerService {
   }
 
   private static String mensagemUsuario(Exception ex) {
+    if (ex instanceof AiAjusteInvalidoException) {
+      return ex.getMessage();
+    }
     String msg = ex.getMessage() == null ? "" : ex.getMessage();
     String lower = msg.toLowerCase(Locale.ROOT);
     if (lower.contains("json") || lower.contains("parse") || lower.contains("sem content")

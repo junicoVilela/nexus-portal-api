@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Única ponte DocFlow ↔ AI. Na extração, virar cliente HTTP.
@@ -144,6 +145,23 @@ public class DocFlowAiBridge {
     return PaginaResponse.from(paginaService.criar(request, principal));
   }
 
+  /** Página atual para o ajuste com IA (Fase B): conteúdo, versão e status. */
+  @Transactional(readOnly = true)
+  public PaginaAjuste buscarPaginaParaAjuste(UUID paginaId) {
+    Pagina pagina = paginaService.buscar(paginaId);
+    return new PaginaAjuste(
+        pagina.getId(),
+        pagina.getModulo().getProjeto().getId(),
+        pagina.getModulo().getId(),
+        pagina.getTitulo(),
+        pagina.getSlug(),
+        pagina.getCodigoTela(),
+        pagina.getResumo(),
+        pagina.getConteudoHtml() == null ? "" : pagina.getConteudoHtml(),
+        pagina.getVersion(),
+        pagina.getStatus().name());
+  }
+
   public PaginaDocumento buscarPaginaDocumento(UUID paginaId) {
     Pagina pagina = paginaService.buscar(paginaId);
     return new PaginaDocumento(
@@ -211,4 +229,16 @@ public class DocFlowAiBridge {
       List<ModuloDocumentoConfirmado> modulos) {}
 
   public record PaginaDocumento(UUID id, UUID projetoId, UUID moduloId, String status) {}
+
+  public record PaginaAjuste(
+      UUID id,
+      UUID projetoId,
+      UUID moduloId,
+      String titulo,
+      String slug,
+      String codigoTela,
+      String resumo,
+      String conteudoHtml,
+      long version,
+      String status) {}
 }

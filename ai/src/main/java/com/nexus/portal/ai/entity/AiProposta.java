@@ -89,6 +89,15 @@ public class AiProposta {
   @Column(name = "prompt_versao", length = 120)
   private String promptVersao;
 
+  /** Ajuste de página: {@code AiPagePatch} serializado. */
+  @JdbcTypeCode(SqlTypes.JSON)
+  @Column(name = "patch_json", columnDefinition = "jsonb")
+  private String patchJson;
+
+  @JdbcTypeCode(SqlTypes.JSON)
+  @Column(name = "operacoes_aceitas", columnDefinition = "jsonb")
+  private List<String> operacoesAceitas;
+
   @Column(name = "motivo_rejeicao", length = 500)
   private String motivoRejeicao;
 
@@ -112,7 +121,8 @@ public class AiProposta {
       String qualidadeJson,
       String pageSpecJson,
       List<String> avisosGeracao,
-      String promptVersao) {
+      String promptVersao,
+      String patchJson) {
     this.sessao = sessao;
     this.job = job;
     this.tipo = tipo;
@@ -127,12 +137,19 @@ public class AiProposta {
     this.pageSpecJson = pageSpecJson;
     this.avisosGeracao = avisosGeracao == null ? List.of() : List.copyOf(avisosGeracao);
     this.promptVersao = promptVersao;
+    this.patchJson = patchJson;
   }
 
   public void aceitar(UUID paginaId) {
     this.status = AiPropostaStatus.ACEITA;
     this.paginaId = paginaId;
     this.updatedAt = OffsetDateTime.now();
+  }
+
+  /** Ajuste aplicado no editor com parte (ou todas) as operações. */
+  public void aceitarAjuste(UUID paginaId, List<String> operacoesAceitas) {
+    aceitar(paginaId);
+    this.operacoesAceitas = List.copyOf(operacoesAceitas);
   }
 
   public void rejeitar(String motivo) {

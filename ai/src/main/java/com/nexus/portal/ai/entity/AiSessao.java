@@ -59,6 +59,14 @@ public class AiSessao extends AuditableEntity {
   @Column(nullable = false, columnDefinition = "text")
   private String briefing;
 
+  /** Ajuste de página: versão da página quando o ajuste foi pedido. */
+  @Column(name = "version_base")
+  private Long versionBase;
+
+  /** Ajuste de página: seção do esboço que limita o ajuste; nulo = página inteira. */
+  @Column(name = "secao_id", length = 20)
+  private String secaoId;
+
   public AiSessao(
       AiObjetivo objetivo,
       String briefing,
@@ -89,6 +97,17 @@ public class AiSessao extends AuditableEntity {
       UUID paginaId,
       UUID templateId) {
     this(objetivo, briefing, projetoId, moduloId, clienteId, paginaId, templateId, List.of());
+  }
+
+  /** Sessão de ajuste (Fase B): parte de uma página existente, numa versão conhecida. */
+  public static AiSessao ajuste(
+      String instrucao, UUID projetoId, UUID moduloId, UUID paginaId, long versionBase, String secaoId) {
+    AiSessao sessao = new AiSessao(
+        AiObjetivo.ATUALIZAR_PAGINA, instrucao, projetoId, moduloId, null, paginaId, null, List.of());
+    sessao.versionBase = versionBase;
+    sessao.secaoId = secaoId;
+    sessao.status = AiSessaoStatus.PRONTA_PARA_GERAR;
+    return sessao;
   }
 
   public void aguardarUsuario() {

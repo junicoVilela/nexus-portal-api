@@ -15,7 +15,7 @@ Plano executável a partir do desenho [`10-assistente-ia-paginas.md`](10-assiste
 | **S2** | A | Geração async | Job → proposta HTML sanitizada + SSE | ✅ |
 | **S3** | A | UI + aplicar | Wizard/drawer → form preenchido | ✅ |
 | **S4** | A | Hardening | Auditoria, e2e, flag off, polish prompts | ✅ |
-| **S5** | B | Atualizar página | Chat no editor + diff + PUT | 📋 |
+| **S5** | B | Atualizar página | Ajuste por patch no editor + diff | ✅ (smoke pendente) |
 | **S6** | C | PR → fila | Webhook merge → propostas-ia | 📋 |
 | **S7+** | D | Aprendizado | Métricas, rejeições, permissões AI_* | 📋 |
 
@@ -172,6 +172,9 @@ Plano executável a partir do desenho [`10-assistente-ia-paginas.md`](10-assiste
 
 **Objetivo:** na página aberta, pedir ajuste e aplicar com diff.
 
+> **Desenho detalhado:** [`13-assistente-ia-fase-b.md`](13-assistente-ia-fase-b.md), que redefine
+> os tickets AI-501..507 abaixo (patch sobre o HTML atual em vez de regenerar a PageSpec).
+
 ### Tickets
 
 | ID | Tipo | Título | Critério de pronto |
@@ -186,13 +189,13 @@ Plano executável a partir do desenho [`10-assistente-ia-paginas.md`](10-assiste
 
 ### Checklist fino
 
-- [ ] AI-501 Objetivo update
-- [ ] AI-502 Prompt contextual
-- [ ] AI-503 Aplicar update
-- [ ] AI-504 Toggle editor
-- [ ] AI-505 Diff UI
-- [ ] AI-506 Insert parcial (opc.)
-- [ ] AI-507 Testes
+- [x] AI-501 Esboço da página (`AiPaginaEsboco`)
+- [x] AI-502 Patch (`AiPagePatchService`)
+- [x] AI-503 V41 + `POST /ai/paginas/{id}/ajustes` + job `AJUSTAR` + prompt `ajustar-pagina`
+- [x] AI-504 `aplicar` com `operacoesAceitas` + 409 de versão
+- [x] AI-505 "Ajustar com IA" no editor + painel
+- [x] AI-506 Lista de mudanças, diff e aplicar selecionadas
+- [ ] AI-507 Smoke manual (doc 13 §15)
 
 **Demo S5:** editar página → “reescreva pré-requisitos” → diff → aplicar → histórico com revisão.
 

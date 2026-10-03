@@ -93,7 +93,8 @@ class AiJobLifecycleServiceTest {
         10,
         20,
         List.of(),
-        "gerar-page-spec@2.2");
+        "gerar-page-spec@2.2",
+        null);
   }
 
   private static void setId(Object target, UUID id) throws Exception {

@@ -23,7 +23,9 @@ public final class FakeLlmProvider implements LlmProvider {
   public LlmCompletion completar(String systemPrompt, String userPrompt) {
     String prompt = (systemPrompt == null ? "" : systemPrompt) + "\n" + (userPrompt == null ? "" : userPrompt);
     String content;
-    if (prompt.contains("GERAR_PAGE_SPEC")) {
+    if (prompt.contains("TAREFA=AJUSTAR_PAGINA")) {
+      content = ajustarPagina(userPrompt == null ? "" : userPrompt);
+    } else if (prompt.contains("GERAR_PAGE_SPEC")) {
       content = gerarPageSpec(userPrompt == null ? "" : userPrompt);
     } else {
       content = """
@@ -42,6 +44,21 @@ public final class FakeLlmProvider implements LlmProvider {
     }
     int tokens = Math.max(1, content.length() / 4);
     return LlmCompletion.of(content, tokens / 2, tokens / 2);
+  }
+
+  /** Ajuste determinístico: acrescenta "(ajustado)" à primeira unidade editável do esboço. */
+  private String ajustarPagina(String userPrompt) {
+    Matcher unidade = Pattern.compile("(?m)^\\s+(u\\d+)\\s+\\[[a-z0-9]+\\]\\s+(.+)$").matcher(userPrompt);
+    while (unidade.find()) {
+      String texto = unidade.group(2);
+      if (!texto.contains("(somente leitura")) {
+        return """
+            {"resumoDaMudanca":"Ajuste de demonstração (provider fake).","operacoes":[
+              {"tipo":"ALTERAR_TEXTO","unidadeId":%s,"novoTexto":%s,"motivo":"Provider fake."}]}
+            """.formatted(json(unidade.group(1)), json(texto.trim() + " (ajustado)"));
+      }
+    }
+    return "{\"resumoDaMudanca\":\"Nada a ajustar.\",\"operacoes\":[]}";
   }
 
   private String gerarPageSpec(String userPrompt) {

@@ -69,6 +69,36 @@ public final class AiPromptBuilder {
   }
 
   /**
+   * Ajuste de página existente (Fase B). {@code esboco} vem de {@code AiPaginaEsboco#descrever};
+   * {@code patchAnterior} só entra no refinamento, para o modelo partir da proposta anterior.
+   */
+  public static PromptMontado ajustarPagina(
+      String titulo,
+      String resumo,
+      String escopo,
+      String esboco,
+      List<PaginaBlocoResponse> catalogo,
+      List<String> pedidos,
+      String patchAnterior) {
+    Map<String, String> variaveis = new LinkedHashMap<>();
+    variaveis.put("titulo", nulo(titulo));
+    variaveis.put("resumo", nulo(resumo));
+    variaveis.put("escopo", nulo(escopo));
+    variaveis.put("pedidos", pedidos == null ? "" : pedidos.stream()
+        .map(pedido -> "- " + pedido.replaceAll("\\s+", " ").trim())
+        .reduce((a, b) -> a + "\n" + b)
+        .orElse(""));
+    variaveis.put("esboco", nulo(esboco));
+    variaveis.put("catalogo", descreverComponentes(catalogo));
+    variaveis.put("propostaAnterior", patchAnterior == null || patchAnterior.isBlank() || pedidos == null
+        || pedidos.size() < 2
+        ? ""
+        : "\nproposta anterior (refine a partir dela; mantenha o que não foi pedido para mudar):\n"
+            + patchAnterior + "\n");
+    return PromptMontado.de("ajustar-pagina", variaveis);
+  }
+
+  /**
    * Regeneração guiada: parte da versão anterior e aplica os pedidos do autor. O mais recente
    * prevalece em caso de conflito; os fatos continuam vindo do briefing.
    */

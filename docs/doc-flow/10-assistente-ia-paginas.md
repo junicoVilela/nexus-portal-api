@@ -349,8 +349,9 @@ Auditoria: eventos `AI_SESSAO_CRIADA`, `AI_PROPOSTA_GERADA`, `AI_PROPOSTA_ACEITA
 
 ## 9. Fase B — ajustar página existente
 
-> Até a Fase B ser entregue, `POST /ai/sessoes` com `objetivo=ATUALIZAR_PAGINA` responde **422**: o worker
-> ainda não lê o HTML atual e `aplicar` só sabe criar página, o que geraria duplicata.
+> **Implementada** como ajuste por patch sobre o HTML atual: ver
+> [`13-assistente-ia-fase-b.md`](13-assistente-ia-fase-b.md). O caminho é
+> `POST /ai/paginas/{id}/ajustes`; `POST /ai/sessoes` com `ATUALIZAR_PAGINA` continua 422.
 
 - `objetivo=ATUALIZAR_PAGINA` + `paginaId` obrigatório.
 - Contexto do prompt inclui `conteudoHtml` atual (truncado por seções se grande).

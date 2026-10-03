@@ -69,6 +69,7 @@ class AiJobWorkerServiceTest {
         new AiComponenteRetriever(),
         new AiPageSpecService(objectMapper, docFlowAiBridge),
         new AiBriefingPageSpecEnricher(),
+        new AiPagePatchService(objectMapper, docFlowAiBridge, new AiHtmlSanitizer()),
         objectMapper);
 
     sessao = new AiSessao(

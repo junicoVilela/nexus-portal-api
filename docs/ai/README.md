@@ -138,6 +138,8 @@ referenciam componentes existentes, sem duplicar HTML.
 | Mudar o que a sessão aceita em cada status | `AiSessaoStatus` (`permiteGerar`, `aceitaMensagem`, `terminal`) |
 | Mudar uma etapa da geração | `AiJobWorkerService` (uma etapa por método, listadas no javadoc) |
 | Mudar operações sobre o plano importado (mover, mesclar…) | `AiDocumentoPlanoOperacoes` (funções puras, testadas isoladamente) |
+| Mudar como o ajuste de página vê a página (seções, unidades) | `AiPaginaEsboco` (precisa bater com `extrairSecoesPagina` no front) |
+| Mudar o que o ajuste pode fazer ou seus limites | `AiPagePatchService` (operações, `MAX_*`) e `prompts/ajustar-pagina.*.md` |
 | Mudar o limite de gerações | `NEXUS_AI_MAX_GERACOES_POR_HORA` (contado em `tb_ai_job`, vale entre instâncias) |
 
 Cada proposta grava o prompt que a gerou (`tb_ai_proposta.prompt_versao`, ex.:

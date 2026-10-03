@@ -15,6 +15,7 @@ import com.nexus.portal.ai.dto.response.AiQualidadeItemResponse;
 import com.nexus.portal.ai.entity.AiJob;
 import com.nexus.portal.ai.entity.AiJobTipo;
 import com.nexus.portal.ai.entity.AiMensagem;
+import com.nexus.portal.ai.entity.AiObjetivo;
 import com.nexus.portal.ai.entity.AiPapelMensagem;
 import com.nexus.portal.ai.entity.AiProposta;
 import com.nexus.portal.ai.entity.AiPropostaStatus;
@@ -27,10 +28,14 @@ import com.nexus.portal.ai.repository.AiSessaoRepository;
 import com.nexus.portal.docflow.dto.request.PaginaRequest;
 import com.nexus.portal.docflow.dto.response.PaginaResponse;
 import com.nexus.portal.shared.exception.BusinessException;
+import com.nexus.portal.shared.exception.ConflictException;
 import com.nexus.portal.shared.exception.NotFoundException;
 import java.security.Principal;
 import java.time.OffsetDateTime;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -56,6 +61,7 @@ public class AiPropostaService {
   private final AiRateLimitService rateLimitService;
   private final AuditoriaService auditoriaService;
   private final AiMensagemRepository mensagemRepository;
+  private final AiPagePatchService pagePatchService;
 
   @Transactional
   public AiJobResponse gerar(UUID sessaoId, Principal principal) {
@@ -102,7 +108,10 @@ public class AiPropostaService {
     }
     int tentativa = Math.toIntExact(jobRepository.countBySessaoId(sessaoId) + 1);
     AiJob job = jobRepository.saveAndFlush(
-        new AiJob(sessao, AiJobTipo.GERAR_RASCUNHO, tentativa));
+        new AiJob(
+            sessao,
+            sessao.getObjetivo() == AiObjetivo.ATUALIZAR_PAGINA ? AiJobTipo.AJUSTAR : AiJobTipo.GERAR_RASCUNHO,
+            tentativa));
     sessao.gerando();
     aiEventService.publicarJob(job);
     agendarProcessamento(job.getId());
@@ -128,6 +137,9 @@ public class AiPropostaService {
         .orElseThrow(() -> new NotFoundException("Nenhuma proposta pendente para aplicar."));
 
     ModoAplicacao modo = request.modo();
+    if (sessao.getObjetivo() == AiObjetivo.ATUALIZAR_PAGINA) {
+      return aplicarAjuste(sessao, proposta, request, principal);
+    }
     if (modo == ModoAplicacao.FORM) {
       auditoriaService.registrar(
           AiAuditoriaAcoes.ENTIDADE_PROPOSTA,
@@ -189,6 +201,59 @@ public class AiPropostaService {
         moduloId);
   }
 
+  /**
+   * Ajuste de página: reaplica só as operações aceitas sobre o HTML atual — que precisa ser o da
+   * versão base, senão os ids do esboço não valem mais. Devolve o HTML para o editor; quem salva
+   * é o autor, pelo fluxo normal.
+   */
+  private AiAplicacaoResponse aplicarAjuste(
+      AiSessao sessao, AiProposta proposta, AplicarAiPropostaRequest request, Principal principal) {
+    if (request.modo() != ModoAplicacao.FORM) {
+      throw new BusinessException("Ajustes de página são aplicados no editor (modo FORM).");
+    }
+    DocFlowAiBridge.PaginaAjuste pagina = docFlowAiBridge.buscarPaginaParaAjuste(sessao.getPaginaId());
+    if (sessao.getVersionBase() == null || pagina.version() != sessao.getVersionBase()) {
+      throw new ConflictException(
+          "A página mudou desde a proposta. Gere o ajuste de novo para trabalhar sobre a versão atual.");
+    }
+    AiPagePatch patch = pagePatchService.ler(proposta.getPatchJson());
+    Set<String> propostas = patch.operacoes().stream()
+        .map(AiPagePatch.Operacao::id)
+        .collect(Collectors.toCollection(LinkedHashSet::new));
+    Set<String> aceitas = request.operacoesAceitas() == null
+        ? propostas
+        : new LinkedHashSet<>(request.operacoesAceitas());
+    if (!propostas.containsAll(aceitas)) {
+      throw new BusinessException("Mudança selecionada não pertence a esta proposta.");
+    }
+    if (aceitas.isEmpty()) {
+      throw new BusinessException("Selecione ao menos uma mudança para aplicar.");
+    }
+    AiPagePatchService.Resultado resultado = pagePatchService.aplicar(
+        pagina.conteudoHtml(), pagina.titulo(), pagina.resumo(), patch, aceitas);
+    proposta.aceitarAjuste(pagina.id(), List.copyOf(aceitas));
+    sessao.aplicada();
+    auditoriaService.registrar(
+        AiAuditoriaAcoes.ENTIDADE_PROPOSTA,
+        proposta.getId(),
+        AiAuditoriaAcoes.PROPOSTA_APLICADA_FORM,
+        truncar("ajuste " + pagina.codigoTela() + " · " + aceitas.size() + " de " + propostas.size()
+            + " mudanças", 200),
+        principal);
+    return new AiAplicacaoResponse(
+        ModoAplicacao.FORM.name(),
+        proposta.getId(),
+        pagina.id(),
+        resultado.titulo(),
+        pagina.slug(),
+        pagina.codigoTela(),
+        resultado.resumo(),
+        resultado.html(),
+        null,
+        null,
+        pagina.moduloId());
+  }
+
   /** Autor descarta a proposta; a sessão continua disponível para regenerar com uma instrução. */
   @Transactional
   public AiPropostaResponse rejeitar(UUID sessaoId, String motivo, Principal principal) {
@@ -234,7 +299,8 @@ public class AiPropostaService {
     } catch (Exception ignored) {
       itens = List.of();
     }
-    return AiPropostaResponse.from(proposta, apto, itens);
+    AiPagePatch patch = proposta.getPatchJson() == null ? null : pagePatchService.ler(proposta.getPatchJson());
+    return AiPropostaResponse.from(proposta, apto, itens, patch);
   }
 
   private AiSessao carregarSessao(UUID id, Principal principal) {

@@ -25,6 +25,10 @@ import com.nexus.portal.ai.repository.AiJobRepository;
 import com.nexus.portal.ai.repository.AiMensagemRepository;
 import com.nexus.portal.ai.repository.AiPropostaRepository;
 import com.nexus.portal.ai.repository.AiSessaoRepository;
+import com.nexus.portal.ai.dto.request.AplicarAiPropostaRequest;
+import com.nexus.portal.ai.dto.request.AplicarAiPropostaRequest.ModoAplicacao;
+import com.nexus.portal.shared.exception.BusinessException;
+import com.nexus.portal.shared.exception.ConflictException;
 import com.nexus.portal.shared.exception.NotFoundException;
 import java.util.List;
 import java.util.Optional;
@@ -68,7 +72,8 @@ class AiPropostaServiceTest {
         new ObjectMapper(),
         rateLimitService,
         auditoriaService,
-        mensagemRepository);
+        mensagemRepository,
+        new AiPagePatchService(new ObjectMapper(), docFlowAiBridge, new AiHtmlSanitizer()));
   }
 
   @Test
@@ -128,7 +133,7 @@ class AiPropostaServiceTest {
     setId(job, UUID.randomUUID());
     AiProposta proposta = new AiProposta(
         sessao, job, AiPropostaTipo.NOVA, "Consulta", "consulta", "PED-001", "Resumo",
-        "<section>Consulta</section>", null, null, null, null, List.of(), null);
+        "<section>Consulta</section>", null, null, null, null, List.of(), null, null);
     setId(proposta, UUID.randomUUID());
     when(sessaoRepository.findById(sessaoId)).thenReturn(Optional.of(sessao));
     when(propostaRepository.findFirstBySessaoIdAndStatusOrderByCreatedAtDesc(
@@ -147,6 +152,73 @@ class AiPropostaServiceTest {
 
     assertThatThrownBy(() -> service.rejeitar(sessao.getId(), null, null))
         .isInstanceOf(NotFoundException.class);
+  }
+
+  @Test
+  void aplicarAjusteReaplicaSoAsOperacoesAceitasSobreAVersaoBase() throws Exception {
+    var cenario = cenarioAjuste(7L);
+
+    var aplicacao = service.aplicar(
+        cenario.sessao().getId(),
+        new AplicarAiPropostaRequest(ModoAplicacao.FORM, null, null, null, List.of("op2")),
+        null);
+
+    assertThat(aplicacao.conteudoHtml()).contains("Passo revisado.").contains("Pré-requisito original.");
+    assertThat(cenario.proposta().getStatus()).isEqualTo(AiPropostaStatus.ACEITA);
+    assertThat(cenario.proposta().getOperacoesAceitas()).containsExactly("op2");
+    assertThat(cenario.sessao().getStatus()).isEqualTo(AiSessaoStatus.APLICADA);
+  }
+
+  @Test
+  void aplicarAjusteSobrePaginaQueMudouRetorna409() throws Exception {
+    var cenario = cenarioAjuste(8L);
+
+    assertThatThrownBy(() -> service.aplicar(
+        cenario.sessao().getId(), new AplicarAiPropostaRequest(ModoAplicacao.FORM, null, null, null), null))
+        .isInstanceOf(ConflictException.class)
+        .hasMessageContaining("mudou desde a proposta");
+    assertThat(cenario.proposta().getStatus()).isEqualTo(AiPropostaStatus.PENDENTE);
+  }
+
+  @Test
+  void aplicarAjusteRecusaOperacaoDeOutraProposta() throws Exception {
+    var cenario = cenarioAjuste(7L);
+
+    assertThatThrownBy(() -> service.aplicar(
+        cenario.sessao().getId(),
+        new AplicarAiPropostaRequest(ModoAplicacao.FORM, null, null, null, List.of("op9")),
+        null))
+        .isInstanceOf(BusinessException.class);
+  }
+
+  private record CenarioAjuste(AiSessao sessao, AiProposta proposta) {}
+
+  /** Página na versão {@code versaoAtual}; a sessão foi aberta na versão 7. */
+  private CenarioAjuste cenarioAjuste(long versaoAtual) throws Exception {
+    String html = "<h2>Pré-requisitos</h2><p>Pré-requisito original.</p><h2>Passo</h2><p>Passo original.</p>";
+    UUID paginaId = UUID.randomUUID();
+    AiSessao sessao = AiSessao.ajuste("Revise o passo.", null, null, paginaId, 7L, null);
+    setId(sessao, UUID.randomUUID());
+    sessao.setCreatedBy("system");
+    sessao.pronta();
+    AiJob job = new AiJob(sessao, AiJobTipo.AJUSTAR, 1);
+    setId(job, UUID.randomUUID());
+    AiPagePatch patch = new AiPagePatch("ajuste", List.of(
+        new AiPagePatch.Operacao("op1", AiPagePatch.Tipo.ALTERAR_TEXTO, "u2", "Pré-requisito original.",
+            "Pré-requisito revisado.", null, null, null, "a"),
+        new AiPagePatch.Operacao("op2", AiPagePatch.Tipo.ALTERAR_TEXTO, "u4", "Passo original.",
+            "Passo revisado.", null, null, null, "b")));
+    AiProposta proposta = new AiProposta(
+        sessao, job, AiPropostaTipo.ATUALIZACAO, "Página", "pagina", "PED-001", null, html,
+        null, null, null, null, List.of(), "ajustar-pagina@1.1",
+        new ObjectMapper().writeValueAsString(patch));
+    setId(proposta, UUID.randomUUID());
+    when(sessaoRepository.findById(sessao.getId())).thenReturn(Optional.of(sessao));
+    when(propostaRepository.findFirstBySessaoIdAndStatusOrderByCreatedAtDesc(
+        sessao.getId(), AiPropostaStatus.PENDENTE)).thenReturn(Optional.of(proposta));
+    when(docFlowAiBridge.buscarPaginaParaAjuste(paginaId)).thenReturn(new DocFlowAiBridge.PaginaAjuste(
+        paginaId, null, null, "Página", "pagina", "PED-001", null, html, versaoAtual, "RASCUNHO"));
+    return new CenarioAjuste(sessao, proposta);
   }
 
   private static AiSessao sessaoDoUsuario() throws Exception {

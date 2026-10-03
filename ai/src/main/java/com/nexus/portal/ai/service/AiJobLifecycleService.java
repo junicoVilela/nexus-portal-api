@@ -50,11 +50,13 @@ public class AiJobLifecycleService {
     job.iniciar(modelo);
     job.atualizarProgresso(AiJobEtapa.PREPARANDO_CONTEXTO, 10);
     aiEventService.publicarJob(job);
-    String pageSpecAnterior = propostaRepository
+    String propostaAnterior = propostaRepository
         .findFirstBySessaoIdOrderByCreatedAtDesc(sessao.getId())
-        .map(AiProposta::getPageSpecJson)
+        .map(proposta -> sessao.getObjetivo() == AiObjetivo.ATUALIZAR_PAGINA
+            ? proposta.getPatchJson()
+            : proposta.getPageSpecJson())
         .orElse(null);
-    return Optional.of(ContextoExecucao.from(job, pageSpecAnterior));
+    return Optional.of(ContextoExecucao.from(job, propostaAnterior));
   }
 
   @Transactional
@@ -95,7 +97,8 @@ public class AiJobLifecycleService {
         resultado.qualidadeJson(),
         resultado.pageSpecJson(),
         resultado.avisosGeracao(),
-        resultado.promptVersao()));
+        resultado.promptVersao(),
+        resultado.patchJson()));
 
     job.registrarTokens(resultado.tokensEntrada(), resultado.tokensSaida());
     job.sucesso();
@@ -213,10 +216,16 @@ public class AiJobLifecycleService {
       UUID paginaId,
       UUID templateId,
       List<String> componentesSelecionados,
-      /** PageSpec da última proposta da sessão; base para aplicar as instruções de ajuste. */
-      String pageSpecAnterior) {
+      /** Ajuste de página: versão base e seção do escopo. */
+      Long versionBase,
+      String secaoId,
+      /**
+       * Última proposta da sessão (PageSpec na criação, patch no ajuste); base para aplicar as
+       * instruções de refinamento.
+       */
+      String propostaAnterior) {
 
-    static ContextoExecucao from(AiJob job, String pageSpecAnterior) {
+    static ContextoExecucao from(AiJob job, String propostaAnterior) {
       AiSessao sessao = job.getSessao();
       return new ContextoExecucao(
           job.getId(),
@@ -229,7 +238,9 @@ public class AiJobLifecycleService {
           sessao.getPaginaId(),
           sessao.getTemplateId(),
           sessao.getComponentesSelecionados(),
-          pageSpecAnterior);
+          sessao.getVersionBase(),
+          sessao.getSecaoId(),
+          propostaAnterior);
     }
   }
 
@@ -247,7 +258,8 @@ public class AiJobLifecycleService {
       Integer tokensEntrada,
       Integer tokensSaida,
       List<String> avisosGeracao,
-      String promptVersao) {}
+      String promptVersao,
+      String patchJson) {}
 
   public record ResultadoConclusao(UUID propostaId, long latenciaMs) {}
 }
