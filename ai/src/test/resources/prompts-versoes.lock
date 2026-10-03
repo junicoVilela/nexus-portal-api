@@ -1,0 +1,14 @@
+# Impressão digital de cada prompt em ai/src/main/resources/prompts (AiPromptVersaoTest).
+# Formato: <nome> <versao> <sha256 do texto, 16 primeiros hex>
+#
+# Mudou o texto de um prompt? Suba `versao` no cabeçalho do .md e atualize a linha aqui
+# (o teste imprime a linha nova). Assim cada proposta gravada (`prompt_versao`) aponta
+# para um texto único e o painel Qualidade da IA compara versões de verdade.
+ajustar-pagina.system 1 fdd944fdfbbe1803
+ajustar-pagina.user 1 42ea6ebd19ec19c9
+analise-documento-amplo.system 2 990d66a1d5087263
+analise-documento-amplo.user 2 3c6da714e97f5547
+analise-documento.system 2 74961fb0af7274ef
+analise-documento.user 2 5b7500e56c3abd5f
+gerar-page-spec.system 2 8063acd9df4bc299
+gerar-page-spec.user 2 3a9e25d75318e2c2

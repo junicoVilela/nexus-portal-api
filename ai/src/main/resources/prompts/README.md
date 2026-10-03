@@ -14,7 +14,9 @@ Texto do prompt com {{variavel}}.
 
 - **Suba `versao` a cada mudança de texto.** O par `nome@versao` fica gravado em cada
   proposta (`tb_ai_proposta.prompt_versao`) e no log `ai.job.completed`. É assim que dá para
-  comparar a taxa de aceite e rejeição entre versões.
+  comparar a taxa de aceite e rejeição entre versões. O `AiPromptVersaoTest` falha se o texto
+  mudar sem subir a versão; atualize `ai/src/test/resources/prompts-versoes.lock` com a linha
+  que ele imprime. Ciclo completo em `docs/ai/PROMPT-OPS.md`.
 - `{{variavel}}` é preenchida pelo código. Variável sem valor ou placeholder desconhecido
   faz a renderização falhar, e o `AiPromptCatalogoTest` pega isso no build.
 - O conteúdo do autor (briefing, manifesto) vai sempre entre marcas `<<<…` / `…>>>`. O

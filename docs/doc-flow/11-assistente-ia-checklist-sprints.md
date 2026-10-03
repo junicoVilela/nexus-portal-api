@@ -117,7 +117,7 @@ Plano executável a partir do desenho [`10-assistente-ia-paginas.md`](10-assiste
 | AI-307 | WEB | Feature flag UI (`AiFeatureService`) | ✅ |
 | AI-308 | WEB | Layout CSS preview \| checklist | ✅ |
 | AI-309 | WEB | Testes unit component/service | ✅ |
-| AI-310 | WEB | Regenerar OpenAPI client se aplicável | ⏭ hand-written client |
+| AI-310 | WEB | Regenerar OpenAPI client se aplicável | Contrato checado contra o gerado (`ai-contrato.spec.ts`) |
 
 ### Checklist fino
 
@@ -130,7 +130,7 @@ Plano executável a partir do desenho [`10-assistente-ia-paginas.md`](10-assiste
 - [x] AI-307 `AiFeatureService` (oculta CTAs se AI off)
 - [x] AI-308 Layout preview | checklist (responsive)
 - [x] AI-309 Testes unit (service/feature/componentes/CTA)
-- [ ] AI-310 OpenAPI — cliente AI continua hand-written (`api:check` N/A)
+- [x] AI-310 OpenAPI — cliente AI segue manual (SSE, FormData); `services/ai-contrato.spec.ts` checa modelos e payloads contra os tipos gerados na compilação
 
 **Demo S3:** UI — colar briefing → (responder perguntas) → Aplicar no editor → ver campos + HTML; salvar rascunho manualmente.
 
@@ -252,10 +252,10 @@ Plano executável a partir do desenho [`10-assistente-ia-paginas.md`](10-assiste
 | AI-703 | API | Ajuste prompts com base nos padrões de rejeição | Ciclo documentado |
 | AI-704 | DB+API+WEB | Permissões `PAGINA:AI_GERAR`, `AI_APLICAR`, `AI_PROPOSTA` | Seed RBAC + guards |
 
-- [ ] AI-701 Feedback loop
+- [x] AI-701 Feedback loop — categoria de rejeição (`AiCategoriaRejeicao`, V43) + "Depois do aceite" em `/ai/metricas`
 - [x] AI-702 Métricas UI — `/doc-flow/ia-qualidade` (`GET /ai/metricas`, `AUDITORIA:VISUALIZAR`)
-- [ ] AI-703 Prompt ops
-- [ ] AI-704 Permissões granulares
+- [x] AI-703 Prompt ops — `docs/ai/PROMPT-OPS.md`, trava `AiPromptVersaoTest` e "Versão atual × anterior" no painel
+- [x] AI-704 Permissões granulares — `PAGINA:AI_GERAR` / `AI_APLICAR` / `AI_PROPOSTA` (V42) + guards no front
 
 ---
 

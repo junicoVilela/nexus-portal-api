@@ -146,7 +146,20 @@ Cada proposta grava o prompt que a gerou (`tb_ai_proposta.prompt_versao`, ex.:
 `gerar-page-spec@2.2`). Para avaliar uma mudança de prompt, use o painel **Qualidade da IA**
 (`/doc-flow/ia-qualidade`, permissão `AUDITORIA:VISUALIZAR`): aceite por versão, avisos de
 fallback, motivos de rejeição, aceite parcial dos ajustes, latência e tokens. A regra do aceite
-fica em `AiMetricasService`.
+fica em `AiMetricasService`. O ciclo para ajustar prompts pelos padrões de rejeição está em
+[`PROMPT-OPS.md`](PROMPT-OPS.md).
+
+### Permissões
+
+| Permissão | Libera |
+|---|---|
+| `PAGINA:AI_GERAR` | Assistente: sessões, geração, ajuste com IA, importação de documentos |
+| `PAGINA:AI_APLICAR` | Levar a proposta para uma página (também exige `PAGINA:CRIAR`/`EDITAR`) |
+| `PAGINA:AI_PROPOSTA` | Triar a fila de propostas abertas a partir de PRs (Fase C) |
+| `AUDITORIA:VISUALIZAR` | Painel Qualidade da IA |
+
+A V42 concedeu as três ações `AI_*` a todo grupo que já tinha `PAGINA:CRIAR`. Para tirar a IA de
+um grupo sem tirar a edição manual, remova as ações `AI_*` dele.
 
 ### Quando adicionar RAG vetorial
 
