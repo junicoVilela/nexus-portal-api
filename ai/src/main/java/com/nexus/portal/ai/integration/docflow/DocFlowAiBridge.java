@@ -147,6 +147,11 @@ public class DocFlowAiBridge {
 
   /** Página atual para o ajuste com IA (Fase B): conteúdo, versão e status. */
   @Transactional(readOnly = true)
+  /** Fase C: página que um PR altera, pelo código de tela (único no DocFlow). */
+  public Optional<PaginaAjuste> buscarPaginaPorCodigoTela(String codigoTela) {
+    return paginaRepository.findByCodigoTela(codigoTela).map(pagina -> buscarPaginaParaAjuste(pagina.getId()));
+  }
+
   public PaginaAjuste buscarPaginaParaAjuste(UUID paginaId) {
     Pagina pagina = paginaService.buscar(paginaId);
     return new PaginaAjuste(

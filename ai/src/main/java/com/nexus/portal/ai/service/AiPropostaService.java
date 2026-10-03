@@ -35,6 +35,7 @@ import java.security.Principal;
 import java.time.OffsetDateTime;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.UUID;
@@ -315,6 +316,15 @@ public class AiPropostaService {
     } else {
       jobWorkerService.processar(jobId);
     }
+  }
+
+  /**
+   * Última proposta da sessão, sem checar o dono: só para a fila de PR, cuja autorização
+   * ({@code PAGINA:AI_PROPOSTA}) fica no controller.
+   */
+  @Transactional(readOnly = true)
+  public Optional<AiPropostaResponse> ultimaPropostaDaFila(UUID sessaoId) {
+    return propostaRepository.findFirstBySessaoIdOrderByCreatedAtDesc(sessaoId).map(this::toResponse);
   }
 
   private AiPropostaResponse toResponse(AiProposta proposta) {

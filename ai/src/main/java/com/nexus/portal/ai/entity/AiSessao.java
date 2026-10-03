@@ -67,6 +67,10 @@ public class AiSessao extends AuditableEntity {
   @Column(name = "secao_id", length = 20)
   private String secaoId;
 
+  /** Dono atual quando difere de quem criou: item da fila de PR assumido por um autor. */
+  @Column(length = 120)
+  private String responsavel;
+
   public AiSessao(
       AiObjetivo objetivo,
       String briefing,
@@ -146,8 +150,16 @@ public class AiSessao extends AuditableEntity {
     return status == AiSessaoStatus.CANCELADA;
   }
 
+  /** Usuário criado pelo webhook (sem autenticação) para as sessões da fila de PR. */
+  public static final String SISTEMA = "system";
+
   public boolean pertenceA(String usuario) {
-    return usuario != null && usuario.equals(getCreatedBy());
+    return usuario != null && usuario.equals(responsavel != null ? responsavel : getCreatedBy());
+  }
+
+  /** Item da fila de PR assumido: a partir daqui o autor usa os fluxos normais do assistente. */
+  public void transferirPara(String usuario) {
+    this.responsavel = usuario;
   }
 
   public boolean terminal() {

@@ -58,6 +58,8 @@ public class SecurityConfig {
             .requestMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**").permitAll()
             .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
             .requestMatchers(HttpMethod.POST, "/api/v1/release-orchestrator/webhooks/**").permitAll()
+            // GitHub → fila de propostas da IA; autenticado pela assinatura HMAC no controller.
+            .requestMatchers(HttpMethod.POST, "/api/v1/ai/webhooks/github").permitAll()
             .requestMatchers("/api/v1/preview/**").permitAll()
             .requestMatchers(HttpMethod.GET, "/api/v1/public/publicacoes/download").permitAll()
             .requestMatchers(HttpMethod.GET, "/api/v1/docflow/paginas/*/anexos/*/download").permitAll()

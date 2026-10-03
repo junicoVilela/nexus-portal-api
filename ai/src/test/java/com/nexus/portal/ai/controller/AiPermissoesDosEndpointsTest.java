@@ -24,11 +24,16 @@ class AiPermissoesDosEndpointsTest {
   private static final List<Class<?>> CONTROLLERS = List.of(
       AiSessaoController.class,
       AiDocumentoImportacaoController.class,
+      AiFilaPrController.class,
+      AiGithubWebhookController.class,
       AiAjustePaginaController.class,
       AiTemplateController.class,
       AiMetricasController.class,
       AiStatusController.class,
       AiEventController.class);
+
+  /** Público por decisão: autenticado pela assinatura HMAC do GitHub (SecurityConfig). */
+  private static final Set<String> PUBLICOS = Set.of("AiGithubWebhookController#receber");
 
   /** POSTs que só leem: recomendação de modelo e recarga do estado da importação. */
   private static final Set<String> ESCRITA_SEM_IA = Set.of(
@@ -38,13 +43,14 @@ class AiPermissoesDosEndpointsTest {
   /** Endpoints que criam/alteram páginas do DocFlow a partir de uma proposta. */
   private static final Set<String> GRAVAM_PAGINA = Set.of(
       "AiSessaoController#aplicar",
-      "AiDocumentoImportacaoController#aceitarPaginaImportada");
+      "AiDocumentoImportacaoController#aceitarPaginaImportada",
+      "AiFilaPrController#aceitar");
 
   @Test
   void todoEndpointDeclaraPermissao() {
     List<String> semPermissao = new ArrayList<>();
     endpoints().forEach(m -> {
-      if (m.getAnnotation(PreAuthorize.class) == null) {
+      if (m.getAnnotation(PreAuthorize.class) == null && !PUBLICOS.contains(nome(m))) {
         semPermissao.add(nome(m));
       }
     });
@@ -56,7 +62,7 @@ class AiPermissoesDosEndpointsTest {
     List<String> divergentes = new ArrayList<>();
     endpoints().stream()
         .filter(AiPermissoesDosEndpointsTest::escrita)
-        .filter(m -> !ESCRITA_SEM_IA.contains(nome(m)))
+        .filter(m -> !ESCRITA_SEM_IA.contains(nome(m)) && !PUBLICOS.contains(nome(m)))
         .filter(m -> !permissao(m).contains("PAGINA:AI_"))
         .forEach(m -> divergentes.add(nome(m) + " -> " + permissao(m)));
     assertThat(divergentes).as("escritas do assistente sem PAGINA:AI_*").isEmpty();

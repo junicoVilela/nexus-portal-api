@@ -6,6 +6,7 @@ public final class AiAuditoriaAcoes {
   public static final String ENTIDADE_SESSAO = "AI_SESSAO";
   public static final String ENTIDADE_PROPOSTA = "AI_PROPOSTA";
   public static final String ENTIDADE_DOCUMENTO_IMPORTACAO = "AI_DOCUMENTO_IMPORTACAO";
+  public static final String ENTIDADE_PR_EVENTO = "AI_PR_EVENTO";
 
   public static final String SESSAO_CRIADA = "AI_SESSAO_CRIADA";
   public static final String SESSAO_CANCELADA = "AI_SESSAO_CANCELADA";
@@ -14,6 +15,8 @@ public final class AiAuditoriaAcoes {
   public static final String PROPOSTA_ACEITA = "AI_PROPOSTA_ACEITA";
   public static final String PROPOSTA_APLICADA_FORM = "AI_PROPOSTA_APLICADA_FORM";
   public static final String PROPOSTA_REJEITADA = "AI_PROPOSTA_REJEITADA";
+  public static final String PR_RECEBIDO = "AI_PR_RECEBIDO";
+  public static final String PR_ASSUMIDO = "AI_PR_ASSUMIDO";
   public static final String DOCUMENTO_IMPORTADO = "AI_DOCUMENTO_IMPORTADO";
   public static final String DOCUMENTO_ESTRUTURA_CONFIRMADA = "AI_DOCUMENTO_ESTRUTURA_CONFIRMADA";
   public static final String DOCUMENTO_ESTRUTURA_REORDENADA = "AI_DOCUMENTO_ESTRUTURA_REORDENADA";

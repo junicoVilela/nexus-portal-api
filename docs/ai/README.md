@@ -149,6 +149,9 @@ fallback, motivos de rejeição, aceite parcial dos ajustes, latência e tokens.
 fica em `AiMetricasService`. O ciclo para ajustar prompts pelos padrões de rejeição está em
 [`PROMPT-OPS.md`](PROMPT-OPS.md).
 
+PRs mergeados podem abrir propostas sozinhos (Fase C): veja
+[`GITHUB-WEBHOOK.md`](GITHUB-WEBHOOK.md).
+
 ### Permissões
 
 | Permissão | Libera |

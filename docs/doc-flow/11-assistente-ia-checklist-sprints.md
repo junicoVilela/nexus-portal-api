@@ -224,18 +224,18 @@ Plano executável a partir do desenho [`10-assistente-ia-paginas.md`](10-assiste
 
 ### Checklist fino
 
-- [ ] AI-601 Webhook
-- [ ] AI-602 Security
-- [ ] AI-603 Idempotência
-- [ ] AI-604 GitHub client
-- [ ] AI-605 Classificador
-- [ ] AI-606 Match pagina
-- [ ] AI-607 Pipeline sessão
-- [ ] AI-608 API fila
-- [ ] AI-609 UI fila
-- [ ] AI-610 Aceitar
-- [ ] AI-611 Runbook
-- [ ] AI-612 Testes
+- [x] AI-601 Webhook — `POST /api/v1/ai/webhooks/github` com assinatura HMAC `X-Hub-Signature-256` (o GitHub não envia `X-Webhook-Secret`)
+- [x] AI-602 Security — `permitAll` só no POST do webhook
+- [x] AI-603 Idempotência — `tb_ai_pr_evento` com `delivery_id` e (repositório, PR) únicos (V44)
+- [x] AI-604 GitHub client — `AiGithubHttpClient` (pulls/{n}/files), sem depender do RO
+- [x] AI-605 Classificador — `AiPrClassificador` (determinístico, rótulo `docs:skip`)
+- [x] AI-606 Match página — `codigoTela` (marcador ou citado) → ajuste; publicada → aguardando rascunho
+- [x] AI-607 Pipeline sessão — página nova via sessão + geração; existente via ajuste da Fase B
+- [x] AI-608 API fila — `/api/v1/ai/fila-pr` (listar, assumir, aceitar, rejeitar, reprocessar)
+- [x] AI-609 UI fila — `/doc-flow/propostas-ia`
+- [x] AI-610 Aceitar — rascunho direto (página nova) ou editor com o painel de ajuste
+- [x] AI-611 Runbook — `docs/ai/GITHUB-WEBHOOK.md`
+- [x] AI-612 Testes — unitários + `AiFilaPrIntegrationTest` (webhook → fila → rascunho)
 
 **Demo S6:** PR de UI merged (ou payload fixture) → item na fila → aceitar → rascunho no editor.
 

@@ -90,3 +90,10 @@ nexus:
     max-perguntas: ${NEXUS_AI_MAX_PERGUNTAS:5}
     max-tokens-saida: ${NEXUS_AI_MAX_TOKENS_SAIDA:8000}
     max-geracoes-por-hora: ${NEXUS_AI_MAX_GERACOES_POR_HORA:20}
+    # Fase C: PR mergeado → proposta na fila (docs/ai/GITHUB-WEBHOOK.md).
+    # Repositórios: nexus.ai.github.repositorios[n].{nome,projeto-id,modulo-id}
+    # (env: NEXUS_AI_GITHUB_REPOSITORIOS_0_NOME, ..._0_PROJETO_ID, ..._0_MODULO_ID).
+    github:
+      webhook-secret: ${NEXUS_AI_GITHUB_WEBHOOK_SECRET:}
+      token: ${NEXUS_AI_GITHUB_TOKEN:}
+      api-url: ${NEXUS_AI_GITHUB_API_URL:https://api.github.com}

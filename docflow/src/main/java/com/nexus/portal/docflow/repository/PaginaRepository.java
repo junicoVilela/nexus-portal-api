@@ -28,6 +28,8 @@ public interface PaginaRepository extends JpaRepository<Pagina, UUID>, JpaSpecif
 
   boolean existsByCodigoTela(String codigoTela);
 
+  Optional<Pagina> findByCodigoTela(String codigoTela);
+
   boolean existsByCodigoTelaAndIdNot(String codigoTela, UUID id);
 
   long countByTemplateOrigemId(UUID templateId);
