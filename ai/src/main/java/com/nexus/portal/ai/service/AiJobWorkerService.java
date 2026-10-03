@@ -131,7 +131,9 @@ public class AiJobWorkerService {
             templateCodigo,
             templateNome,
             blueprint,
-            candidatos);
+            candidatos,
+            coletarInstrucoes(sessao),
+            truncar(sessao.pageSpecAnterior(), 12_000));
         completion = llmProvider.completarEstruturado(
             system, user, pageSpecService.schema(candidatos));
         try {
@@ -288,6 +290,15 @@ public class AiJobWorkerService {
       }
     }
     return acumulado;
+  }
+
+  /** Pedidos de ajuste feitos ao regenerar, em ordem cronológica. */
+  private List<String> coletarInstrucoes(ContextoExecucao sessao) {
+    return mensagemRepository.findBySessaoIdOrderByOrdemAsc(sessao.sessaoId()).stream()
+        .filter(mensagem -> mensagem.getPapel() == AiPapelMensagem.USUARIO)
+        .map(mensagem -> AiPayloadJson.lerInstrucao(objectMapper, mensagem.getPayloadJson()))
+        .filter(java.util.Objects::nonNull)
+        .toList();
   }
 
   private static List<PaginaBlocoResponse> componentesSelecionados(

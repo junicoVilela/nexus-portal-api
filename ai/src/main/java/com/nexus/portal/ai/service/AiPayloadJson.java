@@ -35,6 +35,31 @@ final class AiPayloadJson {
     }
   }
 
+  /** Pedido de ajuste do autor antes de regenerar ("mais curto", "foque na exportação"…). */
+  static String instrucao(ObjectMapper mapper, String instrucao) {
+    try {
+      return mapper.writeValueAsString(Map.of("instrucao", instrucao));
+    } catch (JsonProcessingException ex) {
+      throw new IllegalStateException("Falha ao serializar instrução AI", ex);
+    }
+  }
+
+  static String lerInstrucao(ObjectMapper mapper, String json) {
+    if (json == null || json.isBlank()) {
+      return null;
+    }
+    try {
+      Object raw = mapper.readValue(json, MAP).get("instrucao");
+      return raw instanceof String texto && !texto.isBlank() ? texto : null;
+    } catch (Exception ex) {
+      return null;
+    }
+  }
+
+  static Map<String, String> lerContexto(ObjectMapper mapper, String json) {
+    return lerMapa(mapper, json, "contexto");
+  }
+
   @SuppressWarnings("unchecked")
   static List<AiPerguntaResponse> lerPerguntas(ObjectMapper mapper, String json) {
     if (json == null || json.isBlank()) {
@@ -52,19 +77,22 @@ final class AiPayloadJson {
     }
   }
 
-  @SuppressWarnings("unchecked")
   static Map<String, String> lerRespostas(ObjectMapper mapper, String json) {
+    return lerMapa(mapper, json, "respostas");
+  }
+
+  private static Map<String, String> lerMapa(ObjectMapper mapper, String json, String chave) {
     if (json == null || json.isBlank()) {
       return Map.of();
     }
     try {
       Map<String, Object> map = mapper.readValue(json, MAP);
-      Object raw = map.get("respostas");
-      if (!(raw instanceof Map<?, ?> respostas)) {
+      Object raw = map.get(chave);
+      if (!(raw instanceof Map<?, ?> valores)) {
         return Map.of();
       }
       Map<String, String> out = new LinkedHashMap<>();
-      respostas.forEach((k, v) -> {
+      valores.forEach((k, v) -> {
         if (k != null && v != null) {
           out.put(String.valueOf(k), String.valueOf(v));
         }

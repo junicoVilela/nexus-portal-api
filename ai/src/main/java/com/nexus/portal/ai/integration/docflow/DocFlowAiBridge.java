@@ -13,6 +13,7 @@ import com.nexus.portal.docflow.entity.Modulo;
 import com.nexus.portal.docflow.entity.Pagina;
 import com.nexus.portal.docflow.entity.PaginaTemplate;
 import com.nexus.portal.docflow.entity.Projeto;
+import com.nexus.portal.docflow.repository.PaginaRepository;
 import com.nexus.portal.docflow.repository.PaginaTemplateRepository;
 import com.nexus.portal.docflow.service.ClienteService;
 import com.nexus.portal.docflow.service.ModuloService;
@@ -49,6 +50,7 @@ public class DocFlowAiBridge {
   private final ProjetoService projetoService;
   private final ModuloService moduloService;
   private final ClienteService clienteService;
+  private final PaginaRepository paginaRepository;
 
   public DocFlowAiBridge(
       PaginaTemplateService paginaTemplateService,
@@ -59,7 +61,8 @@ public class DocFlowAiBridge {
       PaginaBlueprintCatalogoService paginaBlueprintCatalogoService,
       ProjetoService projetoService,
       ModuloService moduloService,
-      ClienteService clienteService) {
+      ClienteService clienteService,
+      PaginaRepository paginaRepository) {
     this.paginaTemplateService = paginaTemplateService;
     this.paginaTemplateRepository = paginaTemplateRepository;
     this.paginaQualidadeService = paginaQualidadeService;
@@ -69,6 +72,22 @@ public class DocFlowAiBridge {
     this.projetoService = projetoService;
     this.moduloService = moduloService;
     this.clienteService = clienteService;
+    this.paginaRepository = paginaRepository;
+  }
+
+  /** {@code codigo_tela} é único entre páginas: a proposta com código repetido não salva. */
+  public boolean codigoTelaEmUso(String codigoTela) {
+    return codigoTela != null && !codigoTela.isBlank() && paginaRepository.existsByCodigoTela(codigoTela);
+  }
+
+  /** Primeiro código livre a partir de {@code base}: base, base-2, base-3… */
+  public String codigoTelaLivre(String base) {
+    String candidato = base;
+    int sufixo = 2;
+    while (codigoTelaEmUso(candidato)) {
+      candidato = base + "-" + sufixo++;
+    }
+    return candidato;
   }
 
   public boolean disponivel() {

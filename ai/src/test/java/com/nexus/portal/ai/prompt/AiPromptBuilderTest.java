@@ -2,6 +2,7 @@ package com.nexus.portal.ai.prompt;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
@@ -33,5 +34,25 @@ class AiPromptBuilderTest {
     assertThat(user).contains("PED-001");
     assertThat(user).contains("templateCodigo: CONSULTA");
     assertThat(user).contains("doc-intro");
+  }
+
+  @Test
+  void pageSpecSemInstrucoesNaoMencionaAjustes() {
+    String user = AiPromptBuilder.userGerarPageSpec(
+        "Consulta", "PED-001", "Resumo", "Briefing longo", Map.of(), "CONSULTA", "Consulta",
+        null, List.of(), List.of(), "{\"titulo\":\"Anterior\"}");
+    assertThat(user).doesNotContain("ajustes pedidos pelo autor");
+    assertThat(user).doesNotContain("Anterior");
+  }
+
+  @Test
+  void pageSpecComInstrucoesIncluiPedidosEVersaoAnterior() {
+    String user = AiPromptBuilder.userGerarPageSpec(
+        "Consulta", "PED-001", "Resumo", "Briefing longo", Map.of(), "CONSULTA", "Consulta",
+        null, List.of(), List.of("Deixe mais curto", "Foque\n na exportação"),
+        "{\"titulo\":\"Anterior\"}");
+    assertThat(user).contains("ajustes pedidos pelo autor");
+    assertThat(user).contains("- Deixe mais curto\n- Foque na exportação");
+    assertThat(user).contains("{\"titulo\":\"Anterior\"}");
   }
 }

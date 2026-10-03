@@ -45,7 +45,9 @@ public final class AiPromptBuilder {
       String templateCodigo,
       String templateNome,
       PaginaBlueprintResponse blueprint,
-      List<PaginaBlocoResponse> componentes) {
+      List<PaginaBlocoResponse> componentes,
+      List<String> instrucoes,
+      String pageSpecAnterior) {
     return """
         TAREFA=GERAR_PAGE_SPEC
         templateCodigo: %s
@@ -65,7 +67,7 @@ public final class AiPromptBuilder {
 
         catálogo permitido (ID, finalidade e slots editáveis):
         %s
-
+        %s
         Monte a PageSpec com conteúdo específico para o briefing. Não retorne conteudoHtml.
         """.formatted(
         nulo(templateCodigo),
@@ -76,7 +78,31 @@ public final class AiPromptBuilder {
         nulo(briefing),
         contexto == null ? "{}" : contexto,
         descreverBlueprint(blueprint),
-        descreverComponentes(componentes));
+        descreverComponentes(componentes),
+        descreverAjustes(instrucoes, pageSpecAnterior));
+  }
+
+  /**
+   * Regeneração guiada: parte da versão anterior e aplica os pedidos do autor. O mais recente
+   * prevalece em caso de conflito; os fatos continuam vindo do briefing.
+   */
+  static String descreverAjustes(List<String> instrucoes, String pageSpecAnterior) {
+    if (instrucoes == null || instrucoes.isEmpty()) {
+      return "";
+    }
+    String pedidos = instrucoes.stream()
+        .map(instrucao -> "- " + instrucao.replaceAll("\\s+", " ").trim())
+        .reduce((a, b) -> a + "\n" + b)
+        .orElse("");
+    String anterior = pageSpecAnterior == null || pageSpecAnterior.isBlank()
+        ? ""
+        : "\nversão anterior (PageSpec) — mantenha o que não foi pedido para mudar:\n"
+            + pageSpecAnterior + "\n";
+    return """
+
+        ajustes pedidos pelo autor (em ordem; o último prevalece em caso de conflito):
+        %s
+        %s""".formatted(pedidos, anterior);
   }
 
   public static String systemGerarRascunho() {

@@ -85,6 +85,9 @@ public class AiProposta {
   @Column(name = "pagina_id")
   private UUID paginaId;
 
+  @Column(name = "motivo_rejeicao", length = 500)
+  private String motivoRejeicao;
+
   @Column(name = "created_at", nullable = false, updatable = false)
   private OffsetDateTime createdAt = OffsetDateTime.now();
 
@@ -123,6 +126,12 @@ public class AiProposta {
   public void aceitar(UUID paginaId) {
     this.status = AiPropostaStatus.ACEITA;
     this.paginaId = paginaId;
+    this.updatedAt = OffsetDateTime.now();
+  }
+
+  public void rejeitar(String motivo) {
+    this.status = AiPropostaStatus.REJEITADA;
+    this.motivoRejeicao = motivo == null || motivo.isBlank() ? null : motivo.trim();
     this.updatedAt = OffsetDateTime.now();
   }
 

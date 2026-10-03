@@ -170,10 +170,11 @@ Proxy front: `/api/ai` → `/api/v1/ai`.
 | `POST` | `/ai/sessoes` | `PAGINA:CRIAR` | Abre sessão com briefing + contexto |
 | `GET` | `/ai/sessoes/{id}` | `PAGINA:LER` | Estado + última proposta |
 | `POST` | `/ai/sessoes/{id}/mensagens` | `PAGINA:CRIAR` ou `EDITAR` | Resposta do usuário / follow-up |
-| `POST` | `/ai/sessoes/{id}/gerar` | `PAGINA:CRIAR` | Enfileira job `GERAR_RASCUNHO` → **202** |
+| `POST` | `/ai/sessoes/{id}/gerar` | `PAGINA:CRIAR` | Enfileira job `GERAR_RASCUNHO` → **202**. Corpo opcional `{ "instrucao": "…" }`: ajuste do autor enviado ao modelo junto com a PageSpec anterior |
 | `GET` | `/ai/sessoes/{id}/proposta` | `PAGINA:LER` | Proposta atual |
+| `POST` | `/ai/sessoes/{id}/proposta/rejeitar` | `PAGINA:CRIAR` | Proposta `PENDENTE` → `REJEITADA` com `motivo` opcional; sessão segue disponível para regenerar |
 | `POST` | `/ai/sessoes/{id}/aplicar` | `PAGINA:CRIAR` | Materializa página `RASCUNHO` **ou** devolve payload para o form |
-| `POST` | `/ai/sessoes/{id}/cancelar` | `PAGINA:EDITAR` | Cancela sessão/job |
+| `POST` | `/ai/sessoes/{id}/cancelar` | `PAGINA:CRIAR` ou `EDITAR` | Cancela sessão/job |
 
 ### 5.2 Request — criar sessão
 
@@ -218,6 +219,8 @@ Quando faltar contexto, o orquestrador **não** gera HTML ainda:
 ```
 
 Máximo recomendado: **5 perguntas**. Se o briefing já trouxer título + código + fluxo, pular direto para `gerar`.
+
+Cada mensagem do assistente traz `contexto` (o que a triagem extraiu: `titulo`, `codigoTela`, `publico`…), exibido na UI para o autor corrigir. Se o `codigoTela` já pertence a outra página (`uq_tb_pagina_codigo_tela`), a triagem devolve pergunta obrigatória pedindo outro código.
 
 ### 5.4 Response — proposta
 

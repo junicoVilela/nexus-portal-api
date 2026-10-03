@@ -7,6 +7,7 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.nexus.portal.ai.integration.docflow.DocFlowAiBridge;
 import com.nexus.portal.shared.exception.BusinessException;
 import com.nexus.portal.shared.exception.NotFoundException;
 
@@ -47,6 +48,7 @@ class AiSessaoServiceTest {
   @Mock AuditoriaService auditoriaService;
   @Mock AiTemplateRecomendacaoService templateRecomendacaoService;
   @Mock AiJobLifecycleService jobLifecycleService;
+  @Mock DocFlowAiBridge docFlowAiBridge;
 
   private final ObjectMapper objectMapper = new ObjectMapper();
   private final List<AiMensagem> mensagens = new ArrayList<>();
@@ -65,7 +67,8 @@ class AiSessaoServiceTest {
         objectMapper,
         auditoriaService,
         templateRecomendacaoService,
-        jobLifecycleService);
+        jobLifecycleService,
+        docFlowAiBridge);
     lenient().when(jobLifecycleService.atual(any())).thenReturn(Optional.empty());
     lenient().when(templateRecomendacaoService.recomendar(any()))
         .thenReturn(new AiTemplateRecomendacaoResponse(null, List.of(), true));
@@ -125,6 +128,32 @@ class AiSessaoServiceTest {
         AiObjetivo.CRIAR_PAGINA, briefing, null, null, null, null, null), null);
 
     assertThat(response.status()).isEqualTo(AiSessaoStatus.PRONTA_PARA_GERAR);
+    assertThat(response.mensagens())
+        .filteredOn(m -> m.papel() == AiPapelMensagem.ASSISTENTE)
+        .last()
+        .satisfies(m -> assertThat(m.contexto()).containsEntry("codigoTela", "PED-CONSULTA"));
+  }
+
+  @Test
+  void codigoTelaJaUsadoViraPerguntaObrigatoria() {
+    when(docFlowAiBridge.codigoTelaEmUso("PED-CONSULTA")).thenReturn(true);
+    String briefing = """
+        Consulta de pedidos
+        codigoTela: PED-CONSULTA
+        Público operador. Fluxo completo: filtrar por período, listar resultados e exportar CSV.
+        """;
+
+    AiSessaoResponse response = service.criar(new CriarAiSessaoRequest(
+        AiObjetivo.CRIAR_PAGINA, briefing, null, null, null, null, null), null);
+
+    assertThat(response.status()).isEqualTo(AiSessaoStatus.AGUARDANDO_USUARIO);
+    var ultima = response.mensagens().get(response.mensagens().size() - 1);
+    assertThat(ultima.perguntas()).first().satisfies(p -> {
+      assertThat(p.id()).isEqualTo("codigoTela");
+      assertThat(p.obrigatoria()).isTrue();
+      assertThat(p.texto()).contains("PED-CONSULTA já é usado");
+    });
+    assertThat(ultima.contexto()).doesNotContainKey("codigoTela");
   }
 
   @Test
@@ -166,7 +195,8 @@ class AiSessaoServiceTest {
         objectMapper,
         auditoriaService,
         templateRecomendacaoService,
-        jobLifecycleService);
+        jobLifecycleService,
+        docFlowAiBridge);
 
     assertThatThrownBy(() -> offService.criar(new CriarAiSessaoRequest(
         AiObjetivo.CRIAR_PAGINA,

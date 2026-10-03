@@ -50,7 +50,11 @@ public class AiJobLifecycleService {
     job.iniciar(modelo);
     job.atualizarProgresso(AiJobEtapa.PREPARANDO_CONTEXTO, 10);
     aiEventService.publicarJob(job);
-    return Optional.of(ContextoExecucao.from(job));
+    String pageSpecAnterior = propostaRepository
+        .findFirstBySessaoIdOrderByCreatedAtDesc(sessao.getId())
+        .map(AiProposta::getPageSpecJson)
+        .orElse(null);
+    return Optional.of(ContextoExecucao.from(job, pageSpecAnterior));
   }
 
   @Transactional
@@ -207,9 +211,11 @@ public class AiJobLifecycleService {
       UUID clienteId,
       UUID paginaId,
       UUID templateId,
-      List<String> componentesSelecionados) {
+      List<String> componentesSelecionados,
+      /** PageSpec da última proposta da sessão; base para aplicar as instruções de ajuste. */
+      String pageSpecAnterior) {
 
-    static ContextoExecucao from(AiJob job) {
+    static ContextoExecucao from(AiJob job, String pageSpecAnterior) {
       AiSessao sessao = job.getSessao();
       return new ContextoExecucao(
           job.getId(),
@@ -221,7 +227,8 @@ public class AiJobLifecycleService {
           sessao.getClienteId(),
           sessao.getPaginaId(),
           sessao.getTemplateId(),
-          sessao.getComponentesSelecionados());
+          sessao.getComponentesSelecionados(),
+          pageSpecAnterior);
     }
   }
 

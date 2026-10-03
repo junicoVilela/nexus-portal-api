@@ -8,18 +8,21 @@ import com.nexus.portal.ai.dto.request.AiMensagemRequest;
 import com.nexus.portal.ai.dto.request.CriarAiSessaoRequest;
 import com.nexus.portal.ai.dto.request.AiTemplateRecomendacaoRequest;
 import com.nexus.portal.ai.dto.response.AiMensagemResponse;
+import com.nexus.portal.ai.dto.response.AiPerguntaResponse;
 import com.nexus.portal.ai.dto.response.AiSessaoResponse;
 import com.nexus.portal.ai.entity.AiMensagem;
 import com.nexus.portal.ai.entity.AiObjetivo;
 import com.nexus.portal.ai.entity.AiPapelMensagem;
 import com.nexus.portal.ai.entity.AiSessao;
 import com.nexus.portal.ai.entity.AiSessaoStatus;
+import com.nexus.portal.ai.integration.docflow.DocFlowAiBridge;
 import com.nexus.portal.ai.repository.AiMensagemRepository;
 import com.nexus.portal.ai.repository.AiSessaoRepository;
 import com.nexus.portal.ai.service.AiTriagemService.ResultadoTriagem;
 import com.nexus.portal.shared.exception.BusinessException;
 import com.nexus.portal.shared.exception.NotFoundException;
 import java.security.Principal;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +43,7 @@ public class AiSessaoService {
   private final AuditoriaService auditoriaService;
   private final AiTemplateRecomendacaoService templateRecomendacaoService;
   private final AiJobLifecycleService jobLifecycleService;
+  private final DocFlowAiBridge docFlowAiBridge;
 
   public AiSessaoService(
       AiSessaoRepository sessaoRepository,
@@ -49,7 +53,8 @@ public class AiSessaoService {
       ObjectMapper objectMapper,
       AuditoriaService auditoriaService,
       AiTemplateRecomendacaoService templateRecomendacaoService,
-      AiJobLifecycleService jobLifecycleService) {
+      AiJobLifecycleService jobLifecycleService,
+      DocFlowAiBridge docFlowAiBridge) {
     this.sessaoRepository = sessaoRepository;
     this.mensagemRepository = mensagemRepository;
     this.triagemService = triagemService;
@@ -58,6 +63,7 @@ public class AiSessaoService {
     this.auditoriaService = auditoriaService;
     this.templateRecomendacaoService = templateRecomendacaoService;
     this.jobLifecycleService = jobLifecycleService;
+    this.docFlowAiBridge = docFlowAiBridge;
   }
 
   @Transactional
@@ -149,7 +155,8 @@ public class AiSessaoService {
     return montarResponse(sessao);
   }
 
-  private void aplicarTriagem(AiSessao sessao, ResultadoTriagem triagem) {
+  private void aplicarTriagem(AiSessao sessao, ResultadoTriagem resultado) {
+    ResultadoTriagem triagem = exigirCodigoTelaLivre(resultado);
     if (triagem.completa()) {
       sessao.prontaParaGerar();
       adicionarMensagem(
@@ -165,6 +172,33 @@ public class AiSessaoService {
           triagem.mensagem(),
           AiPayloadJson.perguntas(objectMapper, triagem.perguntas(), triagem.contextoExtraido()));
     }
+  }
+
+  /**
+   * O código detectado no briefing (ou respondido) pode já pertencer a outra página; gerar com ele
+   * só falharia ao salvar. Vira pergunta obrigatória em vez de seguir adiante.
+   */
+  private ResultadoTriagem exigirCodigoTelaLivre(ResultadoTriagem triagem) {
+    String codigo = triagem.contextoExtraido().get("codigoTela");
+    if (!docFlowAiBridge.codigoTelaEmUso(codigo)) {
+      return triagem;
+    }
+    Map<String, String> contexto = new LinkedHashMap<>(triagem.contextoExtraido());
+    contexto.remove("codigoTela");
+    List<AiPerguntaResponse> perguntas = new ArrayList<>();
+    perguntas.add(new AiPerguntaResponse(
+        "codigoTela",
+        "O código " + codigo + " já é usado por outra página. Qual código esta tela deve usar?",
+        List.of(),
+        true));
+    triagem.perguntas().stream()
+        .filter(pergunta -> !"codigoTela".equals(pergunta.id()))
+        .forEach(perguntas::add);
+    return new ResultadoTriagem(
+        false,
+        "Para montar o guia, preciso de alguns detalhes:",
+        perguntas,
+        Map.copyOf(contexto));
   }
 
   private void adicionarMensagem(AiSessao sessao, AiPapelMensagem papel, String conteudo, String payload) {
@@ -186,7 +220,12 @@ public class AiSessaoService {
     List<AiMensagemResponse> mensagens = mensagemRepository
         .findBySessaoIdOrderByOrdemAsc(sessao.getId())
         .stream()
-        .map(m -> AiMensagemResponse.from(m, AiPayloadJson.lerPerguntas(objectMapper, m.getPayloadJson())))
+        .map(m -> AiMensagemResponse.from(
+            m,
+            AiPayloadJson.lerPerguntas(objectMapper, m.getPayloadJson()),
+            m.getPapel() == AiPapelMensagem.ASSISTENTE
+                ? AiPayloadJson.lerContexto(objectMapper, m.getPayloadJson())
+                : Map.of()))
         .toList();
     return AiSessaoResponse.from(
         sessao,

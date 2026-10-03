@@ -3,6 +3,8 @@ package com.nexus.portal.ai.controller;
 import com.nexus.portal.ai.dto.request.AiMensagemRequest;
 import com.nexus.portal.ai.dto.request.AplicarAiPropostaRequest;
 import com.nexus.portal.ai.dto.request.CriarAiSessaoRequest;
+import com.nexus.portal.ai.dto.request.GerarAiPropostaRequest;
+import com.nexus.portal.ai.dto.request.RejeitarAiPropostaRequest;
 import com.nexus.portal.ai.dto.response.AiAplicacaoResponse;
 import com.nexus.portal.ai.dto.response.AiJobResponse;
 import com.nexus.portal.ai.dto.response.AiPropostaResponse;
@@ -64,14 +66,28 @@ public class AiSessaoController {
 
   @PostMapping("/{id}/gerar")
   @PreAuthorize(Permissoes.PAGINA_CRIAR)
-  public ResponseEntity<AiJobResponse> gerar(@PathVariable UUID id, Principal principal) {
-    return ResponseEntity.status(HttpStatus.ACCEPTED).body(aiPropostaService.gerar(id, principal));
+  public ResponseEntity<AiJobResponse> gerar(
+      @PathVariable UUID id,
+      @Valid @RequestBody(required = false) GerarAiPropostaRequest request,
+      Principal principal) {
+    String instrucao = request == null ? null : request.instrucao();
+    return ResponseEntity.status(HttpStatus.ACCEPTED)
+        .body(aiPropostaService.gerar(id, instrucao, principal));
   }
 
   @GetMapping("/{id}/proposta")
   @PreAuthorize(Permissoes.PAGINA_LER)
   public AiPropostaResponse proposta(@PathVariable UUID id, Principal principal) {
     return aiPropostaService.propostaAtual(id, principal);
+  }
+
+  @PostMapping("/{id}/proposta/rejeitar")
+  @PreAuthorize(Permissoes.PAGINA_CRIAR)
+  public AiPropostaResponse rejeitar(
+      @PathVariable UUID id,
+      @Valid @RequestBody(required = false) RejeitarAiPropostaRequest request,
+      Principal principal) {
+    return aiPropostaService.rejeitar(id, request == null ? null : request.motivo(), principal);
   }
 
   @PostMapping("/{id}/aplicar")

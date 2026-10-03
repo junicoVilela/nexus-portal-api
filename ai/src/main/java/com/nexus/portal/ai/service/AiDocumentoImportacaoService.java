@@ -746,7 +746,9 @@ public class AiDocumentoImportacaoService {
       if (pagina.status() == AiPaginaPlanoStatus.EM_GERACAO) {
         throw new BusinessException("Uma das páginas selecionadas já está em geração.");
       }
-      String codigoTela = "DOC-M%02d-P%02d".formatted(modulo.ordem(), pagina.ordem());
+      // codigo_tela é único no DocFlow inteiro: uma segunda importação colidiria com DOC-M01-P01.
+      String codigoTela = docFlowAiBridge.codigoTelaLivre(
+          "DOC-M%02d-P%02d".formatted(modulo.ordem(), pagina.ordem()));
       String briefing = "titulo: " + pagina.titulo() + "\n"
           + "codigoTela: " + codigoTela + "\n"
           + "publico: Ambos\n\n"

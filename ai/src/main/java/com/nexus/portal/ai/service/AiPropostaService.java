@@ -14,12 +14,15 @@ import com.nexus.portal.ai.dto.response.AiPropostaResponse;
 import com.nexus.portal.ai.dto.response.AiQualidadeItemResponse;
 import com.nexus.portal.ai.entity.AiJob;
 import com.nexus.portal.ai.entity.AiJobTipo;
+import com.nexus.portal.ai.entity.AiMensagem;
+import com.nexus.portal.ai.entity.AiPapelMensagem;
 import com.nexus.portal.ai.entity.AiProposta;
 import com.nexus.portal.ai.entity.AiPropostaStatus;
 import com.nexus.portal.ai.entity.AiSessao;
 import com.nexus.portal.ai.entity.AiSessaoStatus;
 import com.nexus.portal.ai.integration.docflow.DocFlowAiBridge;
 import com.nexus.portal.ai.repository.AiJobRepository;
+import com.nexus.portal.ai.repository.AiMensagemRepository;
 import com.nexus.portal.ai.repository.AiPropostaRepository;
 import com.nexus.portal.ai.repository.AiSessaoRepository;
 import com.nexus.portal.docflow.dto.request.PaginaRequest;
@@ -53,9 +56,19 @@ public class AiPropostaService {
   private final ObjectMapper objectMapper;
   private final AiRateLimitService rateLimitService;
   private final AuditoriaService auditoriaService;
+  private final AiMensagemRepository mensagemRepository;
 
   @Transactional
   public AiJobResponse gerar(UUID sessaoId, Principal principal) {
+    return gerar(sessaoId, null, principal);
+  }
+
+  /**
+   * Enfileira a geração. {@code instrucao} (opcional) é o ajuste pedido pelo autor sobre a versão
+   * anterior — fica no histórico da sessão e o worker o envia ao modelo junto com a PageSpec anterior.
+   */
+  @Transactional
+  public AiJobResponse gerar(UUID sessaoId, String instrucao, Principal principal) {
     exigirModuloHabilitado();
     AiSessao sessao = sessaoRepository.findByIdForUpdate(sessaoId)
         .filter(s -> s.pertenceA(AiSessaoService.usuario(principal)))
@@ -82,6 +95,15 @@ public class AiPropostaService {
     }
 
     rateLimitService.exigirGeracaoPermitida(principal);
+    if (instrucao != null && !instrucao.isBlank()) {
+      int ordem = mensagemRepository.countBySessaoId(sessaoId) + 1;
+      mensagemRepository.save(new AiMensagem(
+          sessao,
+          AiPapelMensagem.USUARIO,
+          instrucao.trim(),
+          AiPayloadJson.instrucao(objectMapper, instrucao.trim()),
+          ordem));
+    }
     int tentativa = Math.toIntExact(jobRepository.countBySessaoId(sessaoId) + 1);
     AiJob job = jobRepository.saveAndFlush(
         new AiJob(sessao, AiJobTipo.GERAR_RASCUNHO, tentativa));
@@ -169,6 +191,24 @@ public class AiPropostaService {
         proposta.getTemplateId(),
         proposta.getTemplateVersao(),
         moduloId);
+  }
+
+  /** Autor descarta a proposta; a sessão continua disponível para regenerar com uma instrução. */
+  @Transactional
+  public AiPropostaResponse rejeitar(UUID sessaoId, String motivo, Principal principal) {
+    exigirModuloHabilitado();
+    carregarSessao(sessaoId, principal);
+    AiProposta proposta = propostaRepository
+        .findFirstBySessaoIdAndStatusOrderByCreatedAtDesc(sessaoId, AiPropostaStatus.PENDENTE)
+        .orElseThrow(() -> new NotFoundException("Nenhuma proposta pendente para rejeitar."));
+    proposta.rejeitar(motivo);
+    auditoriaService.registrar(
+        AiAuditoriaAcoes.ENTIDADE_PROPOSTA,
+        proposta.getId(),
+        AiAuditoriaAcoes.PROPOSTA_REJEITADA,
+        truncar(proposta.getMotivoRejeicao() == null ? "sem motivo" : proposta.getMotivoRejeicao(), 200),
+        principal);
+    return toResponse(proposta);
   }
 
   private void agendarProcessamento(UUID jobId) {
