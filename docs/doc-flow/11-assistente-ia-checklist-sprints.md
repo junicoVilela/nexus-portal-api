@@ -253,7 +253,7 @@ Plano executável a partir do desenho [`10-assistente-ia-paginas.md`](10-assiste
 | AI-704 | DB+API+WEB | Permissões `PAGINA:AI_GERAR`, `AI_APLICAR`, `AI_PROPOSTA` | Seed RBAC + guards |
 
 - [ ] AI-701 Feedback loop
-- [ ] AI-702 Métricas UI
+- [x] AI-702 Métricas UI — `/doc-flow/ia-qualidade` (`GET /ai/metricas`, `AUDITORIA:VISUALIZAR`)
 - [ ] AI-703 Prompt ops
 - [ ] AI-704 Permissões granulares
 

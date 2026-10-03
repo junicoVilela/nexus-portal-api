@@ -28,6 +28,9 @@ public interface AiJobRepository extends JpaRepository<AiJob, UUID> {
 
   List<AiJob> findAllByStatus(AiJobStatus status);
 
+  /** Base do painel de qualidade (volume interno: agregação em memória). */
+  List<AiJob> findByCreatedAtAfter(OffsetDateTime desde);
+
   @Lock(LockModeType.PESSIMISTIC_WRITE)
   @Query("select j from AiJob j join fetch j.sessao where j.id = :id")
   Optional<AiJob> findByIdForUpdate(@Param("id") UUID id);

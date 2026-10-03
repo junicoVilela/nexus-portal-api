@@ -143,8 +143,10 @@ referenciam componentes existentes, sem duplicar HTML.
 | Mudar o limite de gerações | `NEXUS_AI_MAX_GERACOES_POR_HORA` (contado em `tb_ai_job`, vale entre instâncias) |
 
 Cada proposta grava o prompt que a gerou (`tb_ai_proposta.prompt_versao`, ex.:
-`gerar-page-spec@2.2`). Para avaliar uma mudança de prompt, compare aceite e rejeição
-(`status`, `motivo_rejeicao`) e `avisos_geracao` entre versões.
+`gerar-page-spec@2.2`). Para avaliar uma mudança de prompt, use o painel **Qualidade da IA**
+(`/doc-flow/ia-qualidade`, permissão `AUDITORIA:VISUALIZAR`): aceite por versão, avisos de
+fallback, motivos de rejeição, aceite parcial dos ajustes, latência e tokens. A regra do aceite
+fica em `AiMetricasService`.
 
 ### Quando adicionar RAG vetorial
 
