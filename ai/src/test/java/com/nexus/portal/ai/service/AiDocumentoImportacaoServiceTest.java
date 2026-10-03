@@ -3,7 +3,9 @@ package com.nexus.portal.ai.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -18,6 +20,7 @@ import com.nexus.portal.ai.dto.response.AiAplicacaoResponse;
 import com.nexus.portal.ai.dto.response.AiComponenteCandidatoResponse;
 import com.nexus.portal.ai.dto.response.AiPropostaResponse;
 import com.nexus.portal.ai.dto.response.AiTemplateRecomendacaoResponse;
+import com.nexus.portal.ai.entity.AiImportacaoStatus;
 import com.nexus.portal.ai.entity.AiDocumentoClienteModo;
 import com.nexus.portal.ai.entity.AiDocumentoImportacao;
 import com.nexus.portal.ai.entity.AiDocumentoProjetoModo;
@@ -63,6 +66,48 @@ class AiDocumentoImportacaoServiceTest {
         mock(com.nexus.portal.ai.repository.AiSessaoRepository.class),
         mock(com.nexus.portal.ai.config.AiProperties.class),
         templateService);
+  }
+
+  @Test
+  void importar_mesmoArquivoEmAndamentoRetomaEmVezDeDuplicar() throws Exception {
+    UUID importacaoId = UUID.randomUUID();
+    AiDocumentoImportacao existente = importacao(importacaoId, plano(UUID.randomUUID(), UUID.randomUUID(), true));
+    when(repository.findFirstByCreatedByAndHashSha256AndStatusNotOrderByUpdatedAtDesc(
+        eq("editor"), any(), eq(AiImportacaoStatus.CONCLUIDA))).thenReturn(Optional.of(existente));
+    var arquivo = new org.springframework.mock.web.MockMultipartFile(
+        "arquivo", "manual.txt", "text/plain", "# Manual".getBytes());
+
+    var response = service.importar(arquivo, null, null, false, principal());
+
+    assertThat(response.retomada()).isTrue();
+    assertThat(response.id()).isEqualTo(importacaoId);
+    verify(repository, never()).saveAndFlush(any());
+  }
+
+  @Test
+  void importar_novaImportacaoIgnoraAExistente() {
+    var arquivo = new org.springframework.mock.web.MockMultipartFile(
+        "arquivo", "manual.txt", "text/plain", "# Manual".getBytes());
+    try {
+      service.importar(arquivo, null, null, true, principal());
+    } catch (RuntimeException ignorada) {
+      // extrator mockado devolve nulo; só interessa que a busca por duplicado não aconteceu
+    }
+    verify(repository, never()).findFirstByCreatedByAndHashSha256AndStatusNotOrderByUpdatedAtDesc(any(), any(), any());
+  }
+
+  @Test
+  void emAndamento_resumeProgressoDasPaginas() throws Exception {
+    AiDocumentoImportacao importacao = importacao(UUID.randomUUID(), plano(UUID.randomUUID(), UUID.randomUUID(), true));
+    when(repository.findTop10ByCreatedByAndStatusNotOrderByUpdatedAtDesc("editor", AiImportacaoStatus.CONCLUIDA))
+        .thenReturn(List.of(importacao));
+
+    var lista = service.emAndamento(principal());
+
+    assertThat(lista).hasSize(1);
+    assertThat(lista.getFirst().paginasTotal()).isEqualTo(1);
+    assertThat(lista.getFirst().paginasRevisadas()).isZero();
+    assertThat(lista.getFirst().estruturaConfirmada()).isTrue();
   }
 
   @Test

@@ -6,14 +6,17 @@ import com.nexus.portal.ai.dto.request.AiGerarLoteDocumentoRequest;
 import com.nexus.portal.ai.dto.request.AiReordenarEstruturaDocumentoRequest;
 import com.nexus.portal.ai.dto.response.AiEstimativaLoteDocumentoResponse;
 import com.nexus.portal.ai.dto.response.AiImportacaoDocumentoResponse;
+import com.nexus.portal.ai.dto.response.AiImportacaoResumoResponse;
 import com.nexus.portal.ai.service.AiDocumentoImportacaoService;
 import com.nexus.portal.shared.security.Permissoes;
 import jakarta.validation.Valid;
 import java.security.Principal;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -22,7 +25,6 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -33,15 +35,25 @@ public class AiDocumentoImportacaoController {
 
   private final AiDocumentoImportacaoService service;
 
+  /** 201 com importação nova; 200 quando o mesmo arquivo já estava em andamento ({@code retomada}). */
   @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-  @ResponseStatus(HttpStatus.CREATED)
   @PreAuthorize(Permissoes.PAGINA_CRIAR)
-  public AiImportacaoDocumentoResponse importarDocumento(
+  public ResponseEntity<AiImportacaoDocumentoResponse> importarDocumento(
       @RequestParam MultipartFile arquivo,
       @RequestParam(required = false) UUID projetoId,
       @RequestParam(required = false) UUID clienteId,
+      @RequestParam(defaultValue = "false") boolean novaImportacao,
       Principal principal) {
-    return service.importar(arquivo, projetoId, clienteId, principal);
+    AiImportacaoDocumentoResponse resposta =
+        service.importar(arquivo, projetoId, clienteId, novaImportacao, principal);
+    return ResponseEntity.status(resposta.retomada() ? HttpStatus.OK : HttpStatus.CREATED).body(resposta);
+  }
+
+  /** Importações não concluídas do usuário, para retomar de onde parou. */
+  @GetMapping
+  @PreAuthorize(Permissoes.PAGINA_LER)
+  public List<AiImportacaoResumoResponse> importacoesEmAndamento(Principal principal) {
+    return service.emAndamento(principal);
   }
 
   @GetMapping("/{id}")

@@ -21,6 +21,7 @@ import com.nexus.portal.ai.dto.request.AplicarAiPropostaRequest;
 import com.nexus.portal.ai.dto.request.CriarAiSessaoRequest;
 import com.nexus.portal.ai.dto.response.AiEstimativaLoteDocumentoResponse;
 import com.nexus.portal.ai.dto.response.AiImportacaoDocumentoResponse;
+import com.nexus.portal.ai.dto.response.AiImportacaoResumoResponse;
 import com.nexus.portal.ai.dto.response.AiTemplateRecomendacaoResponse;
 import com.nexus.portal.ai.config.AiProperties;
 import com.nexus.portal.ai.entity.AiDocumentoImportacao;
@@ -107,6 +108,30 @@ public class AiDocumentoImportacaoService {
       UUID projetoId,
       UUID clienteId,
       Principal principal) {
+    return importar(arquivo, projetoId, clienteId, false, principal);
+  }
+
+  /**
+   * Importa o documento. Se o mesmo arquivo (hash) já tem importação em andamento do usuário e
+   * {@code novaImportacao} é falso, devolve essa importação ({@code retomada = true}) em vez de
+   * criar outra paralela — que, ao confirmar a estrutura, colidiria com o projeto já criado.
+   */
+  @Transactional
+  public AiImportacaoDocumentoResponse importar(
+      MultipartFile arquivo,
+      UUID projetoId,
+      UUID clienteId,
+      boolean novaImportacao,
+      Principal principal) {
+    String hash = sha256(arquivo);
+    if (!novaImportacao) {
+      var existente = repository.findFirstByCreatedByAndHashSha256AndStatusNotOrderByUpdatedAtDesc(
+          usuario(principal), hash, AiImportacaoStatus.CONCLUIDA);
+      if (existente.isPresent()) {
+        AiDocumentoImportacao importacao = existente.get();
+        return response(importacao, lerPlano(importacao), lerAvisos(importacao)).comoRetomada();
+      }
+    }
     DocumentoExtraido extraido = extratorService.extrair(arquivo);
     AiDocumentoPlano plano = planejadorService.planejar(extraido, projetoId, clienteId);
     plano = new AiDocumentoPlano(
@@ -127,7 +152,7 @@ public class AiDocumentoImportacaoService {
         extraido.tipo(),
         mimeType(arquivo),
         arquivo.getSize(),
-        sha256(arquivo),
+        hash,
         extraido.texto(),
         extraido.totalPaginasOrigem(),
         escrever(plano),
@@ -147,6 +172,32 @@ public class AiDocumentoImportacaoService {
       }
     });
     return response(importacao, plano, extraido.avisos());
+  }
+
+  /** Importações não concluídas do usuário, para retomar de onde parou. */
+  @Transactional(readOnly = true)
+  public List<AiImportacaoResumoResponse> emAndamento(Principal principal) {
+    return repository.findTop10ByCreatedByAndStatusNotOrderByUpdatedAtDesc(
+            usuario(principal), AiImportacaoStatus.CONCLUIDA)
+        .stream()
+        .map(importacao -> {
+          AiDocumentoPlano plano = lerPlano(importacao);
+          List<AiDocumentoPlano.Pagina> paginas = plano.modulos().stream()
+              .flatMap(modulo -> modulo.paginas().stream())
+              .toList();
+          return new AiImportacaoResumoResponse(
+              importacao.getId(),
+              importacao.getNomeArquivo(),
+              plano.projetoNome(),
+              importacao.getStatus(),
+              plano.estruturaConfirmada(),
+              paginas.size(),
+              (int) paginas.stream()
+                  .filter(pagina -> pagina.status() == AiPaginaPlanoStatus.REVISADA)
+                  .count(),
+              importacao.getUpdatedAt());
+        })
+        .toList();
   }
 
   @Transactional(readOnly = true)
@@ -1014,9 +1065,12 @@ public class AiDocumentoImportacaoService {
     };
   }
 
+  private static String usuario(Principal principal) {
+    return principal == null ? "system" : principal.getName();
+  }
+
   private AiDocumentoImportacao carregar(UUID id, Principal principal) {
-    String usuario = principal == null ? "system" : principal.getName();
-    return repository.findByIdAndCreatedBy(id, usuario)
+    return repository.findByIdAndCreatedBy(id, usuario(principal))
         .orElseThrow(() -> new NotFoundException("Importação de documento não encontrada."));
   }
 

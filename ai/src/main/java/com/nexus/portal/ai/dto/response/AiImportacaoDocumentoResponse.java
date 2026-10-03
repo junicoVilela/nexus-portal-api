@@ -36,7 +36,9 @@ public record AiImportacaoDocumentoResponse(
     List<Modulo> modulos,
     List<String> avisos,
     OffsetDateTime createdAt,
-    OffsetDateTime updatedAt) {
+    OffsetDateTime updatedAt,
+    /** O mesmo arquivo já tinha importação em andamento: devolvida em vez de criar outra paralela. */
+    boolean retomada) {
 
   public static AiImportacaoDocumentoResponse from(
       AiDocumentoImportacao importacao,
@@ -77,7 +79,16 @@ public record AiImportacaoDocumentoResponse(
         modulos,
         avisos,
         importacao.getCreatedAt(),
-        importacao.getUpdatedAt());
+        importacao.getUpdatedAt(),
+        false);
+  }
+
+  public AiImportacaoDocumentoResponse comoRetomada() {
+    return new AiImportacaoDocumentoResponse(
+        id, nomeArquivo, tipoArquivo, mimeType, tamanhoBytes, caracteresExtraidos, totalPaginasOrigem,
+        status, version, projetoNome, projetoDescricao, projetoId, clienteId, estruturaConfirmada,
+        projetoNomesSugeridos, analiseOrigem, analiseMensagem, tokensEntradaAnalise, tokensSaidaAnalise,
+        sugestoes, modulos, avisos, createdAt, updatedAt, true);
   }
 
   public record Modulo(UUID id, UUID moduloId, String nome, int ordem, List<Pagina> paginas) {}
