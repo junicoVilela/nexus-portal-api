@@ -127,6 +127,10 @@ public class AiSessao extends AuditableEntity {
     return status == AiSessaoStatus.CANCELADA;
   }
 
+  public boolean pertenceA(String usuario) {
+    return usuario != null && usuario.equals(getCreatedBy());
+  }
+
   public boolean terminal() {
     return status == AiSessaoStatus.CANCELADA
         || status == AiSessaoStatus.APLICADA;

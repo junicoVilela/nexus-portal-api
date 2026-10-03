@@ -7,6 +7,9 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.nexus.portal.shared.exception.BusinessException;
+import com.nexus.portal.shared.exception.NotFoundException;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.portal.ai.config.AiProperties;
 import com.nexus.portal.ai.dto.request.AiMensagemRequest;
@@ -182,6 +185,7 @@ class AiSessaoServiceTest {
         null, null, null, null, null);
     UUID id = UUID.randomUUID();
     setId(sessao, id);
+    sessao.setCreatedBy("system");
     sessao.aguardarUsuario();
     when(sessaoRepository.findById(id)).thenReturn(Optional.of(sessao));
 
@@ -190,7 +194,7 @@ class AiSessaoServiceTest {
         Map.of(
             "titulo", "Consulta de pedidos",
             "codigoTela", "PED-CONSULTA",
-            "fluxo", "Filtrar, listar e exportar.")));
+            "fluxo", "Filtrar, listar e exportar.")), null);
 
     assertThat(response.status()).isEqualTo(AiSessaoStatus.PRONTA_PARA_GERAR);
   }
@@ -203,6 +207,7 @@ class AiSessaoServiceTest {
         null, null, null, null, null);
     UUID id = UUID.randomUUID();
     setId(sessao, id);
+    sessao.setCreatedBy("system");
     when(sessaoRepository.findById(id)).thenReturn(Optional.of(sessao));
 
     AiSessaoResponse response = service.cancelar(id, null);
@@ -212,6 +217,31 @@ class AiSessaoServiceTest {
     ArgumentCaptor<AiMensagem> captor = ArgumentCaptor.forClass(AiMensagem.class);
     verify(mensagemRepository).save(captor.capture());
     assertThat(captor.getValue().getPapel()).isEqualTo(AiPapelMensagem.SISTEMA);
+  }
+
+  @Test
+  void sessaoDeOutroUsuarioNaoEncontrada() {
+    AiSessao sessao = new AiSessao(
+        AiObjetivo.CRIAR_PAGINA,
+        "Documentar a nova tela operacional de pedidos do portal Nexus.",
+        null, null, null, null, null);
+    UUID id = UUID.randomUUID();
+    setId(sessao, id);
+    sessao.setCreatedBy("outro.usuario");
+    when(sessaoRepository.findById(id)).thenReturn(Optional.of(sessao));
+
+    assertThatThrownBy(() -> service.buscar(id, () -> "editor"))
+        .isInstanceOf(NotFoundException.class);
+  }
+
+  @Test
+  void atualizarPaginaAindaNaoSuportado() {
+    assertThatThrownBy(() -> service.criar(new CriarAiSessaoRequest(
+        AiObjetivo.ATUALIZAR_PAGINA,
+        "Briefing longo o suficiente para passar na validação mínima do request DTO.",
+        null, null, null, null, UUID.randomUUID()), null))
+        .isInstanceOf(BusinessException.class)
+        .hasMessageContaining("ainda não está disponível");
   }
 
   private static void setId(AiSessao sessao, UUID id) {

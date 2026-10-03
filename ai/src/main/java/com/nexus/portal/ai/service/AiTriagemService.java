@@ -89,7 +89,7 @@ public class AiTriagemService {
 
     boolean completa = perguntas.stream().noneMatch(AiPerguntaResponse::obrigatoria);
     String mensagem = completa
-        ? "Contexto suficiente. Sessão pronta para gerar o rascunho (S2)."
+        ? "Tenho contexto suficiente. Você já pode gerar o rascunho."
         : "Para montar o guia, preciso de alguns detalhes:";
 
     return new ResultadoTriagem(completa, mensagem, perguntas, Map.copyOf(ctx));

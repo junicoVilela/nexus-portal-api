@@ -24,7 +24,9 @@ public record AiPropostaResponse(
     List<AiQualidadeItemResponse> qualidade,
     AiPropostaStatus status,
     UUID paginaId,
-    OffsetDateTime createdAt) {
+    OffsetDateTime createdAt,
+    /** Não vazio quando a geração caiu em fallback e o conteúdo exige atenção redobrada. */
+    List<String> avisosGeracao) {
 
   public static AiPropostaResponse from(
       AiProposta proposta,
@@ -47,6 +49,7 @@ public record AiPropostaResponse(
         qualidade == null ? List.of() : qualidade,
         proposta.getStatus(),
         proposta.getPaginaId(),
-        proposta.getCreatedAt());
+        proposta.getCreatedAt(),
+        proposta.getAvisosGeracao() == null ? List.of() : proposta.getAvisosGeracao());
   }
 }

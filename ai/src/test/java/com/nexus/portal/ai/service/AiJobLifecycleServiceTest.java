@@ -17,6 +17,7 @@ import com.nexus.portal.ai.entity.AiPropostaTipo;
 import com.nexus.portal.ai.entity.AiSessao;
 import com.nexus.portal.ai.repository.AiJobRepository;
 import com.nexus.portal.ai.repository.AiPropostaRepository;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -90,7 +91,8 @@ class AiJobLifecycleServiceTest {
         "{}",
         null,
         10,
-        20);
+        20,
+        List.of());
   }
 
   private static void setId(Object target, UUID id) throws Exception {

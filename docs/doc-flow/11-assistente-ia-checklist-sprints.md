@@ -176,7 +176,7 @@ Plano executável a partir do desenho [`10-assistente-ia-paginas.md`](10-assiste
 
 | ID | Tipo | Título | Critério de pronto |
 |---|---|---|---|
-| AI-501 | API | `objetivo=ATUALIZAR_PAGINA` + validar `paginaId` | 400 se faltar |
+| AI-501 | API | `objetivo=ATUALIZAR_PAGINA` + validar `paginaId` (hoje bloqueado com 422 até a Fase B) | 400 se faltar |
 | AI-502 | API | Prompt com HTML atual (chunk por seções se grande) | Proposta `ATUALIZACAO` |
 | AI-503 | API | Aplicar → `PaginaService.atualizar` (revisão) ou autosave | Status/version corretos |
 | AI-504 | WEB | Toggle Assistente na toolbar do editor | Só `PAGINA:EDITAR` |
@@ -269,7 +269,6 @@ Plano executável a partir do desenho [`10-assistente-ia-paginas.md`](10-assiste
 ## Fora de escopo (não criar ticket)
 
 - Publicação automática pela IA
-- Dependência Maven nova `ai` no MVP
 - Reusar `GitHubReleasesAdapter` do Release Orchestrator para PRs (criar cliente DocFlow)
 - Substituir o editor WYSIWYG
 - Geração de imagens/capturas reais (manter `screen-placeholder`)

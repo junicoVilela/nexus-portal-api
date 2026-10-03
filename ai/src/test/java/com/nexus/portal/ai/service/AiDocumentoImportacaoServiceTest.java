@@ -269,7 +269,7 @@ class AiDocumentoImportacaoServiceTest {
     when(repository.findByIdAndCreatedBy(importacaoId, "editor")).thenReturn(Optional.of(importacao));
     AiPropostaResponse proposta = mock(AiPropostaResponse.class);
     when(proposta.paginaId()).thenReturn(null);
-    when(propostaService.propostaAtual(sessaoId)).thenReturn(proposta);
+    when(propostaService.propostaAtual(org.mockito.ArgumentMatchers.eq(sessaoId), any())).thenReturn(proposta);
     when(propostaService.aplicar(any(), any(), any())).thenReturn(new AiAplicacaoResponse(
         "PERSISTIR",
         UUID.randomUUID(),

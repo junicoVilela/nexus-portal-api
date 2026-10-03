@@ -12,6 +12,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -72,6 +73,11 @@ public class AiProposta {
   @Column(name = "page_spec_json", columnDefinition = "jsonb")
   private String pageSpecJson;
 
+  /** Preenchido quando a geração caiu em fallback; vazio = gerada normalmente. */
+  @JdbcTypeCode(SqlTypes.JSON)
+  @Column(name = "avisos_geracao", nullable = false, columnDefinition = "jsonb")
+  private List<String> avisosGeracao = List.of();
+
   @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 40)
   private AiPropostaStatus status = AiPropostaStatus.PENDENTE;
@@ -97,7 +103,8 @@ public class AiProposta {
       UUID templateId,
       Integer templateVersao,
       String qualidadeJson,
-      String pageSpecJson) {
+      String pageSpecJson,
+      List<String> avisosGeracao) {
     this.sessao = sessao;
     this.job = job;
     this.tipo = tipo;
@@ -110,6 +117,7 @@ public class AiProposta {
     this.templateVersao = templateVersao;
     this.qualidadeJson = qualidadeJson;
     this.pageSpecJson = pageSpecJson;
+    this.avisosGeracao = avisosGeracao == null ? List.of() : List.copyOf(avisosGeracao);
   }
 
   public void aceitar(UUID paginaId) {

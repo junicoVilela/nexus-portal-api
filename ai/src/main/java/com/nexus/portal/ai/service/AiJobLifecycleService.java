@@ -89,7 +89,8 @@ public class AiJobLifecycleService {
         resultado.templateId(),
         resultado.templateVersao(),
         resultado.qualidadeJson(),
-        resultado.pageSpecJson()));
+        resultado.pageSpecJson(),
+        resultado.avisosGeracao()));
 
     job.registrarTokens(resultado.tokensEntrada(), resultado.tokensSaida());
     job.sucesso();
@@ -236,7 +237,8 @@ public class AiJobLifecycleService {
       String qualidadeJson,
       String pageSpecJson,
       Integer tokensEntrada,
-      Integer tokensSaida) {}
+      Integer tokensSaida,
+      List<String> avisosGeracao) {}
 
   public record ResultadoConclusao(UUID propostaId, long latenciaMs) {}
 }

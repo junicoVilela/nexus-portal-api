@@ -43,20 +43,21 @@ public class AiSessaoController {
 
   @GetMapping("/{id}")
   @PreAuthorize(Permissoes.PAGINA_LER)
-  public AiSessaoResponse buscar(@PathVariable UUID id) {
-    return aiSessaoService.buscar(id);
+  public AiSessaoResponse buscar(@PathVariable UUID id, Principal principal) {
+    return aiSessaoService.buscar(id, principal);
   }
 
   @PostMapping("/{id}/mensagens")
   @PreAuthorize("hasAuthority('PAGINA:CRIAR') or hasAuthority('PAGINA:EDITAR')")
   public AiSessaoResponse enviarMensagem(
       @PathVariable UUID id,
-      @Valid @RequestBody AiMensagemRequest request) {
-    return aiSessaoService.enviarMensagem(id, request);
+      @Valid @RequestBody AiMensagemRequest request,
+      Principal principal) {
+    return aiSessaoService.enviarMensagem(id, request, principal);
   }
 
   @PostMapping("/{id}/cancelar")
-  @PreAuthorize(Permissoes.PAGINA_EDITAR)
+  @PreAuthorize("hasAuthority('PAGINA:CRIAR') or hasAuthority('PAGINA:EDITAR')")
   public AiSessaoResponse cancelar(@PathVariable UUID id, Principal principal) {
     return aiSessaoService.cancelar(id, principal);
   }
@@ -69,8 +70,8 @@ public class AiSessaoController {
 
   @GetMapping("/{id}/proposta")
   @PreAuthorize(Permissoes.PAGINA_LER)
-  public AiPropostaResponse proposta(@PathVariable UUID id) {
-    return aiPropostaService.propostaAtual(id);
+  public AiPropostaResponse proposta(@PathVariable UUID id, Principal principal) {
+    return aiPropostaService.propostaAtual(id, principal);
   }
 
   @PostMapping("/{id}/aplicar")

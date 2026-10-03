@@ -165,7 +165,8 @@ nexus:
 
 Headers enviados ao OpenRouter: `Authorization`, `HTTP-Referer`, `X-Title`, `X-OpenRouter-Title`.
 
-Sem chave ou `enabled=false` → `FakeLlmProvider` (dev/test seguro).
+Sem chave ou `enabled=false` → `FakeLlmProvider` (dev/test seguro). No perfil `prod`, `enabled=true` sem chave **falha no boot**.
+Propostas geradas em fallback (fake, JSON inválido, PageSpec fora do schema, código de tela ausente) trazem `avisosGeracao` e a UI destaca o aviso.
 
 Runbook local: [`RUNBOOK-LOCAL.md`](RUNBOOK-LOCAL.md).
 

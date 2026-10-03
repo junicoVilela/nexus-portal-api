@@ -4,7 +4,7 @@ import com.nexus.portal.ai.entity.AiJob;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -12,11 +12,12 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 public class AiEventService {
 
   private static final long TIMEOUT_MILLIS = 30 * 60 * 1000L;
-  private final CopyOnWriteArrayList<SseEmitter> assinantes = new CopyOnWriteArrayList<>();
+  /** Emitter → usuário dono; cada usuário só recebe eventos das próprias sessões. */
+  private final Map<SseEmitter, String> assinantes = new ConcurrentHashMap<>();
 
-  public SseEmitter inscrever() {
+  public SseEmitter inscrever(String usuario) {
     SseEmitter emitter = new SseEmitter(TIMEOUT_MILLIS);
-    assinantes.add(emitter);
+    assinantes.put(emitter, usuario);
     emitter.onCompletion(() -> assinantes.remove(emitter));
     emitter.onTimeout(() -> assinantes.remove(emitter));
     emitter.onError(error -> assinantes.remove(emitter));
@@ -40,7 +41,12 @@ public class AiEventService {
     if (job.getDiagnosticoId() != null) {
       evento.put("diagnosticoId", job.getDiagnosticoId());
     }
-    assinantes.forEach(emitter -> enviar(emitter, evento));
+    String dono = job.getSessao().getCreatedBy();
+    assinantes.forEach((emitter, usuario) -> {
+      if (usuario.equals(dono)) {
+        enviar(emitter, evento);
+      }
+    });
   }
 
   private void enviar(SseEmitter emitter, Map<String, Object> evento) {

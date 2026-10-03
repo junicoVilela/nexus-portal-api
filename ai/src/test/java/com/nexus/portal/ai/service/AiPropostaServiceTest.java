@@ -65,6 +65,7 @@ class AiPropostaServiceTest {
         null, null, null, null, null);
     UUID sessaoId = UUID.randomUUID();
     setId(sessao, sessaoId);
+    sessao.setCreatedBy("system");
     sessao.gerando();
     AiJob job = new AiJob(sessao, AiJobTipo.GERAR_RASCUNHO, 1);
     setId(job, UUID.randomUUID());

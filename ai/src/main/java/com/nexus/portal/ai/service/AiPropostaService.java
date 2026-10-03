@@ -58,6 +58,7 @@ public class AiPropostaService {
   public AiJobResponse gerar(UUID sessaoId, Principal principal) {
     exigirModuloHabilitado();
     AiSessao sessao = sessaoRepository.findByIdForUpdate(sessaoId)
+        .filter(s -> s.pertenceA(AiSessaoService.usuario(principal)))
         .orElseThrow(() -> new NotFoundException("Sessão de IA não encontrada."));
     var jobAtivo = jobRepository.findFirstBySessaoIdAndStatusInOrderByCreatedAtDesc(
         sessaoId, AiJobLifecycleService.statusAtivos());
@@ -91,8 +92,8 @@ public class AiPropostaService {
   }
 
   @Transactional(readOnly = true)
-  public AiPropostaResponse propostaAtual(UUID sessaoId) {
-    carregarSessao(sessaoId);
+  public AiPropostaResponse propostaAtual(UUID sessaoId, Principal principal) {
+    carregarSessao(sessaoId, principal);
     AiProposta proposta = propostaRepository
         .findFirstBySessaoIdAndStatusOrderByCreatedAtDesc(sessaoId, AiPropostaStatus.PENDENTE)
         .or(() -> propostaRepository.findFirstBySessaoIdOrderByCreatedAtDesc(sessaoId))
@@ -103,7 +104,7 @@ public class AiPropostaService {
   @Transactional
   public AiAplicacaoResponse aplicar(UUID sessaoId, AplicarAiPropostaRequest request, Principal principal) {
     exigirModuloHabilitado();
-    AiSessao sessao = carregarSessao(sessaoId);
+    AiSessao sessao = carregarSessao(sessaoId, principal);
     AiProposta proposta = propostaRepository
         .findFirstBySessaoIdAndStatusOrderByCreatedAtDesc(sessaoId, AiPropostaStatus.PENDENTE)
         .orElseThrow(() -> new NotFoundException("Nenhuma proposta pendente para aplicar."));
@@ -200,8 +201,9 @@ public class AiPropostaService {
     return AiPropostaResponse.from(proposta, apto, itens);
   }
 
-  private AiSessao carregarSessao(UUID id) {
+  private AiSessao carregarSessao(UUID id, Principal principal) {
     return sessaoRepository.findById(id)
+        .filter(sessao -> sessao.pertenceA(AiSessaoService.usuario(principal)))
         .orElseThrow(() -> new NotFoundException("Sessão de IA não encontrada."));
   }
 

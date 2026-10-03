@@ -13,6 +13,7 @@ import com.nexus.portal.ai.integration.docflow.AiTemplateSelector;
 import com.nexus.portal.ai.integration.docflow.DocFlowAiBridge;
 import com.nexus.portal.ai.prompt.AiPromptBuilder;
 import com.nexus.portal.ai.provider.LlmCompletion;
+import com.nexus.portal.ai.provider.FakeLlmProvider;
 import com.nexus.portal.ai.provider.LlmProvider;
 import com.nexus.portal.ai.repository.AiMensagemRepository;
 import com.nexus.portal.ai.service.AiJobLifecycleService.ContextoExecucao;
@@ -26,6 +27,7 @@ import com.nexus.portal.docflow.service.PaginaQualidadeService.ResultadoQualidad
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.LinkedHashMap;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -39,6 +41,8 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class AiJobWorkerService {
+
+  private static final String CODIGO_TELA_PADRAO = "AI-DEMO";
 
   private final AiMensagemRepository mensagemRepository;
   private final AiJobLifecycleService lifecycleService;
@@ -67,7 +71,7 @@ public class AiJobWorkerService {
       String titulo = primeiroNaoVazio(
           contexto.get("titulo"), extrairTituloBriefing(sessao.briefing()), "Página gerada");
       String codigoTela = normalizarCodigoTela(
-          primeiroNaoVazio(contexto.get("codigoTela"), "AI-DEMO"));
+          primeiroNaoVazio(contexto.get("codigoTela"), CODIGO_TELA_PADRAO));
       String resumoHint = primeiroNaoVazio(
           contexto.get("resumo"), contexto.get("fluxo"), sessao.briefing());
 
@@ -108,6 +112,10 @@ public class AiJobWorkerService {
           ? componenteRetriever.recuperar(templateCodigo, sessao.briefing(), catalogo, blueprint)
           : componentesSelecionados(sessao.componentesSelecionados(), catalogo);
       lifecycleService.avancar(jobId, AiJobEtapa.GERANDO_CONTEUDO, 50);
+      List<String> avisos = new ArrayList<>();
+      if (FakeLlmProvider.ID.equals(llmProvider.id())) {
+        avisos.add("Gerado pelo provider de demonstração (sem API key): o texto não reflete o briefing.");
+      }
       LlmCompletion completion;
       JsonNode json;
       AiPageSpec pageSpec = null;
@@ -133,6 +141,7 @@ public class AiJobWorkerService {
               "ai.job.pagespec_fallback jobId={} motivo=json_invalido detalhe={}",
               jobId,
               ex.getMessage());
+          avisos.add("A IA devolveu uma resposta inválida; os blocos usam textos padrão do modelo.");
           json = objectMapper.createObjectNode()
               .put("titulo", titulo)
               .put("slug", slugify(titulo))
@@ -147,6 +156,7 @@ public class AiJobWorkerService {
               jobId,
               ex.getMessage(),
               candidatos.stream().map(PaginaBlocoResponse::id).toList());
+          avisos.add("A resposta da IA não seguiu a estrutura esperada; parte do conteúdo usa textos padrão.");
           pageSpec = pageSpecService.fallback(
               text(json, "titulo", titulo),
               text(json, "slug", slugify(titulo)),
@@ -176,6 +186,9 @@ public class AiJobWorkerService {
         json = extrairJson(completion.content());
         String htmlLlm = htmlSanitizer.sanitizar(text(json, "conteudoHtml", esqueleto));
         htmlFinal = decidirHtmlBiblioteca(esqueleto, htmlLlm);
+        if (!htmlFinal.equals(htmlLlm)) {
+          avisos.add("A IA alterou a estrutura do modelo; foi mantido o esqueleto original sem preenchimento.");
+        }
       }
 
       String tituloFinal = truncar(
@@ -189,6 +202,9 @@ public class AiJobWorkerService {
       String resumoFinal = truncar(
           pageSpec == null ? text(json, "resumo", truncar(resumoHint, 280)) : pageSpec.resumo(),
           2_000);
+      if (CODIGO_TELA_PADRAO.equals(codigoFinal)) {
+        avisos.add("Código de tela não identificado; ajuste o código antes de salvar a página.");
+      }
       if (htmlFinal == null || htmlFinal.isBlank()) {
         throw new IllegalStateException("A PageSpec não produziu conteúdo utilizável.");
       }
@@ -220,7 +236,8 @@ public class AiJobWorkerService {
           qualidadeJson,
           pageSpec == null ? null : objectMapper.writeValueAsString(pageSpec),
           completion.tokensEntrada(),
-          completion.tokensSaida()));
+          completion.tokensSaida(),
+          avisos));
       log.info(
           "ai.job.completed jobId={} sessaoId={} status=SUCESSO latencyMs={} tokensIn={} tokensOut={} provider={} template={} blueprint={} componentes={}",
           jobId,
@@ -378,7 +395,7 @@ public class AiJobWorkerService {
     String codigo = value == null ? "" : value.toUpperCase(Locale.ROOT)
         .replaceAll("[^A-Z0-9_-]+", "-")
         .replaceAll("(^-+|-+$)", "");
-    return codigo.isBlank() ? "AI-DEMO" : codigo;
+    return codigo.isBlank() ? CODIGO_TELA_PADRAO : codigo;
   }
 
   private static String truncar(String value, int max) {

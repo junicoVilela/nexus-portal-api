@@ -12,7 +12,7 @@ Subir o assistente de páginas em localhost com Fake LLM (sem chave) ou OpenRout
 | Env | Default (dev) | Descrição |
 |---|---|---|
 | `NEXUS_AI_ENABLED` | `true` | Liga o módulo |
-| `NEXUS_AI_API_KEY` / `OPENROUTER_API_KEY` | vazio | Sem chave → `FakeLlmProvider` |
+| `NEXUS_AI_API_KEY` / `OPENROUTER_API_KEY` | vazio | Sem chave → `FakeLlmProvider` (em `prod` com AI ligada, o boot falha) |
 | `NEXUS_AI_BASE_URL` | `https://openrouter.ai/api/v1` | OpenRouter |
 | `NEXUS_AI_MODEL` | `openai/gpt-5.6-luna` | Slug OpenRouter |
 | `NEXUS_AI_REASONING_EFFORT` | `low` | Esforço de raciocínio do GPT-5.6 |

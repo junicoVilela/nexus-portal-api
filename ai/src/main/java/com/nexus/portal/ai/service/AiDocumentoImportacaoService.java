@@ -625,7 +625,7 @@ public class AiDocumentoImportacaoService {
       throw new BusinessException("Gere uma proposta para esta página antes de aceitá-la.");
     }
 
-    var proposta = propostaService.propostaAtual(paginaPlano.sessaoId());
+    var proposta = propostaService.propostaAtual(paginaPlano.sessaoId(), principal);
     UUID paginaId = proposta.paginaId();
     if (paginaId == null) {
       var aplicacao = propostaService.aplicar(

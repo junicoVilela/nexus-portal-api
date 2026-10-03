@@ -104,15 +104,15 @@ public class AiSessaoService {
   }
 
   @Transactional(readOnly = true)
-  public AiSessaoResponse buscar(UUID id) {
-    AiSessao sessao = carregar(id);
+  public AiSessaoResponse buscar(UUID id, Principal principal) {
+    AiSessao sessao = carregar(id, principal);
     return montarResponse(sessao);
   }
 
   @Transactional
-  public AiSessaoResponse enviarMensagem(UUID id, AiMensagemRequest request) {
+  public AiSessaoResponse enviarMensagem(UUID id, AiMensagemRequest request, Principal principal) {
     exigirModuloHabilitado();
-    AiSessao sessao = carregar(id);
+    AiSessao sessao = carregar(id, principal);
     garantirEditavel(sessao);
 
     Map<String, String> respostas = request.respostas() == null ? Map.of() : request.respostas();
@@ -131,7 +131,7 @@ public class AiSessaoService {
 
   @Transactional
   public AiSessaoResponse cancelar(UUID id, Principal principal) {
-    AiSessao sessao = carregar(id);
+    AiSessao sessao = carregar(id, principal);
     if (sessao.getStatus() == AiSessaoStatus.APLICADA) {
       throw new BusinessException("Sessão já aplicada não pode ser cancelada.");
     }
@@ -194,9 +194,14 @@ public class AiSessaoService {
         jobLifecycleService.atual(sessao.getId()).orElse(null));
   }
 
-  private AiSessao carregar(UUID id) {
+  private AiSessao carregar(UUID id, Principal principal) {
     return sessaoRepository.findById(id)
+        .filter(sessao -> sessao.pertenceA(usuario(principal)))
         .orElseThrow(() -> new NotFoundException("Sessão de IA não encontrada."));
+  }
+
+  static String usuario(Principal principal) {
+    return principal == null ? "system" : principal.getName();
   }
 
   private void exigirModuloHabilitado() {
@@ -217,8 +222,10 @@ public class AiSessaoService {
   }
 
   private void validarObjetivo(CriarAiSessaoRequest request) {
-    if (request.objetivo() == AiObjetivo.ATUALIZAR_PAGINA && request.paginaId() == null) {
-      throw new BusinessException("paginaId é obrigatório para ATUALIZAR_PAGINA.");
+    // Fase B: o worker ainda não lê o HTML atual nem aplica via atualização de página.
+    if (request.objetivo() == AiObjetivo.ATUALIZAR_PAGINA) {
+      throw new BusinessException(
+          "Ajustar uma página existente com IA ainda não está disponível. Crie uma nova página.");
     }
   }
 

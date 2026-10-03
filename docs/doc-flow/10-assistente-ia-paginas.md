@@ -1,6 +1,6 @@
 # 10 — Assistente de IA para Páginas (DocFlow)
 
-> Status: **proposta de desenho** (ainda não implementado).  
+> Status: **Fase A implementada** (criação de página nova + importação de documento). Fases B–D pendentes — ver [`11`](11-assistente-ia-checklist-sprints.md).  
 > Frontend espelho: `nexus-portal-web/docs/docflow/07-assistente-ia-paginas.md`  
 > Contexto: DocFlow já tem templates, editor WYSIWYG, qualidade (`PaginaQualidadeService`), workflow `RASCUNHO → … → PUBLICADO`, SSE e integração runtime com provedor LLM compatível com OpenAI.
 
@@ -347,6 +347,9 @@ Auditoria: eventos `AI_SESSAO_CRIADA`, `AI_PROPOSTA_GERADA`, `AI_PROPOSTA_ACEITA
 ---
 
 ## 9. Fase B — ajustar página existente
+
+> Até a Fase B ser entregue, `POST /ai/sessoes` com `objetivo=ATUALIZAR_PAGINA` responde **422**: o worker
+> ainda não lê o HTML atual e `aplicar` só sabe criar página, o que geraria duplicata.
 
 - `objetivo=ATUALIZAR_PAGINA` + `paginaId` obrigatório.
 - Contexto do prompt inclui `conteudoHtml` atual (truncado por seções se grande).
