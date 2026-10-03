@@ -1,42 +1,34 @@
 package com.nexus.portal.ai.prompt;
 
+import com.nexus.portal.ai.prompt.AiPromptCatalogo.Prompt;
 import com.nexus.portal.docflow.dto.response.PaginaBlocoResponse;
 import com.nexus.portal.docflow.dto.response.PaginaBlueprintResponse;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Prompts do DocFlow AI — preenche modelos da biblioteca, não inventa layout.
- *
- * @see application/src/main/resources/db/migration/V10__docflow__04_seed_templates.sql
+ * Monta os prompts do Nexus AI a partir de {@code resources/prompts/*.md} ({@link AiPromptCatalogo}).
+ * O texto vive nos arquivos; aqui só se formata o contexto que preenche as variáveis.
  */
 public final class AiPromptBuilder {
 
   private AiPromptBuilder() {}
 
-  public static String systemGerarPageSpec() {
-    return """
-        Você é redator técnico do Nexus DocFlow e planeja páginas usando exclusivamente o catálogo
-        de componentes fornecido. Escreva em português do Brasil e em segunda pessoa quando orientar.
+  /** Par system/user pronto para o provider, com a versão que fica registrada na proposta. */
+  public record PromptMontado(String system, String user, String versao) {
 
-        Sua saída é uma PageSpec JSON; você NÃO escreve HTML, CSS, JavaScript, Markdown ou URLs.
-        Cada item de blocos deve conter:
-        - componenteId: um ID exato do catálogo;
-        - textos: lista de objetos {slotId, valor}, usando somente os slots daquele componente.
-
-        Regras:
-        - escolha apenas componentes úteis ao objetivo e mantenha uma sequência editorial coerente;
-        - use de 3 a 12 componentes, sem repetir componenteId;
-        - relacione cada seção do briefing ao componente e aos slots semanticamente mais adequados;
-        - não devolva textos vazio quando o briefing trouxer informação para o componente;
-        - preserve fatos do briefing e não invente permissões, regras, caminhos ou dados sensíveis;
-        - não preencha slots puramente decorativos se o briefing não trouxer informação;
-        - titulo, slug, codigoTela e resumo são obrigatórios;
-        - responda somente com o JSON compatível com o schema solicitado.
-        """;
+    static PromptMontado de(String nome, Map<String, String> variaveis) {
+      Prompt system = AiPromptCatalogo.carregar(nome + ".system");
+      Prompt user = AiPromptCatalogo.carregar(nome + ".user");
+      return new PromptMontado(
+          system.renderizar(Map.of()),
+          user.renderizar(variaveis),
+          nome + "@" + system.versao() + "." + user.versao());
+    }
   }
 
-  public static String userGerarPageSpec(
+  public static PromptMontado gerarPageSpec(
       String titulo,
       String codigoTela,
       String resumo,
@@ -48,38 +40,32 @@ public final class AiPromptBuilder {
       List<PaginaBlocoResponse> componentes,
       List<String> instrucoes,
       String pageSpecAnterior) {
-    return """
-        TAREFA=GERAR_PAGE_SPEC
-        templateCodigo: %s
-        templateNome: %s
-        tituloSugerido: %s
-        codigoTelaSugerido: %s
-        resumoSugerido: %s
+    Map<String, String> variaveis = new LinkedHashMap<>();
+    variaveis.put("templateCodigo", nulo(templateCodigo));
+    variaveis.put("templateNome", nulo(templateNome));
+    variaveis.put("titulo", nulo(titulo));
+    variaveis.put("codigoTela", nulo(codigoTela));
+    variaveis.put("resumo", nulo(resumo));
+    variaveis.put("briefing", nulo(briefing));
+    variaveis.put("contexto", contexto == null ? "{}" : contexto.toString());
+    variaveis.put("blueprint", descreverBlueprint(blueprint));
+    variaveis.put("catalogo", descreverComponentes(componentes));
+    variaveis.put("ajustes", descreverAjustes(instrucoes, pageSpecAnterior));
+    return PromptMontado.de("gerar-page-spec", variaveis);
+  }
 
-        briefing:
-        %s
+  /** Organização de documento importado (páginas + sugestões). */
+  public static PromptMontado analiseDocumento(String arquivo, String projetoNome, String manifestoJson) {
+    return PromptMontado.de(
+        "analise-documento",
+        Map.of("arquivo", nulo(arquivo), "projetoNome", nulo(projetoNome), "manifesto", nulo(manifestoJson)));
+  }
 
-        contexto confirmado:
-        %s
-
-        blueprint editorial selecionado:
-        %s
-
-        catálogo permitido (ID, finalidade e slots editáveis):
-        %s
-        %s
-        Monte a PageSpec com conteúdo específico para o briefing. Não retorne conteudoHtml.
-        """.formatted(
-        nulo(templateCodigo),
-        nulo(templateNome),
-        nulo(titulo),
-        nulo(codigoTela),
-        nulo(resumo),
-        nulo(briefing),
-        contexto == null ? "{}" : contexto,
-        descreverBlueprint(blueprint),
-        descreverComponentes(componentes),
-        descreverAjustes(instrucoes, pageSpecAnterior));
+  /** Documento grande: só nomes de projeto e módulos; as páginas não vão ao modelo. */
+  public static PromptMontado analiseDocumentoAmplo(String arquivo, String projetoNome, String manifestoJson) {
+    return PromptMontado.de(
+        "analise-documento-amplo",
+        Map.of("arquivo", nulo(arquivo), "projetoNome", nulo(projetoNome), "manifesto", nulo(manifestoJson)));
   }
 
   /**
@@ -103,72 +89,6 @@ public final class AiPromptBuilder {
         ajustes pedidos pelo autor (em ordem; o último prevalece em caso de conflito):
         %s
         %s""".formatted(pedidos, anterior);
-  }
-
-  public static String systemGerarRascunho() {
-    return """
-        Você é redator técnico do Nexus DocFlow. Gera rascunhos de manuais em português do Brasil
-        PREENCHENDO um modelo HTML da biblioteca DocFlow — nunca inventa layout próprio.
-
-        Responda APENAS um JSON válido com as chaves:
-        titulo, slug, codigoTela, resumo, conteudoHtml.
-
-        Regras obrigatórias de estrutura:
-        - O campo conteudoHtml DEVE partir do esqueletoHtml fornecido (modelo da biblioteca).
-        - Preserve a árvore DOM, tags, classes CSS e screen-placeholder do esqueleto.
-        - Substitua apenas textos genéricos / placeholders pelo conteúdo do briefing.
-        - NÃO invente seções novas, NÃO troque classes, NÃO remova screen-placeholder.
-        - NÃO crie layout alternativo (mesmo que "mais bonito").
-        - Se o esqueletoHtml estiver vazio (erro), use como último recurso as classes seed:
-          doc-intro, doc-kicker, objective-card, doc-section, steps, checklist,
-          result-card, screen-frame, screen-placeholder — preferindo modelos
-          FUNCIONALIDADE, PASSO_A_PASSO, CONSULTA, LISTAR_REGISTROS.
-
-        Regras de conteúdo:
-        - Segunda pessoa do singular ("você") quando orientar o usuário.
-        - HTML fragmento (sem html/head/body/script/style).
-        - Não invente URLs de imagem nem links externos.
-        - Não publique, não invente permissões RBAC, não inclua dados sensíveis.
-        """;
-  }
-
-  public static String userGerarRascunho(
-      String titulo,
-      String codigoTela,
-      String resumo,
-      String briefing,
-      Map<String, String> contexto,
-      String esqueletoHtml,
-      String templateCodigo,
-      String templateNome) {
-    return """
-        TAREFA=GERAR_RASCUNHO
-        modo=PREENCHER_MODELO_BIBLIOTECA
-        templateCodigo: %s
-        templateNome: %s
-        titulo: %s
-        codigoTela: %s
-        resumo: %s
-
-        briefing:
-        %s
-
-        contexto:
-        %s
-
-        esqueletoHtml:
-        %s
-
-        INSTRUCAO_FINAL: devolva conteudoHtml = esqueletoHtml acima com textos preenchidos; não invente outra estrutura.
-        """.formatted(
-        nulo(templateCodigo),
-        nulo(templateNome),
-        nulo(titulo),
-        nulo(codigoTela),
-        nulo(resumo),
-        nulo(briefing),
-        contexto == null ? "{}" : contexto.toString(),
-        nulo(esqueletoHtml));
   }
 
   private static String nulo(String value) {

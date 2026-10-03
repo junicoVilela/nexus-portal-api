@@ -121,6 +121,7 @@ class AiJobWorkerServiceTest {
     assertThat(proposta.getConteudoHtml()).contains("doc-intro");
     assertThat(proposta.getPageSpecJson()).contains("\"componenteId\":\"introducao\"");
     assertThat(proposta.getCodigoTela()).isEqualTo("PED-CONSULTA");
+    assertThat(proposta.getPromptVersao()).startsWith("gerar-page-spec@");
     verify(aiEventService, atLeastOnce()).publicarJob(job);
   }
 

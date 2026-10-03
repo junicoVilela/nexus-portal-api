@@ -301,16 +301,14 @@ Provider padrão: **OpenRouter** (headers `HTTP-Referer` + `X-Title`).
 7. Pré-rodar regras de `PaginaQualidadeService` sobre um `Pagina` transitório.
 8. Persistir `AiProposta` + job `SUCESSO` + SSE.
 
-### 6.3 Regras de conteúdo (system prompt — contrato)
+### 6.3 Regras de conteúdo (prompts)
 
-A IA deve:
-
-- Emitir **apenas** HTML de corpo (sem `<html>`, `<head>`, scripts).
-- Preferir classes já usadas nos seeds: `doc-intro`, `doc-section`, `objective-card`, `screen-frame`, `screen-placeholder`, `steps`, `checklist`, `result-card`, `annotation-card`, `related-links` + `data-codigo-tela`.
-- Manter placeholders de captura (`screen-placeholder`) quando não houver imagem — qualidade marca AVISO, não inventar URL falsa.
-- Não deixar `{{ variavel }}` se o contexto já resolveu; se faltar cliente, pode manter variável conhecida do DocFlow.
-- Escrever em **português** do manual (tom instrucional, 2ª pessoa ou infinitivo — alinhar aos templates seed).
-- Gerar `codigoTela` estável (CAIXA-ALTA / padrão do projeto) quando o usuário informar; senão sugerir e pedir confirmação.
+O modelo não escreve HTML: devolve uma `PageSpec` (componentes do catálogo + textos por slot),
+renderizada e sanitizada no servidor. O antigo caminho de "preencher o esqueleto HTML" foi
+removido. As regras de redação vivem em arquivos versionados:
+[`ai/src/main/resources/prompts/`](../../ai/src/main/resources/prompts/README.md). Cada
+proposta registra `prompt_versao`. Briefing e manifesto de documento vão entre marcas
+`<<<…`/`…>>>` e o system prompt os trata como dado, não como instrução.
 
 ### 6.4 Fallback sem provider
 

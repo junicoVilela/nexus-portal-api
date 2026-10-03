@@ -85,6 +85,10 @@ public class AiProposta {
   @Column(name = "pagina_id")
   private UUID paginaId;
 
+  /** {@code nome@versao} do prompt que gerou a proposta (ver {@code resources/prompts}). */
+  @Column(name = "prompt_versao", length = 120)
+  private String promptVersao;
+
   @Column(name = "motivo_rejeicao", length = 500)
   private String motivoRejeicao;
 
@@ -107,7 +111,8 @@ public class AiProposta {
       Integer templateVersao,
       String qualidadeJson,
       String pageSpecJson,
-      List<String> avisosGeracao) {
+      List<String> avisosGeracao,
+      String promptVersao) {
     this.sessao = sessao;
     this.job = job;
     this.tipo = tipo;
@@ -121,6 +126,7 @@ public class AiProposta {
     this.qualidadeJson = qualidadeJson;
     this.pageSpecJson = pageSpecJson;
     this.avisosGeracao = avisosGeracao == null ? List.of() : List.copyOf(avisosGeracao);
+    this.promptVersao = promptVersao;
   }
 
   public void aceitar(UUID paginaId) {

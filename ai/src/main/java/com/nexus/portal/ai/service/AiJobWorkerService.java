@@ -9,25 +9,24 @@ import com.nexus.portal.ai.entity.AiMensagem;
 import com.nexus.portal.ai.entity.AiObjetivo;
 import com.nexus.portal.ai.entity.AiPapelMensagem;
 import com.nexus.portal.ai.entity.AiPropostaTipo;
-import com.nexus.portal.ai.integration.docflow.AiTemplateSelector;
 import com.nexus.portal.ai.integration.docflow.DocFlowAiBridge;
 import com.nexus.portal.ai.prompt.AiPromptBuilder;
-import com.nexus.portal.ai.provider.LlmCompletion;
+import com.nexus.portal.ai.prompt.AiPromptBuilder.PromptMontado;
 import com.nexus.portal.ai.provider.FakeLlmProvider;
+import com.nexus.portal.ai.provider.LlmCompletion;
 import com.nexus.portal.ai.provider.LlmProvider;
 import com.nexus.portal.ai.repository.AiMensagemRepository;
 import com.nexus.portal.ai.service.AiJobLifecycleService.ContextoExecucao;
 import com.nexus.portal.ai.service.AiJobLifecycleService.ResultadoConclusao;
 import com.nexus.portal.ai.service.AiJobLifecycleService.ResultadoGeracao;
-import com.nexus.portal.docflow.dto.response.PaginaTemplateAplicacaoResponse;
 import com.nexus.portal.docflow.dto.response.PaginaBlocoResponse;
 import com.nexus.portal.docflow.dto.response.PaginaBlueprintResponse;
 import com.nexus.portal.docflow.entity.PaginaTemplate;
 import com.nexus.portal.docflow.service.PaginaQualidadeService.ResultadoQualidade;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.LinkedHashMap;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -37,6 +36,17 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+/**
+ * Executa o job {@code GERAR_RASCUNHO} em etapas, cada uma refletida no progresso via SSE:
+ *
+ * <ol>
+ *   <li>{@link #prepararEntrada} — título, código e resumo a partir do briefing e das respostas;
+ *   <li>{@link #selecionarEstrutura} — modelo, blueprint e componentes candidatos do catálogo;
+ *   <li>{@link #gerarConteudo} — PageSpec pela IA, com fallback registrado em {@code avisos};
+ *   <li>{@link #avaliarQualidade} — checklist do DocFlow sobre o HTML renderizado;
+ *   <li>{@link #concluir} — persiste a proposta e registra métricas.
+ * </ol>
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -64,195 +74,15 @@ public class AiJobWorkerService {
     }
     ContextoExecucao sessao = execucao.orElseThrow();
     try {
-      Map<String, String> respostas = coletarContexto(sessao);
-      Map<String, String> contexto = new LinkedHashMap<>(
-          triagemService.avaliar(sessao.objetivo(), sessao.briefing(), respostas).contextoExtraido());
-      contexto.putAll(respostas);
-      String titulo = primeiroNaoVazio(
-          contexto.get("titulo"), extrairTituloBriefing(sessao.briefing()), "Página gerada");
-      String codigoTela = normalizarCodigoTela(
-          primeiroNaoVazio(contexto.get("codigoTela"), CODIGO_TELA_PADRAO));
-      String resumoHint = primeiroNaoVazio(
-          contexto.get("resumo"), contexto.get("fluxo"), sessao.briefing());
-
+      Entrada entrada = prepararEntrada(sessao);
       lifecycleService.avancar(jobId, AiJobEtapa.SELECIONANDO_ESTRUTURA, 30);
-
-      PaginaTemplate template = docFlowAiBridge
-          .buscarTemplate(
-              sessao.templateId(),
-              sessao.projetoId(),
-              sessao.clienteId(),
-              sessao.briefing())
-          .orElse(null);
-
-      String esqueleto = "";
-      String templateCodigo = null;
-      String templateNome = null;
-      UUID templateId = null;
-      Integer templateVersao = null;
-      if (template != null) {
-        templateId = template.getId();
-        templateVersao = template.getVersaoAtual();
-        templateCodigo = template.getCodigo();
-        templateNome = template.getNome();
-        PaginaTemplateAplicacaoResponse aplicado = docFlowAiBridge.aplicarTemplate(
-            templateId,
-            sessao.projetoId(),
-            sessao.moduloId(),
-            sessao.clienteId(),
-            titulo,
-            codigoTela);
-        esqueleto = aplicado.conteudoHtml() == null ? "" : aplicado.conteudoHtml();
-        templateVersao = aplicado.versao();
-      }
-
-      PaginaBlueprintResponse blueprint = docFlowAiBridge.buscarBlueprint(templateCodigo).orElse(null);
-      List<PaginaBlocoResponse> catalogo = docFlowAiBridge.listarBlocos();
-      List<PaginaBlocoResponse> candidatos = sessao.componentesSelecionados().isEmpty()
-          ? componenteRetriever.recuperar(templateCodigo, sessao.briefing(), catalogo, blueprint)
-          : componentesSelecionados(sessao.componentesSelecionados(), catalogo);
+      Estrutura estrutura = selecionarEstrutura(sessao);
       lifecycleService.avancar(jobId, AiJobEtapa.GERANDO_CONTEUDO, 50);
-      List<String> avisos = new ArrayList<>();
-      if (FakeLlmProvider.ID.equals(llmProvider.id())) {
-        avisos.add("Gerado pelo provider de demonstração (sem API key): o texto não reflete o briefing.");
-      }
-      LlmCompletion completion;
-      JsonNode json;
-      AiPageSpec pageSpec = null;
-      String htmlFinal;
-      if (!candidatos.isEmpty()) {
-        String system = AiPromptBuilder.systemGerarPageSpec();
-        String user = AiPromptBuilder.userGerarPageSpec(
-            titulo,
-            codigoTela,
-            truncar(resumoHint, 500),
-            sessao.briefing(),
-            contexto,
-            templateCodigo,
-            templateNome,
-            blueprint,
-            candidatos,
-            coletarInstrucoes(sessao),
-            truncar(sessao.pageSpecAnterior(), 12_000));
-        completion = llmProvider.completarEstruturado(
-            system, user, pageSpecService.schema(candidatos));
-        try {
-          json = extrairJson(completion.content());
-        } catch (Exception ex) {
-          log.warn(
-              "ai.job.pagespec_fallback jobId={} motivo=json_invalido detalhe={}",
-              jobId,
-              ex.getMessage());
-          avisos.add("A IA devolveu uma resposta inválida; os blocos usam textos padrão do modelo.");
-          json = objectMapper.createObjectNode()
-              .put("titulo", titulo)
-              .put("slug", slugify(titulo))
-              .put("codigoTela", codigoTela)
-              .put("resumo", truncar(resumoHint, 280));
-        }
-        try {
-          pageSpec = pageSpecService.interpretar(json, candidatos, blueprint);
-        } catch (IllegalArgumentException ex) {
-          log.warn(
-              "ai.job.pagespec_fallback jobId={} motivo={} componentes={}",
-              jobId,
-              ex.getMessage(),
-              candidatos.stream().map(PaginaBlocoResponse::id).toList());
-          avisos.add("A resposta da IA não seguiu a estrutura esperada; parte do conteúdo usa textos padrão.");
-          pageSpec = pageSpecService.fallback(
-              text(json, "titulo", titulo),
-              text(json, "slug", slugify(titulo)),
-              text(json, "codigoTela", codigoTela),
-              text(json, "resumo", truncar(resumoHint, 280)),
-              candidatos,
-              blueprint);
-        }
-        if (!sessao.componentesSelecionados().isEmpty()) {
-          pageSpec = pageSpecService.garantirComponentes(pageSpec, candidatos);
-        }
-        pageSpec = briefingPageSpecEnricher.enriquecer(pageSpec, candidatos, sessao.briefing());
-        htmlFinal = htmlSanitizer.sanitizar(pageSpecService.renderizar(pageSpec));
-      } else {
-        // Compatibilidade defensiva: em operação normal o catálogo canônico nunca fica vazio.
-        String system = AiPromptBuilder.systemGerarRascunho();
-        String user = AiPromptBuilder.userGerarRascunho(
-            titulo,
-            codigoTela,
-            truncar(resumoHint, 500),
-            sessao.briefing(),
-            contexto,
-            truncar(esqueleto, 14_000),
-            templateCodigo,
-            templateNome);
-        completion = llmProvider.completar(system, user);
-        json = extrairJson(completion.content());
-        String htmlLlm = htmlSanitizer.sanitizar(text(json, "conteudoHtml", esqueleto));
-        htmlFinal = decidirHtmlBiblioteca(esqueleto, htmlLlm);
-        if (!htmlFinal.equals(htmlLlm)) {
-          avisos.add("A IA alterou a estrutura do modelo; foi mantido o esqueleto original sem preenchimento.");
-        }
-      }
-
-      String tituloFinal = truncar(
-          pageSpec == null ? text(json, "titulo", titulo) : pageSpec.titulo(), 200);
-      String slugFinal = truncar(
-          pageSpec == null ? text(json, "slug", slugify(tituloFinal)) : pageSpec.slug(), 200);
-      String codigoFinal = truncar(
-          normalizarCodigoTela(
-              pageSpec == null ? text(json, "codigoTela", codigoTela) : pageSpec.codigoTela()),
-          120);
-      String resumoFinal = truncar(
-          pageSpec == null ? text(json, "resumo", truncar(resumoHint, 280)) : pageSpec.resumo(),
-          2_000);
-      if (CODIGO_TELA_PADRAO.equals(codigoFinal)) {
-        avisos.add("Código de tela não identificado; ajuste o código antes de salvar a página.");
-      }
-      if (htmlFinal == null || htmlFinal.isBlank()) {
-        throw new IllegalStateException("A PageSpec não produziu conteúdo utilizável.");
-      }
-
+      Conteudo conteudo = gerarConteudo(jobId, sessao, entrada, estrutura);
       lifecycleService.avancar(jobId, AiJobEtapa.VALIDANDO_QUALIDADE, 80);
-
-      ResultadoQualidade qualidade = docFlowAiBridge.avaliarQualidade(
-          tituloFinal, codigoFinal, resumoFinal, htmlFinal);
-      String qualidadeJson = objectMapper.writeValueAsString(Map.of(
-          "aptoParaRevisao", qualidade.aptoParaRevisao(),
-          "itens", qualidade.itens().stream()
-              .map(i -> new AiQualidadeItemResponse(
-                  i.codigo(), i.titulo(), i.descricao(), i.ok(), i.severidade().name()))
-              .toList()));
-
+      String qualidadeJson = avaliarQualidade(conteudo);
       lifecycleService.avancar(jobId, AiJobEtapa.FINALIZANDO, 95);
-      AiPropostaTipo tipo = sessao.objetivo() == AiObjetivo.ATUALIZAR_PAGINA
-          ? AiPropostaTipo.ATUALIZACAO
-          : AiPropostaTipo.NOVA;
-      ResultadoConclusao conclusao = lifecycleService.concluir(jobId, new ResultadoGeracao(
-          tipo,
-          tituloFinal,
-          slugFinal,
-          codigoFinal,
-          resumoFinal,
-          htmlFinal,
-          templateId,
-          templateVersao,
-          qualidadeJson,
-          pageSpec == null ? null : objectMapper.writeValueAsString(pageSpec),
-          completion.tokensEntrada(),
-          completion.tokensSaida(),
-          avisos));
-      log.info(
-          "ai.job.completed jobId={} sessaoId={} status=SUCESSO latencyMs={} tokensIn={} tokensOut={} provider={} template={} blueprint={} componentes={}",
-          jobId,
-          sessao.sessaoId(),
-          conclusao.latenciaMs(),
-          completion.tokensEntrada(),
-          completion.tokensSaida(),
-          llmProvider.id(),
-          templateCodigo,
-          blueprint == null ? null : blueprint.id(),
-          pageSpec == null
-              ? List.of()
-              : pageSpec.blocos().stream().map(AiPageSpec.Bloco::componenteId).toList());
+      concluir(jobId, sessao, estrutura, conteudo, qualidadeJson);
     } catch (AiJobCanceladoException ex) {
       log.info("ai.job.cancelled jobId={} sessaoId={}", jobId, sessao.sessaoId());
     } catch (Exception ex) {
@@ -264,6 +94,173 @@ public class AiJobWorkerService {
           sessao.sessaoId(),
           llmProvider.id());
     }
+  }
+
+  /** Respostas do autor prevalecem sobre o que a triagem extrai do texto. */
+  private Entrada prepararEntrada(ContextoExecucao sessao) {
+    Map<String, String> respostas = coletarContexto(sessao);
+    Map<String, String> contexto = new LinkedHashMap<>(
+        triagemService.avaliar(sessao.objetivo(), sessao.briefing(), respostas).contextoExtraido());
+    contexto.putAll(respostas);
+    return new Entrada(
+        contexto,
+        primeiroNaoVazio(contexto.get("titulo"), extrairTituloBriefing(sessao.briefing()), "Página gerada"),
+        normalizarCodigoTela(primeiroNaoVazio(contexto.get("codigoTela"), CODIGO_TELA_PADRAO)),
+        primeiroNaoVazio(contexto.get("resumo"), contexto.get("fluxo"), sessao.briefing()));
+  }
+
+  private Estrutura selecionarEstrutura(ContextoExecucao sessao) {
+    PaginaTemplate template = docFlowAiBridge
+        .buscarTemplate(sessao.templateId(), sessao.projetoId(), sessao.clienteId(), sessao.briefing())
+        .orElse(null);
+    String templateCodigo = template == null ? null : template.getCodigo();
+    PaginaBlueprintResponse blueprint = docFlowAiBridge.buscarBlueprint(templateCodigo).orElse(null);
+    List<PaginaBlocoResponse> catalogo = docFlowAiBridge.listarBlocos();
+    List<PaginaBlocoResponse> candidatos = sessao.componentesSelecionados().isEmpty()
+        ? componenteRetriever.recuperar(templateCodigo, sessao.briefing(), catalogo, blueprint)
+        : componentesSelecionados(sessao.componentesSelecionados(), catalogo);
+    if (candidatos.isEmpty()) {
+      throw new IllegalStateException(
+          "Nenhum componente do catálogo DocFlow disponível para montar a página.");
+    }
+    return new Estrutura(
+        template == null ? null : template.getId(),
+        template == null ? null : template.getVersaoAtual(),
+        templateCodigo,
+        template == null ? null : template.getNome(),
+        blueprint,
+        candidatos);
+  }
+
+  /**
+   * Pede a PageSpec à IA e renderiza no servidor. Resposta inválida não derruba o job: cai no
+   * fallback com textos padrão do catálogo e registra o motivo em {@code avisos}, que a UI destaca.
+   */
+  private Conteudo gerarConteudo(UUID jobId, ContextoExecucao sessao, Entrada entrada, Estrutura estrutura) {
+    List<String> avisos = new ArrayList<>();
+    if (FakeLlmProvider.ID.equals(llmProvider.id())) {
+      avisos.add("Gerado pelo provider de demonstração (sem API key): o texto não reflete o briefing.");
+    }
+    List<PaginaBlocoResponse> candidatos = estrutura.candidatos();
+    PromptMontado prompt = AiPromptBuilder.gerarPageSpec(
+        entrada.titulo(),
+        entrada.codigoTela(),
+        truncar(entrada.resumoHint(), 500),
+        sessao.briefing(),
+        entrada.contexto(),
+        estrutura.templateCodigo(),
+        estrutura.templateNome(),
+        estrutura.blueprint(),
+        candidatos,
+        coletarInstrucoes(sessao),
+        truncar(sessao.pageSpecAnterior(), 12_000));
+    LlmCompletion completion = llmProvider.completarEstruturado(
+        prompt.system(), prompt.user(), pageSpecService.schema(candidatos));
+
+    JsonNode json;
+    try {
+      json = extrairJson(completion.content());
+    } catch (Exception ex) {
+      log.warn("ai.job.pagespec_fallback jobId={} motivo=json_invalido detalhe={}", jobId, ex.getMessage());
+      avisos.add("A IA devolveu uma resposta inválida; os blocos usam textos padrão do modelo.");
+      json = objectMapper.createObjectNode()
+          .put("titulo", entrada.titulo())
+          .put("slug", slugify(entrada.titulo()))
+          .put("codigoTela", entrada.codigoTela())
+          .put("resumo", truncar(entrada.resumoHint(), 280));
+    }
+    AiPageSpec pageSpec;
+    try {
+      pageSpec = pageSpecService.interpretar(json, candidatos, estrutura.blueprint());
+    } catch (IllegalArgumentException ex) {
+      log.warn(
+          "ai.job.pagespec_fallback jobId={} motivo={} componentes={}",
+          jobId,
+          ex.getMessage(),
+          candidatos.stream().map(PaginaBlocoResponse::id).toList());
+      avisos.add("A resposta da IA não seguiu a estrutura esperada; parte do conteúdo usa textos padrão.");
+      pageSpec = pageSpecService.fallback(
+          text(json, "titulo", entrada.titulo()),
+          text(json, "slug", slugify(entrada.titulo())),
+          text(json, "codigoTela", entrada.codigoTela()),
+          text(json, "resumo", truncar(entrada.resumoHint(), 280)),
+          candidatos,
+          estrutura.blueprint());
+    }
+    if (!sessao.componentesSelecionados().isEmpty()) {
+      pageSpec = pageSpecService.garantirComponentes(pageSpec, candidatos);
+    }
+    pageSpec = briefingPageSpecEnricher.enriquecer(pageSpec, candidatos, sessao.briefing());
+    String html = htmlSanitizer.sanitizar(pageSpecService.renderizar(pageSpec));
+    if (html == null || html.isBlank()) {
+      throw new IllegalStateException("A PageSpec não produziu conteúdo utilizável.");
+    }
+
+    String codigoTela = truncar(normalizarCodigoTela(pageSpec.codigoTela()), 120);
+    if (CODIGO_TELA_PADRAO.equals(codigoTela)) {
+      avisos.add("Código de tela não identificado; ajuste o código antes de salvar a página.");
+    }
+    return new Conteudo(
+        pageSpec,
+        truncar(pageSpec.titulo(), 200),
+        truncar(pageSpec.slug(), 200),
+        codigoTela,
+        truncar(pageSpec.resumo(), 2_000),
+        html,
+        avisos,
+        completion,
+        prompt.versao());
+  }
+
+  private String avaliarQualidade(Conteudo conteudo) throws Exception {
+    ResultadoQualidade qualidade = docFlowAiBridge.avaliarQualidade(
+        conteudo.titulo(), conteudo.codigoTela(), conteudo.resumo(), conteudo.html());
+    return objectMapper.writeValueAsString(Map.of(
+        "aptoParaRevisao", qualidade.aptoParaRevisao(),
+        "itens", qualidade.itens().stream()
+            .map(i -> new AiQualidadeItemResponse(
+                i.codigo(), i.titulo(), i.descricao(), i.ok(), i.severidade().name()))
+            .toList()));
+  }
+
+  private void concluir(
+      UUID jobId,
+      ContextoExecucao sessao,
+      Estrutura estrutura,
+      Conteudo conteudo,
+      String qualidadeJson) throws Exception {
+    AiPropostaTipo tipo = sessao.objetivo() == AiObjetivo.ATUALIZAR_PAGINA
+        ? AiPropostaTipo.ATUALIZACAO
+        : AiPropostaTipo.NOVA;
+    LlmCompletion completion = conteudo.completion();
+    ResultadoConclusao conclusao = lifecycleService.concluir(jobId, new ResultadoGeracao(
+        tipo,
+        conteudo.titulo(),
+        conteudo.slug(),
+        conteudo.codigoTela(),
+        conteudo.resumo(),
+        conteudo.html(),
+        estrutura.templateId(),
+        estrutura.templateVersao(),
+        qualidadeJson,
+        objectMapper.writeValueAsString(conteudo.pageSpec()),
+        completion.tokensEntrada(),
+        completion.tokensSaida(),
+        conteudo.avisos(),
+        conteudo.promptVersao()));
+    log.info(
+        "ai.job.completed jobId={} sessaoId={} status=SUCESSO latencyMs={} tokensIn={} tokensOut={} provider={} prompt={} template={} blueprint={} componentes={} avisos={}",
+        jobId,
+        sessao.sessaoId(),
+        conclusao.latenciaMs(),
+        completion.tokensEntrada(),
+        completion.tokensSaida(),
+        llmProvider.id(),
+        conteudo.promptVersao(),
+        estrutura.templateCodigo(),
+        estrutura.blueprint() == null ? null : estrutura.blueprint().id(),
+        conteudo.pageSpec().blocos().stream().map(AiPageSpec.Bloco::componenteId).toList(),
+        conteudo.avisos().size());
   }
 
   private Map<String, String> coletarContexto(ContextoExecucao sessao) {
@@ -315,20 +312,6 @@ public class AiJobWorkerService {
           "Um componente aprovado não está mais disponível no catálogo DocFlow.");
     }
     return selecionados;
-  }
-
-  /**
-   * Garante saída baseada no modelo da biblioteca. Se a IA inventar layout, usa o esqueleto.
-   */
-  static String decidirHtmlBiblioteca(String esqueleto, String htmlLlm) {
-    if (esqueleto != null && !esqueleto.isBlank()) {
-      if (AiTemplateSelector.preservaEstrutura(esqueleto, htmlLlm)) {
-        return htmlLlm;
-      }
-      log.info("ai.job.html_fallback motivo=estrutura_divergente_do_modelo");
-      return esqueleto;
-    }
-    return htmlLlm;
   }
 
   private JsonNode extrairJson(String raw) throws Exception {
@@ -415,4 +398,25 @@ public class AiJobWorkerService {
     }
     return value.length() <= max ? value : value.substring(0, max) + "…";
   }
+
+  private record Entrada(Map<String, String> contexto, String titulo, String codigoTela, String resumoHint) {}
+
+  private record Estrutura(
+      UUID templateId,
+      Integer templateVersao,
+      String templateCodigo,
+      String templateNome,
+      PaginaBlueprintResponse blueprint,
+      List<PaginaBlocoResponse> candidatos) {}
+
+  private record Conteudo(
+      AiPageSpec pageSpec,
+      String titulo,
+      String slug,
+      String codigoTela,
+      String resumo,
+      String html,
+      List<String> avisos,
+      LlmCompletion completion,
+      String promptVersao) {}
 }

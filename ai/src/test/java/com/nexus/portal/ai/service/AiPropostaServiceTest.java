@@ -128,7 +128,7 @@ class AiPropostaServiceTest {
     setId(job, UUID.randomUUID());
     AiProposta proposta = new AiProposta(
         sessao, job, AiPropostaTipo.NOVA, "Consulta", "consulta", "PED-001", "Resumo",
-        "<section>Consulta</section>", null, null, null, null, List.of());
+        "<section>Consulta</section>", null, null, null, null, List.of(), null);
     setId(proposta, UUID.randomUUID());
     when(sessaoRepository.findById(sessaoId)).thenReturn(Optional.of(sessao));
     when(propostaRepository.findFirstBySessaoIdAndStatusOrderByCreatedAtDesc(

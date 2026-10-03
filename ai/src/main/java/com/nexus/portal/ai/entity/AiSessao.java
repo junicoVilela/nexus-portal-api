@@ -132,7 +132,6 @@ public class AiSessao extends AuditableEntity {
   }
 
   public boolean terminal() {
-    return status == AiSessaoStatus.CANCELADA
-        || status == AiSessaoStatus.APLICADA;
+    return status.terminal();
   }
 }

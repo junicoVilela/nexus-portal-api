@@ -245,45 +245,4 @@ public final class AiTemplateSelector {
       return confianca >= CONFIANCA_AUTO_SELECAO;
     }
   }
-
-  /** Extrai classes estruturais do HTML da biblioteca para validar se a IA as preservou. */
-  public static boolean preservaEstrutura(String esqueleto, String htmlGerado) {
-    if (esqueleto == null || esqueleto.isBlank()) {
-      return true;
-    }
-    if (htmlGerado == null || htmlGerado.isBlank()) {
-      return false;
-    }
-    String gerado = htmlGerado.toLowerCase(Locale.ROOT);
-    int marcadores = 0;
-    int presentes = 0;
-    for (String cls : List.of(
-        "doc-intro",
-        "doc-section",
-        "objective-card",
-        "screen-placeholder",
-        "screen-frame",
-        "steps",
-        "checklist",
-        "result-card",
-        "annotation-card",
-        "related-links",
-        "doc-kicker")) {
-      if (esqueleto.toLowerCase(Locale.ROOT).contains(cls)) {
-        marcadores++;
-        if (gerado.contains(cls)) {
-          presentes++;
-        }
-      }
-    }
-    if (marcadores == 0) {
-      String trecho = esqueleto.replaceAll("\\s+", " ").trim();
-      if (trecho.length() > 80) {
-        String amostra = trecho.substring(0, Math.min(80, trecho.length()));
-        return htmlGerado.contains(amostra.substring(0, Math.min(40, amostra.length())));
-      }
-      return true;
-    }
-    return presentes * 2 >= marcadores;
-  }
 }

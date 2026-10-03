@@ -108,20 +108,6 @@ class AiTemplateSelectorTest {
         .isLessThan(AiTemplateSelector.CONFIANCA_AUTO_SELECAO);
   }
 
-  @Test
-  void preservaEstruturaQuandoClassesMantidas() {
-    String esqueleto = "<section class=\"doc-intro\"></section><div class=\"screen-placeholder\"></div>";
-    String gerado = "<section class=\"doc-intro\"><p>x</p></section><div class=\"screen-placeholder\"></div>";
-    assertThat(AiTemplateSelector.preservaEstrutura(esqueleto, gerado)).isTrue();
-  }
-
-  @Test
-  void rejeitaQuandoInventaLayout() {
-    String esqueleto = "<section class=\"doc-intro\"></section><div class=\"screen-placeholder\"></div><ol class=\"steps\"></ol>";
-    String inventado = "<div class=\"meu-layout-novo\"><h1>Outra coisa</h1></div>";
-    assertThat(AiTemplateSelector.preservaEstrutura(esqueleto, inventado)).isFalse();
-  }
-
   private static PaginaTemplate template(String codigo, String nome) {
     return new PaginaTemplate(codigo, nome, "desc", "<p/>", 0, true);
   }

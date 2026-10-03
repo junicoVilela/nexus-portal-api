@@ -3,12 +3,10 @@ package com.nexus.portal.ai.integration.docflow;
 import com.nexus.portal.docflow.dto.request.ClienteRequest;
 import com.nexus.portal.docflow.dto.request.ModuloRequest;
 import com.nexus.portal.docflow.dto.request.PaginaRequest;
-import com.nexus.portal.docflow.dto.request.PaginaTemplateAplicacaoRequest;
 import com.nexus.portal.docflow.dto.request.ProjetoRequest;
 import com.nexus.portal.docflow.dto.response.PaginaResponse;
 import com.nexus.portal.docflow.dto.response.PaginaBlocoResponse;
 import com.nexus.portal.docflow.dto.response.PaginaBlueprintResponse;
-import com.nexus.portal.docflow.dto.response.PaginaTemplateAplicacaoResponse;
 import com.nexus.portal.docflow.entity.Modulo;
 import com.nexus.portal.docflow.entity.Pagina;
 import com.nexus.portal.docflow.entity.PaginaTemplate;
@@ -123,24 +121,6 @@ public class DocFlowAiBridge {
 
   public String renderizarBloco(String blocoId, Map<String, String> textos) {
     return paginaBlocoCatalogoService.renderizar(blocoId, textos);
-  }
-
-  /** @deprecated use {@link #buscarTemplate(UUID, UUID, UUID, String)} */
-  @Deprecated
-  public Optional<PaginaTemplate> buscarTemplate(UUID templateId, UUID projetoId, UUID clienteId) {
-    return buscarTemplate(templateId, projetoId, clienteId, null);
-  }
-
-  public PaginaTemplateAplicacaoResponse aplicarTemplate(
-      UUID templateId,
-      UUID projetoId,
-      UUID moduloId,
-      UUID clienteId,
-      String titulo,
-      String codigoTela) {
-    return paginaTemplateService.aplicar(
-        templateId,
-        new PaginaTemplateAplicacaoRequest(projetoId, moduloId, clienteId, titulo, codigoTela));
   }
 
   public ResultadoQualidade avaliarQualidade(

@@ -6,6 +6,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.portal.ai.entity.AiDocumentoAnaliseOrigem;
 import com.nexus.portal.ai.entity.AiDocumentoSugestaoStatus;
 import com.nexus.portal.ai.entity.AiDocumentoSugestaoTipo;
+import com.nexus.portal.ai.prompt.AiPromptBuilder;
+import com.nexus.portal.ai.prompt.AiPromptBuilder.PromptMontado;
 import com.nexus.portal.ai.provider.LlmCompletion;
 import com.nexus.portal.ai.provider.LlmProvider;
 import java.util.ArrayList;
@@ -17,9 +19,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Matcher;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 /** Reorganiza semanticamente o plano sem pedir à LLM que reproduza o conteúdo do documento. */
+@Slf4j
 @Service
 public class AiDocumentoAnaliseSemanticaService {
 
@@ -58,34 +62,10 @@ public class AiDocumentoAnaliseSemanticaService {
       }
     }
 
-    String userPrompt = """
-        Arquivo: %s
-        Nome estrutural atual: %s
-
-        Organize o manifesto abaixo como um manual de usuário profissional.
-        Cada paginaId deve aparecer exatamente uma vez. Não crie, remova, una ou divida páginas.
-        Sugira até 3 nomes curtos para o projeto, uma descrição objetiva e módulos em ordem de uso.
-        Renomeie páginas somente quando isso melhorar clareza e consistência.
-
-        Depois analise a completude do manual e devolva no máximo 12 sugestões ainda não
-        aplicadas na estrutura proposta. Use:
-        - ADICIONAR_PAGINA apenas para uma lacuna funcional fortemente indicada pelo texto;
-        - MESCLAR_PAGINAS apenas para páginas realmente duplicadas;
-        - MOVER_PAGINA quando a jornada ficar materialmente mais clara;
-        - RENOMEAR_PAGINA ou RENOMEAR_MODULO somente quando a estrutura proposta ainda precisar.
-        O conteudoSugerido deve listar o que precisa ser documentado usando somente fatos
-        sustentados pelo manifesto. Não invente campos, telas, permissões ou regras.
-
-        MANIFESTO_JSON:
-        %s
-        """.formatted(nomeArquivo, base.projetoNome(), escrever(manifesto));
-    String systemPrompt = """
-        Você é arquiteto de informação especializado em manuais de software.
-        Classifique páginas por jornada do usuário, pré-requisitos e dependências funcionais.
-        Responda somente o JSON solicitado. Preserve todos os paginaId exatamente uma vez.
-        """;
-
-    LlmCompletion completion = llmProvider.completarEstruturado(systemPrompt, userPrompt, schema());
+    PromptMontado prompt = AiPromptBuilder.analiseDocumento(
+        nomeArquivo, base.projetoNome(), escrever(manifesto));
+    log.info("ai.documento.analise prompt={}", prompt.versao());
+    LlmCompletion completion = llmProvider.completarEstruturado(prompt.system(), prompt.user(), schema());
     JsonNode resposta = lerJson(completion.content());
     List<String> nomesSugeridos = lerNomes(resposta.path("projetoNomes"), base.projetoNome());
     String descricao = textoLimitado(
@@ -207,25 +187,11 @@ public class AiDocumentoAnaliseSemanticaService {
           "nomeAtual", modulo.nome(),
           "paginas", modulo.paginas().stream().map(AiDocumentoPlano.Pagina::titulo).toList()));
     }
-    String userPrompt = """
-        Arquivo: %s
-        Nome estrutural atual: %s
-
-        Este é um manual amplo. Sugira até 3 nomes curtos para o projeto, uma descrição objetiva
-        e nomes profissionais para os módulos. Cada moduloId deve aparecer exatamente uma vez.
-        Não crie, remova, una ou divida módulos. Não devolva as páginas: o backend preservará
-        integralmente a ordem e o conteúdo de todas elas.
-
-        MANIFESTO_MODULOS_JSON:
-        %s
-        """.formatted(nomeArquivo, base.projetoNome(), escrever(manifesto));
-    String systemPrompt = """
-        Você é arquiteto de informação especializado em manuais de software extensos.
-        Responda somente o JSON solicitado e preserve todos os moduloId exatamente uma vez.
-        """;
-
+    PromptMontado prompt = AiPromptBuilder.analiseDocumentoAmplo(
+        nomeArquivo, base.projetoNome(), escrever(manifesto));
+    log.info("ai.documento.analise prompt={}", prompt.versao());
     LlmCompletion completion = llmProvider.completarEstruturado(
-        systemPrompt, userPrompt, schemaDocumentoAmplo());
+        prompt.system(), prompt.user(), schemaDocumentoAmplo());
     JsonNode resposta = lerJson(completion.content());
     List<String> nomesSugeridos = lerNomes(resposta.path("projetoNomes"), base.projetoNome());
     String projetoNome = nomesSugeridos.getFirst();

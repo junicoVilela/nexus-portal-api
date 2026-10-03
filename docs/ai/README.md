@@ -125,6 +125,25 @@ Ao adicionar um bloco, atualize esse arquivo e seus testes — não crie uma có
 As composições ficam em `docflow/src/main/resources/docflow/pagina-blueprints.json` e sempre
 referenciam componentes existentes, sem duplicar HTML.
 
+## Onde mexer (guia rápido)
+
+| Quero… | Onde |
+|---|---|
+| Mudar tom, regras ou formato do texto gerado | `ai/src/main/resources/prompts/gerar-page-spec.*.md` (suba `versao`) |
+| Mudar como documentos importados são organizados | `prompts/analise-documento*.md` |
+| Entender as variáveis e o formato dos prompts | [`prompts/README.md`](../../ai/src/main/resources/prompts/README.md) |
+| Adicionar ou alterar um componente de página | `docflow/src/main/resources/docflow/pagina-blocos.json` |
+| Mudar a composição por tipo de página | `docflow/src/main/resources/docflow/pagina-blueprints.json` |
+| Mudar as perguntas da triagem | `AiTriagemService` |
+| Mudar o que a sessão aceita em cada status | `AiSessaoStatus` (`permiteGerar`, `aceitaMensagem`, `terminal`) |
+| Mudar uma etapa da geração | `AiJobWorkerService` (uma etapa por método, listadas no javadoc) |
+| Mudar operações sobre o plano importado (mover, mesclar…) | `AiDocumentoPlanoOperacoes` (funções puras, testadas isoladamente) |
+| Mudar o limite de gerações | `NEXUS_AI_MAX_GERACOES_POR_HORA` (contado em `tb_ai_job`, vale entre instâncias) |
+
+Cada proposta grava o prompt que a gerou (`tb_ai_proposta.prompt_versao`, ex.:
+`gerar-page-spec@2.2`). Para avaliar uma mudança de prompt, compare aceite e rejeição
+(`status`, `motivo_rejeicao`) e `avisos_geracao` entre versões.
+
 ### Quando adicionar RAG vetorial
 
 A recuperação atual é híbrida determinística (template + metadados), adequada para dezenas de

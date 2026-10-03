@@ -252,12 +252,12 @@ public class AiSessaoService {
   }
 
   private void garantirEditavel(AiSessao sessao) {
-    if (sessao.terminal()) {
-      throw new BusinessException("Sessão encerrada (" + sessao.getStatus() + ").");
+    if (sessao.getStatus().aceitaMensagem()) {
+      return;
     }
-    if (sessao.getStatus() == AiSessaoStatus.GERANDO) {
-      throw new BusinessException("Sessão em geração; aguarde o término do job.");
-    }
+    throw new BusinessException(sessao.terminal()
+        ? "Sessão encerrada (" + sessao.getStatus() + ")."
+        : "Sessão em geração; aguarde o término do job.");
   }
 
   private void validarObjetivo(CriarAiSessaoRequest request) {

@@ -3,6 +3,7 @@ package com.nexus.portal.ai.repository;
 import com.nexus.portal.ai.entity.AiJob;
 import com.nexus.portal.ai.entity.AiJobStatus;
 import jakarta.persistence.LockModeType;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -21,6 +22,9 @@ public interface AiJobRepository extends JpaRepository<AiJob, UUID> {
   Optional<AiJob> findFirstBySessaoIdOrderByCreatedAtDesc(UUID sessaoId);
 
   long countBySessaoId(UUID sessaoId);
+
+  /** Gerações disparadas pelo usuário (dono da sessão) desde {@code desde} — base do rate limit. */
+  long countBySessaoCreatedByAndCreatedAtAfter(String usuario, OffsetDateTime desde);
 
   List<AiJob> findAllByStatus(AiJobStatus status);
 

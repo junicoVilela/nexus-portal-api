@@ -19,7 +19,6 @@ import com.nexus.portal.ai.entity.AiPapelMensagem;
 import com.nexus.portal.ai.entity.AiProposta;
 import com.nexus.portal.ai.entity.AiPropostaStatus;
 import com.nexus.portal.ai.entity.AiSessao;
-import com.nexus.portal.ai.entity.AiSessaoStatus;
 import com.nexus.portal.ai.integration.docflow.DocFlowAiBridge;
 import com.nexus.portal.ai.repository.AiJobRepository;
 import com.nexus.portal.ai.repository.AiMensagemRepository;
@@ -85,10 +84,7 @@ public class AiPropostaService {
           atual,
           "Heartbeat ausente por mais de " + limiteSegundos + " segundos.");
     }
-    if (sessao.getStatus() != AiSessaoStatus.PRONTA_PARA_GERAR
-        && sessao.getStatus() != AiSessaoStatus.PRONTA
-        && sessao.getStatus() != AiSessaoStatus.ERRO
-        && sessao.getStatus() != AiSessaoStatus.GERANDO) {
+    if (!sessao.getStatus().permiteGerar()) {
       throw new BusinessException(
           "Sessão precisa estar pronta ou disponível para uma nova tentativa. Status atual: "
               + sessao.getStatus());
