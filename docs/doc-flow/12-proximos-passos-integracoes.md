@@ -62,15 +62,35 @@ O gerador de pacote (`GeradorPacoteService`) já grava:
 
 ### Checklist fino
 
-- [ ] INT-101 `llms.txt`
-- [ ] INT-102 `llms-full.txt`
-- [ ] INT-103 validação do ZIP
-- [ ] INT-104 deep link PWA
-- [ ] INT-105 preview
-- [ ] INT-106 copiar link no detalhe
-- [ ] INT-107 testes
+- [x] INT-101 `llms.txt` — `ManualRagService` (agrupado por projeto / módulo)
+- [x] INT-102 `llms-full.txt` — Markdown (não texto plano: títulos, listas e tabelas ajudam o modelo)
+- [x] INT-103 validação do ZIP — `llms*.txt`, `rag/index.json`, `assets/routes.js` e um `.md` por tela são obrigatórios
+- [x] INT-104 deep link — `?tela=` / `#tela=`; funciona aberto do disco (`assets/routes.js`); código inexistente mostra aviso
+- [x] INT-105 preview — prévia por token honra `?tela=`
+- [x] INT-106 copiar link no detalhe — aba Páginas da publicação (prévia do cliente + `?tela=`)
+- [x] INT-107 testes — `PaginaMarkdownConverterTest`, `GeradorPacoteServiceTest`, `ProjetoRagServiceTest`, `PublicacaoDownloadIntegrationTest`
 
 **Não fazer nesta onda:** MCP, hospedagem CDN, chat no PWA.
+
+### Base para RAG (um Markdown por tela)
+
+Junto da Onda A, cada tela publicada vira um `.md` com frontmatter, para indexar num RAG:
+
+| Onde | Para quê |
+|---|---|
+| `rag/` no ZIP da publicação | Snapshot por cliente e versão (o mesmo conteúdo que o cliente recebe) |
+| `GET /api/v1/docflow/projetos/{id}/rag.zip` (`PAGINA:LER`) | Base do **projeto**, sem depender de cliente: o RAG de cada produto baixa isto (ex.: job de CI). Botão "Base RAG" na lista de projetos |
+
+Formato (`ManualRagService`, conversão em `PaginaMarkdownConverter`):
+
+- `rag/<projeto>/<CODIGO_TELA>.md`: o nome é estável entre versões, então o RAG atualiza em vez de
+  duplicar. O frontmatter traz `codigoTela`, `titulo`, `resumo`, `projeto`, `modulo`, `caminho`,
+  `pai`, `url`, `versao`, `cliente` e `publicadoEm`.
+- Títulos do conteúdo começam em `##`: cortar os chunks por `##` mantém as seções inteiras.
+- Avisos viram citação (`> **Atenção:**`), tabelas viram GFM e links entre telas apontam para o
+  `.md` da outra tela. Placeholders de captura são descartados.
+- `rag/index.json` traz o `sha256` de cada arquivo, para reindexar só o que mudou. Não há data de
+  geração dentro dos `.md`, então o hash só muda quando a tela muda.
 
 ---
 

@@ -1,5 +1,6 @@
 package com.nexus.portal.docflow.controller;
 
+import com.nexus.portal.docflow.service.ProjetoRagService;
 import com.nexus.portal.docflow.service.ProjetoService;
 import com.nexus.portal.shared.api.PageResponse;
 import com.nexus.portal.shared.api.SortDirection;
@@ -11,6 +12,10 @@ import java.util.UUID;
 import java.util.List;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.MediaType;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ContentDisposition;
 import org.springframework.security.access.prepost.PreAuthorize;
 import com.nexus.portal.shared.security.Permissoes;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -32,6 +37,7 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/api/v1/docflow/projetos")
 public class ProjetoController {
   private final ProjetoService projetoService;
+  private final ProjetoRagService projetoRagService;
 
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
@@ -66,6 +72,21 @@ public class ProjetoController {
   @GetMapping("/{id}")
   public ProjetoResponse buscar(@PathVariable UUID id) {
     return ProjetoResponse.from(projetoService.buscar(id));
+  }
+
+  /**
+   * Base de RAG do projeto: um Markdown por tela publicada + {@code index.json} (sha256 por
+   * arquivo), {@code llms.txt} e {@code llms-full.txt}. Formato em {@code ManualRagService}.
+   */
+  @PreAuthorize(Permissoes.PAGINA_LER)
+  @GetMapping(value = "/{id}/rag.zip", produces = "application/zip")
+  public ResponseEntity<byte[]> exportarRag(@PathVariable UUID id) {
+    ProjetoRagService.Exportacao exportacao = projetoRagService.exportar(id);
+    return ResponseEntity.ok()
+        .header(HttpHeaders.CONTENT_DISPOSITION,
+            ContentDisposition.attachment().filename(exportacao.nomeArquivo()).build().toString())
+        .contentType(MediaType.parseMediaType("application/zip"))
+        .body(exportacao.zip());
   }
 
   @DeleteMapping("/{id}")

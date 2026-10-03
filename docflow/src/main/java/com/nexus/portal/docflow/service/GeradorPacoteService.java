@@ -55,6 +55,7 @@ public class GeradorPacoteService {
   private final StorageProperties storageProperties;
   private final EmpresaLogoService empresaLogoService;
   private final PaginaSnippetService paginaSnippetService;
+  private final ManualRagService manualRagService;
   private final ObjectMapper objectMapper;
 
   public GeradorPacoteService(ClienteModuloRepository clienteModuloRepository,
@@ -64,6 +65,7 @@ public class GeradorPacoteService {
       StorageProperties storageProperties,
       EmpresaLogoService empresaLogoService,
       PaginaSnippetService paginaSnippetService,
+      ManualRagService manualRagService,
       ObjectMapper objectMapper) {
     this.clienteModuloRepository = clienteModuloRepository;
     this.clientePaginaRepository = clientePaginaRepository;
@@ -73,6 +75,7 @@ public class GeradorPacoteService {
     this.storageProperties = storageProperties;
     this.empresaLogoService = empresaLogoService;
     this.paginaSnippetService = paginaSnippetService;
+    this.manualRagService = manualRagService;
     this.objectMapper = objectMapper.copy().enable(SerializationFeature.INDENT_OUTPUT);
   }
 
@@ -98,8 +101,14 @@ public class GeradorPacoteService {
 
     escreverAssets(workDir.resolve("assets"));
     escreverLogos(cliente, workDir.resolve("assets"));
-    escreverPaginas(cliente, versao, paginas, workDir);
+    Map<UUID, String> conteudos = escreverPaginas(cliente, versao, paginas, workDir);
     escreverJson(cliente, versao, paginas, workDir);
+    // Agentes e RAG: llms.txt, llms-full.txt e um Markdown por tela em rag/ (mesmo snapshot do HTML).
+    manualRagService.escrever(workDir, paginas, new ManualRagService.Escopo(
+        "Manual " + cliente.getNome(), versao, cliente.getSlug(),
+        pagina -> "paginas/" + pagina.getSlug() + ".html",
+        pagina -> conteudos.get(pagina.getId()),
+        true));
     escreverIndex(cliente, versao, paginas, workDir);
     escreverSobreVersao(cliente, versao, paginas, workDir);
     escreverPwa(cliente, versao, paginas, workDir);
@@ -166,7 +175,11 @@ public class GeradorPacoteService {
         "manifest.webmanifest",
         "sw.js",
         "assets/app.css",
-        "assets/app.js"));
+        "assets/app.js",
+        "assets/routes.js",
+        "llms.txt",
+        "llms-full.txt",
+        ManualRagService.PASTA + "/index.json"));
     for (String req : obrigatorios) {
       if (!present.contains(req)) {
         faltantes.add(req);
@@ -177,6 +190,10 @@ public class GeradorPacoteService {
       String pathHtml = "paginas/" + p.getSlug() + ".html";
       if (!present.contains(pathHtml)) {
         faltantes.add(pathHtml);
+      }
+      String pathMd = ManualRagService.PASTA + "/" + ManualRagService.arquivo(p);
+      if (!present.contains(pathMd)) {
+        faltantes.add(pathMd);
       }
     }
 
@@ -268,7 +285,7 @@ public class GeradorPacoteService {
     for (int index = 0; index < paginas.size(); index++) {
       Pagina pagina = paginas.get(index);
       content.append("""
-          <section id="pagina-%d" class="page %s">
+          <section id="pagina-%d" class="page %s" data-codigo-tela="%s">
             <div class="page-client">%s</div>
             <header>
               <span>%s</span>
@@ -277,7 +294,8 @@ public class GeradorPacoteService {
             </header>
             <div class="article-content">%s</div>
           </section>
-          """.formatted(index + 1, index == 0 ? "active" : "", clientePreviewLogo,
+          """.formatted(index + 1, index == 0 ? "active" : "", HtmlUtils.htmlEscape(pagina.getCodigoTela()),
+          clientePreviewLogo,
           HtmlUtils.htmlEscape(breadcrumb(pagina)),
           HtmlUtils.htmlEscape(pagina.getTitulo()),
           pagina.getResumo() == null || pagina.getResumo().isBlank()
@@ -344,14 +362,19 @@ public class GeradorPacoteService {
         HtmlUtils.htmlEscape(pagina.getTitulo()), resumo, conteudo);
   }
 
-  private void escreverPaginas(Cliente cliente, String versao, List<Pagina> paginas, Path workDir) throws IOException {
+  /** Devolve o conteúdo final de cada página (trechos resolvidos, anexos copiados) para reuso. */
+  private Map<UUID, String> escreverPaginas(Cliente cliente, String versao, List<Pagina> paginas, Path workDir)
+      throws IOException {
+    Map<UUID, String> conteudos = new LinkedHashMap<>();
     for (Pagina pagina : paginas) {
       String menu = menuHtml(paginas, "", pagina.getSlug());
       String conteudo = prepararConteudoComAnexos(pagina, workDir.resolve("assets"), "../assets");
       String html = template(cliente, versao, pagina.getTitulo(), breadcrumb(pagina), menu,
           conteudo, "../assets");
       Files.writeString(workDir.resolve("paginas").resolve(pagina.getSlug() + ".html"), html);
+      conteudos.put(pagina.getId(), conteudo);
     }
+    return conteudos;
   }
 
   private String prepararConteudoComAnexos(Pagina pagina, Path assetsDir, String assetBase) throws IOException {
@@ -417,6 +440,10 @@ public class GeradorPacoteService {
     manifest.put("temaCorFundo", cliente.getTemaCorFundoOuPadrao());
 
     objectMapper.writeValue(workDir.resolve("routes.json").toFile(), routes);
+    // Aberto do disco (file://) o navegador bloqueia fetch: o deep link lê as rotas deste script.
+    Files.writeString(workDir.resolve("assets").resolve("routes.js"),
+        "window.MANUAL_ROUTES = "
+            + objectMapper.writer().without(SerializationFeature.INDENT_OUTPUT).writeValueAsString(routes) + ";\n");
     objectMapper.writeValue(workDir.resolve("search-index.json").toFile(), searchIndex);
     objectMapper.writeValue(workDir.resolve("manifest.json").toFile(), manifest);
   }
@@ -607,8 +634,11 @@ public class GeradorPacoteService {
             }
             window.addEventListener('hashchange',()=>{const id=location.hash.slice(1);if(id)openPage(id,false);});
             links.forEach(link=>link.addEventListener('click',event=>{event.preventDefault();openPage(link.dataset.page);}));
-            const initial=location.hash?location.hash.slice(1):links[0]?.dataset.page;
-            if(initial)openPage(initial,!location.hash);
+            // Deep link por código de tela: ?tela=PED-001 ou #tela=PED-001 (INT-105).
+            const telaPedida=new URLSearchParams(location.search).get('tela')||(location.hash.startsWith('#tela=')?decodeURIComponent(location.hash.slice(6)):null);
+            const paginaDaTela=telaPedida?pages.find(page=>page.dataset.codigoTela===telaPedida):null;
+            const initial=paginaDaTela?paginaDaTela.id:(location.hash&&!telaPedida?location.hash.slice(1):links[0]?.dataset.page);
+            if(initial)openPage(initial,!location.hash||!!paginaDaTela);
           </script>
         </body>
         </html>
@@ -665,6 +695,7 @@ public class GeradorPacoteService {
           <link rel="manifest" href="%s/../manifest.webmanifest">
           <link rel="stylesheet" href="%s/app.css?%s">
           %s
+          <script defer src="%s/routes.js?%s"></script>
           <script defer src="%s/app.js?%s"></script>
         </head>
         <body>
@@ -685,7 +716,7 @@ public class GeradorPacoteService {
         </body>
         </html>
         """.formatted(HtmlUtils.htmlEscape(MANUAL_ASSETS_REVISION), temaMetaCor, HtmlUtils.htmlEscape(title),
-        assetBase, assetBase, assetQuery, temaTag, assetBase, assetQuery, brandHtml, menu,
+        assetBase, assetBase, assetQuery, temaTag, assetBase, assetQuery, assetBase, assetQuery, brandHtml, menu,
         HtmlUtils.htmlEscape(breadcrumb), articleClass, clienteLogoHtml, content);
   }
 
@@ -978,13 +1009,18 @@ public class GeradorPacoteService {
         nav a{display:block;color:#3c4043;text-decoration:none;padding:10px 16px;border-radius:999px;font-size:14px;font-weight:400;line-height:20px;transition:background .12s ease,color .12s ease}
         nav a:hover{background:var(--nav-hover);color:var(--text)}
         nav a.active{background:var(--accent-soft);color:var(--accent-hover);font-weight:500}
+        .manual-tela-ausente{margin:0 0 16px;padding:12px 16px;border:1px solid #fcd34d;border-radius:12px;background:#fffbeb;color:#92400e;font-size:14px}
         @media(max-width:820px){body{display:block;grid-template-columns:1fr}.sidebar{height:auto;position:relative;max-height:none;box-shadow:none}.content{padding:18px}.article-body{padding:22px}.welcome-hero{margin:-22px -22px 22px;padding:36px 24px}.welcome-overview,.welcome-paths{grid-template-columns:1fr}.welcome-overview>div,.welcome-overview>a{min-height:68px;border-right:0;border-bottom:1px solid var(--border)}.welcome-overview>a{border-bottom:0}.welcome-section-heading{align-items:flex-start;flex-direction:column;gap:5px}.article-body .content-grid--2,.article-body .content-grid--3,.article-body .annotation-grid,.article-body .screen-grid,.article-body .flow-strip,.article-body .journey-grid,.article-body .annotation-grid--2,.article-body .annotation-grid--3,.article-body .annotation-grid--half{grid-template-columns:1fr}.article-body .flow-strip li:not(:last-child):after,.article-body .journey-card:not(:last-child):after{top:auto;right:50%;bottom:-25px;transform:translateX(50%) rotate(90deg)}.article-body .resource-item{align-items:flex-start;flex-wrap:wrap}.article-body .resource-item__meta{flex-basis:100%!important;text-align:left}}
         """.replace("%%", "%"));
     Files.writeString(assetsDir.resolve("app.js"), """
         const manualRootBase = window.location.pathname.includes('/paginas/') ? '..' : '.';
-        async function manualOpenByCodigoTela(codigoTela, basePath = manualRootBase) {
+        async function manualRoutes(basePath = manualRootBase) {
+          if (window.MANUAL_ROUTES) return window.MANUAL_ROUTES;
           const response = await fetch(`${basePath}/routes.json`);
-          const routes = await response.json();
+          return response.json();
+        }
+        async function manualOpenByCodigoTela(codigoTela, basePath = manualRootBase) {
+          const routes = await manualRoutes(basePath);
           const url = routes[codigoTela];
           if (url) window.open(`${basePath}/${url}`, '_blank');
           return url;
@@ -1043,6 +1079,26 @@ public class GeradorPacoteService {
             }
           });
         }
+        /** Deep link por código de tela (INT-104): index.html?tela=PED-001 ou #tela=PED-001. */
+        function manualDeepLink() {
+          const hash = location.hash.startsWith('#tela=') ? decodeURIComponent(location.hash.slice(6)) : null;
+          const codigo = (new URLSearchParams(location.search).get('tela') || hash || '').trim();
+          if (!codigo) return;
+          const routes = window.MANUAL_ROUTES || {};
+          const url = routes[codigo] || routes[codigo.toUpperCase()];
+          if (url) {
+            if (!location.pathname.endsWith(url)) location.replace(`${manualRootBase}/${url}`);
+            return;
+          }
+          const artigo = document.querySelector('main.content > article');
+          if (!artigo) return;
+          const aviso = document.createElement('div');
+          aviso.className = 'manual-tela-ausente';
+          aviso.setAttribute('role', 'status');
+          aviso.textContent = `A tela ${codigo} não está nesta versão do manual. Use a busca ao lado para encontrar o assunto.`;
+          artigo.before(aviso);
+        }
+        document.addEventListener('DOMContentLoaded', manualDeepLink);
         document.addEventListener('DOMContentLoaded', () => {
           const file = decodeURIComponent((location.pathname.split('/').pop() || ''));
           document.querySelectorAll('nav a[href]').forEach(a => {
@@ -1176,6 +1232,7 @@ public class GeradorPacoteService {
     urls.add("./versao.html");
     String assetQ = "rev=" + MANUAL_ASSETS_REVISION + "&ver=" + URLEncoder.encode(versao, StandardCharsets.UTF_8);
     urls.add("./assets/app.css?" + assetQ);
+    urls.add("./assets/routes.js?" + assetQ);
     urls.add("./assets/app.js?" + assetQ);
     paginas.forEach(pagina -> urls.add("./paginas/" + pagina.getSlug() + ".html"));
     String cacheName = ("manual-" + cliente.getSlug() + "-" + versao).replaceAll("[^a-zA-Z0-9._-]", "-");

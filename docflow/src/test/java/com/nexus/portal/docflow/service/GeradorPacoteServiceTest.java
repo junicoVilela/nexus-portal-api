@@ -17,6 +17,7 @@ import com.nexus.portal.docflow.repository.PaginaRepository;
 import com.nexus.portal.docflow.service.GeradorPacoteService.ResultadoGeracao;
 import com.nexus.portal.shared.config.StorageProperties;
 import com.nexus.portal.shared.exception.BusinessException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -66,7 +67,7 @@ class GeradorPacoteServiceTest {
         .thenAnswer(inv -> inv.getArgument(0));
     service = new GeradorPacoteService(clienteModuloRepository, clientePaginaRepository,
         paginaRepository, clienteProjetoRepository, paginaAnexoRepository, props,
-        empresaLogoService, paginaSnippetService, new ObjectMapper());
+        empresaLogoService, paginaSnippetService, new ManualRagService(new ObjectMapper()), new ObjectMapper());
 
     clienteId = UUID.randomUUID();
     cliente = new Cliente("ACME", "acme", true);
@@ -187,6 +188,7 @@ class GeradorPacoteServiceTest {
     assertThat(html).contains("2.5.0");
     assertThat(html).contains("Login");
     assertThat(html).contains("ACME");
+    assertThat(html).contains("data-codigo-tela=\"LOGIN\"", "new URLSearchParams(location.search).get('tela')");
   }
 
   @Test
@@ -249,11 +251,51 @@ class GeradorPacoteServiceTest {
       String appJs = new String(zf.getInputStream(zf.getEntry("assets/app.js")).readAllBytes(),
           java.nio.charset.StandardCharsets.UTF_8);
       assertThat(appJs).contains("manualFilterNav", "nav-toggle", "data-codigo-tela", "manualOpenByCodigoTela");
+      assertThat(appJs).contains("function manualDeepLink", "window.MANUAL_ROUTES", "manual-tela-ausente");
+      assertThat(new String(zf.getInputStream(zf.getEntry("assets/routes.js")).readAllBytes(),
+          java.nio.charset.StandardCharsets.UTF_8)).isEqualTo("window.MANUAL_ROUTES = {\"LOGIN\":\"paginas/login.html\"};\n");
+      assertThat(new String(zf.getInputStream(zf.getEntry("paginas/login.html")).readAllBytes(),
+          java.nio.charset.StandardCharsets.UTF_8)).contains("../assets/routes.js?");
       String index = new String(zf.getInputStream(zf.getEntry("index.html")).readAllBytes(),
           java.nio.charset.StandardCharsets.UTF_8);
       assertThat(index).contains("CENTRAL DE AJUDA", "Olá! Como podemos ajudar?", "id=\"welcome-search\"")
           .contains("data-welcome-page", "Encontre a resposta certa");
     }
+  }
+
+  @Test
+  void gerar_incluiLlmsTxtEUmMarkdownPorTelaParaRag() throws Exception {
+    Pagina pai = paginaPublicada("Operações", "operacoes", 0);
+    Pagina filho = paginaPublicadaComPai("Lista", "lista", 0, pai);
+    setField(filho, "conteudoHtml",
+        "<h2>Filtros</h2><p>Volte para <span data-codigo-tela=\"OPERACOES\">Operações</span>.</p>");
+    when(clienteModuloRepository.findModuloIdsByClienteId(clienteId)).thenReturn(List.of(modulo.getId()));
+    when(paginaRepository.findAtivasByStatusWithModulo(StatusPagina.PUBLICADO)).thenReturn(List.of(pai, filho));
+
+    ResultadoGeracao resultado = service.gerar(cliente, "2.1.0");
+
+    try (ZipFile zf = new ZipFile(Path.of(resultado.arquivoZipCaminho()).toFile())) {
+      String llms = ler(zf, "llms.txt");
+      assertThat(llms).startsWith("# Manual ACME (v2.1.0)")
+          .contains("## Suite / Portal", "- [Lista](paginas/lista.html): LISTA — resumo");
+      assertThat(ler(zf, "llms-full.txt")).contains("# Lista", "Código da tela: LISTA", "## Filtros");
+
+      String md = ler(zf, "rag/suite/LISTA.md");
+      assertThat(md).startsWith("---\ncodigoTela: \"LISTA\"\n")
+          .contains("caminho: \"Suite › Portal › Operações › Lista\"", "pai: \"OPERACOES\"", "versao: \"2.1.0\"")
+          .contains("# Lista\n\n> resumo\n\n## Filtros", "[Operações](OPERACOES.md)")
+          .doesNotContain("geradoEm");
+
+      JsonNode index = new ObjectMapper().readTree(ler(zf, "rag/index.json"));
+      assertThat(index.path("documentos")).hasSize(2);
+      assertThat(index.path("documentos").get(1).path("arquivo").asText()).isEqualTo("rag/suite/LISTA.md");
+      assertThat(index.path("documentos").get(1).path("sha256").asText()).matches("^[0-9a-f]{64}$");
+    }
+  }
+
+  private static String ler(ZipFile zf, String nome) throws Exception {
+    assertThat(zf.getEntry(nome)).as(nome).isNotNull();
+    return new String(zf.getInputStream(zf.getEntry(nome)).readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
   }
 
   @Test

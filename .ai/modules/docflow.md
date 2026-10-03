@@ -238,6 +238,16 @@ GET    /api/v1/auditoria
 - O PDF normaliza HTML5 para XHTML com Jsoup antes do OpenHTMLtoPDF. O teste integrado
   `PublicacaoDownloadIntegrationTest` sobe PostgreSQL real, gera a publicação e valida ZIP e PDF.
 
+## Pacote AI-ready e base RAG
+
+- O ZIP da publicação inclui `llms.txt`, `llms-full.txt`, `rag/<projeto>/<CODIGO>.md` (frontmatter
+  YAML) e `rag/index.json` (sha256 por arquivo). Implementação em `ManualRagService` e
+  `PaginaMarkdownConverter`.
+- Base RAG por projeto: `GET /api/v1/docflow/projetos/{id}/rag.zip` (`ProjetoRagService`).
+- Deep link `?tela=CODIGO` no pacote (via `assets/routes.js`, funciona em `file://`) e na prévia
+  por token.
+- Detalhes em `docs/doc-flow/12-proximos-passos-integracoes.md` (Onda A).
+
 ## Contrato OpenAPI
 
 - Documento JSON: `GET /v3/api-docs`.

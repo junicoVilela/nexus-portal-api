@@ -233,5 +233,6 @@ Runbook local: [`RUNBOOK-LOCAL.md`](RUNBOOK-LOCAL.md).
 - [x] Seleção automática com confiança e confirmação humana
 - [x] Wizard UI + aplicar no editor (S3)
 - [x] Hardening: auditoria, métricas, rate limit, prompts, e2e (S4)
-- [ ] Atualizar página (S5)
-- [ ] Webhook PR (S6)
+- [x] Ajustar página existente com IA (S5, Fase B) — `docs/doc-flow/13-assistente-ia-fase-b.md`
+- [x] PR mergeado → fila de propostas (S6, Fase C) — [`GITHUB-WEBHOOK.md`](GITHUB-WEBHOOK.md)
+- [x] Permissões, feedback de rejeição e prompt ops (S7) — [`PROMPT-OPS.md`](PROMPT-OPS.md)

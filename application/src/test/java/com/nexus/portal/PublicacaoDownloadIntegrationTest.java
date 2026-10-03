@@ -80,6 +80,22 @@ class PublicacaoDownloadIntegrationTest {
     assertThat(zip.statusCode()).isEqualTo(200);
     assertThat(zip.headers().firstValue("content-disposition").orElse("")).contains(".zip");
     assertThat(zip.body()).startsWith((byte) 0x50, (byte) 0x4b);
+    // Onda A: material para agentes e RAG viaja no mesmo pacote (INT-101/102/103).
+    java.util.Map<String, String> entradas = new java.util.HashMap<>();
+    try (var in = new java.util.zip.ZipInputStream(new java.io.ByteArrayInputStream(zip.body()))) {
+      for (java.util.zip.ZipEntry e; (e = in.getNextEntry()) != null; ) {
+        entradas.put(e.getName(), new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8));
+      }
+    }
+    assertThat(entradas).containsKeys("llms.txt", "llms-full.txt", "rag/index.json", "assets/routes.js",
+        "rag/" + projeto.getSlug() + "/E2E_" + sufixo + ".md");
+    assertThat(entradas.get("rag/" + projeto.getSlug() + "/E2E_" + sufixo + ".md"))
+        .contains("codigoTela: \"E2E_" + sufixo + "\"", "# Cadastrar fornecedor", "## Objetivo");
+
+    HttpResponse<byte[]> rag = baixar("/api/v1/docflow/projetos/" + projeto.getId() + "/rag.zip", token);
+    assertThat(rag.statusCode()).isEqualTo(200);
+    assertThat(rag.headers().firstValue("content-disposition").orElse(""))
+        .contains("rag-" + projeto.getSlug() + ".zip");
 
     HttpResponse<byte[]> pdf = baixar("/api/v1/docflow/publicacoes/" + publicacaoId + "/download-pdf", token);
     assertThat(pdf.statusCode()).isEqualTo(200);
