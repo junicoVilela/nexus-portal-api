@@ -29,6 +29,7 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -82,11 +83,13 @@ public class PaginaService {
     Pagina pagina = buscar(id);
     validarVersao(pagina, request.version());
     String slug = slugFrom(request.slug(), request.titulo());
+    String conteudoHtml = sanitizar(request.conteudoHtml());
+    exigirConteudoEditavel(pagina, request, slug, conteudoHtml);
     validarUnicos(id, slug, request.codigoTela());
     Modulo modulo = modulo(request.moduloId());
     Pagina parent = parent(request.parentId(), id, modulo);
     pagina.atualizar(request.titulo().trim(), slug, request.codigoTela().trim(), request.resumo(),
-        sanitizar(request.conteudoHtml()), request.ordem() == null ? 0 : request.ordem(),
+        conteudoHtml, request.ordem() == null ? 0 : request.ordem(),
         request.ativo() == null || request.ativo(), modulo, parent);
     pagina.definirOrigemTemplate(request.templateOrigemId(), request.templateOrigemVersao());
     paginaRepository.flush();
@@ -620,6 +623,44 @@ public class PaginaService {
       String descricao) {
     int numero = paginaRevisaoRepository.countByPagina_Id(pagina.getId()) + 1;
     return paginaRevisaoRepository.save(new PaginaRevisao(pagina, numero, username, tipo, descricao));
+  }
+
+  /**
+   * Conteúdo aprovado ou publicado só muda depois de voltar para rascunho. O pacote publica o
+   * conteúdo atual das páginas {@code PUBLICADO}; sem esta trava, uma edição entraria na próxima
+   * publicação sem passar por revisão. Metadados (ordem, módulo, pai, ativo) seguem livres.
+   */
+  private void exigirConteudoEditavel(
+      Pagina pagina, PaginaRequest request, String slug, String conteudoHtml) {
+    if (pagina.getStatus() != StatusPagina.APROVADO && pagina.getStatus() != StatusPagina.PUBLICADO) {
+      return;
+    }
+    boolean conteudoAlterado = !Objects.equals(pagina.getTitulo(), request.titulo().trim())
+        || !Objects.equals(pagina.getSlug(), slug)
+        || !Objects.equals(pagina.getCodigoTela(), request.codigoTela().trim())
+        || !Objects.equals(textoOuNulo(pagina.getResumo()), textoOuNulo(request.resumo()))
+        || !Objects.equals(htmlNormalizado(pagina.getConteudoHtml()), htmlNormalizado(conteudoHtml));
+    if (conteudoAlterado) {
+      throw new BusinessException(
+          "Página " + (pagina.getStatus() == StatusPagina.PUBLICADO ? "publicada" : "aprovada")
+              + ": volte para rascunho antes de alterar o conteúdo. Ela sai das próximas "
+              + "publicações até ser aprovada e publicada de novo.");
+    }
+  }
+
+  private static String textoOuNulo(String valor) {
+    return valor == null || valor.isBlank() ? null : valor;
+  }
+
+  /** O editor reformata o HTML ao carregar (espaços, ordem de atributos); isso não é edição. */
+  private String htmlNormalizado(String html) {
+    String sanitizado = sanitizar(html);
+    if (sanitizado == null || sanitizado.isBlank()) {
+      return null;
+    }
+    Document documento = Jsoup.parseBodyFragment(sanitizado);
+    documento.outputSettings().prettyPrint(false);
+    return documento.body().html().replaceAll("\\s+", " ").replaceAll("> <", "><").trim();
   }
 
   private void validarVersao(Pagina pagina, Long versaoEsperada) {

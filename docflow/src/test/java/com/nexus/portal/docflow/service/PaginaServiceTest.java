@@ -325,6 +325,69 @@ class PaginaServiceTest {
   }
 
   @Test
+  void atualizar_conteudoDePaginaPublicada_exigeVoltarParaRascunho() {
+    UUID paginaId = UUID.randomUUID();
+    Pagina pagina = pagina(paginaId, StatusPagina.PUBLICADO);
+    when(paginaRepository.findById(paginaId)).thenReturn(Optional.of(pagina));
+
+    PaginaRequest request = new PaginaRequest("Título", "slug", "TELA", null,
+        "<p>conteúdo alterado</p>", 0, true, moduloPadrao.getId(), null, 0L);
+
+    assertThatThrownBy(() -> service.atualizar(paginaId, request, principal))
+        .isInstanceOf(BusinessException.class)
+        .hasMessageContaining("volte para rascunho")
+        .hasMessageContaining("próximas publicações");
+    assertThat(pagina.getConteudoHtml()).isEqualTo("<p>conteúdo</p>");
+  }
+
+  @Test
+  void atualizar_tituloDePaginaAprovada_exigeVoltarParaRascunho() {
+    UUID paginaId = UUID.randomUUID();
+    Pagina pagina = pagina(paginaId, StatusPagina.APROVADO);
+    when(paginaRepository.findById(paginaId)).thenReturn(Optional.of(pagina));
+
+    PaginaRequest request = new PaginaRequest("Outro título", "slug", "TELA", null,
+        "<p>conteúdo</p>", 0, true, moduloPadrao.getId(), null, 0L);
+
+    assertThatThrownBy(() -> service.atualizar(paginaId, request, principal))
+        .isInstanceOf(BusinessException.class)
+        .hasMessageContaining("aprovada");
+  }
+
+  @Test
+  void atualizar_somenteMetadadosDePaginaPublicada_continuaPermitido() {
+    UUID paginaId = UUID.randomUUID();
+    Pagina pagina = pagina(paginaId, StatusPagina.PUBLICADO);
+    when(paginaRepository.findById(paginaId)).thenReturn(Optional.of(pagina));
+    when(moduloService.buscar(moduloPadrao.getId())).thenReturn(moduloPadrao);
+    when(paginaRepository.existsBySlugAndIdNot(any(), any())).thenReturn(false);
+    when(paginaRepository.existsByCodigoTelaAndIdNot(any(), any())).thenReturn(false);
+
+    PaginaRequest request = new PaginaRequest("Título", "slug", "TELA", null,
+        "<p>conteúdo</p>", 5, true, moduloPadrao.getId(), null, 0L);
+
+    Pagina atualizada = service.atualizar(paginaId, request, principal);
+
+    assertThat(atualizada.getOrdem()).isEqualTo(5);
+    assertThat(atualizada.getStatus()).isEqualTo(StatusPagina.PUBLICADO);
+  }
+
+  @Test
+  void atualizar_paginaPublicadaComHtmlReformatadoPeloEditor_naoContaComoEdicao() {
+    UUID paginaId = UUID.randomUUID();
+    Pagina pagina = pagina(paginaId, StatusPagina.PUBLICADO);
+    when(paginaRepository.findById(paginaId)).thenReturn(Optional.of(pagina));
+    when(moduloService.buscar(moduloPadrao.getId())).thenReturn(moduloPadrao);
+    when(paginaRepository.existsBySlugAndIdNot(any(), any())).thenReturn(false);
+    when(paginaRepository.existsByCodigoTelaAndIdNot(any(), any())).thenReturn(false);
+
+    PaginaRequest request = new PaginaRequest("Título", "slug", "TELA", null,
+        "\n  <p>conteúdo</p>\n", 3, true, moduloPadrao.getId(), null, 0L);
+
+    assertThat(service.atualizar(paginaId, request, principal).getOrdem()).isEqualTo(3);
+  }
+
+  @Test
   void atualizar_comCicloNaHierarquia_deveLancarBusinessException() throws Exception {
     UUID paginaId = UUID.randomUUID();
     UUID parentId = UUID.randomUUID();
