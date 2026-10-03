@@ -2,6 +2,7 @@ package com.nexus.portal.ai.dto.response;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Painel de qualidade da IA. {@code taxaAceite} = aceitas / (aceitas + rejeitadas + regeneradas):
@@ -14,7 +15,9 @@ public record AiMetricasResponse(
     List<PorPrompt> porPrompt,
     Ajustes ajustes,
     List<AvisoFrequente> avisosFrequentes,
-    List<Rejeicao> rejeicoesRecentes) {
+    List<Rejeicao> rejeicoesRecentes,
+    List<RejeicaoPorCategoria> rejeicoesPorCategoria,
+    AlteracoesPosAceite alteracoesPosAceite) {
 
   public record Geracao(
       long jobs,
@@ -38,7 +41,9 @@ public record AiMetricasResponse(
       /** Média do texto da IA ainda presente nas páginas salvas (0–1); nulo sem amostra. */
       Double textoMantido,
       /** Quantas propostas aceitas com página entraram na média de texto mantido. */
-      long amostrasTextoMantido) {}
+      long amostrasTextoMantido,
+      /** Rejeições por {@code AiCategoriaRejeicao} (só as categorias que ocorreram). */
+      Map<String, Long> rejeicoesPorCategoria) {}
 
   /** Fase B: aceite parcial por operação nos ajustes aplicados. */
   public record Ajustes(
@@ -52,5 +57,20 @@ public record AiMetricasResponse(
 
   public record AvisoFrequente(String aviso, long ocorrencias) {}
 
-  public record Rejeicao(String motivo, String promptVersao, OffsetDateTime em) {}
+  /** {@code categoria} e {@code motivo} são opcionais; ao menos um vem preenchido. */
+  public record Rejeicao(String categoria, String motivo, String promptVersao, OffsetDateTime em) {}
+
+  public record RejeicaoPorCategoria(String categoria, String rotulo, long total) {}
+
+  /**
+   * O que o autor mudou depois de aceitar: compara a proposta com a página de hoje. Cada campo
+   * conta propostas em que ele mudou; {@code conteudoReescrito} = menos da metade do texto da IA
+   * continua na página.
+   */
+  public record AlteracoesPosAceite(
+      long amostras,
+      long tituloAlterado,
+      long resumoAlterado,
+      long codigoTelaAlterado,
+      long conteudoReescrito) {}
 }

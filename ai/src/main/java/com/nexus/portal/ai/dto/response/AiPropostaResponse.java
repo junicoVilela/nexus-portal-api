@@ -1,5 +1,6 @@
 package com.nexus.portal.ai.dto.response;
 
+import com.nexus.portal.ai.entity.AiCategoriaRejeicao;
 import com.nexus.portal.ai.entity.AiProposta;
 import com.nexus.portal.ai.entity.AiPropostaStatus;
 import com.nexus.portal.ai.entity.AiPropostaTipo;
@@ -29,6 +30,7 @@ public record AiPropostaResponse(
     /** Não vazio quando a geração caiu em fallback e o conteúdo exige atenção redobrada. */
     List<String> avisosGeracao,
     String motivoRejeicao,
+    AiCategoriaRejeicao categoriaRejeicao,
     /** Ajuste de página: o que a IA resumiu, as mudanças propostas e as que o autor aplicou. */
     String resumoDaMudanca,
     List<AiPatchOperacaoResponse> operacoes,
@@ -66,6 +68,7 @@ public record AiPropostaResponse(
         proposta.getCreatedAt(),
         proposta.getAvisosGeracao() == null ? List.of() : proposta.getAvisosGeracao(),
         proposta.getMotivoRejeicao(),
+        proposta.getCategoriaRejeicao(),
         patch == null ? null : patch.resumoDaMudanca(),
         patch == null ? List.of() : patch.operacoes().stream().map(AiPatchOperacaoResponse::from).toList(),
         proposta.getOperacoesAceitas() == null ? List.of() : proposta.getOperacoesAceitas());

@@ -101,6 +101,10 @@ public class AiProposta {
   @Column(name = "motivo_rejeicao", length = 500)
   private String motivoRejeicao;
 
+  @Enumerated(EnumType.STRING)
+  @Column(name = "categoria_rejeicao", length = 40)
+  private AiCategoriaRejeicao categoriaRejeicao;
+
   @Column(name = "created_at", nullable = false, updatable = false)
   private OffsetDateTime createdAt = OffsetDateTime.now();
 
@@ -153,7 +157,12 @@ public class AiProposta {
   }
 
   public void rejeitar(String motivo) {
+    rejeitar(null, motivo);
+  }
+
+  public void rejeitar(AiCategoriaRejeicao categoria, String motivo) {
     this.status = AiPropostaStatus.REJEITADA;
+    this.categoriaRejeicao = categoria;
     this.motivoRejeicao = motivo == null || motivo.isBlank() ? null : motivo.trim();
     this.updatedAt = OffsetDateTime.now();
   }

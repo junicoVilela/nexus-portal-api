@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.identityaccess.service.AuditoriaService;
 import com.nexus.portal.ai.config.AiProperties;
+import com.nexus.portal.ai.entity.AiCategoriaRejeicao;
 import com.nexus.portal.ai.entity.AiJob;
 import com.nexus.portal.ai.entity.AiJobTipo;
 import com.nexus.portal.ai.entity.AiMensagem;
@@ -139,10 +140,12 @@ class AiPropostaServiceTest {
     when(propostaRepository.findFirstBySessaoIdAndStatusOrderByCreatedAtDesc(
         sessaoId, AiPropostaStatus.PENDENTE)).thenReturn(Optional.of(proposta));
 
-    var response = service.rejeitar(sessaoId, " Texto genérico demais ", null);
+    var response = service.rejeitar(
+        sessaoId, AiCategoriaRejeicao.FALTOU_INFORMACAO, " Texto genérico demais ", null);
 
     assertThat(response.status()).isEqualTo(AiPropostaStatus.REJEITADA);
     assertThat(response.motivoRejeicao()).isEqualTo("Texto genérico demais");
+    assertThat(response.categoriaRejeicao()).isEqualTo(AiCategoriaRejeicao.FALTOU_INFORMACAO);
   }
 
   @Test
@@ -150,7 +153,7 @@ class AiPropostaServiceTest {
     AiSessao sessao = sessaoDoUsuario();
     when(sessaoRepository.findById(sessao.getId())).thenReturn(Optional.of(sessao));
 
-    assertThatThrownBy(() -> service.rejeitar(sessao.getId(), null, null))
+    assertThatThrownBy(() -> service.rejeitar(sessao.getId(), null, null, null))
         .isInstanceOf(NotFoundException.class);
   }
 

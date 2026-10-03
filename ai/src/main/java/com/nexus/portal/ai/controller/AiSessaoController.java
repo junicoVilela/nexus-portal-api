@@ -88,7 +88,11 @@ public class AiSessaoController {
       @PathVariable UUID id,
       @Valid @RequestBody(required = false) RejeitarAiPropostaRequest request,
       Principal principal) {
-    return aiPropostaService.rejeitar(id, request == null ? null : request.motivo(), principal);
+    return aiPropostaService.rejeitar(
+        id,
+        request == null ? null : request.categoria(),
+        request == null ? null : request.motivo(),
+        principal);
   }
 
   /** O editor salvou a página criada a partir da proposta (modo FORM). */

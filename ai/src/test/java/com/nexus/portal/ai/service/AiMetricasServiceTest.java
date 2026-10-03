@@ -7,6 +7,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nexus.portal.ai.entity.AiCategoriaRejeicao;
 import com.nexus.portal.ai.entity.AiJob;
 import com.nexus.portal.ai.entity.AiJobTipo;
 import com.nexus.portal.ai.entity.AiObjetivo;
@@ -71,6 +72,55 @@ class AiMetricasServiceTest {
     assertThat(metricas.porPrompt()).anyMatch(p -> p.promptVersao().equals(AiMetricasService.SEM_VERSAO));
     assertThat(metricas.avisosFrequentes().getFirst().ocorrencias()).isEqualTo(2);
     assertThat(metricas.rejeicoesRecentes()).extracting(r -> r.motivo()).containsExactly("Texto genérico");
+  }
+
+  @Test
+  void rejeicoesSomamPorCategoriaNoTotalENaVersaoDoPrompt() {
+    AiProposta semInformacao = proposta("gerar-page-spec@2.2", List.of(), null);
+    semInformacao.rejeitar(AiCategoriaRejeicao.FALTOU_INFORMACAO, null);
+    AiProposta outra = proposta("gerar-page-spec@2.2", List.of(), null);
+    outra.rejeitar(AiCategoriaRejeicao.FALTOU_INFORMACAO, "Sem os filtros da tela");
+    AiProposta antiga = proposta("gerar-page-spec@2.1", List.of(), null);
+    antiga.rejeitar(AiCategoriaRejeicao.LINGUAGEM, null);
+    when(propostaRepository.findByCreatedAtAfter(any())).thenReturn(List.of(semInformacao, outra, antiga));
+    when(jobRepository.findByCreatedAtAfter(any())).thenReturn(List.of());
+
+    var metricas = service.calcular(30);
+
+    assertThat(metricas.rejeicoesPorCategoria())
+        .hasSize(AiCategoriaRejeicao.values().length)
+        .anySatisfy(c -> {
+          assertThat(c.categoria()).isEqualTo("FALTOU_INFORMACAO");
+          assertThat(c.rotulo()).isEqualTo("Faltou informação");
+          assertThat(c.total()).isEqualTo(2);
+        });
+    var atual = metricas.porPrompt().stream()
+        .filter(p -> p.promptVersao().equals("gerar-page-spec@2.2")).findFirst().orElseThrow();
+    assertThat(atual.rejeicoesPorCategoria()).containsExactlyEntriesOf(java.util.Map.of("FALTOU_INFORMACAO", 2L));
+    assertThat(metricas.rejeicoesRecentes()).extracting(r -> r.categoria())
+        .containsOnly("FALTOU_INFORMACAO", "LINGUAGEM");
+  }
+
+  @Test
+  void alteracoesPosAceiteComparamPropostaComAPaginaDeHoje() {
+    UUID paginaId = UUID.randomUUID();
+    AiProposta aceita = new AiProposta(sessao, job, AiPropostaTipo.NOVA, "Consulta de pedidos", "consulta",
+        "PED-001", "Resumo da IA", "<p>Filtre os pedidos por período e status.</p>",
+        null, null, null, null, List.of(), "gerar-page-spec@2.2", null);
+    aceita.aceitar(paginaId);
+    when(bridge.buscarPaginaParaAjuste(paginaId)).thenReturn(new DocFlowAiBridge.PaginaAjuste(
+        paginaId, UUID.randomUUID(), UUID.randomUUID(), "  Consulta de pedidos ", "consulta", "PED-002",
+        "Resumo reescrito pelo autor", "<p>Texto totalmente novo escrito à mão.</p>", 3, "RASCUNHO"));
+    when(propostaRepository.findByCreatedAtAfter(any())).thenReturn(List.of(aceita));
+    when(jobRepository.findByCreatedAtAfter(any())).thenReturn(List.of());
+
+    var alteracoes = service.calcular(30).alteracoesPosAceite();
+
+    assertThat(alteracoes.amostras()).isEqualTo(1);
+    assertThat(alteracoes.tituloAlterado()).isZero();
+    assertThat(alteracoes.codigoTelaAlterado()).isEqualTo(1);
+    assertThat(alteracoes.resumoAlterado()).isEqualTo(1);
+    assertThat(alteracoes.conteudoReescrito()).isEqualTo(1);
   }
 
   @Test

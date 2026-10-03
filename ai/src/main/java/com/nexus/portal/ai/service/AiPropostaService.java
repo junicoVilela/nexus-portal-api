@@ -12,6 +12,7 @@ import com.nexus.portal.ai.dto.response.AiAplicacaoResponse;
 import com.nexus.portal.ai.dto.response.AiJobResponse;
 import com.nexus.portal.ai.dto.response.AiPropostaResponse;
 import com.nexus.portal.ai.dto.response.AiQualidadeItemResponse;
+import com.nexus.portal.ai.entity.AiCategoriaRejeicao;
 import com.nexus.portal.ai.entity.AiJob;
 import com.nexus.portal.ai.entity.AiJobTipo;
 import com.nexus.portal.ai.entity.AiMensagem;
@@ -284,18 +285,21 @@ public class AiPropostaService {
 
   /** Autor descarta a proposta; a sessão continua disponível para regenerar com uma instrução. */
   @Transactional
-  public AiPropostaResponse rejeitar(UUID sessaoId, String motivo, Principal principal) {
+  public AiPropostaResponse rejeitar(
+      UUID sessaoId, AiCategoriaRejeicao categoria, String motivo, Principal principal) {
     exigirModuloHabilitado();
     carregarSessao(sessaoId, principal);
     AiProposta proposta = propostaRepository
         .findFirstBySessaoIdAndStatusOrderByCreatedAtDesc(sessaoId, AiPropostaStatus.PENDENTE)
         .orElseThrow(() -> new NotFoundException("Nenhuma proposta pendente para rejeitar."));
-    proposta.rejeitar(motivo);
+    proposta.rejeitar(categoria, motivo);
+    String detalhe = (categoria == null ? "" : categoria.name() + ": ")
+        + (proposta.getMotivoRejeicao() == null ? "sem motivo" : proposta.getMotivoRejeicao());
     auditoriaService.registrar(
         AiAuditoriaAcoes.ENTIDADE_PROPOSTA,
         proposta.getId(),
         AiAuditoriaAcoes.PROPOSTA_REJEITADA,
-        truncar(proposta.getMotivoRejeicao() == null ? "sem motivo" : proposta.getMotivoRejeicao(), 200),
+        truncar(detalhe, 200),
         principal);
     return toResponse(proposta);
   }

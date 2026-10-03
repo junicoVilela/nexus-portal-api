@@ -2,21 +2,26 @@ package com.nexus.portal.ai.service;
 
 import com.nexus.portal.ai.dto.response.AiMetricasResponse;
 import com.nexus.portal.ai.dto.response.AiMetricasResponse.Ajustes;
+import com.nexus.portal.ai.dto.response.AiMetricasResponse.AlteracoesPosAceite;
 import com.nexus.portal.ai.dto.response.AiMetricasResponse.AvisoFrequente;
 import com.nexus.portal.ai.dto.response.AiMetricasResponse.Geracao;
 import com.nexus.portal.ai.dto.response.AiMetricasResponse.PorPrompt;
 import com.nexus.portal.ai.dto.response.AiMetricasResponse.PorTipoOperacao;
 import com.nexus.portal.ai.dto.response.AiMetricasResponse.Rejeicao;
+import com.nexus.portal.ai.dto.response.AiMetricasResponse.RejeicaoPorCategoria;
+import com.nexus.portal.ai.entity.AiCategoriaRejeicao;
 import com.nexus.portal.ai.entity.AiJob;
 import com.nexus.portal.ai.entity.AiJobStatus;
 import com.nexus.portal.ai.entity.AiProposta;
 import com.nexus.portal.ai.entity.AiPropostaStatus;
 import com.nexus.portal.ai.entity.AiPropostaTipo;
 import com.nexus.portal.ai.integration.docflow.DocFlowAiBridge;
+import com.nexus.portal.ai.integration.docflow.DocFlowAiBridge.PaginaAjuste;
 import com.nexus.portal.ai.repository.AiJobRepository;
 import com.nexus.portal.ai.repository.AiPropostaRepository;
 import com.nexus.portal.shared.exception.BusinessException;
 import java.time.OffsetDateTime;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
@@ -25,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -46,6 +52,8 @@ public class AiMetricasService {
   private static final int TOP_REJEICOES = 10;
   /** Teto de páginas lidas por cálculo de "texto mantido" (as mais recentes). */
   static final int MAX_AMOSTRAS_TEXTO = 200;
+  /** Abaixo disso o autor reescreveu a maior parte do texto da IA. */
+  static final double LIMIAR_REESCRITA = 0.5;
 
   private final AiJobRepository jobRepository;
   private final AiPropostaRepository propostaRepository;
@@ -71,14 +79,18 @@ public class AiMetricasService {
     OffsetDateTime desde = OffsetDateTime.now().minusDays(dias);
     List<AiJob> jobs = jobRepository.findByCreatedAtAfter(desde);
     List<AiProposta> propostas = propostaRepository.findByCreatedAtAfter(desde);
+    Map<AiProposta, PaginaAjuste> paginas = paginasAceitas(propostas);
+    Map<AiProposta, Double> mantido = textoMantido(paginas);
     return new AiMetricasResponse(
         dias,
         desde,
         geracao(jobs),
-        porPrompt(propostas, textoMantido(propostas)),
+        porPrompt(propostas, mantido),
         ajustes(propostas),
         avisosFrequentes(propostas),
-        rejeicoesRecentes(propostas));
+        rejeicoesRecentes(propostas),
+        rejeicoesPorCategoria(propostas),
+        alteracoesPosAceite(paginas, mantido));
   }
 
   private static Geracao geracao(List<AiJob> jobs) {
@@ -100,32 +112,69 @@ public class AiMetricasService {
   }
 
   /**
-   * Fração do texto de cada proposta aceita que continua na página hoje. Página removida ou
-   * inacessível fica fora da amostra.
+   * Página de hoje de cada proposta aceita (as {@link #MAX_AMOSTRAS_TEXTO} mais recentes). Página
+   * removida ou inacessível fica fora da amostra.
    */
-  private Map<AiProposta, Double> textoMantido(List<AiProposta> propostas) {
-    Map<UUID, String> paginas = new HashMap<>();
-    Map<AiProposta, Double> resultado = new IdentityHashMap<>();
+  private Map<AiProposta, PaginaAjuste> paginasAceitas(List<AiProposta> propostas) {
+    Map<UUID, PaginaAjuste> cache = new HashMap<>();
+    Map<AiProposta, PaginaAjuste> resultado = new IdentityHashMap<>();
     propostas.stream()
         .filter(p -> p.getStatus() == AiPropostaStatus.ACEITA && p.getPaginaId() != null)
         .sorted(Comparator.comparing(AiProposta::getUpdatedAt).reversed())
         .limit(MAX_AMOSTRAS_TEXTO)
         .forEach(proposta -> {
-          String html = paginas.computeIfAbsent(proposta.getPaginaId(), this::conteudoPagina);
-          Double fracao = html == null ? null : AiTextoMantido.fracao(proposta.getConteudoHtml(), html);
-          if (fracao != null) {
-            resultado.put(proposta, fracao);
+          PaginaAjuste pagina = cache.computeIfAbsent(proposta.getPaginaId(), this::buscarPagina);
+          if (pagina != null) {
+            resultado.put(proposta, pagina);
           }
         });
     return resultado;
   }
 
-  private String conteudoPagina(UUID paginaId) {
+  private PaginaAjuste buscarPagina(UUID paginaId) {
     try {
-      return docFlowAiBridge.buscarPaginaParaAjuste(paginaId).conteudoHtml();
+      return docFlowAiBridge.buscarPaginaParaAjuste(paginaId);
     } catch (RuntimeException ex) {
       return null;
     }
+  }
+
+  /** Fração do texto de cada proposta aceita que continua na página hoje. */
+  private static Map<AiProposta, Double> textoMantido(Map<AiProposta, PaginaAjuste> paginas) {
+    Map<AiProposta, Double> resultado = new IdentityHashMap<>();
+    paginas.forEach((proposta, pagina) -> {
+      Double fracao = AiTextoMantido.fracao(proposta.getConteudoHtml(), pagina.conteudoHtml());
+      if (fracao != null) {
+        resultado.put(proposta, fracao);
+      }
+    });
+    return resultado;
+  }
+
+  /** Para propostas de página nova; ajustes (Fase B) já medem o aceite por operação. */
+  private static AlteracoesPosAceite alteracoesPosAceite(
+      Map<AiProposta, PaginaAjuste> paginas, Map<AiProposta, Double> mantido) {
+    List<Map.Entry<AiProposta, PaginaAjuste>> novas = paginas.entrySet().stream()
+        .filter(e -> e.getKey().getTipo() == AiPropostaTipo.NOVA)
+        .toList();
+    return new AlteracoesPosAceite(
+        novas.size(),
+        contar(novas, e -> mudou(e.getKey().getTitulo(), e.getValue().titulo())),
+        contar(novas, e -> mudou(e.getKey().getResumo(), e.getValue().resumo())),
+        contar(novas, e -> mudou(e.getKey().getCodigoTela(), e.getValue().codigoTela())),
+        contar(novas, e -> {
+          Double fracao = mantido.get(e.getKey());
+          return fracao != null && fracao < LIMIAR_REESCRITA;
+        }));
+  }
+
+  /** Ignora espaços nas pontas e repetidos: só conta o que o autor de fato reescreveu. */
+  static boolean mudou(String proposto, String atual) {
+    return !normalizar(proposto).equals(normalizar(atual));
+  }
+
+  private static String normalizar(String texto) {
+    return texto == null ? "" : texto.strip().replaceAll("\\s+", " ");
   }
 
   private static List<PorPrompt> porPrompt(List<AiProposta> propostas, Map<AiProposta, Double> mantido) {
@@ -152,7 +201,11 @@ public class AiMetricasService {
               amostras.isEmpty()
                   ? null
                   : amostras.stream().mapToDouble(Double::doubleValue).average().orElseThrow(),
-              amostras.size());
+              amostras.size(),
+              lista.stream()
+                  .filter(p -> p.getStatus() == AiPropostaStatus.REJEITADA && p.getCategoriaRejeicao() != null)
+                  .collect(Collectors.groupingBy(
+                      p -> p.getCategoriaRejeicao().name(), TreeMap::new, Collectors.counting())));
         })
         .sorted(Comparator.comparing(PorPrompt::promptVersao).reversed())
         .toList();
@@ -208,13 +261,25 @@ public class AiMetricasService {
 
   private static List<Rejeicao> rejeicoesRecentes(List<AiProposta> propostas) {
     return propostas.stream()
-        .filter(p -> p.getStatus() == AiPropostaStatus.REJEITADA && p.getMotivoRejeicao() != null)
+        .filter(p -> p.getStatus() == AiPropostaStatus.REJEITADA)
+        .filter(p -> p.getMotivoRejeicao() != null || p.getCategoriaRejeicao() != null)
         .sorted(Comparator.comparing(AiProposta::getUpdatedAt).reversed())
         .limit(TOP_REJEICOES)
         .map(p -> new Rejeicao(
+            p.getCategoriaRejeicao() == null ? null : p.getCategoriaRejeicao().name(),
             p.getMotivoRejeicao(),
             p.getPromptVersao() == null ? SEM_VERSAO : p.getPromptVersao(),
             p.getUpdatedAt()))
+        .toList();
+  }
+
+  /** Todas as categorias, na ordem do enum, inclusive as zeradas (o painel mostra a escala). */
+  private static List<RejeicaoPorCategoria> rejeicoesPorCategoria(List<AiProposta> propostas) {
+    Map<AiCategoriaRejeicao, Long> contagem = propostas.stream()
+        .filter(p -> p.getStatus() == AiPropostaStatus.REJEITADA && p.getCategoriaRejeicao() != null)
+        .collect(Collectors.groupingBy(AiProposta::getCategoriaRejeicao, Collectors.counting()));
+    return Arrays.stream(AiCategoriaRejeicao.values())
+        .map(c -> new RejeicaoPorCategoria(c.name(), c.rotulo(), contagem.getOrDefault(c, 0L)))
         .toList();
   }
 
