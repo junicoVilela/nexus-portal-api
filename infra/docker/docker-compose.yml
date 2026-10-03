@@ -26,7 +26,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-nexus_platform}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-nexus!@#}
     ports:
-      - "${POSTGRES_PORT:-5433}:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       # PostgreSQL 18 usa PGDATA versionado; o volume é montado no
       # diretório-pai, em vez do caminho legado /var/lib/postgresql/data.

@@ -9,7 +9,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  *
  * <pre>
  * NEXUS_AI_ENABLED=true
- * NEXUS_AI_API_KEY=...                 # ou OPENROUTER_API_KEY
+ * NEXUS_AI_API_KEY=...
  * NEXUS_AI_BASE_URL=https://openrouter.ai/api/v1
  * NEXUS_AI_MODEL=openai/gpt-5.6-luna
  * NEXUS_AI_REASONING_EFFORT=low

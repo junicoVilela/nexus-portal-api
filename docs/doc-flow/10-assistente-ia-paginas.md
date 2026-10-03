@@ -275,7 +275,7 @@ Frontend: subscribe + fallback polling `GET /ai/sessoes/{id}` a cada 3–5s (com
 ```text
 nexus.ai.enabled=true
 nexus.ai.base-url=${NEXUS_AI_BASE_URL:https://openrouter.ai/api/v1}
-nexus.ai.api-key=${NEXUS_AI_API_KEY:${OPENROUTER_API_KEY:}}
+nexus.ai.api-key=${NEXUS_AI_API_KEY:}
 nexus.ai.model=${NEXUS_AI_MODEL:openai/gpt-5.6-luna}
 nexus.ai.reasoning-effort=${NEXUS_AI_REASONING_EFFORT:low}
 nexus.ai.http-referer=${NEXUS_AI_HTTP_REFERER:http://localhost:4200}
@@ -418,7 +418,7 @@ Credencial: token por produto/projeto DocFlow (espelhar ideia de `ProdutoRh.gith
 - [x] Teste de serviço: aplicar proposta → `Pagina` com `templateOrigem*` quando houver template.
 - [x] Sem chave configurada → provider fake + UI/status claros (sem stacktrace); `enabled=false` → 503.
 
-**Smoke local (2026-08-03):** `GET /status` (fake) → sessão `PRONTA_PARA_GERAR` → `POST /gerar` → proposta com `doc-intro`/`screen-placeholder` → `aplicar FORM` → auditoria `AI_SESSAO_CRIADA` + `AI_PROPOSTA_GERADA` + `AI_PROPOSTA_APLICADA_FORM`. OpenRouter real exige `OPENROUTER_API_KEY` no ambiente.
+**Smoke local (2026-08-03):** `GET /status` (fake) → sessão `PRONTA_PARA_GERAR` → `POST /gerar` → proposta com `doc-intro`/`screen-placeholder` → `aplicar FORM` → auditoria `AI_SESSAO_CRIADA` + `AI_PROPOSTA_GERADA` + `AI_PROPOSTA_APLICADA_FORM`. OpenRouter real exige `NEXUS_AI_API_KEY` no ambiente.
 
 ---
 

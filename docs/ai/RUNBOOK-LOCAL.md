@@ -12,7 +12,7 @@ Subir o assistente de páginas em localhost com Fake LLM (sem chave) ou OpenRout
 | Env | Default (dev) | Descrição |
 |---|---|---|
 | `NEXUS_AI_ENABLED` | `true` | Liga o módulo |
-| `NEXUS_AI_API_KEY` / `OPENROUTER_API_KEY` | vazio | Sem chave → `FakeLlmProvider` (em `prod` com AI ligada, o boot falha) |
+| `NEXUS_AI_API_KEY` | vazio | Sem chave → `FakeLlmProvider` (em `prod` com AI ligada, o boot falha) |
 | `NEXUS_AI_BASE_URL` | `https://openrouter.ai/api/v1` | OpenRouter |
 | `NEXUS_AI_MODEL` | `openai/gpt-5.6-luna` | Slug OpenRouter |
 | `NEXUS_AI_REASONING_EFFORT` | `low` | Esforço de raciocínio do GPT-5.6 |
@@ -23,7 +23,7 @@ Subir o assistente de páginas em localhost com Fake LLM (sem chave) ou OpenRout
 ```bash
 export NEXUS_AI_ENABLED=true
 # opcional (geração real):
-export OPENROUTER_API_KEY=sk-or-...
+export NEXUS_AI_API_KEY=sk-or-...
 ```
 
 ## 3. Verificar
@@ -71,7 +71,7 @@ NEXUS_AI_ENABLED=true ./mvnw -pl application spring-boot:run -Dspring-boot.run.p
 | O modelo sugerido aparece para confirmação | A confiança ficou abaixo de 70%; selecione uma sugestão ou force um modelo em **Avançado** |
 | 503 nas APIs AI | `NEXUS_AI_ENABLED=true` + restart |
 | 429 | Aumente `NEXUS_AI_MAX_GERACOES_POR_HORA` ou aguarde 1h |
-| HTML pobre | Configure `OPENROUTER_API_KEY` (sai do Fake) |
+| HTML pobre | Configure `NEXUS_AI_API_KEY` (sai do Fake) |
 
-Nunca coloque a chave no YAML ou no Git. Use `OPENROUTER_API_KEY`/`NEXUS_AI_API_KEY` no ambiente e
+Nunca coloque a chave no YAML ou no Git. Use `NEXUS_AI_API_KEY` no ambiente e
 revogue imediatamente qualquer chave que tenha aparecido em arquivo, log ou histórico.
