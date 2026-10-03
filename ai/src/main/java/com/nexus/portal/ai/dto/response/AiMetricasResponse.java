@@ -34,7 +34,11 @@ public record AiMetricasResponse(
       long regeneradas,
       long pendentes,
       long comAvisos,
-      Double taxaAceite) {}
+      Double taxaAceite,
+      /** Média do texto da IA ainda presente nas páginas salvas (0–1); nulo sem amostra. */
+      Double textoMantido,
+      /** Quantas propostas aceitas com página entraram na média de texto mantido. */
+      long amostrasTextoMantido) {}
 
   /** Fase B: aceite parcial por operação nos ajustes aplicados. */
   public record Ajustes(

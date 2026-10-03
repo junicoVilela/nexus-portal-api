@@ -27,15 +27,16 @@ class AiMetricasServiceTest {
   private final AiJobRepository jobRepository = mock(AiJobRepository.class);
   private final AiPropostaRepository propostaRepository = mock(AiPropostaRepository.class);
   private final ObjectMapper objectMapper = new ObjectMapper();
+  private final DocFlowAiBridge bridge = mock(DocFlowAiBridge.class);
   private final AiPagePatchService patchService =
-      new AiPagePatchService(objectMapper, mock(DocFlowAiBridge.class), new AiHtmlSanitizer());
+      new AiPagePatchService(objectMapper, bridge, new AiHtmlSanitizer());
   private AiMetricasService service;
   private AiSessao sessao;
   private AiJob job;
 
   @BeforeEach
   void setUp() {
-    service = new AiMetricasService(jobRepository, propostaRepository, patchService);
+    service = new AiMetricasService(jobRepository, propostaRepository, patchService, bridge);
     sessao = new AiSessao(AiObjetivo.CRIAR_PAGINA, "briefing", null, null, null, null, null);
     job = new AiJob(sessao, AiJobTipo.GERAR_RASCUNHO, 1);
   }
@@ -114,6 +115,40 @@ class AiMetricasServiceTest {
     assertThat(geracao.erro()).isEqualTo(1);
     assertThat(geracao.tokensEntrada()).isEqualTo(100);
     assertThat(geracao.tokensSaida()).isEqualTo(50);
+  }
+
+  @Test
+  void textoMantidoComparaPropostaComAPaginaAtual() {
+    UUID paginaId = UUID.randomUUID();
+    AiProposta aceita = new AiProposta(sessao, job, AiPropostaTipo.NOVA, "t", "t", "C", null,
+        "<p>Filtre os pedidos por período.</p>", null, null, null, null, List.of(), "gerar-page-spec@2.2", null);
+    aceita.aceitar(paginaId);
+    AiProposta semPagina = proposta("gerar-page-spec@2.2", List.of(), null);
+    semPagina.aceitar(null);
+    when(propostaRepository.findByCreatedAtAfter(any())).thenReturn(List.of(aceita, semPagina));
+    when(jobRepository.findByCreatedAtAfter(any())).thenReturn(List.of());
+    when(bridge.buscarPaginaParaAjuste(paginaId)).thenReturn(new DocFlowAiBridge.PaginaAjuste(
+        paginaId, null, null, "t", "t", "C", null, "<p>Filtre pedidos no período.</p>", 1, "RASCUNHO"));
+
+    var prompt = service.calcular(30).porPrompt().getFirst();
+
+    assertThat(prompt.amostrasTextoMantido()).isEqualTo(1);
+    assertThat(prompt.textoMantido()).isCloseTo(0.6, org.assertj.core.api.Assertions.within(0.001));
+  }
+
+  @Test
+  void paginaRemovidaFicaForaDaAmostra() {
+    UUID paginaId = UUID.randomUUID();
+    AiProposta aceita = proposta("gerar-page-spec@2.2", List.of(), null);
+    aceita.aceitar(paginaId);
+    when(propostaRepository.findByCreatedAtAfter(any())).thenReturn(List.of(aceita));
+    when(jobRepository.findByCreatedAtAfter(any())).thenReturn(List.of());
+    when(bridge.buscarPaginaParaAjuste(paginaId)).thenThrow(new RuntimeException("removida"));
+
+    var prompt = service.calcular(30).porPrompt().getFirst();
+
+    assertThat(prompt.textoMantido()).isNull();
+    assertThat(prompt.amostrasTextoMantido()).isZero();
   }
 
   @Test

@@ -254,6 +254,34 @@ public class AiPropostaService {
         pagina.moduloId());
   }
 
+  /**
+   * Proposta aplicada no editor (modo FORM) virou página salva: marca como aceita e guarda a
+   * página, para o painel medir aceite e quanto do texto da IA foi mantido. Idempotente.
+   */
+  @Transactional
+  public AiPropostaResponse vincularPagina(UUID sessaoId, UUID paginaId, Principal principal) {
+    AiSessao sessao = carregarSessao(sessaoId, principal);
+    docFlowAiBridge.buscarPaginaDocumento(paginaId);
+    var jaVinculada = propostaRepository.findFirstBySessaoIdOrderByCreatedAtDesc(sessaoId)
+        .filter(proposta -> proposta.getStatus() == AiPropostaStatus.ACEITA
+            && paginaId.equals(proposta.getPaginaId()));
+    if (jaVinculada.isPresent()) {
+      return toResponse(jaVinculada.get());
+    }
+    AiProposta proposta = propostaRepository
+        .findFirstBySessaoIdAndStatusOrderByCreatedAtDesc(sessaoId, AiPropostaStatus.PENDENTE)
+        .orElseThrow(() -> new NotFoundException("Nenhuma proposta pendente para vincular."));
+    proposta.aceitar(paginaId);
+    sessao.aplicada();
+    auditoriaService.registrar(
+        AiAuditoriaAcoes.ENTIDADE_PROPOSTA,
+        proposta.getId(),
+        AiAuditoriaAcoes.PROPOSTA_ACEITA,
+        truncar("página " + paginaId + " · " + proposta.getCodigoTela(), 200),
+        principal);
+    return toResponse(proposta);
+  }
+
   /** Autor descarta a proposta; a sessão continua disponível para regenerar com uma instrução. */
   @Transactional
   public AiPropostaResponse rejeitar(UUID sessaoId, String motivo, Principal principal) {

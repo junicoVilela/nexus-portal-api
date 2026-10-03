@@ -191,6 +191,29 @@ class AiPropostaServiceTest {
         .isInstanceOf(BusinessException.class);
   }
 
+  @Test
+  void vincularPaginaAceitaAPropostaAplicadaNoEditor() throws Exception {
+    AiSessao sessao = sessaoDoUsuario();
+    AiJob job = new AiJob(sessao, AiJobTipo.GERAR_RASCUNHO, 1);
+    AiProposta proposta = new AiProposta(sessao, job, AiPropostaTipo.NOVA, "Consulta", "consulta", "PED-001",
+        null, "<p>x</p>", null, null, null, null, List.of(), "gerar-page-spec@2.2", null);
+    setId(proposta, UUID.randomUUID());
+    UUID paginaId = UUID.randomUUID();
+    when(sessaoRepository.findById(sessao.getId())).thenReturn(Optional.of(sessao));
+    when(propostaRepository.findFirstBySessaoIdOrderByCreatedAtDesc(sessao.getId())).thenReturn(Optional.of(proposta));
+    when(propostaRepository.findFirstBySessaoIdAndStatusOrderByCreatedAtDesc(sessao.getId(), AiPropostaStatus.PENDENTE))
+        .thenReturn(Optional.of(proposta));
+
+    var resposta = service.vincularPagina(sessao.getId(), paginaId, null);
+
+    assertThat(resposta.status()).isEqualTo(AiPropostaStatus.ACEITA);
+    assertThat(proposta.getPaginaId()).isEqualTo(paginaId);
+    assertThat(sessao.getStatus()).isEqualTo(AiSessaoStatus.APLICADA);
+
+    // Segundo aviso do editor (ex.: retry) não falha nem duplica.
+    assertThat(service.vincularPagina(sessao.getId(), paginaId, null).status()).isEqualTo(AiPropostaStatus.ACEITA);
+  }
+
   private record CenarioAjuste(AiSessao sessao, AiProposta proposta) {}
 
   /** Página na versão {@code versaoAtual}; a sessão foi aberta na versão 7. */

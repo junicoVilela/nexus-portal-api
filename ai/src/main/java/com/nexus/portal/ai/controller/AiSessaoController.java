@@ -1,6 +1,7 @@
 package com.nexus.portal.ai.controller;
 
 import com.nexus.portal.ai.dto.request.AiMensagemRequest;
+import com.nexus.portal.ai.dto.request.AiVincularPaginaRequest;
 import com.nexus.portal.ai.dto.request.AplicarAiPropostaRequest;
 import com.nexus.portal.ai.dto.request.CriarAiSessaoRequest;
 import com.nexus.portal.ai.dto.request.GerarAiPropostaRequest;
@@ -88,6 +89,16 @@ public class AiSessaoController {
       @Valid @RequestBody(required = false) RejeitarAiPropostaRequest request,
       Principal principal) {
     return aiPropostaService.rejeitar(id, request == null ? null : request.motivo(), principal);
+  }
+
+  /** O editor salvou a página criada a partir da proposta (modo FORM). */
+  @PostMapping("/{id}/pagina")
+  @PreAuthorize("hasAuthority('PAGINA:CRIAR') or hasAuthority('PAGINA:EDITAR')")
+  public AiPropostaResponse vincularPagina(
+      @PathVariable UUID id,
+      @Valid @RequestBody AiVincularPaginaRequest request,
+      Principal principal) {
+    return aiPropostaService.vincularPagina(id, request.paginaId(), principal);
   }
 
   @PostMapping("/{id}/aplicar")
