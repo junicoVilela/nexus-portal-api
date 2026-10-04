@@ -250,6 +250,10 @@ GET    /api/v1/auditoria
   `ManualBusca` (código + BM25), `ManualMcpController` (`/api/v1/docflow/mcp`, token de prévia);
   a resposta com IA fica no módulo `ai` (`AiManualPerguntaService`). Guia em
   `docs/ai/PERGUNTAS-MANUAL.md`.
+- Manual nos sistemas do cliente (Onda D): chave `nxm_…` (`ManualAcessoService`, V46),
+  `ManualPublicoController` (`/api/v1/manual/{chave}/vigente|tela|site/**`, `help-bridge.js`),
+  `ManualLeitorService` (chave ou link de prévia) e CORS por origem das chaves
+  (`OrigensManualCors`).
 - Detalhes em `docs/doc-flow/12-proximos-passos-integracoes.md` (Onda A).
 
 ## Contrato OpenAPI

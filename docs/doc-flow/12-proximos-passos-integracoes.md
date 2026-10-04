@@ -152,6 +152,15 @@ Pré-requisito: Onda A. Hospedagem mínima pode ser o preview token já existent
 
 **Não fazer nesta onda:** chat RAG, MCP, multi-idioma.
 
+### Checklist fino
+
+- [x] INT-401 vigente — `GET /api/v1/manual/{chave}/vigente`: última publicação concluída do cliente
+- [x] INT-402 tela — `GET /api/v1/manual/{chave}/tela/{codigoTela}` (JSON com `url`). O manual é servido do próprio ZIP em `/api/v1/manual/{chave}/site/**`, e o `?tela=` funciona
+- [x] INT-403 chave de leitura — `tb_manual_acesso` (V46): `nxm_…`, só o sha256 no banco, origens, validade opcional, revogação, limite próprio (`docflow.manual.limite-por-minuto`, padrão 600/min). O link de prévia segue aceito
+- [x] INT-404 `help-bridge.js` — na API (`/api/v1/manual/help-bridge.js`) e no ZIP (`assets/help-bridge.js`): `NexusManual.open`, `tela`, `perguntar` e `configure({ localUrl })` para o ZIP local
+- [x] INT-405 Configurações → "Manual nos sistemas do cliente": chaves por cliente e snippet; o CORS das rotas do manual libera as origens das chaves ativas
+- [x] INT-406 tela inexistente → 404 de negócio com mensagem (`ManualIntegracaoIntegrationTest`)
+
 ---
 
 ## Onda E — Answer engine + MCP

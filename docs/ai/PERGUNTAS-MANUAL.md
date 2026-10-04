@@ -19,6 +19,7 @@ pergunta
 | Portal | Publicação → aba **Perguntar** (`POST /api/v1/ai/publicacoes/{id}/perguntar`, `PUBLICACAO:LER`) | Aquela publicação |
 | Leitor | Prévia online por token: caixa "Pergunte ao manual" (`POST /api/v1/ai/manual/{token}/perguntar`) | Manual vigente do cliente |
 | Agente | MCP (`/api/v1/docflow/mcp`) | Manual vigente do cliente |
+| Sistema do cliente | `help-bridge.js` → `NexusManual.perguntar(...)` | Manual vigente do cliente |
 
 O "manual vigente" é a última publicação concluída do cliente.
 
@@ -28,7 +29,7 @@ Na aba **Perguntar** da publicação, clique em **Gerar comando de conexão** e 
 
 ```bash
 claude mcp add --transport http manual-acme https://<portal>/api/doc-flow/mcp \
-  --header "Authorization: Bearer <token de prévia>"
+  --header "Authorization: Bearer <chave do manual nxm_… ou link de prévia>"
 ```
 
 Ferramentas expostas:
@@ -41,17 +42,39 @@ Ferramentas expostas:
 
 O transporte é Streamable HTTP sem streaming: cada POST é uma mensagem JSON-RPC.
 
-## Token de leitura
+## Credencial de leitura
 
-O token de prévia do cliente (Clientes → links de prévia) é a credencial de leitura do manual:
+Use uma **chave do manual** (`nxm_…`), criada em Configurações → "Manual nos sistemas do
+cliente":
 
-- vale 72 h por padrão;
-- pode ser revogado a qualquer momento;
-- é limitado por `docflow.preview.limite-por-minuto` (padrão: 30 acessos por minuto, somando
-  prévia, perguntas e MCP).
+- tem nome, origens permitidas (CORS) e validade opcional; pode ficar sem expiração e ser
+  revogada a qualquer momento;
+- só aparece na criação, e o banco guarda o hash;
+- tem limite próprio de acessos: `docflow.manual.limite-por-minuto`, padrão 600 por minuto.
 
-Para integrações longas, gere tokens com validade maior ou renove-os pelo endpoint de
-preview-tokens.
+O link de prévia do cliente também é aceito, mas vale 72 h e aceita 30 acessos por minuto. Serve
+para testes, não para integrações fixas.
+
+## Manual dentro do sistema do cliente (Onda D)
+
+```html
+<script src="https://<portal>/api/v1/manual/help-bridge.js" data-token="nxm_..."></script>
+<script>
+  // botão de ajuda da tela:
+  NexusManual.open({ codigoTela: 'PED-001' });
+  const r = await NexusManual.perguntar('como filtrar pedidos?');
+</script>
+```
+
+| Rota (`/api/v1/manual/{chave}/…`) | O que devolve |
+|---|---|
+| `vigente` | Cliente, versão e data do manual vigente |
+| `tela/{codigoTela}` | Título, caminho e `url` da tela; 404 com mensagem se a tela não estiver no manual |
+| `site/**` | O ZIP publicado servido arquivo a arquivo (`site/index.html?tela=PED-001`) |
+
+Com o ZIP descompactado ao lado do sistema, use
+`NexusManual.configure({ localUrl: 'file:///…/index.html' })`. O `help-bridge.js` também vai no
+pacote, em `assets/`.
 
 ## Métricas
 
