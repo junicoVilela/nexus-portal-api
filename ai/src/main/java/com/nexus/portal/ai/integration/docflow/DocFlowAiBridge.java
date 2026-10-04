@@ -15,6 +15,7 @@ import com.nexus.portal.docflow.repository.PaginaRepository;
 import com.nexus.portal.docflow.repository.PaginaTemplateRepository;
 import com.nexus.portal.docflow.service.ClienteService;
 import com.nexus.portal.docflow.service.ManualCorpusService;
+import com.nexus.portal.docflow.service.ManualLeitorService;
 import com.nexus.portal.docflow.service.ModuloService;
 import com.nexus.portal.docflow.service.PaginaBlocoCatalogoService;
 import com.nexus.portal.docflow.service.PaginaBlueprintCatalogoService;
@@ -22,7 +23,6 @@ import com.nexus.portal.docflow.service.PaginaQualidadeService;
 import com.nexus.portal.docflow.service.PaginaQualidadeService.ResultadoQualidade;
 import com.nexus.portal.docflow.service.PaginaService;
 import com.nexus.portal.docflow.service.PaginaTemplateService;
-import com.nexus.portal.docflow.service.PreviewTokenService;
 import com.nexus.portal.docflow.service.ProjetoService;
 import com.nexus.portal.shared.util.SlugUtils;
 import java.security.Principal;
@@ -53,7 +53,7 @@ public class DocFlowAiBridge {
   private final ClienteService clienteService;
   private final PaginaRepository paginaRepository;
   private final ManualCorpusService manualCorpusService;
-  private final PreviewTokenService previewTokenService;
+  private final ManualLeitorService manualLeitorService;
 
   public DocFlowAiBridge(
       PaginaTemplateService paginaTemplateService,
@@ -67,7 +67,7 @@ public class DocFlowAiBridge {
       ClienteService clienteService,
       PaginaRepository paginaRepository,
       ManualCorpusService manualCorpusService,
-      PreviewTokenService previewTokenService) {
+      ManualLeitorService manualLeitorService) {
     this.paginaTemplateService = paginaTemplateService;
     this.paginaTemplateRepository = paginaTemplateRepository;
     this.paginaQualidadeService = paginaQualidadeService;
@@ -79,7 +79,7 @@ public class DocFlowAiBridge {
     this.clienteService = clienteService;
     this.paginaRepository = paginaRepository;
     this.manualCorpusService = manualCorpusService;
-    this.previewTokenService = previewTokenService;
+    this.manualLeitorService = manualLeitorService;
   }
 
   /** Onda E: snapshot publicado de uma publicação (perguntas pelo portal). */
@@ -87,9 +87,9 @@ public class DocFlowAiBridge {
     return manualCorpusService.daPublicacao(publicacaoId);
   }
 
-  /** Onda E: manual vigente do cliente dono do token de prévia (perguntas do leitor). */
-  public ManualCorpusService.Corpus corpusDoToken(String token) {
-    return manualCorpusService.vigenteDoCliente(previewTokenService.clienteDoToken(token));
+  /** Manual vigente do cliente da chave do manual ou do link de prévia (perguntas do leitor). */
+  public ManualCorpusService.Corpus corpusDoToken(String token, String origem) {
+    return manualLeitorService.corpusVigente(token, origem);
   }
 
   /** {@code codigo_tela} é único entre páginas: a proposta com código repetido não salva. */

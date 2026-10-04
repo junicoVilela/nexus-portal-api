@@ -6,10 +6,12 @@ import com.nexus.portal.ai.service.AiManualPerguntaService;
 import com.nexus.portal.shared.security.Permissoes;
 import jakarta.validation.Valid;
 import java.util.UUID;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -39,7 +41,9 @@ public class AiManualController {
    */
   @PostMapping("/api/v1/ai/manual/{token}/perguntar")
   public AiManualRespostaResponse perguntarComToken(
-      @PathVariable String token, @Valid @RequestBody AiManualPerguntaRequest request) {
-    return service.perguntarComToken(token, request.pergunta());
+      @PathVariable String token,
+      @RequestHeader(value = HttpHeaders.ORIGIN, required = false) String origem,
+      @Valid @RequestBody AiManualPerguntaRequest request) {
+    return service.perguntarComToken(token, origem, request.pergunta());
   }
 }

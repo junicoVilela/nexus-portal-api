@@ -6,14 +6,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.nexus.portal.docflow.service.ManualBusca;
-import com.nexus.portal.docflow.service.ManualCorpusService;
 import com.nexus.portal.docflow.service.ManualCorpusService.Corpus;
 import com.nexus.portal.docflow.service.ManualCorpusService.Documento;
-import com.nexus.portal.docflow.service.PreviewTokenService;
+import com.nexus.portal.docflow.service.ManualLeitorService;
 import com.nexus.portal.shared.exception.BusinessException;
 import com.nexus.portal.shared.exception.NotFoundException;
 import java.util.Map;
-import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -28,7 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
  * Servidor MCP do manual (INT-504), transporte Streamable HTTP sem streaming: cada POST é uma
  * mensagem JSON-RPC e a resposta vem em JSON.
  *
- * <p>Autenticação: {@code Authorization: Bearer <token de prévia do cliente>} (INT-403). O corpus é
+ * <p>Autenticação: {@code Authorization: Bearer <chave do manual nxm_… ou link de prévia>}. O corpus é
  * o manual <b>vigente</b> do cliente — a última publicação concluída —, nunca rascunho.
  *
  * <pre>
@@ -44,14 +42,11 @@ public class ManualMcpController {
   private static final int LIMITE_PADRAO = 5;
   private static final int LIMITE_MAXIMO = 10;
 
-  private final PreviewTokenService previewTokenService;
-  private final ManualCorpusService corpusService;
+  private final ManualLeitorService leitorService;
   private final ObjectMapper json;
 
-  public ManualMcpController(
-      PreviewTokenService previewTokenService, ManualCorpusService corpusService, ObjectMapper json) {
-    this.previewTokenService = previewTokenService;
-    this.corpusService = corpusService;
+  public ManualMcpController(ManualLeitorService leitorService, ObjectMapper json) {
+    this.leitorService = leitorService;
     this.json = json;
   }
 
@@ -106,8 +101,8 @@ public class ManualMcpController {
     if (autorizacao == null || !autorizacao.startsWith("Bearer ") || autorizacao.length() <= 7) {
       throw new NotFoundException("Informe o token de leitura do manual em Authorization: Bearer <token>.");
     }
-    UUID clienteId = previewTokenService.clienteDoToken(autorizacao.substring(7).strip());
-    return corpusService.vigenteDoCliente(clienteId);
+    // Chave de integração (nxm_…) ou link de prévia; agentes não mandam Origin.
+    return leitorService.corpusVigente(autorizacao.substring(7).strip(), null);
   }
 
   private ObjectNode inicializar(Corpus corpus) {

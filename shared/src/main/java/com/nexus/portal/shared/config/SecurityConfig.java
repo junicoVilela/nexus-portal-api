@@ -20,6 +20,9 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.beans.factory.ObjectProvider;
+import com.nexus.portal.shared.security.OrigensManualCors;
+import java.util.ArrayList;
 
 @Configuration
 @EnableMethodSecurity
@@ -62,6 +65,8 @@ public class SecurityConfig {
             .requestMatchers(HttpMethod.POST, "/api/v1/ai/webhooks/github").permitAll()
             // Manual para agentes (MCP) e perguntas: autenticados pelo token de prévia do cliente.
             .requestMatchers("/api/v1/docflow/mcp").permitAll()
+            // Manual vigente para os sistemas do cliente (site, tela, help-bridge): chave no caminho.
+            .requestMatchers(HttpMethod.GET, "/api/v1/manual/**").permitAll()
             .requestMatchers(HttpMethod.POST, "/api/v1/ai/manual/*/perguntar").permitAll()
             .requestMatchers("/api/v1/preview/**").permitAll()
             .requestMatchers(HttpMethod.GET, "/api/v1/public/publicacoes/download").permitAll()
@@ -87,12 +92,14 @@ public class SecurityConfig {
 
   @Bean
   CorsConfigurationSource corsConfigurationSource(
-      @Value("${docflow.cors.allowed-origins}") String allowedOrigins) {
-    CorsConfiguration config = new CorsConfiguration();
-    config.setAllowedOrigins(Arrays.stream(allowedOrigins.split(","))
+      @Value("${docflow.cors.allowed-origins}") String allowedOrigins,
+      ObjectProvider<OrigensManualCors> origensManual) {
+    List<String> globais = Arrays.stream(allowedOrigins.split(","))
         .map(String::trim)
         .filter(origin -> !origin.isBlank())
-        .toList());
+        .toList();
+    CorsConfiguration config = new CorsConfiguration();
+    config.setAllowedOrigins(globais);
     config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
     config.setAllowedHeaders(List.of(
         "Authorization", "Content-Type", CorrelationIdFilter.HEADER_NAME,
@@ -102,6 +109,25 @@ public class SecurityConfig {
     config.setExposedHeaders(List.of("Content-Disposition", CorrelationIdFilter.HEADER_NAME));
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
     source.registerCorsConfiguration("/**", config);
-    return source;
+    return request -> {
+      String caminho = request.getRequestURI();
+      if (!ROTAS_MANUAL.stream().anyMatch(caminho::startsWith)) {
+        return source.getCorsConfiguration(request);
+      }
+      // Sistemas do cliente chamam o manual do navegador: origens das chaves de integração ativas.
+      CorsConfiguration manual = new CorsConfiguration();
+      List<String> origens = new ArrayList<>(globais);
+      OrigensManualCors provedor = origensManual.getIfAvailable();
+      if (provedor != null) {
+        origens.addAll(provedor.origens());
+      }
+      manual.setAllowedOrigins(origens);
+      manual.setAllowedMethods(List.of("GET", "POST", "OPTIONS"));
+      manual.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+      return manual;
+    };
   }
+
+  private static final List<String> ROTAS_MANUAL =
+      List.of("/api/v1/manual/", "/api/v1/ai/manual/", "/api/v1/docflow/mcp");
 }

@@ -73,9 +73,9 @@ public class AiManualPerguntaService {
     return responder(docFlowAiBridge.corpusDaPublicacao(publicacaoId), pergunta, Origem.PORTAL);
   }
 
-  /** Pelo leitor (prévia, app do cliente): manual vigente do cliente do token. */
-  public AiManualRespostaResponse perguntarComToken(String token, String pergunta) {
-    return responder(docFlowAiBridge.corpusDoToken(token), pergunta, Origem.LEITOR);
+  /** Pelo leitor (prévia, app do cliente): manual vigente do cliente da chave ou do link de prévia. */
+  public AiManualRespostaResponse perguntarComToken(String token, String origem, String pergunta) {
+    return responder(docFlowAiBridge.corpusDoToken(token, origem), pergunta, Origem.LEITOR);
   }
 
   AiManualRespostaResponse responder(Corpus corpus, String pergunta, Origem origem) {

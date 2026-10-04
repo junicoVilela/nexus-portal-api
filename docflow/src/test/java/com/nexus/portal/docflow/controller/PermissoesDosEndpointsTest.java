@@ -37,7 +37,9 @@ class PermissoesDosEndpointsTest {
       PreviewController.class,
       DocFlowDashboardController.class,
       PublicDownloadController.class,
-      ManualMcpController.class);
+      ManualMcpController.class,
+      ManualPublicoController.class,
+      ManualAcessoController.class);
 
   /**
    * Endpoints intencionalmente públicos — liberados no {@code SecurityConfig}
@@ -52,7 +54,13 @@ class PermissoesDosEndpointsTest {
       "EmpresaController#getLogo",
       // MCP do manual: autenticado pelo token de prévia do cliente dentro do controller.
       "ManualMcpController#semStream",
-      "ManualMcpController#mensagem");
+      "ManualMcpController#mensagem",
+      // Manual vigente para os sistemas do cliente: chave de integração no caminho.
+      "ManualPublicoController#helpBridge",
+      "ManualPublicoController#vigente",
+      "ManualPublicoController#tela",
+      "ManualPublicoController#raiz",
+      "ManualPublicoController#site");
 
   @Test
   void todoEndpointDeclaraPermissaoOuEstaNaListaDePublicos() {

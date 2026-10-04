@@ -440,6 +440,13 @@ public class GeradorPacoteService {
     manifest.put("temaCorFundo", cliente.getTemaCorFundoOuPadrao());
 
     objectMapper.writeValue(workDir.resolve("routes.json").toFile(), routes);
+    // Ponte para os sistemas do cliente abrirem a ajuda da tela (Onda D); com o ZIP local,
+    // NexusManual.configure({ localUrl }) resolve sem a API.
+    try (var helpBridge = GeradorPacoteService.class.getResourceAsStream("/docflow/help-bridge.js")) {
+      if (helpBridge != null) {
+        Files.write(workDir.resolve("assets").resolve("help-bridge.js"), helpBridge.readAllBytes());
+      }
+    }
     // Aberto do disco (file://) o navegador bloqueia fetch: o deep link lê as rotas deste script.
     Files.writeString(workDir.resolve("assets").resolve("routes.js"),
         "window.MANUAL_ROUTES = "

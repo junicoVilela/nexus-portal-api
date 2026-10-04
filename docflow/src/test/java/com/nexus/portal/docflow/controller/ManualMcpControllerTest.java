@@ -6,11 +6,10 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nexus.portal.docflow.service.ManualCorpusService;
 import com.nexus.portal.docflow.service.ManualCorpusService.Corpus;
 import com.nexus.portal.docflow.service.ManualCorpusService.Documento;
 import com.nexus.portal.docflow.service.ManualCorpusService.Secao;
-import com.nexus.portal.docflow.service.PreviewTokenService;
+import com.nexus.portal.docflow.service.ManualLeitorService;
 import com.nexus.portal.shared.exception.NotFoundException;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -22,20 +21,17 @@ import org.junit.jupiter.api.Test;
 class ManualMcpControllerTest {
 
   private final ObjectMapper json = new ObjectMapper();
-  private final PreviewTokenService tokens = mock(PreviewTokenService.class);
-  private final ManualCorpusService corpusService = mock(ManualCorpusService.class);
-  private final ManualMcpController controller = new ManualMcpController(tokens, corpusService, json);
-  private final UUID cliente = UUID.randomUUID();
+  private final ManualLeitorService leitor = mock(ManualLeitorService.class);
+  private final ManualMcpController controller = new ManualMcpController(leitor, json);
 
   @BeforeEach
   void setUp() {
     Documento doc = new Documento("PED-001", "Consulta de pedidos", "Vendas › Consulta de pedidos",
         "paginas/pedidos.html", "# Consulta de pedidos\n\n## Filtros\n\nFiltre por período e status.");
     Map<String, Documento> docs = new LinkedHashMap<>(Map.of("PED-001", doc));
-    when(tokens.clienteDoToken("tok")).thenReturn(cliente);
-    when(tokens.clienteDoToken("ruim")).thenThrow(new NotFoundException("Token inválido ou expirado."));
-    when(corpusService.vigenteDoCliente(cliente)).thenReturn(new Corpus(UUID.randomUUID(), "ACME", "1.5.0", docs,
+    when(leitor.corpusVigente("tok", null)).thenReturn(new Corpus(UUID.randomUUID(), "ACME", "1.5.0", docs,
         List.of(new Secao(doc, "Filtros", "Filtre por período e status."))));
+    when(leitor.corpusVigente("ruim", null)).thenThrow(new NotFoundException("Token inválido ou expirado."));
   }
 
   private JsonNode chamar(String token, String corpo) throws Exception {

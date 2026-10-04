@@ -12,6 +12,7 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -77,12 +78,29 @@ public class ManualCorpusService {
   /** Última publicação concluída do cliente (o manual "vigente"). */
   @Transactional(readOnly = true)
   public Corpus vigenteDoCliente(UUID clienteId) {
-    Publicacao publicacao = publicacaoRepository.findByCliente_IdOrderByCreatedAtDesc(clienteId).stream()
-        .filter(p -> p.getStatus() == StatusPublicacao.SUCESSO)
-        .findFirst()
-        .orElseThrow(() -> new NotFoundException("O cliente ainda não tem manual publicado."));
+    Publicacao publicacao = publicacaoVigente(clienteId);
     Corpus emCache = cache.get(publicacao.getId());
     return emCache != null ? emCache : carregar(publicacao);
+  }
+
+  /** Manual vigente já resolvido (sem associações lazy para fora da transação). */
+  public record Vigente(UUID publicacaoId, String cliente, String versao, OffsetDateTime publicadaEm,
+      int quantidadePaginas, Path zip) {}
+
+  @Transactional(readOnly = true)
+  public Vigente vigente(UUID clienteId) {
+    Publicacao p = publicacaoVigente(clienteId);
+    return new Vigente(p.getId(), p.getCliente().getNome(), p.getVersao(), p.getUpdatedAt(),
+        p.getQuantidadePaginas(), Path.of(p.getArquivoZipCaminho()));
+  }
+
+  /** Publicação vigente: a última concluída do cliente (INT-401). */
+  @Transactional(readOnly = true)
+  public Publicacao publicacaoVigente(UUID clienteId) {
+    return publicacaoRepository.findByCliente_IdOrderByCreatedAtDesc(clienteId).stream()
+        .filter(p -> p.getStatus() == StatusPublicacao.SUCESSO && p.getArquivoZipCaminho() != null)
+        .findFirst()
+        .orElseThrow(() -> new NotFoundException("O cliente ainda não tem manual publicado."));
   }
 
   private Corpus carregar(Publicacao publicacao) {
