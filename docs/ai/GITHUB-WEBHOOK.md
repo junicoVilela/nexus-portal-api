@@ -80,6 +80,14 @@ Ao agir num item, você o **assume**: a sessão da IA passa a ser sua, e regener
 funciona como no assistente. O item registra o responsável. A auditoria grava `AI_PR_RECEBIDO` e
 `AI_PR_ASSUMIDO`.
 
+### Itens de release
+
+Quando uma release vai para **PUBLICADA** no Release Orchestrator, cada tela citada na release
+vira um item com origem **Release** e situação **Para revisar**. A IA não é chamada sozinha: o
+item mostra o texto da release, quantas capturas da tela existem e dois botões, **Gerar ajuste
+com IA** (como um PR) e **Dispensar: já está certa**. A página fica marcada como "alterada pela
+release" até ser publicada de novo. O filtro *Origem* separa PRs e releases.
+
 ## 5. Testar sem o GitHub
 
 ```bash
@@ -103,3 +111,4 @@ mensagem do GitHub (404), o que já valida assinatura, registro e fila. O teste
 | Processamento | `AiPrIngestaoService` |
 | Fila (assumir, aceitar, rejeitar, reprocessar) | `AiFilaPrService`, `GET/POST /api/v1/ai/fila-pr` |
 | Configuração | `AiGithubProperties` (`nexus.ai.github.*`) |
+| Release publicada → fila | `ReleasePublicadaEvento`, `AiReleaseFilaListener`, `AiPrIngestaoService.processarRelease` |

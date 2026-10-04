@@ -254,7 +254,18 @@ GET    /api/v1/auditoria
   `ManualPublicoController` (`/api/v1/manual/{chave}/vigente|tela|site/**`, `help-bridge.js`),
   `ManualLeitorService` (chave ou link de prévia) e CORS por origem das chaves
   (`OrigensManualCors`).
-- Detalhes em `docs/doc-flow/12-proximos-passos-integracoes.md` (Onda A).
+- Página `tipo` ARTIGO ou MENU (V47): menu é pasta/capítulo, tem checklist próprio (mínimo 20),
+  ganha a lista "Nesta seção" no pacote e não entra nas respostas da IA (`ManualCorpusService`).
+- Tema do cliente: o padrão do produto é aplicado no construtor; cor não faz parte do contrato.
+- Anexo guarda `codigo_tela` e `seletor` (V48): a Mídia filtra por tela e a fila de release diz
+  quantas capturas podem ter envelhecido.
+- Eventos do leitor (Onda F): `POST /api/v1/manual/{token}/eventos` grava BUSCA,
+  BUSCA_SEM_RESULTADO e PAGINA_ABERTA em `tb_manual_evento` (V49), sem PII; o dashboard
+  (`/dashboard/resumo`) mostra as lacunas dos últimos 30 dias.
+- Release publicada no Orchestrator emite `ReleasePublicadaEvento` (shared): a página da tela
+  citada é marcada `desatualizada_por` (V50, limpa ao publicar) e a fila da IA ganha um item
+  `RELEASE` em `PARA_REVISAR` (V51) — a IA só gera o ajuste se alguém pedir.
+- Detalhes em `docs/doc-flow/12-proximos-passos-integracoes.md` (Ondas A–F).
 
 ## Contrato OpenAPI
 

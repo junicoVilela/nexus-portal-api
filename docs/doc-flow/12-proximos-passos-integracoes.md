@@ -129,6 +129,12 @@ C depende de B: aceitar proposta de atualização usa o mesmo apply/diff.
 
 **Não fazer nesta onda:** cliente único Orchestrator↔DocFlow (ver Débitos de plataforma).
 
+### Checklist fino (extensão release)
+
+- [x] INT-301 gancho — `ReleaseService` publica `ReleasePublicadaEvento` (shared) ao ir para `PUBLICADA`; `AiReleaseFilaListener` cria um item por tela citada na release (origem `RELEASE`, status `PARA_REVISAR`, V51). A IA **não** é chamada automaticamente: "Gerar ajuste com IA" sob demanda ou "Dispensar"
+- [x] INT-302 obsoleta pela release — `tb_pagina.desatualizada_por/em` (V50); limpa ao publicar a página. Dashboard: "alteradas por release"; editor mostra aviso
+- [x] INT-303 fila — filtro por origem (PRs / Releases), texto da release no item, link para a release e quantas capturas da tela podem ter envelhecido
+
 ---
 
 ## Onda D — Manual no produto
@@ -218,6 +224,15 @@ em `docs/ai/PERGUNTAS-MANUAL.md`.
 
 **Não fazer nesta onda:** regeneração autônoma de print a cada deploy (HappyRecorder completo). INT-603 é o teto.
 
+### Checklist fino
+
+- [x] INT-601 anexo com tela — `tb_pagina_anexo.codigo_tela/seletor` (V48, preenchido a partir da página); `PATCH /paginas/{id}/anexos/{anexoId}` muda o vínculo
+- [x] INT-602 Mídia — filtro por código de tela; cada captura mostra a tela
+- [ ] INT-603 captura automática — **não feito** (opcional, é o teto da onda): exige ambiente demo estável e credenciais por sistema. A fila de release já aponta quais capturas podem ter envelhecido
+- [x] INT-604 include — já existia (`PaginaSnippetService`, resolvido na geração do pacote)
+- [x] INT-605 eventos do PWA — `POST /api/v1/manual/{token}/eventos` (BUSCA, BUSCA_SEM_RESULTADO, PAGINA_ABERTA) em `tb_manual_evento` (V49), sem IP nem usuário; retenção junto com `docflow.ajuda.*`. Só envia quando o manual é servido pela API (ZIP offline não envia)
+- [x] INT-606 dashboard — "Lacunas do manual": buscas sem resultado nos últimos 30 dias (top 8)
+
 ---
 
 ## Débitos de plataforma (paralelos, não bloqueiam A–B)
@@ -227,8 +242,8 @@ Estes itens não são “feature de docs”, mas travam a jornada ACME. Tratar e
 | ID | Tema | Por quê |
 |---|---|---|
 | PLAT-01 | Cliente DocFlow ↔ Cliente Orchestrator | Sem ID compartilhado, widget e “o que ACME recebeu?” mentem |
-| PLAT-02 | `tipoPagina=menu` no backend | Front já tem pasta; pacote mistura capítulo com artigo |
-| PLAT-03 | `Cliente.definirTemas` ignora a cor informada | Schema de tema é teatro |
+| PLAT-02 ✅ | `tipoPagina=menu` no backend | Feito: `tb_pagina.tipo` (V47); menu tem qualidade própria, lista "Nesta seção" no pacote e fica fora das respostas da IA |
+| PLAT-03 ✅ | `Cliente.definirTemas` ignora a cor informada | Decisão: tema padrão do produto mantido; campos de cor saíram do contrato do cliente |
 | PLAT-04 | Publicação DocFlow como artefato da entrega | ZIP técnico + manual na mesma história |
 | PLAT-05 | Permissões `PAGINA:AI_*` (AI-704) | Depois que B/C tiverem uso real |
 
