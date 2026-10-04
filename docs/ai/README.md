@@ -152,6 +152,9 @@ fica em `AiMetricasService`. O ciclo para ajustar prompts pelos padrões de reje
 PRs mergeados podem abrir propostas sozinhos (Fase C): veja
 [`GITHUB-WEBHOOK.md`](GITHUB-WEBHOOK.md).
 
+Leitores e agentes (MCP) podem perguntar ao manual publicado, com citação da tela: veja
+[`PERGUNTAS-MANUAL.md`](PERGUNTAS-MANUAL.md).
+
 ### Permissões
 
 | Permissão | Libera |

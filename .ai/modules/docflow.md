@@ -246,6 +246,10 @@ GET    /api/v1/auditoria
 - Base RAG por projeto: `GET /api/v1/docflow/projetos/{id}/rag.zip` (`ProjetoRagService`).
 - Deep link `?tela=CODIGO` no pacote (via `assets/routes.js`, funciona em `file://`) e na prévia
   por token.
+- Perguntar ao manual publicado e MCP (Onda E): `ManualCorpusService` (snapshot do ZIP),
+  `ManualBusca` (código + BM25), `ManualMcpController` (`/api/v1/docflow/mcp`, token de prévia);
+  a resposta com IA fica no módulo `ai` (`AiManualPerguntaService`). Guia em
+  `docs/ai/PERGUNTAS-MANUAL.md`.
 - Detalhes em `docs/doc-flow/12-proximos-passos-integracoes.md` (Onda A).
 
 ## Contrato OpenAPI

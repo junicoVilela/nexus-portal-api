@@ -175,6 +175,19 @@ Retrieval: híbrido determinístico (`codigo_tela` exact + keyword do `search-in
 
 **Demo:** no PWA da v1.5.0 ACME, “como filtrar pedidos?” cita a página certa; pergunta sobre tela que o cliente não tem → “não sei”.
 
+### Checklist fino
+
+- [x] INT-501 perguntar — `POST /api/v1/ai/publicacoes/{id}/perguntar` e `/api/v1/ai/manual/{token}/perguntar`; corpus = `rag/` do ZIP
+- [x] INT-502 "não sei" — melhor trecho precisa cobrir ≥ 50% dos termos; citação da IA validada contra os trechos
+- [x] INT-503 UI — caixa "Pergunte ao manual" na prévia por token; aba **Perguntar** na publicação (o ZIP offline segue só com a busca)
+- [x] INT-504 MCP — `/api/v1/docflow/mcp` (Streamable HTTP), tools `buscar`, `paginaPorCodigo`, `listarTelas`
+- [x] INT-505 sem rascunho — `ManualPerguntaIntegrationTest` pergunta por texto que só existe em rascunho → `NAO_SEI`
+- [x] INT-506 métricas — `tb_ai_manual_pergunta` (V45) + bloco no painel Qualidade da IA, sem identificar quem perguntou
+
+**Credencial:** a Onda D não foi feita. O token de prévia do cliente faz o papel de token de
+leitura (INT-403). O "manual vigente" (INT-401) é a última publicação concluída do cliente. Guia
+em `docs/ai/PERGUNTAS-MANUAL.md`.
+
 ---
 
 ## Onda F — Captura, snippet, coverage gap
