@@ -13,5 +13,7 @@ public enum AiPrEventoStatus {
   /** Sessão aberta e geração enfileirada: a proposta aparece na fila. */
   EM_FILA,
   /** Falha ao buscar o PR ou ao gerar; dá para reprocessar pela fila. */
-  ERRO
+  ERRO,
+  /** Release citou a tela: alguém decide se gera o ajuste ou dispensa (sem gastar IA à toa). */
+  PARA_REVISAR
 }

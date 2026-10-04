@@ -2,6 +2,7 @@ package com.nexus.portal.docflow.service;
 
 import com.nexus.portal.docflow.config.AjudaProperties;
 import com.nexus.portal.docflow.repository.AjudaEventoRepository;
+import com.nexus.portal.docflow.repository.ManualEventoRepository;
 import java.time.OffsetDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +16,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class AjudaEventoRetencaoJob {
 
   private final AjudaEventoRepository eventoRepository;
+  /** INT-605: os eventos do manual hospedado seguem a mesma retenção. */
+  private final ManualEventoRepository manualEventoRepository;
   private final AjudaProperties properties;
 
   @Scheduled(cron = "${docflow.ajuda.retencao-cron:0 30 3 * * *}")
@@ -26,7 +29,8 @@ public class AjudaEventoRetencaoJob {
       return;
     }
     OffsetDateTime limite = OffsetDateTime.now().minusDays(dias);
-    long removidos = eventoRepository.deleteByCreatedAtBefore(limite);
+    long removidos = eventoRepository.deleteByCreatedAtBefore(limite)
+        + manualEventoRepository.deleteByCreatedAtBefore(limite);
     if (removidos > 0) {
       log.info("Retenção da ajuda removeu {} eventos anteriores a {}.", removidos, limite);
     }

@@ -15,6 +15,8 @@ public interface AiPrEventoRepository extends JpaRepository<AiPrEvento, UUID> {
 
   Optional<AiPrEvento> findByRepositorioAndNumeroPr(String repositorio, int numeroPr);
 
+  boolean existsByReleaseIdAndCodigoTela(UUID releaseId, String codigoTela);
+
   Page<AiPrEvento> findByStatusInOrderByCreatedAtDesc(Collection<AiPrEventoStatus> status, Pageable pageable);
 
   Page<AiPrEvento> findAllByOrderByCreatedAtDesc(Pageable pageable);

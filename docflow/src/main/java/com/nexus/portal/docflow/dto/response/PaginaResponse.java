@@ -33,7 +33,9 @@ public record PaginaResponse(
     OffsetDateTime updatedAt,
     String createdBy,
     String updatedBy,
-    TipoPagina tipo) {
+    TipoPagina tipo,
+    /** INT-302: release que alterou a tela depois da última publicação. */
+    String desatualizadaPor) {
   public static PaginaResponse from(Pagina pagina) {
     return new PaginaResponse(
         pagina.getId(),
@@ -62,6 +64,7 @@ public record PaginaResponse(
         pagina.getUpdatedAt(),
         pagina.getCreatedBy(),
         pagina.getUpdatedBy(),
-        pagina.getTipo());
+        pagina.getTipo(),
+        pagina.getDesatualizadaPor());
   }
 }

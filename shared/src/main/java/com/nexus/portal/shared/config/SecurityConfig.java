@@ -67,6 +67,7 @@ public class SecurityConfig {
             .requestMatchers("/api/v1/docflow/mcp").permitAll()
             // Manual vigente para os sistemas do cliente (site, tela, help-bridge): chave no caminho.
             .requestMatchers(HttpMethod.GET, "/api/v1/manual/**").permitAll()
+            .requestMatchers(HttpMethod.POST, "/api/v1/manual/*/eventos").permitAll()
             .requestMatchers(HttpMethod.POST, "/api/v1/ai/manual/*/perguntar").permitAll()
             .requestMatchers("/api/v1/preview/**").permitAll()
             .requestMatchers(HttpMethod.GET, "/api/v1/public/publicacoes/download").permitAll()

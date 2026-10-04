@@ -35,7 +35,8 @@ class AiFilaPrServiceTest {
   private final AiSessaoRepository sessaoRepository = mock(AiSessaoRepository.class);
   private final AiPropostaService propostaService = mock(AiPropostaService.class);
   private final AiFilaPrService service = new AiFilaPrService(eventoRepository, sessaoRepository, propostaService,
-      mock(AiPrIngestaoService.class), mock(AuditoriaService.class));
+      mock(AiPrIngestaoService.class), mock(AuditoriaService.class),
+      mock(com.nexus.portal.ai.integration.docflow.DocFlowAiBridge.class));
   private final Principal autora = () -> "ana";
   private AiPrEvento evento;
   private AiSessao sessao;
@@ -94,6 +95,24 @@ class AiFilaPrServiceTest {
   @Test
   void itemComPropostaNaoReprocessa() {
     assertThatThrownBy(() -> service.reprocessar(evento.getId())).isInstanceOf(BusinessException.class);
+  }
+
+  @Test
+  void itemDeReleaseSaiComDispensar() {
+    AiPrEvento release = AiPrEvento.daRelease(UUID.randomUUID(), "Portal 1.5.0", "Filtros", "- Filtro PED-001",
+        "/release-orchestrator/releases/x", "PED-001", UUID.randomUUID());
+    when(eventoRepository.findById(release.getId())).thenReturn(Optional.of(release));
+
+    var item = service.dispensar(release.getId(), autora);
+
+    assertThat(item.status()).isEqualTo(com.nexus.portal.ai.entity.AiPrEventoStatus.IGNORADO);
+    assertThat(item.pendente()).isFalse();
+    assertThat(item.mensagem()).contains("ana");
+  }
+
+  @Test
+  void itemComPropostaNaoSeDispensa() {
+    assertThatThrownBy(() -> service.dispensar(evento.getId(), autora)).isInstanceOf(BusinessException.class);
   }
 
   private static void definir(Object alvo, String campo, Object valor) throws Exception {

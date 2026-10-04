@@ -122,6 +122,14 @@ class ManualIntegracaoIntegrationTest {
         .build(), HttpResponse.BodyHandlers.ofString());
     assertThat(json.readTree(mcp.body()).path("result").path("content").get(0).path("text").asText()).contains(codigo);
 
+    var evento = http.send(HttpRequest.newBuilder(URI.create(url("/api/v1/manual/" + token + "/eventos")))
+        .header("Content-Type", "application/json").header("Origin", ORIGEM)
+        .POST(HttpRequest.BodyPublishers.ofString("{\"tipo\":\"BUSCA_SEM_RESULTADO\",\"termo\":\"Nota Fiscal\",\"resultados\":0}"))
+        .build(), HttpResponse.BodyHandlers.ofString());
+    assertThat(evento.statusCode()).isEqualTo(204);
+    JsonNode dashboard = json.readTree(get("/api/v1/docflow/dashboard/resumo", jwt).body());
+    assertThat(dashboard.path("lacunas").path("termosSemResultado").toString()).contains("nota fiscal");
+
     var revogada = http.send(HttpRequest.newBuilder(
             URI.create(url("/api/v1/docflow/acessos-manual/" + chave.path("acesso").path("id").asText())))
         .header("Authorization", "Bearer " + jwt).DELETE().build(), HttpResponse.BodyHandlers.ofString());

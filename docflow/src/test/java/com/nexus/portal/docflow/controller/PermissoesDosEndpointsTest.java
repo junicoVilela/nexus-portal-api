@@ -60,7 +60,8 @@ class PermissoesDosEndpointsTest {
       "ManualPublicoController#vigente",
       "ManualPublicoController#tela",
       "ManualPublicoController#raiz",
-      "ManualPublicoController#site");
+      "ManualPublicoController#site",
+      "ManualPublicoController#evento");
 
   @Test
   void todoEndpointDeclaraPermissaoOuEstaNaListaDePublicos() {

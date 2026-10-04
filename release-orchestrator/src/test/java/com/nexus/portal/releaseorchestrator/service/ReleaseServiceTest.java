@@ -12,6 +12,7 @@ import com.nexus.portal.releaseorchestrator.repository.ReleaseItemRepository;
 import com.nexus.portal.releaseorchestrator.repository.ReleaseRepository;
 import com.nexus.portal.shared.exception.BusinessException;
 import com.nexus.portal.shared.exception.NotFoundException;
+import com.nexus.portal.releaseorchestrator.entity.ReleaseItem;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -45,6 +46,7 @@ class ReleaseServiceTest {
     @Mock ReleaseItemRepository itemRepository;
     @Mock ReleaseHistoricoRepository historicoRepository;
     @Mock ProdutoRhService produtoService;
+    @Mock org.springframework.context.ApplicationEventPublisher eventos;
     @InjectMocks ReleaseService service;
 
     UUID produtoId = UUID.randomUUID();
@@ -109,6 +111,25 @@ class ReleaseServiceTest {
         service.alterarStatus(id, new AlterarStatusReleaseRequest(ReleaseStatus.EM_DESENVOLVIMENTO, null));
 
         assertThat(release.getStatus()).isEqualTo(ReleaseStatus.EM_DESENVOLVIMENTO);
+    }
+
+    @Test
+    @DisplayName("Release publicada avisa com título, resumo e itens (INT-301)")
+    void publicadaPublicaEventoComOsItens() {
+        UUID id = UUID.randomUUID();
+        Release release = criarRelease(ReleaseStatus.APROVADA);
+        when(releaseRepository.findById(id)).thenReturn(Optional.of(release));
+        ReleaseItem item = org.mockito.Mockito.mock(ReleaseItem.class);
+        when(item.getTitulo()).thenReturn("Filtro por status na PED-001");
+        when(item.getDescricao()).thenReturn("Novo combo de status");
+        when(itemRepository.findByReleaseIdOrderByOrdemAsc(any())).thenReturn(List.of(item));
+
+        service.alterarStatus(id, new AlterarStatusReleaseRequest(ReleaseStatus.PUBLICADA, null));
+
+        var captor = org.mockito.ArgumentCaptor.forClass(com.nexus.portal.shared.events.ReleasePublicadaEvento.class);
+        org.mockito.Mockito.verify(eventos).publishEvent(captor.capture());
+        assertThat(captor.getValue().rotulo()).isEqualTo("Sistema X 5.13.0");
+        assertThat(captor.getValue().texto()).contains("- Filtro por status na PED-001: Novo combo de status");
     }
 
     @Test

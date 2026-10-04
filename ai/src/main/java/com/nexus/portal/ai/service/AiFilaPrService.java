@@ -12,6 +12,7 @@ import com.nexus.portal.ai.entity.AiObjetivo;
 import com.nexus.portal.ai.entity.AiPrEvento;
 import com.nexus.portal.ai.entity.AiPrEventoStatus;
 import com.nexus.portal.ai.entity.AiSessao;
+import com.nexus.portal.ai.integration.docflow.DocFlowAiBridge;
 import com.nexus.portal.ai.repository.AiPrEventoRepository;
 import com.nexus.portal.ai.repository.AiSessaoRepository;
 import com.nexus.portal.shared.exception.BusinessException;
@@ -40,18 +41,21 @@ public class AiFilaPrService {
   private final AiPropostaService propostaService;
   private final AiPrIngestaoService ingestaoService;
   private final AuditoriaService auditoriaService;
+  private final DocFlowAiBridge docFlowAiBridge;
 
   public AiFilaPrService(
       AiPrEventoRepository eventoRepository,
       AiSessaoRepository sessaoRepository,
       AiPropostaService propostaService,
       AiPrIngestaoService ingestaoService,
-      AuditoriaService auditoriaService) {
+      AuditoriaService auditoriaService,
+      DocFlowAiBridge docFlowAiBridge) {
     this.eventoRepository = eventoRepository;
     this.sessaoRepository = sessaoRepository;
     this.propostaService = propostaService;
     this.ingestaoService = ingestaoService;
     this.auditoriaService = auditoriaService;
+    this.docFlowAiBridge = docFlowAiBridge;
   }
 
   @Transactional(readOnly = true)
@@ -125,18 +129,31 @@ public class AiFilaPrService {
       sessao.transferirPara(usuario);
       evento.assumir(usuario);
       auditoriaService.registrar(AiAuditoriaAcoes.ENTIDADE_PR_EVENTO, evento.getId(), AiAuditoriaAcoes.PR_ASSUMIDO,
-          evento.getRepositorio() + "#" + evento.getNumeroPr(), principal);
+          evento.getRepositorio() + (evento.getNumeroPr() == null ? "" : "#" + evento.getNumeroPr()) + " · "
+              + evento.getCodigoTela(), principal);
     }
     return sessao;
   }
 
   private AiFilaPrItemResponse item(AiPrEvento evento) {
+    long capturas = docFlowAiBridge.capturasDaTela(evento.getCodigoTela());
     if (evento.getSessaoId() == null) {
-      return AiFilaPrItemResponse.from(evento, null, null);
+      return AiFilaPrItemResponse.from(evento, null, null, capturas);
     }
     var sessaoStatus = sessaoRepository.findById(evento.getSessaoId()).map(AiSessao::getStatus).orElse(null);
     return AiFilaPrItemResponse.from(evento, sessaoStatus,
-        propostaService.ultimaPropostaDaFila(evento.getSessaoId()).orElse(null));
+        propostaService.ultimaPropostaDaFila(evento.getSessaoId()).orElse(null), capturas);
+  }
+
+  /** "Revisado, a página já está certa": tira o item da fila sem gerar nada. */
+  @Transactional
+  public AiFilaPrItemResponse dispensar(UUID id, Principal principal) {
+    AiPrEvento evento = carregar(id);
+    if (!evento.podeReprocessar()) {
+      throw new BusinessException("Este item já tem proposta: rejeite a proposta em vez de dispensar.");
+    }
+    evento.dispensar(AiSessaoService.usuario(principal));
+    return item(evento);
   }
 
   private AiPrEvento carregar(UUID id) {

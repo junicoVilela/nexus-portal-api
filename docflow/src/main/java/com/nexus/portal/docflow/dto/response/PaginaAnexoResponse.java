@@ -13,7 +13,9 @@ public record PaginaAnexoResponse(
     long tamanhoBytes,
     OffsetDateTime createdAt,
     String createdBy,
-    String downloadUrl) {
+    String downloadUrl,
+    String codigoTela,
+    String seletor) {
   public static PaginaAnexoResponse from(PaginaAnexo anexo) {
     return new PaginaAnexoResponse(
         anexo.getId(),
@@ -24,6 +26,8 @@ public record PaginaAnexoResponse(
         anexo.getTamanhoBytes(),
         anexo.getCreatedAt(),
         anexo.getCreatedBy(),
-        "/paginas/" + anexo.getPagina().getId() + "/anexos/" + anexo.getId() + "/download");
+        "/paginas/" + anexo.getPagina().getId() + "/anexos/" + anexo.getId() + "/download",
+        anexo.getCodigoTela(),
+        anexo.getSeletor());
   }
 }

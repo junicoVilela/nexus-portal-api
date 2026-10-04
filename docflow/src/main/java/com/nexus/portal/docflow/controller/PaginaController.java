@@ -31,6 +31,8 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import jakarta.validation.constraints.Size;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -398,13 +400,26 @@ public class PaginaController {
   @GetMapping("/anexos")
   public PageResponse<PaginaAnexoResponse> bibliotecaAnexos(
       @RequestParam(required = false) String busca,
+      @RequestParam(required = false) String codigoTela,
       @RequestParam(defaultValue = "1") Integer page,
       @RequestParam(defaultValue = "24") Integer size) {
     return PageResponse.from(
         paginaAnexoService.listarBiblioteca(
             busca,
+            codigoTela,
             PageableUtils.of(page, size, Sort.by(Sort.Order.desc("createdAt")))),
         PaginaAnexoResponse::from);
+  }
+
+  public record VincularTelaRequest(@Size(max = 120) String codigoTela, @Size(max = 300) String seletor) {}
+
+  /** INT-601: de qual tela é a captura (e a região), para saber quando ela envelhece. */
+  @PatchMapping("/{id}/anexos/{anexoId}")
+  @PreAuthorize(Permissoes.PAGINA_EDITAR)
+  public PaginaAnexoResponse vincularTelaAnexo(@PathVariable UUID id, @PathVariable UUID anexoId,
+      @Valid @RequestBody VincularTelaRequest request) {
+    return PaginaAnexoResponse.from(
+        paginaAnexoService.vincularTela(id, anexoId, request.codigoTela(), request.seletor()));
   }
 
   @PreAuthorize(Permissoes.PAGINA_LER)
@@ -416,8 +431,9 @@ public class PaginaController {
   @PostMapping(value = "/{id}/anexos", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   @ResponseStatus(HttpStatus.CREATED)
   @PreAuthorize(Permissoes.PAGINA_EDITAR)
-  public PaginaAnexoResponse anexar(@PathVariable UUID id, @RequestParam MultipartFile file) {
-    return PaginaAnexoResponse.from(paginaAnexoService.anexar(id, file));
+  public PaginaAnexoResponse anexar(@PathVariable UUID id, @RequestParam MultipartFile file,
+      @RequestParam(required = false) String codigoTela, @RequestParam(required = false) String seletor) {
+    return PaginaAnexoResponse.from(paginaAnexoService.anexar(id, file, codigoTela, seletor));
   }
 
   @GetMapping("/{paginaId}/anexos/{anexoId}/download")

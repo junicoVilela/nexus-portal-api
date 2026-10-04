@@ -27,6 +27,7 @@ class DocFlowDashboardServiceTest {
   @Mock ModuloRepository moduloRepository;
   @Mock PaginaRepository paginaRepository;
   @Mock PublicacaoRepository publicacaoRepository;
+  @Mock com.nexus.portal.docflow.repository.ManualEventoRepository manualEventoRepository;
   @InjectMocks DocFlowDashboardService service;
 
   @Test
@@ -50,6 +51,16 @@ class DocFlowDashboardServiceTest {
         org.mockito.ArgumentMatchers.eq(StatusPagina.PUBLICADO), any(OffsetDateTime.class)))
         .thenReturn(4L);
 
+    when(paginaRepository.countByAtivoTrueAndDesatualizadaPorIsNotNull()).thenReturn(5L);
+    when(manualEventoRepository.countByTipoAndCreatedAtAfter(
+        org.mockito.ArgumentMatchers.eq(com.nexus.portal.docflow.entity.ManualEvento.Tipo.BUSCA_SEM_RESULTADO),
+        any(OffsetDateTime.class))).thenReturn(3L);
+    when(manualEventoRepository.countByTipoAndCreatedAtAfter(
+        org.mockito.ArgumentMatchers.eq(com.nexus.portal.docflow.entity.ManualEvento.Tipo.BUSCA),
+        any(OffsetDateTime.class))).thenReturn(7L);
+    when(manualEventoRepository.termosSemResultado(any(), any()))
+        .thenReturn(List.<Object[]>of(new Object[] {"nota fiscal", 2L}));
+
     var resumo = service.resumo();
 
     assertThat(resumo.totalClientes()).isEqualTo(3);
@@ -60,5 +71,10 @@ class DocFlowDashboardServiceTest {
     assertThat(resumo.paginasPorStatus()).containsEntry("EM_REVISAO", 2L);
     assertThat(resumo.paginasSemResumo()).isEqualTo(3);
     assertThat(resumo.paginasDesatualizadas()).isEqualTo(4);
+    assertThat(resumo.paginasDesatualizadasPorRelease()).isEqualTo(5);
+    assertThat(resumo.lacunas().buscas()).isEqualTo(10);
+    assertThat(resumo.lacunas().buscasSemResultado()).isEqualTo(3);
+    assertThat(resumo.lacunas().termosSemResultado()).first()
+        .satisfies(t -> assertThat(t.termo()).isEqualTo("nota fiscal"));
   }
 }

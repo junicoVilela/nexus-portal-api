@@ -58,6 +58,9 @@ public interface PaginaRepository extends JpaRepository<Pagina, UUID>, JpaSpecif
   @Query("select count(p) from Pagina p where p.ativo = true and (p.resumo is null or length(trim(p.resumo)) < 30)")
   long countSemResumoEditorial();
 
+  /** INT-302: páginas ativas marcadas por uma release e ainda não republicadas. */
+  long countByAtivoTrueAndDesatualizadaPorIsNotNull();
+
   /**
    * Ids que casam com o termo no índice GIN. A listagem continua sendo montada
    * pela Specification (filtros, ordenação e paginação); daqui sai só o

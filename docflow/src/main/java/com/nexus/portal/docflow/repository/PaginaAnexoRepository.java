@@ -25,4 +25,14 @@ public interface PaginaAnexoRepository extends JpaRepository<PaginaAnexo, UUID> 
 
   @EntityGraph(attributePaths = {"pagina", "pagina.modulo", "pagina.modulo.projeto"})
   Page<PaginaAnexo> findByNomeOriginalContainingIgnoreCase(String nome, Pageable pageable);
+
+  @EntityGraph(attributePaths = {"pagina", "pagina.modulo", "pagina.modulo.projeto"})
+  Page<PaginaAnexo> findByCodigoTelaIgnoreCase(String codigoTela, Pageable pageable);
+
+  @EntityGraph(attributePaths = {"pagina", "pagina.modulo", "pagina.modulo.projeto"})
+  Page<PaginaAnexo> findByCodigoTelaIgnoreCaseAndNomeOriginalContainingIgnoreCase(
+      String codigoTela, String nome, Pageable pageable);
+
+  /** Capturas de uma tela: as candidatas a desatualizar quando um PR ou release mexe nela. */
+  long countByCodigoTelaIgnoreCase(String codigoTela);
 }

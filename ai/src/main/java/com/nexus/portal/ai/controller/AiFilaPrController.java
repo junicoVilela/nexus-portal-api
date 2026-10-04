@@ -70,7 +70,14 @@ public class AiFilaPrController {
     return service.aceitar(id, request, principal);
   }
 
-  /** Erro ou página que voltou a rascunho: processa o PR de novo. */
+  /** "Revisado, nada a mudar": tira da fila sem gerar ajuste. */
+  @PostMapping("/{id}/dispensar")
+  @PreAuthorize(Permissoes.PAGINA_AI_PROPOSTA)
+  public AiFilaPrItemResponse dispensar(@PathVariable UUID id, Principal principal) {
+    return service.dispensar(id, principal);
+  }
+
+  /** Erro, página que voltou a rascunho ou item de release: processa (gera o ajuste) de novo. */
   @PostMapping("/{id}/reprocessar")
   @PreAuthorize(Permissoes.PAGINA_AI_PROPOSTA)
   public AiFilaPrItemResponse reprocessar(@PathVariable UUID id) {

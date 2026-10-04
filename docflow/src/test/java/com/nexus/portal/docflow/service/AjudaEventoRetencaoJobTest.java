@@ -6,6 +6,7 @@ import static org.mockito.Mockito.verify;
 
 import com.nexus.portal.docflow.config.AjudaProperties;
 import com.nexus.portal.docflow.repository.AjudaEventoRepository;
+import com.nexus.portal.docflow.repository.ManualEventoRepository;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -16,21 +17,23 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class AjudaEventoRetencaoJobTest {
 
   @Mock private AjudaEventoRepository eventoRepository;
+  @Mock private ManualEventoRepository manualEventoRepository;
 
   @Test
   void executar_deveExcluirEventosForaDaRetencao() {
     AjudaEventoRetencaoJob job = new AjudaEventoRetencaoJob(
-        eventoRepository, new AjudaProperties(90));
+        eventoRepository, manualEventoRepository, new AjudaProperties(90));
 
     job.executar();
 
     verify(eventoRepository).deleteByCreatedAtBefore(any(OffsetDateTime.class));
+    verify(manualEventoRepository).deleteByCreatedAtBefore(any(OffsetDateTime.class));
   }
 
   @Test
   void executar_comRetencaoDesabilitada_naoDeveExcluir() {
     AjudaEventoRetencaoJob job = new AjudaEventoRetencaoJob(
-        eventoRepository, new AjudaProperties(0));
+        eventoRepository, manualEventoRepository, new AjudaProperties(0));
 
     job.executar();
 

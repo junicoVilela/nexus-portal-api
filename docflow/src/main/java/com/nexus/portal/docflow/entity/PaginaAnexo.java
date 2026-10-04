@@ -43,11 +43,26 @@ public class PaginaAnexo extends AuditableEntity {
   @Column(nullable = false, length = 700)
   private String caminho;
 
+  /** Tela que a captura mostra (INT-601); por padrão, a da página. */
+  @Column(name = "codigo_tela", length = 120)
+  private String codigoTela;
+
+  /** Região capturada (seletor CSS), para recapturar a mesma área. */
+  @Column(length = 300)
+  private String seletor;
+
   public PaginaAnexo(Pagina pagina, String nomeOriginal, String contentType, long tamanhoBytes, String caminho) {
     this.pagina = pagina;
+    this.codigoTela = pagina.getCodigoTela();
     this.nomeOriginal = nomeOriginal;
     this.contentType = contentType;
     this.tamanhoBytes = tamanhoBytes;
     this.caminho = caminho;
+  }
+
+  /** Vazio volta ao código da página. */
+  public void vincularTela(String codigoTela, String seletor) {
+    this.codigoTela = codigoTela == null || codigoTela.isBlank() ? pagina.getCodigoTela() : codigoTela.strip();
+    this.seletor = seletor == null || seletor.isBlank() ? null : seletor.strip();
   }
 }

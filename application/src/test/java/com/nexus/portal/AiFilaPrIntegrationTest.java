@@ -58,6 +58,7 @@ class AiFilaPrIntegrationTest {
   @Value("${local.server.port}") int port;
   @Autowired PaginaRepository paginaRepository;
   @MockitoBean AiGithubClient github;
+  @Autowired org.springframework.context.ApplicationEventPublisher eventos;
 
   private final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
   private final ObjectMapper json = new ObjectMapper();
@@ -107,6 +108,39 @@ class AiFilaPrIntegrationTest {
     assertThat(item.path("status").asText()).isEqualTo("AGUARDANDO_RASCUNHO");
     assertThat(item.path("codigoTela").asText()).isEqualTo("DF-START");
     assertThat(item.path("paginaId").asText()).isEqualTo("a0000000-0000-4000-8000-000000000201");
+  }
+
+  @Test
+  void releasePublicadaColocaATelaNaFilaParaRevisar() throws Exception {
+    UUID releaseId = UUID.randomUUID();
+    eventos.publishEvent(new com.nexus.portal.shared.events.ReleasePublicadaEvento(releaseId, "Portal", "9.9.0",
+        "Ajustes na tela inicial", "- Novo atalho na DF-START", "/release-orchestrator/releases/" + releaseId));
+
+    String token = login();
+    JsonNode item = aguardarRelease(token, releaseId);
+    assertThat(item.path("origem").asText()).isEqualTo("RELEASE");
+    assertThat(item.path("status").asText()).isEqualTo("PARA_REVISAR");
+    assertThat(item.path("pendente").asBoolean()).isTrue();
+    assertThat(paginaRepository.findById(UUID.fromString("a0000000-0000-4000-8000-000000000201")))
+        .get().satisfies(p -> assertThat(p.getDesatualizadaPor()).isEqualTo("Portal 9.9.0"));
+
+    var dispensado = json.readTree(post("/api/v1/ai/fila-pr/" + item.path("id").asText() + "/dispensar", token,
+        Map.of()).body());
+    assertThat(dispensado.path("status").asText()).isEqualTo("IGNORADO");
+  }
+
+  private JsonNode aguardarRelease(String token, UUID releaseId) throws Exception {
+    for (int tentativa = 0; tentativa < 80; tentativa++) {
+      HttpResponse<String> resposta = http.send(HttpRequest.newBuilder(URI.create(url("/api/v1/ai/fila-pr?pendentes=false")))
+          .header("Authorization", "Bearer " + token).GET().build(), HttpResponse.BodyHandlers.ofString());
+      for (JsonNode item : json.readTree(resposta.body())) {
+        if (item.path("url").asText().endsWith(releaseId.toString())) {
+          return item;
+        }
+      }
+      Thread.sleep(250);
+    }
+    throw new AssertionError("A release não entrou na fila.");
   }
 
   private static byte[] payload(int numero, String titulo) {

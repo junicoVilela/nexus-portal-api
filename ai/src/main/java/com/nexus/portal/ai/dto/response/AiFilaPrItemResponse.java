@@ -1,5 +1,6 @@
 package com.nexus.portal.ai.dto.response;
 
+import com.nexus.portal.ai.entity.AiFilaOrigem;
 import com.nexus.portal.ai.entity.AiPrClassificacao;
 import com.nexus.portal.ai.entity.AiPrEvento;
 import com.nexus.portal.ai.entity.AiPrEventoStatus;
@@ -14,8 +15,9 @@ import java.util.UUID;
  */
 public record AiFilaPrItemResponse(
     UUID id,
+    AiFilaOrigem origem,
     String repositorio,
-    int numeroPr,
+    Integer numeroPr,
     String titulo,
     String url,
     String autor,
@@ -31,16 +33,20 @@ public record AiFilaPrItemResponse(
     String responsavel,
     OffsetDateTime createdAt,
     AiPropostaResponse proposta,
-    boolean pendente) {
+    boolean pendente,
+    /** INT-601: capturas desta tela no DocFlow — podem ter ficado velhas com a mudança. */
+    long capturasDaTela) {
 
-  public static AiFilaPrItemResponse from(AiPrEvento evento, AiSessaoStatus sessaoStatus, AiPropostaResponse proposta) {
+  public static AiFilaPrItemResponse from(AiPrEvento evento, AiSessaoStatus sessaoStatus, AiPropostaResponse proposta,
+      long capturasDaTela) {
     boolean pendente = switch (evento.getStatus()) {
-      case AGUARDANDO_RASCUNHO, ERRO, RECEBIDO -> true;
+      case AGUARDANDO_RASCUNHO, ERRO, RECEBIDO, PARA_REVISAR -> true;
       case EM_FILA -> proposta == null || proposta.status() == AiPropostaStatus.PENDENTE;
       case IGNORADO -> false;
     };
     return new AiFilaPrItemResponse(
         evento.getId(),
+        evento.getOrigem(),
         evento.getRepositorio(),
         evento.getNumeroPr(),
         evento.getTitulo(),
@@ -58,6 +64,7 @@ public record AiFilaPrItemResponse(
         evento.getResponsavel(),
         evento.getCreatedAt(),
         proposta,
-        pendente);
+        pendente,
+        capturasDaTela);
   }
 }

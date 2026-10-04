@@ -1,9 +1,11 @@
 package com.nexus.portal.docflow.service;
 
 import com.nexus.portal.docflow.dto.response.DocFlowDashboardResponse;
+import com.nexus.portal.docflow.entity.ManualEvento;
 import com.nexus.portal.docflow.entity.StatusPagina;
 import com.nexus.portal.docflow.entity.StatusPublicacao;
 import com.nexus.portal.docflow.repository.ClienteRepository;
+import com.nexus.portal.docflow.repository.ManualEventoRepository;
 import com.nexus.portal.docflow.repository.ModuloRepository;
 import com.nexus.portal.docflow.repository.PaginaRepository;
 import com.nexus.portal.docflow.repository.ProjetoRepository;
@@ -11,8 +13,10 @@ import com.nexus.portal.docflow.repository.PublicacaoRepository;
 import java.time.OffsetDateTime;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,12 +25,15 @@ import org.springframework.transaction.annotation.Transactional;
 public class DocFlowDashboardService {
 
   private static final int DIAS_PAGINA_DESATUALIZADA = 180;
+  private static final int DIAS_LACUNAS = 30;
+  private static final int TOP_TERMOS = 8;
 
   private final ClienteRepository clienteRepository;
   private final ProjetoRepository projetoRepository;
   private final ModuloRepository moduloRepository;
   private final PaginaRepository paginaRepository;
   private final PublicacaoRepository publicacaoRepository;
+  private final ManualEventoRepository manualEventoRepository;
 
   @Transactional(readOnly = true)
   public DocFlowDashboardResponse resumo() {
@@ -69,6 +76,20 @@ public class DocFlowDashboardService {
             StatusPagina.PUBLICADO,
             OffsetDateTime.now().minusDays(DIAS_PAGINA_DESATUALIZADA)),
         taxaSucesso,
-        Map.copyOf(statusResponse));
+        Map.copyOf(statusResponse),
+        paginaRepository.countByAtivoTrueAndDesatualizadaPorIsNotNull(),
+        lacunas());
+  }
+
+  private DocFlowDashboardResponse.Lacunas lacunas() {
+    OffsetDateTime desde = OffsetDateTime.now().minusDays(DIAS_LACUNAS);
+    long semResultado = manualEventoRepository.countByTipoAndCreatedAtAfter(
+        ManualEvento.Tipo.BUSCA_SEM_RESULTADO, desde);
+    long comResultado = manualEventoRepository.countByTipoAndCreatedAtAfter(ManualEvento.Tipo.BUSCA, desde);
+    List<DocFlowDashboardResponse.Termo> termos = manualEventoRepository
+        .termosSemResultado(desde, PageRequest.of(0, TOP_TERMOS)).stream()
+        .map(linha -> new DocFlowDashboardResponse.Termo((String) linha[0], (Long) linha[1]))
+        .toList();
+    return new DocFlowDashboardResponse.Lacunas(comResultado + semResultado, semResultado, termos);
   }
 }

@@ -17,6 +17,7 @@ import com.nexus.portal.docflow.service.ClienteService;
 import com.nexus.portal.docflow.service.ManualCorpusService;
 import com.nexus.portal.docflow.service.ManualLeitorService;
 import com.nexus.portal.docflow.service.ModuloService;
+import com.nexus.portal.docflow.service.PaginaAnexoService;
 import com.nexus.portal.docflow.service.PaginaBlocoCatalogoService;
 import com.nexus.portal.docflow.service.PaginaBlueprintCatalogoService;
 import com.nexus.portal.docflow.service.PaginaQualidadeService;
@@ -54,6 +55,7 @@ public class DocFlowAiBridge {
   private final PaginaRepository paginaRepository;
   private final ManualCorpusService manualCorpusService;
   private final ManualLeitorService manualLeitorService;
+  private final PaginaAnexoService paginaAnexoService;
 
   public DocFlowAiBridge(
       PaginaTemplateService paginaTemplateService,
@@ -67,7 +69,8 @@ public class DocFlowAiBridge {
       ClienteService clienteService,
       PaginaRepository paginaRepository,
       ManualCorpusService manualCorpusService,
-      ManualLeitorService manualLeitorService) {
+      ManualLeitorService manualLeitorService,
+      PaginaAnexoService paginaAnexoService) {
     this.paginaTemplateService = paginaTemplateService;
     this.paginaTemplateRepository = paginaTemplateRepository;
     this.paginaQualidadeService = paginaQualidadeService;
@@ -80,6 +83,18 @@ public class DocFlowAiBridge {
     this.paginaRepository = paginaRepository;
     this.manualCorpusService = manualCorpusService;
     this.manualLeitorService = manualLeitorService;
+    this.paginaAnexoService = paginaAnexoService;
+  }
+
+  /** INT-302: release que alterou a tela documentada pela página. */
+  @Transactional
+  public void marcarPaginaDesatualizada(UUID paginaId, String release) {
+    paginaRepository.findById(paginaId).ifPresent(pagina -> pagina.marcarDesatualizada(release));
+  }
+
+  /** INT-601: capturas da tela — candidatas a desatualizar quando um PR ou release mexe nela. */
+  public long capturasDaTela(String codigoTela) {
+    return paginaAnexoService.capturasDaTela(codigoTela);
   }
 
   /** Onda E: snapshot publicado de uma publicação (perguntas pelo portal). */

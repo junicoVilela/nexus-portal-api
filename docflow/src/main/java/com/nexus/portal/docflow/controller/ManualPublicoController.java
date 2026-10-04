@@ -1,6 +1,8 @@
 package com.nexus.portal.docflow.controller;
 
+import com.nexus.portal.docflow.entity.ManualEvento;
 import com.nexus.portal.docflow.service.ManualCorpusService;
+import com.nexus.portal.docflow.service.ManualEventoService;
 import com.nexus.portal.docflow.service.ManualCorpusService.Documento;
 import com.nexus.portal.docflow.service.ManualLeitorService;
 import com.nexus.portal.shared.exception.NotFoundException;
@@ -24,7 +26,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.MediaTypeFactory;
 import org.springframework.http.ResponseEntity;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -46,10 +53,25 @@ public class ManualPublicoController {
 
   private final ManualLeitorService leitorService;
   private final ManualCorpusService corpusService;
+  private final ManualEventoService eventoService;
 
-  public ManualPublicoController(ManualLeitorService leitorService, ManualCorpusService corpusService) {
+  public ManualPublicoController(ManualLeitorService leitorService, ManualCorpusService corpusService,
+      ManualEventoService eventoService) {
     this.leitorService = leitorService;
     this.corpusService = corpusService;
+    this.eventoService = eventoService;
+  }
+
+  public record EventoRequest(@NotNull ManualEvento.Tipo tipo, @Size(max = 500) String termo,
+      @Size(max = 120) String codigoTela, Integer resultados) {}
+
+  /** INT-605: busca, busca vazia e página aberta no manual hospedado (sem identificar o leitor). */
+  @PostMapping("/{token}/eventos")
+  public ResponseEntity<Void> evento(@PathVariable String token,
+      @RequestHeader(value = HttpHeaders.ORIGIN, required = false) String origem,
+      @Valid @RequestBody EventoRequest request) {
+    eventoService.registrar(token, origem, request.tipo(), request.termo(), request.codigoTela(), request.resultados());
+    return ResponseEntity.noContent().build();
   }
 
   public record Vigente(String cliente, String versao, UUID publicacaoId, OffsetDateTime publicadaEm,

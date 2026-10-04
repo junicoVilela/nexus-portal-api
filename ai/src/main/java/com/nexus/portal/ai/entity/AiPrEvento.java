@@ -27,14 +27,21 @@ public class AiPrEvento {
   @Id
   private UUID id;
 
-  @Column(name = "delivery_id", nullable = false, length = 80, updatable = false)
+  @Column(name = "delivery_id", length = 80, updatable = false)
   private String deliveryId;
+
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false, length = 20, updatable = false)
+  private AiFilaOrigem origem = AiFilaOrigem.PR;
+
+  @Column(name = "release_id", updatable = false)
+  private UUID releaseId;
 
   @Column(nullable = false, length = 200, updatable = false)
   private String repositorio;
 
-  @Column(name = "numero_pr", nullable = false, updatable = false)
-  private int numeroPr;
+  @Column(name = "numero_pr", updatable = false)
+  private Integer numeroPr;
 
   @Column(nullable = false, length = 500)
   private String titulo;
@@ -117,6 +124,35 @@ public class AiPrEvento {
     this.mergedAt = mergedAt;
   }
 
+  /**
+   * Tela citada numa release publicada (INT-301): fica PARA_REVISAR até alguém gerar o ajuste
+   * ou dispensar. {@code texto} (resumo e itens) vira a instrução do ajuste.
+   */
+  public static AiPrEvento daRelease(UUID releaseId, String rotulo, String titulo, String texto, String caminho,
+      String codigoTela, UUID paginaId) {
+    AiPrEvento evento = new AiPrEvento();
+    evento.id = UUID.randomUUID();
+    evento.origem = AiFilaOrigem.RELEASE;
+    evento.releaseId = releaseId;
+    evento.repositorio = rotulo;
+    evento.titulo = truncar(titulo == null || titulo.isBlank() ? rotulo : rotulo + " — " + titulo, 500);
+    evento.corpo = texto;
+    evento.url = caminho;
+    evento.branchBase = "release";
+    evento.classificacao = AiPrClassificacao.UI_ALTERACAO;
+    evento.codigoTela = codigoTela;
+    evento.paginaId = paginaId;
+    evento.status = AiPrEventoStatus.PARA_REVISAR;
+    evento.mensagem = "A release " + rotulo + " cita esta tela: gere o ajuste ou dispense se nada mudou.";
+    return evento;
+  }
+
+  /** "Revisado, nada a mudar." */
+  public void dispensar(String usuario) {
+    this.responsavel = usuario;
+    mudar(AiPrEventoStatus.IGNORADO, "Dispensado por " + usuario + ": a página já está correta.");
+  }
+
   public void classificar(AiPrClassificacao classificacao, String codigoTela) {
     this.classificacao = classificacao;
     this.codigoTela = codigoTela;
@@ -150,7 +186,7 @@ public class AiPrEvento {
   /** Só itens sem sessão em andamento voltam a ser processados. */
   public boolean podeReprocessar() {
     return status == AiPrEventoStatus.ERRO || status == AiPrEventoStatus.AGUARDANDO_RASCUNHO
-        || status == AiPrEventoStatus.RECEBIDO;
+        || status == AiPrEventoStatus.RECEBIDO || status == AiPrEventoStatus.PARA_REVISAR;
   }
 
   private void mudar(AiPrEventoStatus novo, String texto) {

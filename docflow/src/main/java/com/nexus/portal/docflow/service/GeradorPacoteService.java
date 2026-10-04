@@ -372,6 +372,9 @@ public class GeradorPacoteService {
           prepararConteudoComAnexos(pagina, workDir.resolve("assets"), "../assets"), paginas);
       String html = template(cliente, versao, pagina.getTitulo(), breadcrumb(pagina), menu,
           conteudo, "../assets");
+      // INT-605: a página se identifica para o registro de "página aberta".
+      html = html.replaceFirst("<head>", "<head>\n  <meta name=\"docflow-codigo-tela\" content=\""
+          + HtmlUtils.htmlEscape(pagina.getCodigoTela()) + "\">");
       Files.writeString(workDir.resolve("paginas").resolve(pagina.getSlug() + ".html"), html);
       conteudos.put(pagina.getId(), conteudo);
     }
@@ -1160,6 +1163,29 @@ public class GeradorPacoteService {
             }
           });
         }
+        /** INT-605: hospedado em /manual/{chave}/site/, registra buscas e páginas abertas (sem identificar o leitor). */
+        const manualEventosUrl = (() => {
+          const m = location.pathname.match(/^(.*\\/manual\\/[^/]+)\\/site\\//);
+          return m ? `${m[1]}/eventos` : null;
+        })();
+        function manualRegistrar(evento) {
+          if (!manualEventosUrl) return;
+          try {
+            fetch(manualEventosUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(evento), keepalive: true }).catch(() => undefined);
+          } catch (e) { /* uso do manual não pode quebrar a leitura */ }
+        }
+        let manualBuscaTimer = null;
+        function manualRegistrarBusca(termo, resultados) {
+          clearTimeout(manualBuscaTimer);
+          if (!termo || termo.length < 3) return;
+          manualBuscaTimer = setTimeout(() => manualRegistrar({
+            tipo: resultados > 0 ? 'BUSCA' : 'BUSCA_SEM_RESULTADO', termo, resultados }), 1200);
+        }
+        document.addEventListener('DOMContentLoaded', () => {
+          const codigo = document.querySelector('meta[name="docflow-codigo-tela"]')?.content;
+          if (codigo) manualRegistrar({ tipo: 'PAGINA_ABERTA', codigoTela: codigo });
+        });
         /** Deep link por código de tela (INT-104): index.html?tela=PED-001 ou #tela=PED-001. */
         function manualDeepLink() {
           const hash = location.hash.startsWith('#tela=') ? decodeURIComponent(location.hash.slice(6)) : null;
@@ -1249,8 +1275,10 @@ public class GeradorPacoteService {
                 results.replaceChildren();
                 return;
               }
-              const matches = searchIndex
-                .filter(item => manualNormalize(`${item.titulo} ${item.codigoTela} ${item.texto}`).includes(normalizedTerm))
+              const encontrados = searchIndex
+                .filter(item => manualNormalize(`${item.titulo} ${item.codigoTela} ${item.texto}`).includes(normalizedTerm));
+              manualRegistrarBusca(term, encontrados.length);
+              const matches = encontrados
                 .slice(0, 12)
                 .map(item => {
                   const link = document.createElement('a');
@@ -1280,6 +1308,7 @@ public class GeradorPacoteService {
                 if (match) visible += 1;
               });
               empty.hidden = visible > 0;
+              manualRegistrarBusca(welcomeInput.value.trim(), visible);
               status.textContent = term
                 ? `${visible} ${visible === 1 ? 'guia encontrado' : 'guias encontrados'} para “${welcomeInput.value.trim()}”.`
                 : 'Explore os guias disponíveis abaixo.';

@@ -6,6 +6,7 @@ import com.nexus.portal.ai.config.AiGithubProperties;
 import com.nexus.portal.ai.config.AiGithubProperties.Repositorio;
 import com.nexus.portal.ai.dto.request.AiAjustePaginaRequest;
 import com.nexus.portal.ai.dto.request.CriarAiSessaoRequest;
+import com.nexus.portal.ai.entity.AiFilaOrigem;
 import com.nexus.portal.ai.entity.AiObjetivo;
 import com.nexus.portal.ai.entity.AiPrClassificacao;
 import com.nexus.portal.ai.entity.AiPrEvento;
@@ -150,6 +151,10 @@ public class AiPrIngestaoService {
     if (!evento.podeReprocessar()) {
       return;
     }
+    if (evento.getOrigem() == AiFilaOrigem.RELEASE) {
+      processarRelease(eventoId, evento);
+      return;
+    }
     Optional<Repositorio> repositorio = properties.repositorio(evento.getRepositorio());
     if (repositorio.isEmpty()) {
       atualizar(eventoId, e -> e.ignorar("Repositório " + e.getRepositorio() + " não está configurado."));
@@ -182,6 +187,27 @@ public class AiPrIngestaoService {
     }
   }
 
+  /**
+   * INT-303: "Gerar ajuste" num item de release — a instrução é o resumo e os itens da release.
+   * Página publicada aguarda voltar a rascunho, como nos PRs.
+   */
+  private void processarRelease(UUID eventoId, AiPrEvento evento) {
+    try {
+      Optional<PaginaAjuste> pagina = docFlowAiBridge.buscarPaginaPorCodigoTela(evento.getCodigoTela());
+      if (pagina.isEmpty()) {
+        atualizar(eventoId, e -> e.ignorar("A tela " + e.getCodigoTela() + " não tem página no DocFlow."));
+        return;
+      }
+      String instrucao = truncar("Atualize esta página para refletir a release " + evento.getRepositorio()
+          + " (\"" + evento.getTitulo() + "\"). Mudanças da release:\n" + textoOuVazio(evento.getCorpo()),
+          MAX_INSTRUCAO_AJUSTE);
+      abrirAjuste(eventoId, pagina.get(), instrucao);
+    } catch (RuntimeException ex) {
+      log.warn("ai.release.falha evento={} tela={}: {}", eventoId, evento.getCodigoTela(), ex.getMessage());
+      atualizar(eventoId, e -> e.falhar(mensagem(ex)));
+    }
+  }
+
   /** Agenda o processamento para depois do commit da transação atual (ou já, sem transação). */
   public void agendar(UUID eventoId) {
     if (TransactionSynchronizationManager.isSynchronizationActive()) {
@@ -198,16 +224,20 @@ public class AiPrIngestaoService {
 
   private void abrirAjuste(UUID eventoId, AiPrEvento evento, PaginaAjuste pagina,
       AiPrClassificador.Resultado resultado) {
+    String instrucao = truncar("Atualize esta página para refletir o PR " + evento.getRepositorio() + "#"
+        + evento.getNumeroPr() + " (mergeado): \"" + evento.getTitulo() + "\".\n"
+        + "Arquivos de tela alterados: " + String.join(", ", resultado.arquivosTela()) + ".\n"
+        + "Descrição do PR:\n" + textoOuVazio(evento.getCorpo()), MAX_INSTRUCAO_AJUSTE);
+    abrirAjuste(eventoId, pagina, instrucao);
+  }
+
+  private void abrirAjuste(UUID eventoId, PaginaAjuste pagina, String instrucao) {
     if (NAO_EDITAVEIS.contains(pagina.status())) {
       atualizar(eventoId, e -> e.aguardarRascunho(pagina.id(), "Página " + pagina.codigoTela() + " "
           + ("PUBLICADO".equals(pagina.status()) ? "publicada" : "aprovada")
           + ": volte para rascunho e reprocesse para gerar o ajuste."));
       return;
     }
-    String instrucao = truncar("Atualize esta página para refletir o PR " + evento.getRepositorio() + "#"
-        + evento.getNumeroPr() + " (mergeado): \"" + evento.getTitulo() + "\".\n"
-        + "Arquivos de tela alterados: " + String.join(", ", resultado.arquivosTela()) + ".\n"
-        + "Descrição do PR:\n" + textoOuVazio(evento.getCorpo()), MAX_INSTRUCAO_AJUSTE);
     transacao.executeWithoutResult(status -> {
       var resposta = ajusteService.pedir(pagina.id(),
           new AiAjustePaginaRequest(instrucao, null, pagina.version()), null);

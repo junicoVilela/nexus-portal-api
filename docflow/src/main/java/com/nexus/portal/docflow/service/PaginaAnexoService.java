@@ -45,13 +45,46 @@ public class PaginaAnexoService {
   }
 
   public Page<PaginaAnexo> listarBiblioteca(String busca, Pageable pageable) {
-    return busca == null || busca.isBlank()
+    return listarBiblioteca(busca, null, pageable);
+  }
+
+  /** INT-602: a biblioteca filtra por tela. */
+  public Page<PaginaAnexo> listarBiblioteca(String busca, String codigoTela, Pageable pageable) {
+    boolean semBusca = busca == null || busca.isBlank();
+    if (codigoTela != null && !codigoTela.isBlank()) {
+      return semBusca
+          ? paginaAnexoRepository.findByCodigoTelaIgnoreCase(codigoTela.trim(), pageable)
+          : paginaAnexoRepository.findByCodigoTelaIgnoreCaseAndNomeOriginalContainingIgnoreCase(
+              codigoTela.trim(), busca.trim(), pageable);
+    }
+    return semBusca
         ? paginaAnexoRepository.findAll(pageable)
         : paginaAnexoRepository.findByNomeOriginalContainingIgnoreCase(busca.trim(), pageable);
   }
 
+  public long capturasDaTela(String codigoTela) {
+    return codigoTela == null || codigoTela.isBlank() ? 0 : paginaAnexoRepository.countByCodigoTelaIgnoreCase(codigoTela);
+  }
+
+  /** Troca a tela/seletor de uma captura (ex.: print de outra tela citado nesta página). */
+  @Transactional
+  public PaginaAnexo vincularTela(UUID paginaId, UUID anexoId, String codigoTela, String seletor) {
+    paginaService.buscar(paginaId);
+    PaginaAnexo anexo = paginaAnexoRepository.findById(anexoId)
+        .filter(a -> a.getPagina().getId().equals(paginaId))
+        .orElseThrow(() -> new NotFoundException("Anexo não encontrado."));
+    anexo.vincularTela(codigoTela, seletor);
+    return anexo;
+  }
+
   @Transactional
   public PaginaAnexo anexar(UUID paginaId, MultipartFile file) {
+    return anexar(paginaId, file, null, null);
+  }
+
+  /** {@code codigoTela} vazio herda o da página (INT-602). */
+  @Transactional
+  public PaginaAnexo anexar(UUID paginaId, MultipartFile file, String codigoTela, String seletor) {
     Pagina pagina = paginaService.buscar(paginaId);
     validar(file);
     String nomeOriginal = file.getOriginalFilename() == null || file.getOriginalFilename().isBlank()
@@ -64,8 +97,10 @@ public class PaginaAnexoService {
     } catch (IOException ex) {
       throw new BusinessException("Falha ao salvar anexo: " + ex.getMessage());
     }
-    return paginaAnexoRepository.save(new PaginaAnexo(pagina, nomeOriginal, file.getContentType(), file.getSize(),
-        destino.toString()));
+    PaginaAnexo anexo = new PaginaAnexo(pagina, nomeOriginal, file.getContentType(), file.getSize(),
+        destino.toString());
+    anexo.vincularTela(codigoTela, seletor);
+    return paginaAnexoRepository.save(anexo);
   }
 
   /**

@@ -14,6 +14,7 @@ import com.nexus.portal.releaseorchestrator.entity.VisibilidadeItem;
 import com.nexus.portal.releaseorchestrator.repository.ReleaseHistoricoRepository;
 import com.nexus.portal.releaseorchestrator.repository.ReleaseItemRepository;
 import com.nexus.portal.releaseorchestrator.repository.ReleaseRepository;
+import com.nexus.portal.shared.events.ReleasePublicadaEvento;
 import com.nexus.portal.shared.exception.BusinessException;
 import com.nexus.portal.shared.exception.NotFoundException;
 import jakarta.transaction.Transactional;
@@ -27,6 +28,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -47,6 +49,7 @@ public class ReleaseService {
     private final ReleaseItemRepository itemRepository;
     private final ReleaseHistoricoRepository historicoRepository;
     private final ProdutoRhService produtoService;
+    private final ApplicationEventPublisher eventos;
 
     @Transactional
     public Release criar(ReleaseRequest request) {
@@ -99,7 +102,31 @@ public class ReleaseService {
         AcaoHistorico acao = resolverAcao(novoStatus);
         String descricao = request.observacao() != null ? request.observacao() : "Status alterado para " + novoStatus;
         registrarHistorico(release, acao, descricao, statusAtual, novoStatus);
+        if (novoStatus == ReleaseStatus.PUBLICADA) {
+            avisarPublicada(release);
+        }
         return release;
+    }
+
+    /**
+     * INT-301: avisa quem documenta. Quem escuta trata depois do commit, então uma falha lá não
+     * desfaz a publicação.
+     */
+    private void avisarPublicada(Release release) {
+        StringBuilder texto = new StringBuilder();
+        if (release.getResumo() != null) {
+            texto.append(release.getResumo()).append('\n');
+        }
+        for (ReleaseItem item : itemRepository.findByReleaseIdOrderByOrdemAsc(release.getId())) {
+            texto.append("- ").append(item.getTitulo());
+            if (item.getDescricao() != null && !item.getDescricao().isBlank()) {
+                texto.append(": ").append(item.getDescricao());
+            }
+            texto.append('\n');
+        }
+        eventos.publishEvent(new ReleasePublicadaEvento(release.getId(), release.getProduto().getNome(),
+            release.getVersao(), release.getTitulo(), texto.toString(),
+            "/release-orchestrator/releases/" + release.getId()));
     }
 
     @Transactional
@@ -115,6 +142,7 @@ public class ReleaseService {
         ReleaseStatus statusAnterior = release.getStatus();
         release.publicar(username());
         registrarHistorico(release, AcaoHistorico.PUBLICADA, "Release publicada", statusAnterior, ReleaseStatus.PUBLICADA);
+        avisarPublicada(release);
         return release;
     }
 

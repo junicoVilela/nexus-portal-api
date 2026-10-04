@@ -74,6 +74,13 @@ public class Pagina extends AuditableEntity {
   @Column(nullable = false, length = 20)
   private TipoPagina tipo = TipoPagina.ARTIGO;
 
+  /** INT-302: release que mexeu na tela depois da última publicação; some ao publicar de novo. */
+  @Column(name = "desatualizada_por", length = 200)
+  private String desatualizadaPor;
+
+  @Column(name = "desatualizada_em")
+  private OffsetDateTime desatualizadaEm;
+
   @Column(name = "template_origem_id")
   private UUID templateOrigemId;
 
@@ -165,6 +172,14 @@ public class Pagina extends AuditableEntity {
   public void publicar() {
     this.status = StatusPagina.PUBLICADO;
     this.publishedAt = OffsetDateTime.now();
+    this.desatualizadaPor = null;
+    this.desatualizadaEm = null;
+  }
+
+  /** Release (ex.: "Portal 1.5.0") alterou a tela documentada aqui. */
+  public void marcarDesatualizada(String release) {
+    this.desatualizadaPor = release;
+    this.desatualizadaEm = OffsetDateTime.now();
   }
 
   public void enviarRevisao() {
