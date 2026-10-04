@@ -19,6 +19,8 @@ public record AiFilaPrItemResponse(
     String repositorio,
     Integer numeroPr,
     String titulo,
+    /** Descrição do PR ou resumo e itens da release. */
+    String corpo,
     String url,
     String autor,
     String branchBase,
@@ -50,6 +52,7 @@ public record AiFilaPrItemResponse(
         evento.getRepositorio(),
         evento.getNumeroPr(),
         evento.getTitulo(),
+        evento.getCorpo(),
         evento.getUrl(),
         evento.getAutor(),
         evento.getBranchBase(),
