@@ -125,6 +125,7 @@ public class ManualRagService {
     campos.put("projeto", p.getModulo().getProjeto().getNome());
     campos.put("modulo", p.getModulo().getNome());
     campos.put("caminho", doc.caminho());
+    campos.put("tipo", p.menu() ? "menu" : null);
     campos.put("pai", p.getParent() == null ? null : p.getParent().getCodigoTela());
     campos.put("url", escopo.url() == null ? null : escopo.url().apply(p));
     campos.put("manual", escopo.titulo());
@@ -148,6 +149,7 @@ public class ManualRagService {
     item.put("projeto", p.getModulo().getProjeto().getNome());
     item.put("modulo", p.getModulo().getNome());
     item.put("caminho", doc.caminho());
+    item.put("tipo", p.menu() ? "MENU" : "ARTIGO");
     item.put("arquivo", PASTA + "/" + doc.arquivo());
     item.put("url", escopo.url() == null ? null : escopo.url().apply(p));
     item.put("sha256", sha256);

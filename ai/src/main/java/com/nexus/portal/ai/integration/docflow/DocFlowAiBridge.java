@@ -233,7 +233,7 @@ public class DocFlowAiBridge {
     UUID clienteConfirmadoId = clienteId;
     if (novoCliente) {
       clienteConfirmadoId = clienteService.criar(
-          new ClienteRequest(clienteNome, null, true, null, null)).getId();
+          new ClienteRequest(clienteNome, null, true)).getId();
     }
     if (clienteConfirmadoId != null) {
       clienteService.vincularProjeto(clienteConfirmadoId, projeto.getId());

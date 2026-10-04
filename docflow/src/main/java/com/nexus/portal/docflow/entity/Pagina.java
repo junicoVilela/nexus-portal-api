@@ -70,6 +70,10 @@ public class Pagina extends AuditableEntity {
   @Column(name = "published_at")
   private OffsetDateTime publishedAt;
 
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false, length = 20)
+  private TipoPagina tipo = TipoPagina.ARTIGO;
+
   @Column(name = "template_origem_id")
   private UUID templateOrigemId;
 
@@ -93,6 +97,17 @@ public class Pagina extends AuditableEntity {
     this.ativo = ativo;
     this.modulo = modulo;
     this.parent = parent;
+  }
+
+  /** Nulo mantém o tipo atual (clientes antigos da API não enviam o campo). */
+  public void definirTipo(TipoPagina tipo) {
+    if (tipo != null) {
+      this.tipo = tipo;
+    }
+  }
+
+  public boolean menu() {
+    return tipo == TipoPagina.MENU;
   }
 
   public void atualizar(String titulo, String slug, String codigoTela, String resumo, String conteudoHtml,

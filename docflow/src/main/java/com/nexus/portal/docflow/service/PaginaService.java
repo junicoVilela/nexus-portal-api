@@ -71,6 +71,7 @@ public class PaginaService {
         request.resumo(), sanitizar(request.conteudoHtml()), request.ordem() == null ? 0 : request.ordem(),
         request.ativo() == null || request.ativo(), modulo, parent);
     pagina.definirOrigemTemplate(request.templateOrigemId(), request.templateOrigemVersao());
+    pagina.definirTipo(request.tipo());
     pagina = paginaRepository.save(pagina);
     registrarRevisao(pagina, usuario, TipoRevisaoPagina.CRIACAO, "Página criada como rascunho.");
     auditoriaService.registrar("PAGINA", pagina.getId(), "CRIAR", pagina.getTitulo(), principal);
@@ -92,6 +93,7 @@ public class PaginaService {
         conteudoHtml, request.ordem() == null ? 0 : request.ordem(),
         request.ativo() == null || request.ativo(), modulo, parent);
     pagina.definirOrigemTemplate(request.templateOrigemId(), request.templateOrigemVersao());
+    pagina.definirTipo(request.tipo());
     paginaRepository.flush();
     registrarRevisao(pagina, username(principal), TipoRevisaoPagina.SALVAMENTO_MANUAL,
         "Conteúdo salvo manualmente.");
@@ -115,6 +117,7 @@ public class PaginaService {
         sanitizar(request.conteudoHtml()), request.ordem() == null ? 0 : request.ordem(),
         request.ativo() == null || request.ativo(), modulo, parent);
     pagina.definirOrigemTemplate(request.templateOrigemId(), request.templateOrigemVersao());
+    pagina.definirTipo(request.tipo());
     paginaRepository.flush();
     return pagina;
   }
@@ -335,6 +338,7 @@ public class PaginaService {
         origem.getModulo(),
         novoParent));
     copia.definirOrigemTemplate(origem.getTemplateOrigemId(), origem.getTemplateOrigemVersao());
+    copia.definirTipo(origem.getTipo());
     copia.atualizarConteudo(duplicarAnexos(origem, copia));
     registrarRevisao(copia, usuario, TipoRevisaoPagina.DUPLICACAO,
         "Página criada a partir de uma duplicação.");

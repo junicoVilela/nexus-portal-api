@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -40,8 +39,6 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class ClienteService {
 
-  private static final Pattern COR_HEX_PERMITIDO =
-      Pattern.compile("#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})");
 
   private final ClienteRepository clienteRepository;
   private final ModuloService moduloService;
@@ -62,9 +59,7 @@ public class ClienteService {
     if (clienteRepository.existsBySlug(slug)) {
       throw new BusinessException("Já existe cliente com o slug informado.");
     }
-    Cliente cliente = new Cliente(request.nome().trim(), slug, active(request.ativo()));
-    cliente.definirTemas(corTemaOuNull(request.temaCorPrimaria()), corTemaOuNull(request.temaCorFundo()));
-    return clienteRepository.save(cliente);
+    return clienteRepository.save(new Cliente(request.nome().trim(), slug, active(request.ativo())));
   }
 
   @Transactional
@@ -75,8 +70,7 @@ public class ClienteService {
     if (clienteRepository.existsBySlugAndIdNot(slug, id)) {
       throw new BusinessException("Já existe cliente com o slug informado.");
     }
-    cliente.atualizar(request.nome().trim(), slug, active(request.ativo()),
-        corTemaOuNull(request.temaCorPrimaria()), corTemaOuNull(request.temaCorFundo()));
+    cliente.atualizar(request.nome().trim(), slug, active(request.ativo()));
     return cliente;
   }
 
@@ -230,17 +224,6 @@ public class ClienteService {
 
   private boolean active(Boolean value) {
     return value == null || value;
-  }
-
-  private String corTemaOuNull(String cor) {
-    if (cor == null || cor.isBlank()) {
-      return null;
-    }
-    String t = cor.trim();
-    if (!COR_HEX_PERMITIDO.matcher(t).matches()) {
-      throw new BusinessException("Cor de tema inválida. Use formato hexadecimal (#RGB, #RRGGBB ou #RRGGBBAA).");
-    }
-    return t;
   }
 
   private String lowerBlankToNull(String value) {

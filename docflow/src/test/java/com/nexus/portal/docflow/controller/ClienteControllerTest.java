@@ -73,17 +73,6 @@ class ClienteControllerTest {
   }
 
   @Test
-  void criar_comCorDeTemaInvalida_devolve422() throws Exception {
-    when(clienteService.criar(any()))
-        .thenThrow(new BusinessException("Cor de tema inválida."));
-
-    mockMvc.perform(post("/api/v1/docflow/clientes")
-            .contentType(MediaType.APPLICATION_JSON)
-            .content("{\"nome\":\"ACME\",\"temaCorPrimaria\":\"vermelho\"}"))
-        .andExpect(status().isUnprocessableEntity());
-  }
-
-  @Test
   void buscar_inexistente_devolve404() throws Exception {
     UUID id = UUID.randomUUID();
     when(clienteService.buscar(id)).thenThrow(new NotFoundException("Cliente não encontrado."));

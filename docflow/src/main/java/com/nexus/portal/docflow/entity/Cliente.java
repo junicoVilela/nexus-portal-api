@@ -51,22 +51,22 @@ public class Cliente extends AuditableEntity {
   @Column(name = "tema_cor_fundo", length = 20)
   private String temaCorFundo;
 
+  /**
+   * Tema padronizado (V29): todo manual usa a identidade do portal. As colunas de tema ficam com o
+   * padrão e não vêm mais da API.
+   */
   public Cliente(String nome, String slug, boolean ativo) {
     this.nome = nome;
     this.slug = slug;
     this.ativo = ativo;
-  }
-
-  public void definirTemas(String temaCorPrimaria, String temaCorFundo) {
     this.temaCorPrimaria = TEMA_COR_PRIMARIA_PADRAO;
     this.temaCorFundo = TEMA_COR_FUNDO_PADRAO;
   }
 
-  public void atualizar(String nome, String slug, boolean ativo, String temaCorPrimaria, String temaCorFundo) {
+  public void atualizar(String nome, String slug, boolean ativo) {
     this.nome = nome;
     this.slug = slug;
     this.ativo = ativo;
-    definirTemas(temaCorPrimaria, temaCorFundo);
   }
 
   public void definirLogo(String path, String contentType) {

@@ -20,6 +20,25 @@ class PaginaQualidadeServiceTest {
   }
 
   @Test
+  void menuPrecisaDePoucoTextoENaoCobraRegrasDeArtigo() {
+    Pagina menu = pagina("<p>Rotinas de vendas do sistema.</p><div class=\"screen-placeholder\"></div>",
+        "Pasta com as operações de vendas do sistema.");
+    menu.definirTipo(com.nexus.portal.docflow.entity.TipoPagina.MENU);
+
+    var resultado = service.avaliar(menu);
+
+    assertThat(resultado.aptoParaRevisao()).isTrue();
+    assertThat(resultado.itens()).extracting(PaginaQualidadeService.ItemQualidade::codigo)
+        .doesNotContain("SECOES", "CAPTURA", "RESULTADO", "PRE_REQS");
+  }
+
+  @Test
+  void mesmoTextoCurtoComoArtigoNaoPassa() {
+    Pagina artigo = pagina("<p>Rotinas de vendas.</p>", "Pasta com as operações de vendas do sistema.");
+    assertThat(service.avaliar(artigo).aptoParaRevisao()).isFalse();
+  }
+
+  @Test
   void avaliar_comConteudoFinalizado_deveEstarAptoParaRevisao() {
     Pagina pagina = pagina(
         "<h2>Como cadastrar</h2><p>Acesse a tela de clientes, preencha os dados obrigatórios, "

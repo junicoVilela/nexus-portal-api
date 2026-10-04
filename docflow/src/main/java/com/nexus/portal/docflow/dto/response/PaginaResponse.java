@@ -1,6 +1,7 @@
 package com.nexus.portal.docflow.dto.response;
 
 import com.nexus.portal.docflow.entity.Pagina;
+import com.nexus.portal.docflow.entity.TipoPagina;
 import com.nexus.portal.docflow.entity.StatusPagina;
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -31,7 +32,8 @@ public record PaginaResponse(
     OffsetDateTime createdAt,
     OffsetDateTime updatedAt,
     String createdBy,
-    String updatedBy) {
+    String updatedBy,
+    TipoPagina tipo) {
   public static PaginaResponse from(Pagina pagina) {
     return new PaginaResponse(
         pagina.getId(),
@@ -59,6 +61,7 @@ public record PaginaResponse(
         pagina.getCreatedAt(),
         pagina.getUpdatedAt(),
         pagina.getCreatedBy(),
-        pagina.getUpdatedBy());
+        pagina.getUpdatedBy(),
+        pagina.getTipo());
   }
 }

@@ -14,6 +14,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -112,10 +114,15 @@ public class ManualCorpusService {
       throw new NotFoundException("O pacote da publicação " + publicacao.getVersao() + " não está mais disponível.");
     }
     try (ZipFile arquivo = new ZipFile(zip.toFile())) {
+      Set<String> menus = new HashSet<>();
       Map<String, Documento> documentos = arquivo.getEntry(ManualRagService.PASTA + "/index.json") != null
-          ? lerRag(arquivo)
+          ? lerRag(arquivo, menus)
           : lerIndiceDeBusca(arquivo);
-      List<Secao> secoes = documentos.values().stream().flatMap(d -> secoes(d).stream()).toList();
+      // Menus (pastas) só têm links: ficam para listar e abrir, mas não respondem perguntas.
+      List<Secao> secoes = documentos.values().stream()
+          .filter(d -> !menus.contains(d.codigoTela()))
+          .flatMap(d -> secoes(d).stream())
+          .toList();
       Corpus corpus = new Corpus(publicacao.getId(), publicacao.getCliente().getNome(), publicacao.getVersao(),
           documentos, secoes);
       if (cache.size() >= MAX_EM_CACHE) {
@@ -128,10 +135,13 @@ public class ManualCorpusService {
     }
   }
 
-  private Map<String, Documento> lerRag(ZipFile arquivo) throws IOException {
+  private Map<String, Documento> lerRag(ZipFile arquivo, Set<String> menus) throws IOException {
     Map<String, Documento> documentos = new LinkedHashMap<>();
     JsonNode index = objectMapper.readTree(ler(arquivo, ManualRagService.PASTA + "/index.json"));
     for (JsonNode item : index.path("documentos")) {
+      if ("MENU".equals(item.path("tipo").asText())) {
+        menus.add(item.path("codigoTela").asText());
+      }
       String markdown = ler(arquivo, item.path("arquivo").asText());
       documentos.put(item.path("codigoTela").asText(), new Documento(
           item.path("codigoTela").asText(),

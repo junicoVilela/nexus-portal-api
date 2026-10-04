@@ -295,6 +295,35 @@ class GeradorPacoteServiceTest {
     }
   }
 
+  @Test
+  void menuSemListaGanhaNestaSecaoEPastaFicaMarcadaNoRag() throws Exception {
+    Pagina menu = paginaPublicada("Vendas", "vendas", 0);
+    menu.definirTipo(com.nexus.portal.docflow.entity.TipoPagina.MENU);
+    setField(menu, "conteudoHtml", "<p>Rotinas de vendas.</p>");
+    Pagina filho = paginaPublicadaComPai("Pedidos", "pedidos", 0, menu);
+    when(clienteModuloRepository.findModuloIdsByClienteId(clienteId)).thenReturn(List.of(modulo.getId()));
+    when(paginaRepository.findAtivasByStatusWithModulo(StatusPagina.PUBLICADO)).thenReturn(List.of(menu, filho));
+
+    ResultadoGeracao resultado = service.gerar(cliente, "1.0.0");
+
+    try (ZipFile zf = new ZipFile(Path.of(resultado.arquivoZipCaminho()).toFile())) {
+      assertThat(ler(zf, "paginas/vendas.html"))
+          .contains("Nesta seção", "href=\"pedidos.html\" data-codigo-tela=\"PEDIDOS\"");
+      assertThat(ler(zf, "rag/suite/VENDAS.md")).contains("tipo: \"menu\"", "[Pedidos](PEDIDOS.md)");
+      assertThat(ler(zf, "rag/index.json")).contains("\"tipo\" : \"MENU\"");
+    }
+  }
+
+  @Test
+  void menuQueJaListaAsSubpaginasFicaComoEsta() throws Exception {
+    Pagina menu = paginaPublicada("Vendas", "vendas", 0);
+    menu.definirTipo(com.nexus.portal.docflow.entity.TipoPagina.MENU);
+    Pagina filho = paginaPublicadaComPai("Pedidos", "pedidos", 0, menu);
+    String html = "<p>Veja <a href=\"pedidos.html\">Pedidos</a>.</p>";
+    assertThat(GeradorPacoteService.conteudoDoMenu(menu, html, List.of(menu, filho))).isEqualTo(html);
+    assertThat(GeradorPacoteService.conteudoDoMenu(filho, html, List.of(menu, filho))).isEqualTo(html);
+  }
+
   private static String ler(ZipFile zf, String nome) throws Exception {
     assertThat(zf.getEntry(nome)).as(nome).isNotNull();
     return new String(zf.getInputStream(zf.getEntry(nome)).readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);

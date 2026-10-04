@@ -368,13 +368,45 @@ public class GeradorPacoteService {
     Map<UUID, String> conteudos = new LinkedHashMap<>();
     for (Pagina pagina : paginas) {
       String menu = menuHtml(paginas, "", pagina.getSlug());
-      String conteudo = prepararConteudoComAnexos(pagina, workDir.resolve("assets"), "../assets");
+      String conteudo = conteudoDoMenu(pagina,
+          prepararConteudoComAnexos(pagina, workDir.resolve("assets"), "../assets"), paginas);
       String html = template(cliente, versao, pagina.getTitulo(), breadcrumb(pagina), menu,
           conteudo, "../assets");
       Files.writeString(workDir.resolve("paginas").resolve(pagina.getSlug() + ".html"), html);
       conteudos.put(pagina.getId(), conteudo);
     }
     return conteudos;
+  }
+
+  /**
+   * PLAT-02: um menu sem a lista das subpáginas ganha "Nesta seção" gerada. Os itens levam
+   * {@code data-codigo-tela}: viram link para o .md da tela na base de RAG.
+   */
+  static String conteudoDoMenu(Pagina pagina, String conteudo, List<Pagina> paginas) {
+    if (!pagina.menu()) {
+      return conteudo;
+    }
+    List<Pagina> filhos = paginas.stream()
+        .filter(p -> p.getParent() != null && p.getParent().getId().equals(pagina.getId()))
+        .toList();
+    org.jsoup.nodes.Document doc = Jsoup.parseBodyFragment(conteudo == null ? "" : conteudo);
+    boolean jaLista = !filhos.isEmpty() && filhos.stream().allMatch(f ->
+        !doc.select("a[href*=\"" + f.getSlug() + ".html\"], [data-codigo-tela=\""
+            + f.getCodigoTela().replace("\"", "") + "\"]").isEmpty());
+    if (filhos.isEmpty() || jaLista) {
+      return conteudo;
+    }
+    StringBuilder lista = new StringBuilder("<section class=\"doc-section menu-filhos\"><h2>Nesta seção</h2><ul>");
+    for (Pagina filho : filhos) {
+      lista.append("<li><a href=\"").append(HtmlUtils.htmlEscape(filho.getSlug())).append(".html\" data-codigo-tela=\"")
+          .append(HtmlUtils.htmlEscape(filho.getCodigoTela())).append("\">")
+          .append(HtmlUtils.htmlEscape(filho.getTitulo())).append("</a>");
+      if (filho.getResumo() != null && !filho.getResumo().isBlank()) {
+        lista.append(" — ").append(HtmlUtils.htmlEscape(filho.getResumo().strip()));
+      }
+      lista.append("</li>");
+    }
+    return (conteudo == null ? "" : conteudo) + lista.append("</ul></section>");
   }
 
   private String prepararConteudoComAnexos(Pagina pagina, Path assetsDir, String assetBase) throws IOException {

@@ -16,6 +16,11 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class PaginaQualidadeService {
 
+  static final int MINIMO_ARTIGO = 80;
+  static final int MINIMO_MENU = 20;
+  static final Set<String> REGRAS_SO_DE_ARTIGO = Set.of(
+      "SECOES", "CAPTURA", "RESULTADO", "PRE_REQS");
+
   private final PaginaSnippetService paginaSnippetService;
 
   private static final Pattern PLACEHOLDER = Pattern.compile(
@@ -52,8 +57,14 @@ public class PaginaQualidadeService {
         pagina.getTitulo() != null && !pagina.getTitulo().isBlank(), Severidade.ERRO));
     itens.add(item("CODIGO_TELA", "Código da tela definido", "Vincule a documentação à tela correta.",
         pagina.getCodigoTela() != null && !pagina.getCodigoTela().isBlank(), Severidade.ERRO));
+    // Menu (PLAT-02) é pasta de navegação: basta uma apresentação curta da seção.
+    boolean menu = pagina.menu();
+    int minimo = menu ? MINIMO_MENU : MINIMO_ARTIGO;
     itens.add(item("CONTEUDO", "Conteúdo desenvolvido",
-        "A página precisa ter pelo menos 80 caracteres de conteúdo útil.", texto.length() >= 80,
+        menu
+            ? "Apresente a seção em ao menos " + MINIMO_MENU + " caracteres; as subpáginas trazem o conteúdo."
+            : "A página precisa ter pelo menos " + MINIMO_ARTIGO + " caracteres de conteúdo útil.",
+        texto.length() >= minimo,
         Severidade.ERRO));
     itens.add(item("PLACEHOLDERS", "Textos de orientação substituídos",
         placeholderEncontrado != null
@@ -102,6 +113,10 @@ public class PaginaQualidadeService {
             : "Pré-requisitos presentes ou passo a passo não utilizado.",
         !temSteps || temChecklist || temPreRequisitos, Severidade.AVISO));
 
+    if (menu) {
+      // Regras de artigo (seções, captura, passo a passo) não se aplicam a uma pasta.
+      itens.removeIf(item -> REGRAS_SO_DE_ARTIGO.contains(item.codigo()));
+    }
     boolean apto = itens.stream().noneMatch(item -> item.severidade() == Severidade.ERRO && !item.ok());
     return new ResultadoQualidade(apto, List.copyOf(itens));
   }

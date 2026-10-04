@@ -78,7 +78,7 @@ class ClienteServiceTest {
   void criar_comDadosValidos_deveCriarCliente() {
     when(clienteRepository.existsBySlug("acme-corp")).thenReturn(false);
 
-    ClienteRequest request = new ClienteRequest("Acme Corp", "acme-corp", true, null, null);
+    ClienteRequest request = new ClienteRequest("Acme Corp", "acme-corp", true);
     Cliente cliente = service.criar(request);
 
     assertThat(cliente.getNome()).isEqualTo("Acme Corp");
@@ -91,7 +91,7 @@ class ClienteServiceTest {
   void criar_comSlugDuplicado_deveLancarBusinessException() {
     when(clienteRepository.existsBySlug("acme-corp")).thenReturn(true);
 
-    ClienteRequest request = new ClienteRequest("Acme Corp", "acme-corp", true, null, null);
+    ClienteRequest request = new ClienteRequest("Acme Corp", "acme-corp", true);
 
     assertThatThrownBy(() -> service.criar(request))
         .isInstanceOf(BusinessException.class)
@@ -99,25 +99,14 @@ class ClienteServiceTest {
   }
 
   @Test
-  void criar_comCorTemaInvalida_deveLancarBusinessException() {
+  void criar_usaSempreOTemaPadrao() {
     when(clienteRepository.existsBySlug(any())).thenReturn(false);
+    when(clienteRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-    ClienteRequest request = new ClienteRequest("Acme Corp", null, true, "cor-invalida", null);
+    Cliente cliente = service.criar(new ClienteRequest("Acme Corp", null, true));
 
-    assertThatThrownBy(() -> service.criar(request))
-        .isInstanceOf(BusinessException.class)
-        .hasMessageContaining("Cor de tema inválida");
-  }
-
-  @Test
-  void criar_comCorTemaHexValida_deveCriarComTema() {
-    when(clienteRepository.existsBySlug(any())).thenReturn(false);
-
-    ClienteRequest request = new ClienteRequest("Acme Corp", null, true, "#4f46e5", "#f7f8fa");
-    Cliente cliente = service.criar(request);
-
-    assertThat(cliente.getTemaCorPrimaria()).isEqualTo("#4f46e5");
-    assertThat(cliente.getTemaCorFundo()).isEqualTo("#f7f8fa");
+    assertThat(cliente.getTemaCorPrimaria()).isEqualTo(Cliente.TEMA_COR_PRIMARIA_PADRAO);
+    assertThat(cliente.getTemaCorFundo()).isEqualTo(Cliente.TEMA_COR_FUNDO_PADRAO);
   }
 
   @Test
@@ -222,7 +211,7 @@ class ClienteServiceTest {
     when(clienteRepository.findById(id)).thenReturn(Optional.of(cliente));
     when(clienteRepository.existsBySlugAndIdNot("novo-slug", id)).thenReturn(true);
 
-    ClienteRequest request = new ClienteRequest("Acme Corp", "novo-slug", true, null, null);
+    ClienteRequest request = new ClienteRequest("Acme Corp", "novo-slug", true);
 
     assertThatThrownBy(() -> service.atualizar(id, request))
         .isInstanceOf(BusinessException.class)
