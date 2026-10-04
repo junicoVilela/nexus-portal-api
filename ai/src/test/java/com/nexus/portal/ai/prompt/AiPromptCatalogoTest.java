@@ -22,7 +22,9 @@ class AiPromptCatalogoTest {
       "analise-documento-amplo.system",
       "analise-documento-amplo.user",
       "ajustar-pagina.system",
-      "ajustar-pagina.user"})
+      "ajustar-pagina.user",
+      "responder-manual.system",
+      "responder-manual.user"})
   void todoPromptTemVersaoETexto(String nome) {
     Prompt prompt = AiPromptCatalogo.carregar(nome);
     assertThat(prompt.versao()).isPositive();
@@ -32,7 +34,8 @@ class AiPromptCatalogoTest {
 
   @Test
   void systemPromptsNaoTemVariaveis() {
-    for (String nome : Set.of("gerar-page-spec", "analise-documento", "analise-documento-amplo", "ajustar-pagina")) {
+    for (String nome : Set.of("gerar-page-spec", "analise-documento", "analise-documento-amplo", "ajustar-pagina",
+        "responder-manual")) {
       assertThat(AiPromptCatalogo.carregar(nome + ".system").variaveis()).as(nome).isEmpty();
     }
   }

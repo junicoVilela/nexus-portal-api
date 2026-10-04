@@ -609,6 +609,7 @@ public class GeradorPacoteService {
             .article-content .doc-intro--center{text-align:center}.article-content .filter-chips p{display:flex;flex-wrap:wrap;gap:9px;margin:0}.article-content .filter-chip{display:inline-flex;padding:7px 16px;border:1px solid var(--border);border-radius:999px;color:var(--muted);font-size:12px;font-weight:700}.article-content .filter-chip--active{border-color:var(--accent);background:var(--accent);color:#fff}.article-content .resource-list{display:grid;overflow:hidden;border:1px solid var(--border);border-radius:12px;background:#fff}.article-content .resource-item{display:flex;padding:12px 15px;align-items:center;gap:12px;border-bottom:1px solid var(--border)}.article-content .resource-item:last-child{border-bottom:0}.article-content .resource-item>span:not(.number-badge){display:grid;min-width:0;flex:1}.article-content .resource-item strong{color:var(--accent)}.article-content .resource-item small,.article-content .resource-item>span:last-child{color:var(--muted);font-size:11px}.article-content .resource-item__meta{flex:0 0 auto!important;text-align:right}.article-content .rank-list{display:grid;gap:9px;padding:0;list-style:none;counter-reset:rank}.article-content .rank-list li{position:relative;margin:0;padding-left:34px;counter-increment:rank}.article-content .rank-list li:before{position:absolute;left:0;display:grid;width:24px;height:24px;place-items:center;border:1px solid #a5b4fc;border-radius:50%%;color:var(--accent);content:counter(rank);font-size:11px;font-weight:700}
             .article-content .journey-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:16px}.article-content .journey-card{position:relative;min-height:178px;padding:54px 17px 18px;border:1px solid var(--border);border-radius:12px;background:#fff;text-align:center}.article-content .journey-card:not(:last-child):after{position:absolute;top:50%%;right:-15px;color:var(--accent);content:'→';font-weight:700}.article-content .journey-card__number{position:absolute;top:15px;left:15px;display:grid;width:27px;height:27px;place-items:center;border-radius:50%%;background:var(--accent);color:#fff;font-size:11px;font-weight:700}.article-content .journey-card h3{margin:0 0 8px;color:var(--accent)}.article-content .journey-card p{margin:0;color:var(--muted);font-size:12px}.article-content .status-list{display:grid;padding:0;overflow:hidden;border:1px solid var(--border);border-radius:8px;list-style:none}.article-content .status-item{display:flex;margin:0;padding:10px 13px;justify-content:space-between;gap:12px;border-bottom:1px solid var(--border)}.article-content .status-item:last-child{border-bottom:0}.article-content .status-item strong{color:var(--muted);font-size:11px}.article-content .status-item--done strong{color:#10b981}.article-content .status-item--progress strong{color:#f59e0b}.article-content .related-links{margin-top:26px;padding-top:18px;border-top:1px solid var(--border)}.article-content .related-links p{display:flex;flex-wrap:wrap;gap:10px 24px;margin:0}.article-content .related-links strong{flex-basis:100%%}.article-content .related-links span{color:var(--accent);font-size:12px;font-weight:700}.article-content .related-links span:after{margin-left:7px;content:'→'}
             @media(max-width:900px){.shell{display:block;grid-template-columns:1fr}aside{position:static;height:auto}main{padding:16px}.article-content .content-grid--2,.article-content .content-grid--3,.article-content .annotation-grid,.article-content .screen-grid,.article-content .flow-strip,.article-content .journey-grid{grid-template-columns:1fr}.article-content .flow-strip li:not(:last-child):after,.article-content .journey-card:not(:last-child):after{top:auto;right:50%%;bottom:-25px;transform:translateX(50%%) rotate(90deg)}.article-content .resource-item{align-items:flex-start;flex-wrap:wrap}.article-content .resource-item__meta{flex-basis:100%%!important;text-align:left}}
+            .ask{margin:0 0 20px;padding:16px 18px;border:1px solid var(--border);border-radius:12px;background:var(--surface)}.ask[hidden]{display:none}.ask form{display:flex;gap:8px}.ask input{flex:1;min-width:0;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font:inherit}.ask button{padding:10px 16px;border:0;border-radius:8px;background:var(--accent);color:#fff;font-weight:600;cursor:pointer}.ask button:disabled{opacity:.6;cursor:wait}.ask-label{display:block;margin-bottom:8px;font-weight:600}.ask-resposta{margin-top:12px;white-space:pre-wrap;line-height:1.55}.ask-resposta--nao-sei{color:var(--muted)}.ask-citacoes{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;padding:0;list-style:none}.ask-citacoes button{padding:5px 10px;border:1px solid var(--accent);border-radius:999px;background:var(--accent-soft);color:var(--accent);font-size:12px;font-weight:600}.ask-aviso{margin-top:8px;color:var(--muted);font-size:12px}
           </style>
         </head>
         <body>
@@ -617,7 +618,17 @@ public class GeradorPacoteService {
               %s
               <nav>%s</nav>
             </aside>
-            <main>%s</main>
+            <main>
+              <section class="ask" id="ask" hidden aria-label="Pergunte ao manual">
+                <label class="ask-label" for="ask-pergunta">Pergunte ao manual</label>
+                <form id="ask-form">
+                  <input id="ask-pergunta" maxlength="500" placeholder="Ex.: como filtrar os pedidos por status?" autocomplete="off">
+                  <button type="submit">Perguntar</button>
+                </form>
+                <div id="ask-saida" aria-live="polite"></div>
+              </section>
+              %s
+            </main>
           </div>
           <script>
             const links=Array.from(document.querySelectorAll('aside a[data-page]'));
@@ -639,6 +650,36 @@ public class GeradorPacoteService {
             const paginaDaTela=telaPedida?pages.find(page=>page.dataset.codigoTela===telaPedida):null;
             const initial=paginaDaTela?paginaDaTela.id:(location.hash&&!telaPedida?location.hash.slice(1):links[0]?.dataset.page);
             if(initial)openPage(initial,!location.hash||!!paginaDaTela);
+            // Pergunte ao manual (INT-503): só na prévia por token; responde com o manual vigente do cliente.
+            (function(){
+              const m=location.pathname.match(/^(.*)\\/preview\\/([^/?#]+)/);
+              const ask=document.getElementById('ask');
+              if(!m||!ask)return;
+              const base=m[1].endsWith('/doc-flow')?m[1].replace(/\\/doc-flow$/,'/ai'):m[1]+'/ai';
+              const url=base+'/manual/'+encodeURIComponent(m[2])+'/perguntar';
+              const form=document.getElementById('ask-form'),campo=document.getElementById('ask-pergunta'),saida=document.getElementById('ask-saida'),botao=form.querySelector('button');
+              ask.hidden=false;
+              function mostrar(texto,classe){const p=document.createElement('p');p.className=classe;p.textContent=texto;saida.replaceChildren(p);return p;}
+              form.addEventListener('submit',async event=>{
+                event.preventDefault();
+                const pergunta=campo.value.trim();
+                if(pergunta.length<3)return;
+                botao.disabled=true;mostrar('Procurando no manual…','ask-aviso');
+                try{
+                  const resposta=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pergunta})});
+                  if(!resposta.ok)throw new Error(resposta.status===503?'IA indisponível':'falha');
+                  const dados=await resposta.json();
+                  mostrar(dados.resposta,dados.modo==='NAO_SEI'?'ask-resposta ask-resposta--nao-sei':'ask-resposta');
+                  if(dados.citacoes&&dados.citacoes.length){
+                    const lista=document.createElement('ul');lista.className='ask-citacoes';
+                    dados.citacoes.forEach(c=>{const li=document.createElement('li'),b=document.createElement('button');b.type='button';b.textContent=c.titulo+(c.secao?' — '+c.secao:'')+' ('+c.codigoTela+')';b.addEventListener('click',()=>{const page=pages.find(p=>p.dataset.codigoTela===c.codigoTela);if(page)openPage(page.id);});li.append(b);lista.append(li);});
+                    saida.append(lista);
+                  }
+                  if(dados.modo!=='NAO_SEI'){const aviso=document.createElement('p');aviso.className='ask-aviso';aviso.textContent='Resposta baseada no '+dados.manual+'. Confira na página citada.';saida.append(aviso);}
+                }catch(erro){mostrar('Não foi possível perguntar agora. Use a busca ao lado.','ask-aviso');}
+                finally{botao.disabled=false;}
+              });
+            })();
           </script>
         </body>
         </html>
@@ -650,10 +691,11 @@ public class GeradorPacoteService {
     String ac = cliente.getTemaCorPrimariaOuPadrao();
     String bg = cliente.getTemaCorFundoOuPadrao();
     String hover = accentHover(ac);
-    return "--font-ui:Roboto,system-ui,\"Segoe UI\",Arial,sans-serif;"
+    // Parênteses: sem eles o .formatted só alcança o último trecho e as cores saem trocadas.
+    return ("--font-ui:Roboto,system-ui,\"Segoe UI\",Arial,sans-serif;"
         + "--font-body:Roboto,system-ui,\"Segoe UI\",Arial,sans-serif;"
         + "--border:#e5e8ee;--bg:%s;--surface:#fff;--text:#0b1220;--muted:#6b7280;"
-        + "--accent:%s;--accent-hover:%s;--accent-soft:%s"
+        + "--accent:%s;--accent-hover:%s;--accent-soft:%s")
             .formatted(bg, ac, hover, Cliente.TEMA_COR_SOFT_PADRAO);
   }
 

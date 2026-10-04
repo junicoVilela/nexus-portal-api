@@ -23,7 +23,9 @@ public final class FakeLlmProvider implements LlmProvider {
   public LlmCompletion completar(String systemPrompt, String userPrompt) {
     String prompt = (systemPrompt == null ? "" : systemPrompt) + "\n" + (userPrompt == null ? "" : userPrompt);
     String content;
-    if (prompt.contains("TAREFA=AJUSTAR_PAGINA")) {
+    if (prompt.contains("TAREFA=RESPONDER_MANUAL")) {
+      content = responderManual(userPrompt == null ? "" : userPrompt);
+    } else if (prompt.contains("TAREFA=AJUSTAR_PAGINA")) {
       content = ajustarPagina(userPrompt == null ? "" : userPrompt);
     } else if (prompt.contains("GERAR_PAGE_SPEC")) {
       content = gerarPageSpec(userPrompt == null ? "" : userPrompt);
@@ -44,6 +46,16 @@ public final class FakeLlmProvider implements LlmProvider {
     }
     int tokens = Math.max(1, content.length() / 4);
     return LlmCompletion.of(content, tokens / 2, tokens / 2);
+  }
+
+  /** Resposta determinística: cita o primeiro trecho recebido. */
+  private String responderManual(String userPrompt) {
+    Matcher codigo = Pattern.compile("(?m)^codigoTela: (\\S+)").matcher(userPrompt);
+    if (!codigo.find()) {
+      return "{\"encontrou\":false,\"resposta\":\"\",\"citacoes\":[]}";
+    }
+    return "{\"encontrou\":true,\"resposta\":\"Segundo o manual, veja a tela " + codigo.group(1)
+        + ".\",\"citacoes\":[\"" + codigo.group(1) + "\"]}";
   }
 
   /** Ajuste determinístico: acrescenta "(ajustado)" à primeira unidade editável do esboço. */

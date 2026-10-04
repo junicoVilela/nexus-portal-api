@@ -10,12 +10,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.portal.ai.entity.AiCategoriaRejeicao;
 import com.nexus.portal.ai.entity.AiJob;
 import com.nexus.portal.ai.entity.AiJobTipo;
+import com.nexus.portal.ai.entity.AiManualPergunta;
 import com.nexus.portal.ai.entity.AiObjetivo;
 import com.nexus.portal.ai.entity.AiProposta;
 import com.nexus.portal.ai.entity.AiPropostaTipo;
 import com.nexus.portal.ai.entity.AiSessao;
 import com.nexus.portal.ai.integration.docflow.DocFlowAiBridge;
 import com.nexus.portal.ai.repository.AiJobRepository;
+import com.nexus.portal.ai.repository.AiManualPerguntaRepository;
 import com.nexus.portal.ai.repository.AiPropostaRepository;
 import com.nexus.portal.shared.exception.BusinessException;
 import java.util.List;
@@ -29,6 +31,7 @@ class AiMetricasServiceTest {
   private final AiPropostaRepository propostaRepository = mock(AiPropostaRepository.class);
   private final ObjectMapper objectMapper = new ObjectMapper();
   private final DocFlowAiBridge bridge = mock(DocFlowAiBridge.class);
+  private final AiManualPerguntaRepository manualRepository = mock(AiManualPerguntaRepository.class);
   private final AiPagePatchService patchService =
       new AiPagePatchService(objectMapper, bridge, new AiHtmlSanitizer());
   private AiMetricasService service;
@@ -37,7 +40,7 @@ class AiMetricasServiceTest {
 
   @BeforeEach
   void setUp() {
-    service = new AiMetricasService(jobRepository, propostaRepository, patchService, bridge);
+    service = new AiMetricasService(jobRepository, propostaRepository, patchService, bridge, manualRepository);
     sessao = new AiSessao(AiObjetivo.CRIAR_PAGINA, "briefing", null, null, null, null, null);
     job = new AiJob(sessao, AiJobTipo.GERAR_RASCUNHO, 1);
   }
@@ -121,6 +124,31 @@ class AiMetricasServiceTest {
     assertThat(alteracoes.codigoTelaAlterado()).isEqualTo(1);
     assertThat(alteracoes.resumoAlterado()).isEqualTo(1);
     assertThat(alteracoes.conteudoReescrito()).isEqualTo(1);
+  }
+
+  @Test
+  void perguntasAoManualMostramLacunasETelasProcuradas() {
+    UUID pub = UUID.randomUUID();
+    when(manualRepository.findByCreatedAtAfter(any())).thenReturn(List.of(
+        new AiManualPergunta(pub, AiManualPergunta.Origem.LEITOR, "Como emitir nota?", AiManualPergunta.Modo.NAO_SEI,
+            List.of(), 0.2, 3),
+        new AiManualPergunta(pub, AiManualPergunta.Origem.LEITOR, "como emitir nota? ", AiManualPergunta.Modo.NAO_SEI,
+            List.of(), 0.1, 3),
+        new AiManualPergunta(pub, AiManualPergunta.Origem.PORTAL, "Como filtrar pedidos", AiManualPergunta.Modo.IA,
+            List.of("PED-001"), 1.0, 900)));
+    when(propostaRepository.findByCreatedAtAfter(any())).thenReturn(List.of());
+    when(jobRepository.findByCreatedAtAfter(any())).thenReturn(List.of());
+
+    var manual = service.calcular(30).manual();
+
+    assertThat(manual.perguntas()).isEqualTo(3);
+    assertThat(manual.naoSei()).isEqualTo(2);
+    assertThat(manual.taxaNaoSei()).isEqualTo(2.0 / 3);
+    assertThat(manual.semResposta()).first().satisfies(c -> {
+      assertThat(c.valor()).isEqualTo("como emitir nota?");
+      assertThat(c.ocorrencias()).isEqualTo(2);
+    });
+    assertThat(manual.telasMaisCitadas()).extracting(c -> c.valor()).containsExactly("PED-001");
   }
 
   @Test

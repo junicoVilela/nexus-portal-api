@@ -34,6 +34,8 @@ Texto do prompt com {{variavel}}.
 | `analise-documento-amplo.user.md` | idem | `arquivo`, `projetoNome`, `manifesto` |
 | `ajustar-pagina.system.md` | Ajuste de página existente (Fase B) | — |
 | `ajustar-pagina.user.md` | idem | `titulo`, `resumo`, `escopo`, `pedidos`, `esboco`, `catalogo`, `propostaAnterior` |
+| `responder-manual.system.md` | Perguntar ao manual publicado (Onda E) | — |
+| `responder-manual.user.md` | idem | `manual`, `pergunta`, `trechos` |
 
 O `FakeLlmProvider` (dev/test) reconhece os marcadores `TAREFA=GERAR_PAGE_SPEC`,
 `tituloSugerido:`, `codigoTelaSugerido:`, `resumoSugerido:` e as linhas `- <componenteId> |`

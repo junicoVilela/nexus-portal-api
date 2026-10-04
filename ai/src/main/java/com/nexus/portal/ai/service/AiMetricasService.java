@@ -4,7 +4,9 @@ import com.nexus.portal.ai.dto.response.AiMetricasResponse;
 import com.nexus.portal.ai.dto.response.AiMetricasResponse.Ajustes;
 import com.nexus.portal.ai.dto.response.AiMetricasResponse.AlteracoesPosAceite;
 import com.nexus.portal.ai.dto.response.AiMetricasResponse.AvisoFrequente;
+import com.nexus.portal.ai.dto.response.AiMetricasResponse.Contagem;
 import com.nexus.portal.ai.dto.response.AiMetricasResponse.Geracao;
+import com.nexus.portal.ai.dto.response.AiMetricasResponse.Manual;
 import com.nexus.portal.ai.dto.response.AiMetricasResponse.PorPrompt;
 import com.nexus.portal.ai.dto.response.AiMetricasResponse.PorTipoOperacao;
 import com.nexus.portal.ai.dto.response.AiMetricasResponse.Rejeicao;
@@ -12,12 +14,14 @@ import com.nexus.portal.ai.dto.response.AiMetricasResponse.RejeicaoPorCategoria;
 import com.nexus.portal.ai.entity.AiCategoriaRejeicao;
 import com.nexus.portal.ai.entity.AiJob;
 import com.nexus.portal.ai.entity.AiJobStatus;
+import com.nexus.portal.ai.entity.AiManualPergunta;
 import com.nexus.portal.ai.entity.AiProposta;
 import com.nexus.portal.ai.entity.AiPropostaStatus;
 import com.nexus.portal.ai.entity.AiPropostaTipo;
 import com.nexus.portal.ai.integration.docflow.DocFlowAiBridge;
 import com.nexus.portal.ai.integration.docflow.DocFlowAiBridge.PaginaAjuste;
 import com.nexus.portal.ai.repository.AiJobRepository;
+import com.nexus.portal.ai.repository.AiManualPerguntaRepository;
 import com.nexus.portal.ai.repository.AiPropostaRepository;
 import com.nexus.portal.shared.exception.BusinessException;
 import java.time.OffsetDateTime;
@@ -27,6 +31,7 @@ import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -59,16 +64,19 @@ public class AiMetricasService {
   private final AiPropostaRepository propostaRepository;
   private final AiPagePatchService pagePatchService;
   private final DocFlowAiBridge docFlowAiBridge;
+  private final AiManualPerguntaRepository manualPerguntaRepository;
 
   public AiMetricasService(
       AiJobRepository jobRepository,
       AiPropostaRepository propostaRepository,
       AiPagePatchService pagePatchService,
-      DocFlowAiBridge docFlowAiBridge) {
+      DocFlowAiBridge docFlowAiBridge,
+      AiManualPerguntaRepository manualPerguntaRepository) {
     this.jobRepository = jobRepository;
     this.propostaRepository = propostaRepository;
     this.pagePatchService = pagePatchService;
     this.docFlowAiBridge = docFlowAiBridge;
+    this.manualPerguntaRepository = manualPerguntaRepository;
   }
 
   @Transactional(readOnly = true)
@@ -90,7 +98,8 @@ public class AiMetricasService {
         avisosFrequentes(propostas),
         rejeicoesRecentes(propostas),
         rejeicoesPorCategoria(propostas),
-        alteracoesPosAceite(paginas, mantido));
+        alteracoesPosAceite(paginas, mantido),
+        manual(manualPerguntaRepository.findByCreatedAtAfter(desde)));
   }
 
   private static Geracao geracao(List<AiJob> jobs) {
@@ -280,6 +289,29 @@ public class AiMetricasService {
         .collect(Collectors.groupingBy(AiProposta::getCategoriaRejeicao, Collectors.counting()));
     return Arrays.stream(AiCategoriaRejeicao.values())
         .map(c -> new RejeicaoPorCategoria(c.name(), c.rotulo(), contagem.getOrDefault(c, 0L)))
+        .toList();
+  }
+
+  private static Manual manual(List<AiManualPergunta> perguntas) {
+    long naoSei = contar(perguntas, p -> p.getModo() == AiManualPergunta.Modo.NAO_SEI);
+    return new Manual(
+        perguntas.size(),
+        contar(perguntas, p -> p.getModo() == AiManualPergunta.Modo.IA),
+        contar(perguntas, p -> p.getModo() == AiManualPergunta.Modo.TRECHOS),
+        naoSei,
+        taxa(naoSei, perguntas.size()),
+        topo(perguntas.stream()
+            .filter(p -> p.getModo() == AiManualPergunta.Modo.NAO_SEI)
+            .map(p -> p.getPergunta().strip().toLowerCase(Locale.ROOT))),
+        topo(perguntas.stream().flatMap(p -> p.getCodigosCitados().stream())));
+  }
+
+  private static List<Contagem> topo(java.util.stream.Stream<String> valores) {
+    return valores.collect(Collectors.groupingBy(Function.identity(), Collectors.counting()))
+        .entrySet().stream()
+        .sorted(Map.Entry.<String, Long>comparingByValue().reversed().thenComparing(Map.Entry.comparingByKey()))
+        .limit(TOP_AVISOS)
+        .map(e -> new Contagem(e.getKey(), e.getValue()))
         .toList();
   }
 

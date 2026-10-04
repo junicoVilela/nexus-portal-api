@@ -26,6 +26,7 @@ class AiPermissoesDosEndpointsTest {
       AiDocumentoImportacaoController.class,
       AiFilaPrController.class,
       AiGithubWebhookController.class,
+      AiManualController.class,
       AiAjustePaginaController.class,
       AiTemplateController.class,
       AiMetricasController.class,
@@ -33,12 +34,17 @@ class AiPermissoesDosEndpointsTest {
       AiEventController.class);
 
   /** Público por decisão: autenticado pela assinatura HMAC do GitHub (SecurityConfig). */
-  private static final Set<String> PUBLICOS = Set.of("AiGithubWebhookController#receber");
+  private static final Set<String> PUBLICOS = Set.of(
+      "AiGithubWebhookController#receber",
+      // Leitor do manual: autenticado pelo token de prévia do cliente.
+      "AiManualController#perguntarComToken");
 
   /** POSTs que só leem: recomendação de modelo e recarga do estado da importação. */
   private static final Set<String> ESCRITA_SEM_IA = Set.of(
       "AiTemplateController#recomendar",
-      "AiDocumentoImportacaoController#sincronizarImportacaoDocumento");
+      "AiDocumentoImportacaoController#sincronizarImportacaoDocumento",
+      // Perguntar ao manual publicado: só lê o snapshot.
+      "AiManualController#perguntarPublicacao");
 
   /** Endpoints que criam/alteram páginas do DocFlow a partir de uma proposta. */
   private static final Set<String> GRAVAM_PAGINA = Set.of(

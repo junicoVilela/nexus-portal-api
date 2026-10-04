@@ -60,6 +60,9 @@ public class SecurityConfig {
             .requestMatchers(HttpMethod.POST, "/api/v1/release-orchestrator/webhooks/**").permitAll()
             // GitHub → fila de propostas da IA; autenticado pela assinatura HMAC no controller.
             .requestMatchers(HttpMethod.POST, "/api/v1/ai/webhooks/github").permitAll()
+            // Manual para agentes (MCP) e perguntas: autenticados pelo token de prévia do cliente.
+            .requestMatchers("/api/v1/docflow/mcp").permitAll()
+            .requestMatchers(HttpMethod.POST, "/api/v1/ai/manual/*/perguntar").permitAll()
             .requestMatchers("/api/v1/preview/**").permitAll()
             .requestMatchers(HttpMethod.GET, "/api/v1/public/publicacoes/download").permitAll()
             .requestMatchers(HttpMethod.GET, "/api/v1/docflow/paginas/*/anexos/*/download").permitAll()

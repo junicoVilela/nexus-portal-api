@@ -62,6 +62,14 @@ public class PreviewTokenService {
   }
 
   public String renderizarPreview(String token) {
+    return htmlDoCliente(clienteDoToken(token));
+  }
+
+  /**
+   * Credencial de leitura do manual (INT-403): o token de prévia identifica o cliente. Vale para a
+   * prévia, para perguntar ao manual e para o MCP; conta no mesmo limite de acessos.
+   */
+  public UUID clienteDoToken(String token) {
     rateLimiter.registrarAcesso(token);
     PreviewToken pt = previewTokenRepository.findByTokenAndAtivoTrue(token)
         .orElseThrow(() -> new NotFoundException("Token inválido ou expirado."));
@@ -71,7 +79,7 @@ public class PreviewTokenService {
     if (!escopoResolver.podeAcessarCliente(pt.getClienteId())) {
       throw new NotFoundException("Token inválido ou expirado.");
     }
-    return htmlDoCliente(pt.getClienteId());
+    return pt.getClienteId();
   }
 
   /**

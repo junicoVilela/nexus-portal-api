@@ -189,6 +189,8 @@ class GeradorPacoteServiceTest {
     assertThat(html).contains("Login");
     assertThat(html).contains("ACME");
     assertThat(html).contains("data-codigo-tela=\"LOGIN\"", "new URLSearchParams(location.search).get('tela')");
+    assertThat(html).doesNotContain("--bg:%s").contains("--accent:" + cliente.getTemaCorPrimariaOuPadrao() + ";");
+    assertThat(html).contains("id=\"ask\" hidden", "/manual/'+encodeURIComponent(m[2])+'/perguntar");
   }
 
   @Test

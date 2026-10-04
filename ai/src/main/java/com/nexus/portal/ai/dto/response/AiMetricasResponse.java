@@ -17,7 +17,8 @@ public record AiMetricasResponse(
     List<AvisoFrequente> avisosFrequentes,
     List<Rejeicao> rejeicoesRecentes,
     List<RejeicaoPorCategoria> rejeicoesPorCategoria,
-    AlteracoesPosAceite alteracoesPosAceite) {
+    AlteracoesPosAceite alteracoesPosAceite,
+    Manual manual) {
 
   public record Geracao(
       long jobs,
@@ -67,6 +68,21 @@ public record AiMetricasResponse(
    * conta propostas em que ele mudou; {@code conteudoReescrito} = menos da metade do texto da IA
    * continua na página.
    */
+  /**
+   * Perguntas ao manual publicado (Onda E). {@code semResposta}: perguntas que terminaram em "não
+   * sei" — lacunas do manual; {@code telasMaisCitadas}: o que os leitores mais procuram.
+   */
+  public record Manual(
+      long perguntas,
+      long comIa,
+      long soTrechos,
+      long naoSei,
+      Double taxaNaoSei,
+      List<Contagem> semResposta,
+      List<Contagem> telasMaisCitadas) {}
+
+  public record Contagem(String valor, long ocorrencias) {}
+
   public record AlteracoesPosAceite(
       long amostras,
       long tituloAlterado,

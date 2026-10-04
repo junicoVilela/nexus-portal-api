@@ -14,6 +14,7 @@ import com.nexus.portal.docflow.entity.Projeto;
 import com.nexus.portal.docflow.repository.PaginaRepository;
 import com.nexus.portal.docflow.repository.PaginaTemplateRepository;
 import com.nexus.portal.docflow.service.ClienteService;
+import com.nexus.portal.docflow.service.ManualCorpusService;
 import com.nexus.portal.docflow.service.ModuloService;
 import com.nexus.portal.docflow.service.PaginaBlocoCatalogoService;
 import com.nexus.portal.docflow.service.PaginaBlueprintCatalogoService;
@@ -21,6 +22,7 @@ import com.nexus.portal.docflow.service.PaginaQualidadeService;
 import com.nexus.portal.docflow.service.PaginaQualidadeService.ResultadoQualidade;
 import com.nexus.portal.docflow.service.PaginaService;
 import com.nexus.portal.docflow.service.PaginaTemplateService;
+import com.nexus.portal.docflow.service.PreviewTokenService;
 import com.nexus.portal.docflow.service.ProjetoService;
 import com.nexus.portal.shared.util.SlugUtils;
 import java.security.Principal;
@@ -50,6 +52,8 @@ public class DocFlowAiBridge {
   private final ModuloService moduloService;
   private final ClienteService clienteService;
   private final PaginaRepository paginaRepository;
+  private final ManualCorpusService manualCorpusService;
+  private final PreviewTokenService previewTokenService;
 
   public DocFlowAiBridge(
       PaginaTemplateService paginaTemplateService,
@@ -61,7 +65,9 @@ public class DocFlowAiBridge {
       ProjetoService projetoService,
       ModuloService moduloService,
       ClienteService clienteService,
-      PaginaRepository paginaRepository) {
+      PaginaRepository paginaRepository,
+      ManualCorpusService manualCorpusService,
+      PreviewTokenService previewTokenService) {
     this.paginaTemplateService = paginaTemplateService;
     this.paginaTemplateRepository = paginaTemplateRepository;
     this.paginaQualidadeService = paginaQualidadeService;
@@ -72,6 +78,18 @@ public class DocFlowAiBridge {
     this.moduloService = moduloService;
     this.clienteService = clienteService;
     this.paginaRepository = paginaRepository;
+    this.manualCorpusService = manualCorpusService;
+    this.previewTokenService = previewTokenService;
+  }
+
+  /** Onda E: snapshot publicado de uma publicação (perguntas pelo portal). */
+  public ManualCorpusService.Corpus corpusDaPublicacao(UUID publicacaoId) {
+    return manualCorpusService.daPublicacao(publicacaoId);
+  }
+
+  /** Onda E: manual vigente do cliente dono do token de prévia (perguntas do leitor). */
+  public ManualCorpusService.Corpus corpusDoToken(String token) {
+    return manualCorpusService.vigenteDoCliente(previewTokenService.clienteDoToken(token));
   }
 
   /** {@code codigo_tela} é único entre páginas: a proposta com código repetido não salva. */

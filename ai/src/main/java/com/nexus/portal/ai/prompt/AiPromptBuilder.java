@@ -54,6 +54,15 @@ public final class AiPromptBuilder {
     return PromptMontado.de("gerar-page-spec", variaveis);
   }
 
+  /** Pergunta ao manual publicado (Onda E): resposta só com os trechos recuperados. */
+  public static PromptMontado responderManual(String manual, String pergunta, String trechos) {
+    Map<String, String> variaveis = new LinkedHashMap<>();
+    variaveis.put("manual", nulo(manual));
+    variaveis.put("pergunta", nulo(pergunta));
+    variaveis.put("trechos", nulo(trechos));
+    return PromptMontado.de("responder-manual", variaveis);
+  }
+
   /** Organização de documento importado (páginas + sugestões). */
   public static PromptMontado analiseDocumento(String arquivo, String projetoNome, String manifestoJson) {
     return PromptMontado.de(
