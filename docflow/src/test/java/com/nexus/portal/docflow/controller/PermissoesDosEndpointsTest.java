@@ -39,7 +39,8 @@ class PermissoesDosEndpointsTest {
       PublicDownloadController.class,
       ManualMcpController.class,
       ManualPublicoController.class,
-      ManualAcessoController.class);
+      ManualAcessoController.class,
+      ManualSinonimoController.class);
 
   /**
    * Endpoints intencionalmente públicos — liberados no {@code SecurityConfig}

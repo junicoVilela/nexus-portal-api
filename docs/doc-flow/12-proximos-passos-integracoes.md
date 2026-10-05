@@ -231,7 +231,8 @@ em `docs/ai/PERGUNTAS-MANUAL.md`.
 - [ ] INT-603 captura automática — **não feito** (opcional, é o teto da onda): exige ambiente demo estável e credenciais por sistema. A fila de release já aponta quais capturas podem ter envelhecido
 - [x] INT-604 include — já existia (`PaginaSnippetService`, resolvido na geração do pacote)
 - [x] INT-605 eventos do PWA — `POST /api/v1/manual/{token}/eventos` (BUSCA, BUSCA_SEM_RESULTADO, PAGINA_ABERTA) em `tb_manual_evento` (V49), sem IP nem usuário; retenção junto com `docflow.ajuda.*`. Só envia quando o manual é servido pela API (ZIP offline não envia)
-- [x] INT-606 dashboard — "Lacunas do manual": buscas sem resultado nos últimos 30 dias (top 8)
+- [x] INT-606 dashboard — "Lacunas do manual": buscas sem resultado nos últimos 30 dias (top 8). Cada termo tem **Procurar** (páginas), **Criar com IA** (assistente com briefing pronto) e **Sinônimo**
+- [x] Sinônimos da busca por cliente — Configurações → Manual nos sistemas do cliente (`tb_manual_sinonimo`, V52). Valem na hora para perguntas, MCP e manual hospedado; o ZIP leva `sinonimos.json` para a busca offline
 
 ---
 

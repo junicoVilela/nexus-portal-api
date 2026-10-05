@@ -41,6 +41,18 @@ class ManualBuscaTest {
   }
 
   @Test
+  void sinonimoDoClienteTrocaATermoDaPergunta() {
+    var semSinonimo = ManualBusca.buscar(corpus(), "onde fica a planilha?", 3);
+    assertThat(semSinonimo.encontrou()).isFalse();
+
+    var comSinonimo = ManualBusca.buscar(corpus().comSinonimos(List.of(List.of("planilha", "csv"))),
+        "onde fica a planilha?", 3);
+
+    assertThat(comSinonimo.encontrou()).isTrue();
+    assertThat(comSinonimo.resultados().getFirst().secao().titulo()).isEqualTo("Exportação");
+  }
+
+  @Test
   void achaASecaoCertaMesmoComFlexaoEAcento() {
     var resposta = ManualBusca.buscar(corpus(), "Como filtrar os pedidos por vendedor?", 3);
 

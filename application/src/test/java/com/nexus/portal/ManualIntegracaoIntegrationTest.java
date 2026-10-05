@@ -130,11 +130,31 @@ class ManualIntegracaoIntegrationTest {
     JsonNode dashboard = json.readTree(get("/api/v1/docflow/dashboard/resumo", jwt).body());
     assertThat(dashboard.path("lacunas").path("termosSemResultado").toString()).contains("nota fiscal");
 
+    // Sinônimo vale na hora, sem nova publicação: busca do MCP e sinonimos.json do manual hospedado.
+    assertThat(buscarNoMcp(token, "situação")).contains("Nada no");
+    var grupo = post("/api/v1/docflow/clientes/" + cliente.getId() + "/sinonimos-manual", jwt,
+        Map.of("termos", List.of("situação", "status")));
+    assertThat(grupo.statusCode()).isEqualTo(201);
+    assertThat(buscarNoMcp(token, "situação")).contains(codigo);
+    var sinonimos = get("/api/v1/manual/" + token + "/site/sinonimos.json", null);
+    assertThat(json.readTree(sinonimos.body()).path("grupos").toString()).isEqualTo("[[\"situacao\",\"status\"]]");
+    assertThat(post("/api/v1/docflow/clientes/" + cliente.getId() + "/sinonimos-manual", jwt,
+        Map.of("termos", List.of("Status", "estado"))).statusCode()).as("termo já em outro grupo").isBetween(400, 499);
+
     var revogada = http.send(HttpRequest.newBuilder(
             URI.create(url("/api/v1/docflow/acessos-manual/" + chave.path("acesso").path("id").asText())))
         .header("Authorization", "Bearer " + jwt).DELETE().build(), HttpResponse.BodyHandlers.ofString());
     assertThat(revogada.statusCode()).isEqualTo(204);
     assertThat(get("/api/v1/manual/" + token + "/vigente", null).statusCode()).isEqualTo(404);
+  }
+
+  private String buscarNoMcp(String token, String consulta) throws Exception {
+    var resposta = http.send(HttpRequest.newBuilder(URI.create(url("/api/v1/docflow/mcp")))
+        .header("Content-Type", "application/json").header("Authorization", "Bearer " + token)
+        .POST(HttpRequest.BodyPublishers.ofString(json.writeValueAsString(Map.of("jsonrpc", "2.0", "id", 2,
+            "method", "tools/call", "params", Map.of("name", "buscar", "arguments", Map.of("consulta", consulta))))))
+        .build(), HttpResponse.BodyHandlers.ofString());
+    return json.readTree(resposta.body()).path("result").path("content").get(0).path("text").asText();
   }
 
   private void aguardar(UUID id, String jwt) throws Exception {

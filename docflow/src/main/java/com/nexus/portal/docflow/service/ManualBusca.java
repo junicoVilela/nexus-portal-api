@@ -21,6 +21,9 @@ import java.util.regex.Pattern;
  *
  * <p>Guardrail (INT-502): o melhor trecho precisa conter ao menos metade dos termos da pergunta;
  * abaixo disso a resposta é "não sei", sem chamar a IA.
+ *
+ * <p>Sinônimos do cliente: cada troca ("nf" → "nota fiscal") é uma leitura alternativa da
+ * pergunta; vale a leitura que encontra, com o melhor trecho.
  */
 public final class ManualBusca {
 
@@ -44,6 +47,27 @@ public final class ManualBusca {
   public record Resposta(List<Resultado> resultados, boolean encontrou, List<String> termos) {}
 
   public static Resposta buscar(Corpus corpus, String consulta, int limite) {
+    List<String> alternativas = ManualSinonimos.alternativas(consulta, corpus.sinonimos());
+    Resposta melhor = buscarLeitura(corpus, consulta, limite);
+    for (String alternativa : alternativas.subList(1, alternativas.size())) {
+      Resposta resposta = buscarLeitura(corpus, alternativa, limite);
+      if (melhorQue(resposta, melhor)) {
+        melhor = resposta;
+      }
+    }
+    return melhor;
+  }
+
+  /** Encontrar vence não encontrar; entre iguais, o maior score do primeiro trecho. */
+  private static boolean melhorQue(Resposta candidata, Resposta atual) {
+    if (candidata.encontrou() != atual.encontrou()) {
+      return candidata.encontrou();
+    }
+    return !candidata.resultados().isEmpty() && (atual.resultados().isEmpty()
+        || candidata.resultados().getFirst().score() > atual.resultados().getFirst().score());
+  }
+
+  private static Resposta buscarLeitura(Corpus corpus, String consulta, int limite) {
     List<String> termos = termos(consulta);
     Set<String> codigos = codigosCitados(consulta, corpus);
     if (termos.isEmpty() && codigos.isEmpty()) {

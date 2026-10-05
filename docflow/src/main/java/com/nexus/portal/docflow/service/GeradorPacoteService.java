@@ -45,7 +45,9 @@ import org.springframework.web.util.HtmlUtils;
 public class GeradorPacoteService {
 
   /** Revisão dos assets estáticos do manual ZIP; aparece no comentário do app.css, na meta do HTML e na query string (cache bust). */
-  public static final String MANUAL_ASSETS_REVISION = "layout-v19";
+  public static final String MANUAL_ASSETS_REVISION = "layout-v20";
+  /** Grupos de sinônimos da busca ({"grupos": [["nota fiscal", "nf"]]}). */
+  public static final String ARQUIVO_SINONIMOS = "sinonimos.json";
 
   private final ClienteModuloRepository clienteModuloRepository;
   private final ClientePaginaRepository clientePaginaRepository;
@@ -55,6 +57,7 @@ public class GeradorPacoteService {
   private final StorageProperties storageProperties;
   private final EmpresaLogoService empresaLogoService;
   private final PaginaSnippetService paginaSnippetService;
+  private final ManualSinonimoService manualSinonimoService;
   private final ManualRagService manualRagService;
   private final ObjectMapper objectMapper;
 
@@ -66,6 +69,7 @@ public class GeradorPacoteService {
       EmpresaLogoService empresaLogoService,
       PaginaSnippetService paginaSnippetService,
       ManualRagService manualRagService,
+      ManualSinonimoService manualSinonimoService,
       ObjectMapper objectMapper) {
     this.clienteModuloRepository = clienteModuloRepository;
     this.clientePaginaRepository = clientePaginaRepository;
@@ -76,6 +80,7 @@ public class GeradorPacoteService {
     this.empresaLogoService = empresaLogoService;
     this.paginaSnippetService = paginaSnippetService;
     this.manualRagService = manualRagService;
+    this.manualSinonimoService = manualSinonimoService;
     this.objectMapper = objectMapper.copy().enable(SerializationFeature.INDENT_OUTPUT);
   }
 
@@ -487,6 +492,9 @@ public class GeradorPacoteService {
         "window.MANUAL_ROUTES = "
             + objectMapper.writer().without(SerializationFeature.INDENT_OUTPUT).writeValueAsString(routes) + ";\n");
     objectMapper.writeValue(workDir.resolve("search-index.json").toFile(), searchIndex);
+    // Cópia dos sinônimos para a busca offline; hospedado pela API, o arquivo vem do banco (atual).
+    objectMapper.writeValue(workDir.resolve(ARQUIVO_SINONIMOS).toFile(),
+        Map.of("grupos", manualSinonimoService.grupos(cliente.getId())));
     objectMapper.writeValue(workDir.resolve("manifest.json").toFile(), manifest);
   }
 
@@ -1113,6 +1121,35 @@ public class GeradorPacoteService {
         function manualNormalize(text) {
           return (text || '').toString().normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase();
         }
+        /** Mesma regra de ManualSinonimos.normalizar: sem acento, minúsculo, pontuação vira espaço. */
+        function manualTermos(text) {
+          return manualNormalize(text).replace(/[^a-z0-9]+/g, ' ').trim();
+        }
+        let manualSinonimos = [];
+        fetch(`${manualRootBase}/sinonimos.json`, { cache: 'no-store' })
+          .then(response => response.ok ? response.json() : { grupos: [] })
+          .then(json => { manualSinonimos = Array.isArray(json.grupos) ? json.grupos : []; })
+          .catch(() => undefined);
+        /** A busca e as trocas por sinônimo ("nf" → "nota fiscal"), só com palavra inteira. */
+        function manualAlternativas(term) {
+          const base = ` ${manualTermos(term)} `;
+          const alternativas = [base.trim()];
+          manualSinonimos.forEach(grupo => grupo.forEach(termo => {
+            if (!termo || !base.includes(` ${termo} `)) return;
+            grupo.forEach(outro => {
+              const alternativa = base.replace(` ${termo} `, ` ${outro} `).trim();
+              if (outro !== termo && !alternativas.includes(alternativa) && alternativas.length < 8) {
+                alternativas.push(alternativa);
+              }
+            });
+          }));
+          return alternativas.filter(Boolean);
+        }
+        /** O que o leitor digitou casa em qualquer ponto (como sempre); a troca, só no começo de palavra. */
+        function manualCombina(text, alternativas) {
+          const alvo = ` ${manualTermos(text)}`;
+          return alternativas.some((alternativa, i) => alvo.includes(i === 0 ? alternativa : ` ${alternativa}`));
+        }
         function manualSnippet(text, term) {
           const normalizedText = manualNormalize(text);
           const normalizedTerm = manualNormalize(term);
@@ -1275,8 +1312,9 @@ public class GeradorPacoteService {
                 results.replaceChildren();
                 return;
               }
+              const alternativas = manualAlternativas(term);
               const encontrados = searchIndex
-                .filter(item => manualNormalize(`${item.titulo} ${item.codigoTela} ${item.texto}`).includes(normalizedTerm));
+                .filter(item => manualCombina(`${item.titulo} ${item.codigoTela} ${item.texto}`, alternativas));
               manualRegistrarBusca(term, encontrados.length);
               const matches = encontrados
                 .slice(0, 12)
@@ -1301,9 +1339,10 @@ public class GeradorPacoteService {
             const status = document.getElementById('welcome-search-status');
             welcomeInput.addEventListener('input', () => {
               const term = manualNormalize(welcomeInput.value.trim());
+              const alternativas = manualAlternativas(welcomeInput.value.trim());
               let visible = 0;
               cards.forEach(card => {
-                const match = !term || manualNormalize(card.dataset.search).includes(term);
+                const match = !term || manualCombina(card.dataset.search, alternativas);
                 card.hidden = !match;
                 if (match) visible += 1;
               });
@@ -1364,6 +1403,15 @@ public class GeradorPacoteService {
 
         self.addEventListener('fetch', event => {
           if (event.request.method !== 'GET') return;
+          // Sinônimos mudam sem nova publicação: rede primeiro, cache só sem conexão.
+          if (new URL(event.request.url).pathname.endsWith('/sinonimos.json')) {
+            event.respondWith(fetch(event.request).then(response => {
+              const copy = response.clone();
+              caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
+              return response;
+            }).catch(() => caches.match(event.request)));
+            return;
+          }
           event.respondWith(
             caches.match(event.request).then(cached => cached || fetch(event.request).then(response => {
               const copy = response.clone();

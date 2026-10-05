@@ -265,6 +265,10 @@ GET    /api/v1/auditoria
 - Release publicada no Orchestrator emite `ReleasePublicadaEvento` (shared): a página da tela
   citada é marcada `desatualizada_por` (V50, limpa ao publicar) e a fila da IA ganha um item
   `RELEASE` em `PARA_REVISAR` (V51) — a IA só gera o ajuste se alguém pedir.
+- Sinônimos da busca por cliente (V52, `ManualSinonimoService`): grupos de termos equivalentes
+  ("NF" = "nota fiscal"). `ManualBusca` testa cada troca como leitura alternativa; o corpus em
+  cache não guarda sinônimos, eles entram a cada leitura (valem sem nova publicação). O ZIP leva
+  `sinonimos.json`; no manual hospedado esse arquivo vem do banco.
 - Detalhes em `docs/doc-flow/12-proximos-passos-integracoes.md` (Ondas A–F).
 
 ## Contrato OpenAPI

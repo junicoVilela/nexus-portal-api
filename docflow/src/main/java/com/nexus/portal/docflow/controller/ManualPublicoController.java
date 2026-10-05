@@ -4,7 +4,11 @@ import com.nexus.portal.docflow.entity.ManualEvento;
 import com.nexus.portal.docflow.service.ManualCorpusService;
 import com.nexus.portal.docflow.service.ManualEventoService;
 import com.nexus.portal.docflow.service.ManualCorpusService.Documento;
+import com.nexus.portal.docflow.service.GeradorPacoteService;
 import com.nexus.portal.docflow.service.ManualLeitorService;
+import com.nexus.portal.docflow.service.ManualSinonimoService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.portal.shared.exception.NotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
@@ -54,12 +58,16 @@ public class ManualPublicoController {
   private final ManualLeitorService leitorService;
   private final ManualCorpusService corpusService;
   private final ManualEventoService eventoService;
+  private final ManualSinonimoService sinonimoService;
+  private final ObjectMapper json;
 
   public ManualPublicoController(ManualLeitorService leitorService, ManualCorpusService corpusService,
-      ManualEventoService eventoService) {
+      ManualEventoService eventoService, ManualSinonimoService sinonimoService, ObjectMapper json) {
     this.leitorService = leitorService;
     this.corpusService = corpusService;
     this.eventoService = eventoService;
+    this.sinonimoService = sinonimoService;
+    this.json = json;
   }
 
   public record EventoRequest(@NotNull ManualEvento.Tipo tipo, @Size(max = 500) String termo,
@@ -129,7 +137,11 @@ public class ManualPublicoController {
     if (caminho.contains("..") || caminho.startsWith("/") || caminho.contains("\\")) {
       throw new NotFoundException("Arquivo não encontrado no manual.");
     }
-    Path pacote = corpusService.vigente(leitorService.cliente(token, null)).zip();
+    UUID clienteId = leitorService.cliente(token, null);
+    if (caminho.equals(GeradorPacoteService.ARQUIVO_SINONIMOS)) {
+      return sinonimosAtuais(clienteId);
+    }
+    Path pacote = corpusService.vigente(clienteId).zip();
     try (ZipFile zip = new ZipFile(pacote.toFile())) {
       ZipEntry entrada = zip.getEntry(caminho);
       if (entrada == null || entrada.isDirectory()) {
@@ -152,6 +164,19 @@ public class ManualPublicoController {
           .body(bytes);
     } catch (IOException ex) {
       throw new UncheckedIOException("Falha ao ler o pacote do manual.", ex);
+    }
+  }
+
+  /** Sinônimos valem sem nova publicação: no manual hospedado o arquivo vem do banco, não do ZIP. */
+  private ResponseEntity<byte[]> sinonimosAtuais(UUID clienteId) {
+    try {
+      byte[] corpo = json.writeValueAsBytes(Map.of("grupos", sinonimoService.grupos(clienteId)));
+      return ResponseEntity.ok()
+          .contentType(new MediaType(MediaType.APPLICATION_JSON, StandardCharsets.UTF_8))
+          .cacheControl(CacheControl.noCache())
+          .body(corpo);
+    } catch (JsonProcessingException ex) {
+      throw new UncheckedIOException(ex);
     }
   }
 

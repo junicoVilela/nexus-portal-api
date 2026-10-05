@@ -39,12 +39,15 @@ public class ManualCorpusService {
   private static final int MAX_EM_CACHE = 32;
 
   private final PublicacaoRepository publicacaoRepository;
+  private final ManualSinonimoService sinonimoService;
   private final ObjectMapper objectMapper;
   /** O ZIP de uma publicação não muda: cache por id até o limite. */
   private final Map<UUID, Corpus> cache = new ConcurrentHashMap<>();
 
-  public ManualCorpusService(PublicacaoRepository publicacaoRepository, ObjectMapper objectMapper) {
+  public ManualCorpusService(PublicacaoRepository publicacaoRepository, ManualSinonimoService sinonimoService,
+      ObjectMapper objectMapper) {
     this.publicacaoRepository = publicacaoRepository;
+    this.sinonimoService = sinonimoService;
     this.objectMapper = objectMapper;
   }
 
@@ -54,12 +57,27 @@ public class ManualCorpusService {
   /** Trecho recuperável: uma seção {@code ##} de uma tela (a introdução é a seção sem título). */
   public record Secao(Documento documento, String titulo, String texto) {}
 
+  /**
+   * {@code sinonimos} são do cliente e valem na hora (não vêm do ZIP): o corpus em cache não os
+   * guarda, eles entram a cada leitura.
+   */
   public record Corpus(
       UUID publicacaoId,
+      UUID clienteId,
       String cliente,
       String versao,
       Map<String, Documento> documentos,
-      List<Secao> secoes) {
+      List<Secao> secoes,
+      List<List<String>> sinonimos) {
+
+    public Corpus(UUID publicacaoId, String cliente, String versao, Map<String, Documento> documentos,
+        List<Secao> secoes) {
+      this(publicacaoId, null, cliente, versao, documentos, secoes, List.of());
+    }
+
+    public Corpus comSinonimos(List<List<String>> grupos) {
+      return new Corpus(publicacaoId, clienteId, cliente, versao, documentos, secoes, List.copyOf(grupos));
+    }
 
     public String rotulo() {
       return "Manual " + cliente + " v" + versao;
@@ -70,11 +88,11 @@ public class ManualCorpusService {
   public Corpus daPublicacao(UUID publicacaoId) {
     Corpus emCache = cache.get(publicacaoId);
     if (emCache != null) {
-      return emCache;
+      return comSinonimos(emCache);
     }
     Publicacao publicacao = publicacaoRepository.findById(publicacaoId)
         .orElseThrow(() -> new NotFoundException("Publicação não encontrada."));
-    return carregar(publicacao);
+    return comSinonimos(carregar(publicacao));
   }
 
   /** Última publicação concluída do cliente (o manual "vigente"). */
@@ -82,7 +100,11 @@ public class ManualCorpusService {
   public Corpus vigenteDoCliente(UUID clienteId) {
     Publicacao publicacao = publicacaoVigente(clienteId);
     Corpus emCache = cache.get(publicacao.getId());
-    return emCache != null ? emCache : carregar(publicacao);
+    return comSinonimos(emCache != null ? emCache : carregar(publicacao));
+  }
+
+  private Corpus comSinonimos(Corpus corpus) {
+    return corpus.comSinonimos(sinonimoService.grupos(corpus.clienteId()));
   }
 
   /** Manual vigente já resolvido (sem associações lazy para fora da transação). */
@@ -123,8 +145,8 @@ public class ManualCorpusService {
           .filter(d -> !menus.contains(d.codigoTela()))
           .flatMap(d -> secoes(d).stream())
           .toList();
-      Corpus corpus = new Corpus(publicacao.getId(), publicacao.getCliente().getNome(), publicacao.getVersao(),
-          documentos, secoes);
+      Corpus corpus = new Corpus(publicacao.getId(), publicacao.getCliente().getId(),
+          publicacao.getCliente().getNome(), publicacao.getVersao(), documentos, secoes, List.of());
       if (cache.size() >= MAX_EM_CACHE) {
         cache.clear();
       }

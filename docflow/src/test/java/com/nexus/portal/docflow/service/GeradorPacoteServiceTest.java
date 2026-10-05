@@ -56,6 +56,7 @@ class GeradorPacoteServiceTest {
   Modulo modulo;
 
   @Mock PaginaSnippetService paginaSnippetService;
+  @Mock ManualSinonimoService manualSinonimoService;
 
   @TempDir Path storageDir;
 
@@ -67,7 +68,7 @@ class GeradorPacoteServiceTest {
         .thenAnswer(inv -> inv.getArgument(0));
     service = new GeradorPacoteService(clienteModuloRepository, clientePaginaRepository,
         paginaRepository, clienteProjetoRepository, paginaAnexoRepository, props,
-        empresaLogoService, paginaSnippetService, new ManualRagService(new ObjectMapper()), new ObjectMapper());
+        empresaLogoService, paginaSnippetService, new ManualRagService(new ObjectMapper()), manualSinonimoService, new ObjectMapper());
 
     clienteId = UUID.randomUUID();
     cliente = new Cliente("ACME", "acme", true);
@@ -246,7 +247,7 @@ class GeradorPacoteServiceTest {
       String css = new String(zf.getInputStream(zf.getEntry("assets/app.css")).readAllBytes(),
           java.nio.charset.StandardCharsets.UTF_8);
       assertThat(css)
-          .contains("docflow-manual layout-v19", ".article-body .doc-intro", ".article-body .steps>ol", "--accent:#4f46e5")
+          .contains("docflow-manual layout-v20", ".article-body .doc-intro", ".article-body .steps>ol", "--accent:#4f46e5")
           .contains(".article-body .objective-card", ".article-body .screen-grid", ".article-body .flow-strip")
           .contains(".article-body .journey-grid", ".article-body .resource-list", ".article-body .status-list")
           .contains("nav a.active", "nav-toggle", ".status-badge--sim", ".condition-stack", "callout--danger", "content:'✓'");
@@ -292,6 +293,25 @@ class GeradorPacoteServiceTest {
       assertThat(index.path("documentos")).hasSize(2);
       assertThat(index.path("documentos").get(1).path("arquivo").asText()).isEqualTo("rag/suite/LISTA.md");
       assertThat(index.path("documentos").get(1).path("sha256").asText()).matches("^[0-9a-f]{64}$");
+    }
+  }
+
+  @Test
+  void gerar_levaOsSinonimosDoClienteParaABuscaOffline() throws Exception {
+    Pagina pagina = paginaPublicada("Notas", "notas", 0);
+    when(clienteModuloRepository.findModuloIdsByClienteId(clienteId)).thenReturn(List.of(modulo.getId()));
+    when(paginaRepository.findAtivasByStatusWithModulo(StatusPagina.PUBLICADO)).thenReturn(List.of(pagina));
+    when(manualSinonimoService.grupos(clienteId)).thenReturn(List.of(List.of("nota fiscal", "nf", "nf e")));
+
+    ResultadoGeracao resultado = service.gerar(cliente, "3.0.0");
+
+    try (ZipFile zf = new ZipFile(Path.of(resultado.arquivoZipCaminho()).toFile())) {
+      JsonNode sinonimos = new ObjectMapper().readTree(ler(zf, "sinonimos.json"));
+      assertThat(sinonimos.path("grupos").get(0)).hasSize(3);
+      assertThat(sinonimos.path("grupos").get(0).get(1).asText()).isEqualTo("nf");
+      assertThat(ler(zf, "assets/app.js"))
+          .contains("function manualAlternativas(term)", "sinonimos.json", "manualCombina(");
+      assertThat(ler(zf, "sw.js")).contains("endsWith('/sinonimos.json')");
     }
   }
 
